@@ -1,3 +1,14 @@
+# Blackstart AI — CRM
+
+## Version Premium de la v3 — `Blackstart_CRM_App_v3_Premium.html`
+
+**Même interface que la v3** (mêmes écrans, mêmes boutons, mêmes emplacements, mêmes données), avec une finition haut de gamme :
+icônes duotone nettes en haute définition, tuiles d'icônes en relief 3D, cartes avec profondeur, inclinaison 3D au survol et liseré lumineux animé,
+micro-animations d'icônes (téléphone qui sonne, avion qui s'envole…), effet d'onde au toucher, entrées en cascade, fenêtres « ressort », écran de démarrage 3D.
+Les réglages d'animation existants (Apparence › Mouvement) et « réduire les animations » du système sont respectés.
+
+Sources : `premium/premium.css` et `premium/premium.js`, injectés dans `archive/Blackstart_CRM_App_v3.html` par `npm run build:premium`.
+
 # Blackstart AI — CRM v4
 
 Application de prospection **en un seul fichier HTML** : `Blackstart_CRM_App_v4.html`.

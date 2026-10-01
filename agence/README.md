@@ -47,11 +47,16 @@ Les étapes commerciales correspondent aux statuts du pipeline du CRM Blackstart
 
 **Commencer par le directeur de projet** en cas de doute : il décide quelles équipes mobiliser.
 
+**Les équipes travaillent à chaque demande** : dans toute session Claude Code ouverte sur ce dépôt, `CLAUDE.md` impose de confier chaque demande de travail à l'équipe compétente — inutile de nommer l'agent.
+
+**Dans l'app Claude (ordinateur ou téléphone)** : créez un Projet avec le kit de [`projet-claude/`](projet-claude/LISEZMOI.md) (instructions à coller + fichier des équipes).
+
 ## Organisation des fichiers
 
 ```
 agence/
 ├── README.md               ← ce document
+├── projet-claude/          ← kit pour créer le Projet dans l'app Claude
 ├── modeles/                ← modèles à copier pour chaque client
 │   ├── brief-client.md
 │   ├── plan-projet.md

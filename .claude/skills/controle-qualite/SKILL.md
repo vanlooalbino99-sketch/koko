@@ -1,7 +1,7 @@
 ---
 name: controle-qualite
 description: Contrôle qualité avant livraison ou démo client — recette fonctionnelle, revue de sécurité et vérification du déploiement en parallèle, puis verdict « prêt à livrer » ou liste précise des corrections. À utiliser avant toute livraison, démo, mise en production, ou quand le fondateur demande « est-ce que c'est prêt ? ».
-argument-hint: [chemin, fonctionnalité ou nom du client]
+argument-hint: "[chemin, fonctionnalité ou nom du client]"
 ---
 
 # Contrôle qualité

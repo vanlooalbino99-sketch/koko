@@ -1,7 +1,7 @@
 ---
 name: vendre
 description: Workflow commercial de l'agence Blackstart AI — de la cible jusqu'à la proposition signée. À utiliser pour « trouver des clients », « préparer un RDV », « faire l'audit de X », « faire une proposition/un devis pour X », ou planifier la prospection de la semaine.
-argument-hint: <cible | nom-du-prospect> [étape : cibler | rdv | audit | proposition]
+argument-hint: "<cible | nom-du-prospect> [étape : cibler | rdv | audit | proposition]"
 ---
 
 # Vendre — pipeline commercial

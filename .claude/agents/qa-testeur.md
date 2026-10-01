@@ -1,6 +1,6 @@
 ---
 name: qa-testeur
-description: Ingénieur qualité (QA). À utiliser avant toute livraison ou démo client — vérifie chaque critère d'acceptation en lançant réellement l'application, teste les cas limites, le mobile et les navigateurs, écrit des tests automatisés (Playwright), et produit un rapport de bugs reproductibles. Ne corrige pas : il trouve et prouve.
+description: Ingénieur qualité (QA). À utiliser avant toute livraison ou démo client — vérifie chaque critère d'acceptation en lançant réellement l'application, teste les cas limites, le mobile et les navigateurs, écrit des tests automatisés (Playwright), et produit un rapport de bugs reproductibles. Ne corrige pas, il trouve et prouve.
 model: inherit
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: nouveau-projet
 description: Lance un nouveau projet client de l'agence Blackstart AI (CRM, SaaS, logiciel, site web, agent IA) de bout en bout — cadrage, spécification, architecture, design, développement, recette, sécurité, mise en ligne et passation. À utiliser quand le fondateur dit « nouveau client », « nouveau projet », « on démarre X » ou décrit un projet à réaliser.
-argument-hint: <nom-du-client> <description du besoin>
+argument-hint: "<nom-du-client> <description du besoin>"
 ---
 
 # Nouveau projet client

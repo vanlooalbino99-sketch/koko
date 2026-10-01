@@ -1,3 +1,7 @@
+# Blackstart AI
+
+> **Organisation de l'agence** (16 agents IA en 5 équipes, workflows `/vendre`, `/nouveau-projet`, `/controle-qualite`, modèles de documents) : voir [`agence/README.md`](agence/README.md).
+
 # Blackstart AI — CRM
 
 ## Version Premium de la v3 — `Blackstart_CRM_App_v3_Premium.html`

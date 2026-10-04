@@ -1227,6 +1227,9 @@
     grain(x, w, h, r, 0.05);
   }
   // ---- fin des scènes
+  // Contours des terres et grandes villes, réutilisés par le globe interactif (bs-globe.js).
+  window.bsTerre = terre;
+  window.bsVilles = VILLES;
   window.bsGalerie = [
     { id: 'reseau-neuronal', nom: 'Réseau neuronal', cat: 'IA', draw: reseauNeuronal },
     { id: 'cerveau-lumiere', nom: 'Cerveau de lumière', cat: 'IA', draw: cerveauLumiere },

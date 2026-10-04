@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const SRC = 'archive/Blackstart_CRM_App_v3.html';
-const OUT = '../../versions/Blackstart_CRM_App_v3_Premium.html';
+const OUT = 'Blackstart_CRM_App_v3_Premium.html';
 
 const html = readFileSync(SRC, 'utf8');
 const css = readFileSync('premium/premium.css', 'utf8');

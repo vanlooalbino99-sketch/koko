@@ -1,5 +1,0 @@
-
-/* Mode clair : libellés, sous-titres et légendes en noir foncé au lieu de gris clair. */
-[data-scheme="light"] { --text: #0b111c !important; --text-rgb: 11 17 28 !important; --text-2: #172030 !important; --text-3: #2b3546 !important; }
-[data-scheme="light"] ::placeholder { color: #6b778a !important; opacity: 1; }
-[data-scheme="light"] .kpi-label, [data-scheme="light"] .card-sub, [data-scheme="light"] .page-sub, [data-scheme="light"] .sr-hint, [data-scheme="light"] .toggle-hint { font-weight: 500; }

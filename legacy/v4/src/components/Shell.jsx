@@ -17,6 +17,7 @@ export const NAV = [
   { group: 'Ventes' },
   { id: 'devis', label: 'Devis & factures', icon: 'fileText' },
   { id: 'clients', label: 'Clients', icon: 'briefcase' },
+  { id: 'carte', label: 'Carte clients', icon: 'globe' },
   { id: 'payments', label: 'Paiements', icon: 'wallet' },
   { group: 'Analyse' },
   { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard' },

@@ -24,6 +24,7 @@ Les données restent dans le navigateur (même stockage que la v3 : vos prospect
 - **Pipeline** kanban avec glisser-déposer.
 - **Fiche prospect** : historique complet, tâches, documents, appel / email / SMS / WhatsApp.
 - **Devis & factures** : numérotation automatique, remise, TVA multi-taux, document A4 imprimable / PDF, conversion devis → facture, suivi des paiements.
+- **Carte clients** : globe 3D qui tourne tout seul (ou à la souris / au doigt), un point par client placé selon sa ville, zoom, liste par ville et clients à localiser. Répertoire de villes intégré (fonctionne hors ligne), complété en ligne par l'API des communes (geo.api.gouv.fr).
 - **Clients**, **Paiements** (liens Stripe / PayPal / Payoneer, IBAN), **Tableau de bord**, **Rapports** (graphiques 6 mois, meilleurs créneaux, conversion par canal).
 - **Outils** : enregistreur d'appels et documents conservés sur l'appareil, script d'appel et modèles d'email éditables, intégrations.
 - **Réglages** : entreprise, objectifs, thèmes clair/sombre/auto, accent, police, densité, sauvegarde / restauration JSON.

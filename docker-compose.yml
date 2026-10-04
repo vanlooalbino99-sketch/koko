@@ -1,0 +1,16 @@
+# Lancement en une commande : docker compose up -d   →   http://localhost:3000
+services:
+  crm:
+    image: ghcr.io/vanlooalbino99-sketch/koko:latest
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - crm-data:/data
+
+volumes:
+  crm-data:

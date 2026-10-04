@@ -19,7 +19,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${esc(title)} — Blackstart AI CRM</title>
 <meta name="color-scheme" content="dark">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%22528 168 484 474%22%3E%3Cdefs%3E%3ClinearGradient id=%22fg%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22#7d8494%22/%3E%3Cstop offset=%221%22 stop-color=%22#3b404c%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22fb%22 x1=%220.2%22 y1=%220%22 x2=%220.6%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22#2bb0ff%22/%3E%3Cstop offset=%221%22 stop-color=%22#0b52e0%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=%22M566 350V209L828 402L566 595V450%22 fill=%22none%22 stroke=%22url%28#fg%29%22 stroke-width=%2258%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M766 205H862L978 290V314L874 402L978 490V514L862 605H766%22 fill=%22none%22 stroke=%22url%28#fb%29%22 stroke-width=%2254%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23387CD5'/%3E%3Ctext x='32' y='44' font-family='Arial,sans-serif' font-size='34' font-weight='900' fill='white' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
   :root { --bg: #0a1220; --surface: #0f1b2e; --border: rgb(148 163 184 / .18); --text: #eaf1fb; --text-2: #a9bfdd; --accent: #387cd5; --bad: #f87171; }
@@ -32,7 +32,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
   @media (prefers-reduced-motion: reduce) { .bg { animation: none; } }
   main { position: relative; width: min(420px, 100%); background: rgb(15 27 46 / .82); border: 1px solid var(--border); border-radius: 20px; padding: 30px 28px 26px; backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); box-shadow: 0 30px 80px -30px rgb(0 0 0 / .8); }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .14em; font-size: 13px; }
-  .brand .mark { width: 38px; height: 38px; overflow: visible; filter: drop-shadow(0 3px 8px rgb(11 82 224 / .4)); }
+  .brand i { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-style: normal; letter-spacing: 0; font-size: 18px; background: linear-gradient(135deg, var(--accent), #2868bc); box-shadow: 0 8px 20px -8px var(--accent); }
   .brand span { color: #73a3e1; }
   h1 { font-size: 23px; letter-spacing: -.02em; margin: 22px 0 6px; }
   p.sub { margin: 0 0 20px; color: var(--text-2); font-size: 14px; line-height: 1.5; }
@@ -49,7 +49,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
 <body>
 <div class="bg" id="bg"></div><div class="veil"></div>
 <main>
-  <div class="brand"><svg class="mark" viewBox="528 168 484 474" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef1f6"/><stop offset="1" stop-color="#9aa3b4"/></linearGradient><linearGradient id="lb" x1="0.2" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#2bb0ff"/><stop offset="1" stop-color="#0b52e0"/></linearGradient></defs><path d="M566 350V209L828 402L566 595V450" fill="none" stroke="url(#lg)" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/><path d="M766 205H862L978 290V314L874 402L978 490V514L862 605H766" fill="none" stroke="url(#lb)" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/></svg>BLACKSTART <span>AI</span></div>
+  <div class="brand"><i>B</i>BLACKSTART <span>AI</span></div>
   <h1>${esc(title)}</h1>
   <p class="sub">${esc(sub)}</p>
   <form id="f" novalidate>

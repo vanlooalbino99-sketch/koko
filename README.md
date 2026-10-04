@@ -90,7 +90,6 @@ app/                      Le CRM (navigateur), découpé en fichiers
   core/app.min.js         Interface principale (Preact, déjà compilée)
   core/pre-theme.js       Thème appliqué avant l'affichage (pas de flash)
   core/pilote-4d.js       Relief et reflets au survol
-  modules/bs-logo.js      Logo Blackstart AI (SVG)
   modules/bs-serveur.js   Version équipe : synchronisation + Réglages › Équipe & compte
   modules/bs-ambiance.js  Images d'ambiance animées, mode immersion
   modules/bs-galerie.js   Galerie d'ambiances dessinées dans le navigateur
@@ -148,8 +147,6 @@ préférence dans `app/modules/`, branchées sur les points d'accroche prévus (
 
 ## Versions
 
-- **5.6.6** — Logo Blackstart AI (symbole vectoriel) dans le menu, la barre mobile, l'écran de chargement,
-  l'icône d'onglet et la page de connexion.
 - **5.6.5** — Projet full-stack : serveur d'équipe (comptes, synchronisation, fusion, sauvegardes, ambiances
   partagées), Docker, CI GitHub. Couleurs des icônes du menu (personnalisée, par rubrique). Menu blanc en mode sombre.
 - **5.6.4** — Courbes de tendance (graphiques plats), images d'ambiance animées.

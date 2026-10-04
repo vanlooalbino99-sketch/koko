@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Blackstart AI — CRM</title>
-<script id="bs-logo" src="modules/bs-logo.js" data-inline></script>
 <script id="bs-serveur" src="modules/bs-serveur.js" data-inline></script>
 <script id="bs-reglement" src="modules/bs-reglement.js" data-inline></script>
 <script id="bs-galerie" src="modules/bs-galerie.js" data-inline></script>
@@ -18,7 +17,7 @@
 <meta name="theme-color" content="#0A1220" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%22528 168 484 474%22%3E%3Cdefs%3E%3ClinearGradient id=%22fg%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22#7d8494%22/%3E%3Cstop offset=%221%22 stop-color=%22#3b404c%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22fb%22 x1=%220.2%22 y1=%220%22 x2=%220.6%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22#2bb0ff%22/%3E%3Cstop offset=%221%22 stop-color=%22#0b52e0%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=%22M566 350V209L828 402L566 595V450%22 fill=%22none%22 stroke=%22url%28#fg%29%22 stroke-width=%2258%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M766 205H862L978 290V314L874 402L978 490V514L862 605H766%22 fill=%22none%22 stroke=%22url%28#fb%29%22 stroke-width=%2254%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23387CD5'/%3E%3Ctext x='32' y='44' font-family='Arial,sans-serif' font-size='34' font-weight='900' fill='white' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
@@ -30,7 +29,23 @@
 </head>
 <body>
 <div id="splash" aria-hidden="true">
-  <div class="splash-logo" role="img" aria-label="Chargement de Blackstart AI"><svg class="bs-logo-svg" viewBox="528 168 484 474" aria-hidden="true" focusable="false"><defs><linearGradient id="bslspg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--bsl-g1)"/><stop offset="1" style="stop-color:var(--bsl-g2)"/></linearGradient><linearGradient id="bslspb" x1="0.2" y1="0" x2="0.6" y2="1"><stop offset="0" style="stop-color:var(--bsl-b1)"/><stop offset="1" style="stop-color:var(--bsl-b2)"/></linearGradient></defs><path class="bsl-g" d="M566 350V209L828 402L566 595V450" pathLength="1" fill="none" stroke="url(#bslspg)" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/><path class="bsl-b" d="M766 205H862L978 290V314L874 402L978 490V514L862 605H766" pathLength="1" fill="none" stroke="url(#bslspb)" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <svg class="splash-trend" viewBox="0 0 160 90" role="img" aria-label="Chargement">
+    <defs>
+      <linearGradient id="splashTrendFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/>
+        <stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
+      </linearGradient>
+      <filter id="splashTrendGlow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="3.2" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <polygon class="st-area" points="8,78 40,52 62,62 100,30 118,40 150,10 150,88 8,88" fill="url(#splashTrendFill)"/>
+    <g filter="url(#splashTrendGlow)">
+      <polyline class="st-line" pathLength="100" points="8,78 40,52 62,62 100,30 118,40 150,10"/>
+      <polygon class="st-arrow" points="154.4,5.9 151.9,17.8 142.3,7.6"/>
+    </g>
+  </svg>
   <div class="splash-brand">BLACKSTART <span>AI</span></div>
 </div>
 <div id="root"></div>

@@ -279,6 +279,12 @@
     // Lumières vivantes, entre l'image et le voile.
     '.bs-vie{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transition:opacity .7s ease}',
     '#bs-amb .bs-vie{filter:blur(var(--bs-amb-flou,0px))}',
+    '.bs-vie-globe{animation:bsVieIn .9s ease both}',
+    '@keyframes bsVieIn{from{opacity:0}}',
+    // Immersion : le globe reçoit la souris ; le texte et les voiles la laissent passer, les boutons restent cliquables.
+    '#bs-amb-zen .bs-vie-globe.live{pointer-events:auto}',
+    '#bs-amb-zen .z-shade,#bs-amb-zen .z-sweep,#bs-amb-zen .z-center,#bs-amb-zen .z-top,#bs-amb-zen .z-bottom{pointer-events:none}',
+    '#bs-amb-zen button{pointer-events:auto}',
     '.bs-amb-veil{position:absolute;inset:0;background:linear-gradient(90deg,rgb(var(--bg-rgb)/min(1,calc(var(--bs-amb-voile) + .2))) 0,rgb(var(--bg-rgb)/var(--bs-amb-voile)) 300px,rgb(var(--bg-rgb)/max(0,calc(var(--bs-amb-voile) - .12))) 100%),radial-gradient(130% 100% at 60% 0,transparent 45%,rgb(var(--bg-rgb)/.45) 100%)}',
     // Verre dépoli : les blocs laissent deviner l'image sans gêner la lecture.
     'html.bs-amb-fond .sidebar{background:rgb(var(--bg-rgb)/.62)!important;-webkit-backdrop-filter:blur(18px) saturate(1.15);backdrop-filter:blur(18px) saturate(1.15)}',
@@ -453,7 +459,7 @@
   // 30 images/s au plus, en pause quand l'onglet est caché ; rien ne bouge si « réduire les animations » est actif.
   var TAU = Math.PI * 2;
   var VIE_SUJET = { 'Aurore boréale': 'nuit', 'Ville de nuit': 'nuit', 'Horizon marin': 'eau', 'Lac miroir': 'eau',
-    'Crépuscule sur les crêtes': 'or', 'Dunes dorées': 'or' };
+    'Crépuscule sur les crêtes': 'or', 'Dunes dorées': 'or', 'Globe connecté': 'globe' };
   var mqReduce = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   function reducedMotion() { return document.documentElement.getAttribute('data-motion') === 'reduced' || !!(mqReduce && mqReduce.matches); }
   function imageOf(id) { return state.images.filter(function (i) { return i.id === id; })[0] || null; }
@@ -644,7 +650,7 @@
       if (last && ts - last < 31) return;
       var dt = last ? Math.min(0.1, (ts - last) / 1000) : 0.033;
       last = ts;
-      if (reducedMotion()) { if (!blank) { x.clearRect(0, 0, W, H); blank = true; } return; }
+      if (reducedMotion() || sujet === 'globe') { if (!blank) { x.clearRect(0, 0, W, H); blank = true; } return; }
       clock += dt; blank = false;
       if (sujet === 'nuit') drawNuit(dt, clock);
       else if (sujet === 'ia') drawIa(dt, clock);
@@ -658,6 +664,21 @@
       clearTimeout(swapT); canvas.style.opacity = '';
       if (on) { size(); seed(); last = 0; raf = requestAnimationFrame(frame); }
       else { cancelAnimationFrame(raf); raf = 0; x.clearRect(0, 0, W, H); blank = true; }
+      syncGlobe();
+    }
+    // « Globe connecté » : la planète devient un vrai globe 3D qui tourne tout seul ; en mode immersion, on la
+    // fait tourner à la souris (ou au doigt) et on zoome à la molette.
+    var globe = null, globeEl = null;
+    function syncGlobe() {
+      var want = on && sujet === 'globe' && !!window.bsGlobe && !reducedMotion();
+      if (want && !globe) {
+        globeEl = document.createElement('canvas');
+        globeEl.className = 'bs-vie bs-vie-globe' + (o.interactive ? ' live' : '');
+        canvas.parentNode.insertBefore(globeEl, canvas.nextSibling);
+        var deco = (window.bsVilles || []).slice(0, 26).map(function (v, i) { return { lon: v[0], lat: v[1], color: i % 4 ? '#7cc4ff' : '#fbbf24', size: 0.55 }; });
+        globe = window.bsGlobe.create(globeEl, { interactive: !!o.interactive, zoom: !!o.interactive, center: [0.6, 0.53], radius: 0.43, lon: 15, lat: 26,
+          autoRotate: 7, density: o.hd ? 1 : 0.7, labels: false, markers: deco, hub: { lon: 2.35, lat: 48.85 }, minZoom: 0.8, maxZoom: 2.5 });
+      } else if (!want && globe) { globe.destroy(); globeEl.remove(); globe = globeEl = null; }
     }
     // Nouvelle image : le calque s'efface, change de sujet, puis revient.
     function image(img) {
@@ -666,7 +687,7 @@
       if (!on) { sujet = s; tint = c; return; }
       canvas.style.opacity = '0';
       clearTimeout(swapT);
-      swapT = setTimeout(function () { sujet = s; tint = c; x.clearRect(0, 0, W, H); seed(); canvas.style.opacity = ''; }, 700);
+      swapT = setTimeout(function () { sujet = s; tint = c; x.clearRect(0, 0, W, H); seed(); canvas.style.opacity = ''; syncGlobe(); }, 700);
     }
     function onResize() { if (on) { size(); seed(); } }
     window.addEventListener('resize', onResize);
@@ -683,6 +704,7 @@
     if (!zen || reducedMotion()) return;
     var par = zen.querySelector('.z-par');
     if (!par) return;
+    if (zen.querySelector('.bs-vie-globe')) { par.style.transform = ''; return; } // le globe se manipule : pas de relief
     var dx = e.clientX / window.innerWidth - 0.5, dy = e.clientY / window.innerHeight - 0.5;
     par.style.transform = 'translate3d(' + (-dx * 2.4).toFixed(2) + '%,' + (-dy * 2.4).toFixed(2) + '%,0)';
   }
@@ -784,7 +806,7 @@
       '<div class="z-bottom"><div class="z-focus"></div><div class="z-cap"><div class="z-name"></div><div class="z-keys">← → changer d’image · Espace pause · F plein écran · Échap quitter</div></div></div>';
     document.body.appendChild(zen);
     zenSlides = Array.prototype.slice.call(zen.querySelectorAll('.z-par > .bs-amb-slide'));
-    vieZen = makeVie(zen.querySelector('.z-par .bs-vie'), { hd: true, density: 1 });
+    vieZen = makeVie(zen.querySelector('.z-par .bs-vie'), { hd: true, density: 1, interactive: true });
     vieZen.image(imageOf(current || pick()));
     vieZen.run(true);
     vieFondSync(); // le fond se met en pause derrière l'immersion

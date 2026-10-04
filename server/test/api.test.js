@@ -165,3 +165,20 @@ test('trop d’essais de connexion : blocage temporaire', async () => {
   for (let i = 0; i < 10; i++) await c('POST', '/api/auth/login', { email: 'pirate@exemple.fr', password: 'x' + i });
   assert.equal((await c('POST', '/api/auth/login', { email: 'pirate@exemple.fr', password: 'y' })).status, 429);
 });
+
+test('formations : progression par membre, suivi d’équipe pour l’administrateur', async () => {
+  assert.equal((await marie('PUT', '/api/formation/../x', { vu: true })).status, 404);
+  assert.equal((await marie('PUT', '/api/formation/pas-un-module', { vu: true })).status, 400);
+  assert.equal((await marie('PUT', '/api/formation/01-prise-en-main', { vu: true, quiz: 2 })).status, 200);
+  const better = await marie('PUT', '/api/formation/01-prise-en-main', { quiz: 3 });
+  assert.equal(better.body.quiz, 3);
+  const worse = await marie('PUT', '/api/formation/01-prise-en-main', { quiz: 1 });
+  assert.equal(worse.body.quiz, 3);
+  assert.equal(worse.body.vu, true);
+  const mine = await marie('GET', '/api/formation');
+  assert.equal(mine.body.mine['01-prise-en-main'].quiz, 3);
+  assert.equal(mine.body.equipe, undefined);
+  const team = await admin('GET', '/api/formation');
+  const m = team.body.equipe.find((u) => u.name === 'Marie Curie');
+  assert.equal(m.modules['01-prise-en-main'].vu, true);
+});

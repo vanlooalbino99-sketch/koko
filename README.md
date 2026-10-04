@@ -1,7 +1,8 @@
 # Blackstart AI — CRM
 
 CRM de prospection : file d'appels, agenda, prospects, pipeline, devis et factures, paiements, tableau de bord,
-rapports avec courbes de tendance, formations, ambiances animées, icônes du menu personnalisables.
+rapports avec courbes de tendance, **carte des clients sur une planète 3D**, **formations en motion design**, ambiances
+animées (globe interactif), icônes du menu personnalisables.
 
 Le projet fournit **deux façons de l'utiliser, à partir des mêmes sources** :
 
@@ -90,6 +91,9 @@ app/                      Le CRM (navigateur), découpé en fichiers
   core/app.min.js         Interface principale (Preact, déjà compilée)
   core/pre-theme.js       Thème appliqué avant l'affichage (pas de flash)
   core/pilote-4d.js       Relief et reflets au survol
+  modules/bs-formation.js Formations en motion design : lecteur, chapitres, voix off, quiz, certificat
+  modules/bs-globe.js     Globe 3D interactif (canevas) et annuaire hors ligne des villes
+  modules/bs-carte.js     Rubrique « Carte clients » : clients et prospects sur la planète, activité en direct
   modules/bs-serveur.js   Version équipe : synchronisation + Réglages › Équipe & compte
   modules/bs-ambiance.js  Images d'ambiance animées, mode immersion
   modules/bs-galerie.js   Galerie d'ambiances dessinées dans le navigateur
@@ -104,7 +108,7 @@ server/src/               Serveur Express
   auth.js                 Mots de passe (scrypt), sessions, CSRF, limitation des essais
   db.js                   SQLite (node:sqlite) et migrations
   merge.js                Fusion à trois voies des données
-  routes/                 auth, users, data, ambiance
+  routes/                 auth, users, data, ambiance, formation
 server/test/              Tests de l'API et de la fusion (node --test)
 e2e/                      Test de bout en bout dans Chromium (deux sessions en parallèle)
 legacy/                   Sources des versions 3 et 4 (historique)
@@ -147,6 +151,11 @@ préférence dans `app/modules/`, branchées sur les points d'accroche prévus (
 
 ## Versions
 
+- **5.8.0** — Carte clients : planète 3D animée qui tourne, se manipule à la souris (élan, zoom), montre clients et
+  prospects par ville, arcs depuis le siège, activité récente en direct ; localisation hors ligne (villes, codes
+  postaux) et OpenStreetMap à la demande. L'ambiance « Globe connecté » devient un vrai globe 3D (immersion : à la
+  souris). Formations : progression enregistrée par compte et suivi de l'équipe (version serveur).
+- **5.7.0** — Formations en motion design (7 modules animés, lecteur, voix off, quiz, certificat). Logo retiré.
 - **5.6.5** — Projet full-stack : serveur d'équipe (comptes, synchronisation, fusion, sauvegardes, ambiances
   partagées), Docker, CI GitHub. Couleurs des icônes du menu (personnalisée, par rubrique). Menu blanc en mode sombre.
 - **5.6.4** — Courbes de tendance (graphiques plats), images d'ambiance animées.

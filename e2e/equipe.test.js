@@ -121,6 +121,24 @@ test('premier compte, données partagées et fusion entre deux sessions', async 
   const img = await b.evaluate(() => fetch('/ambiance/images/' + window.bsAmbiance.etat().images[0].id + '?taille=mini').then((r) => r.status));
   assert.equal(img, 200);
 
+  // Carte clients : les fiches de la démo sont localisées sur la planète.
+  await a.evaluate(() => { location.hash = '#/carte'; });
+  await a.locator('.bsc-canvas').waitFor();
+  const kpi = await a.locator('.bsc-kpi b').first().innerText();
+  assert.match(kpi, /^\d+/);
+  assert.ok(Number(kpi.match(/^\d+/)[0]) >= 20); // fiches de la démo, hors perdues et résiliées
+
+  // Formations : module vu et quiz enregistrés sur le compte (suivi de l'équipe pour l'administrateur).
+  await a.evaluate(() => { location.hash = '#/formations'; });
+  await a.locator('.bsf-screen').waitFor();
+  await a.click('[data-act="seen"]');
+  await a.click('[data-act="quiz"]');
+  for (let i = 0; i < 3; i++) { await a.click('.bsf-opt >> nth=0'); await a.click('[data-act="qnext"]'); }
+  await a.locator('.bsf-score').waitFor();
+  const prog = await a.evaluate(() => fetch('/api/formation').then((r) => r.json()));
+  assert.equal(prog.mine['01-prise-en-main'].vu, true);
+  assert.ok(prog.equipe.some((u) => u.modules['01-prise-en-main']));
+
   assert.deepEqual(a.errors, []);
   assert.deepEqual(b.errors, []);
 });

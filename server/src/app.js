@@ -10,6 +10,7 @@ import { authRoutes } from './routes/auth.js';
 import { usersRoutes } from './routes/users.js';
 import { dataRoutes } from './routes/data.js';
 import { ambianceStore, ambianceApi, ambianceFiles } from './routes/ambiance.js';
+import { formationRoutes } from './routes/formation.js';
 import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
 
@@ -37,6 +38,7 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
   app.use('/api/users', requireAdmin, express.json({ limit: '100kb' }), usersRoutes({ db }));
   app.use('/api/data', requireUser, express.json({ limit: '25mb' }), dataRoutes({ db }));
   app.use('/api/ambiance', requireUser, express.json({ limit: '40mb' }), ambianceApi({ db, store }));
+  app.use('/api/formation', requireUser, express.json({ limit: '10kb' }), formationRoutes({ db }));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Adresse inconnue.' }));
   app.use('/ambiance', ambianceFiles({ store }));
 

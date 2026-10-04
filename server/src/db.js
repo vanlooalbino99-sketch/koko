@@ -50,6 +50,14 @@ const MIGRATIONS = [
      key TEXT PRIMARY KEY,
      value TEXT NOT NULL
    );`,
+  // v2 : progression des formations, par membre.
+  `CREATE TABLE formation (
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     module TEXT NOT NULL,
+     vu_at TEXT,
+     quiz INTEGER,
+     PRIMARY KEY (user_id, module)
+   );`,
 ];
 
 export function openDb(dataDir) {

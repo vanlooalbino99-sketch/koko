@@ -8,7 +8,7 @@ const port = Number(env.PORT) || 3000;
 const dataDir = resolve(env.DATA_DIR || 'data');
 const { app, db } = createApp({
   dataDir,
-  dev: env.BS_DEV === '1',
+  dev: env.BS_DEV === '1' || process.argv.includes('--dev'),
   secureCookies: env.COOKIE_SECURE === '1',
   trustProxy: env.TRUST_PROXY ? (/^\d+$/.test(env.TRUST_PROXY) ? Number(env.TRUST_PROXY) : env.TRUST_PROXY) : false,
 });

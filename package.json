@@ -9,10 +9,10 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "start": "node --disable-warning=ExperimentalWarning server/src/index.js",
-    "dev": "BS_DEV=1 node --disable-warning=ExperimentalWarning --watch-path=server/src server/src/index.js",
-    "test": "node --disable-warning=ExperimentalWarning --test 'server/test/*.test.js'",
-    "test:e2e": "node --disable-warning=ExperimentalWarning --test 'e2e/*.test.js'",
+    "start": "node --experimental-sqlite --disable-warning=ExperimentalWarning server/src/index.js",
+    "dev": "node --experimental-sqlite --disable-warning=ExperimentalWarning --watch-path=server/src server/src/index.js --dev",
+    "test": "node --experimental-sqlite --disable-warning=ExperimentalWarning --test \"server/test/*.test.js\"",
+    "test:e2e": "node --experimental-sqlite --disable-warning=ExperimentalWarning --test \"e2e/*.test.js\"",
     "legacy:v4": "cd legacy/v4 && node build.mjs",
     "legacy:premium": "cd legacy/v3-premium && node build-premium.mjs"
   },

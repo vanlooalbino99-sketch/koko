@@ -34,6 +34,19 @@ npm start            # http://localhost:3000
 Au premier lancement, la page de connexion propose de **créer le compte administrateur**.
 Il invite ensuite l'équipe dans **Réglages › Équipe & compte**.
 
+### Sur Windows (CMD)
+
+Prérequis : [Node.js LTS](https://nodejs.org/fr/download) (22.5 ou plus récent).
+
+```bat
+cd chemin\vers\koko
+demarrer
+```
+
+`demarrer.cmd` (double-clic possible) vérifie Node.js, installe les dépendances la première fois, lance le serveur
+et ouvre http://localhost:3000. Les données sont rangées dans le dossier `data\` du projet.
+Équivalent manuel : `npm install` puis `npm start`.
+
 ### Avec Docker
 
 ```bash

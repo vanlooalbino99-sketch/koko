@@ -21,4 +21,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -qO- "http://127.0.0.1:${PORT}/healthz" >/dev/null || exit 1
 
-CMD ["node", "--disable-warning=ExperimentalWarning", "server/src/index.js"]
+CMD ["node", "--experimental-sqlite", "--disable-warning=ExperimentalWarning", "server/src/index.js"]

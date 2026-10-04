@@ -1,0 +1,10 @@
+node_modules
+data
+dist
+versions
+legacy
+e2e
+server/test
+.git
+.github
+*.md

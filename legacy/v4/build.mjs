@@ -3,7 +3,7 @@
 import * as esbuild from 'esbuild';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const OUT = 'Blackstart_CRM_App_v4.html';
+const OUT = '../../versions/Blackstart_CRM_App_v4.html';
 const watch = process.argv.includes('--watch');
 
 async function build() {

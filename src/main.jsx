@@ -21,11 +21,12 @@ import { ImportModal } from './views/Import.jsx';
 import { Tasks, TaskForm } from './views/Tasks.jsx';
 import { Sales, DocForm, DocView, EmailComposer } from './views/Sales.jsx';
 import { Clients, Payments } from './views/Clients.jsx';
+import { ClientMap } from './views/ClientMap.jsx';
 import { Dashboard, Reports } from './views/Analytics.jsx';
 import { Tools } from './views/Tools.jsx';
 import { Settings } from './views/Settings.jsx';
 
-const PAGES = { today: Today, agenda: Agenda, prospects: Prospects, pipeline: Pipeline, tasks: Tasks, devis: Sales, clients: Clients, payments: Payments, dashboard: Dashboard, reports: Reports, tools: Tools, settings: Settings };
+const PAGES = { today: Today, agenda: Agenda, prospects: Prospects, pipeline: Pipeline, tasks: Tasks, devis: Sales, clients: Clients, carte: ClientMap, payments: Payments, dashboard: Dashboard, reports: Reports, tools: Tools, settings: Settings };
 
 const OVERLAYS = {
   prospect: ProspectDetail,

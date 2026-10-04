@@ -2,7 +2,7 @@
 import { createStore } from './store.js';
 import { uid } from './util.js';
 
-export const PAGES = ['today', 'agenda', 'prospects', 'pipeline', 'tasks', 'devis', 'clients', 'payments', 'dashboard', 'reports', 'tools', 'settings'];
+export const PAGES = ['today', 'agenda', 'prospects', 'pipeline', 'tasks', 'devis', 'clients', 'carte', 'payments', 'dashboard', 'reports', 'tools', 'settings'];
 const fromHash = () => {
   const h = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
   return PAGES.includes(h) ? h : 'today';

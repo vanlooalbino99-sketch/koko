@@ -37,3 +37,15 @@ npm run build   # génère Blackstart_CRM_App_v4.html (JS + CSS intégrés)
 ```
 
 Sources dans `src/` (Preact + JSX, CSS sans framework). La version précédente est conservée dans `archive/`.
+
+# Opus Rush — jeu de course infinie
+
+Runner 3D dans l'esprit de Subway Surfers, **en un seul fichier** : `opus-rush/index.html` (ouvrir dans un navigateur, Three.js chargé depuis cdnjs).
+
+- 3 voies, saut, roulade, trains fixes, trains qui foncent vers toi, trains à rampe pour courir sur les toits, barrières à sauter / à passer en roulant / à contourner.
+- L'inspecteur et son chien te poursuivent : deux chocs latéraux rapprochés et tu es attrapé.
+- Bonus : aimant, jetpack, super baskets, score x2, hoverboard (encaisse un choc).
+- Surprise : ramasse les lettres **O-P-U-S** pour lancer le mode Opus (8 s d'invincibilité, tu pulvérises les obstacles, ciel arc-en-ciel, musique qui s'emballe).
+- Cycle jour / coucher de soleil / nuit, graffitis générés, gares fictives, musique et bruitages synthétisés en direct.
+- Missions qui font monter le multiplicateur (jusqu'à x30), boutique de personnages (dont le robot doré Opus-9), relance avec les pièces.
+- Clavier : flèches, ZQSD ou WASD, Espace = hoverboard, P = pause. Mobile : glisser dans 4 directions, double tap = hoverboard.

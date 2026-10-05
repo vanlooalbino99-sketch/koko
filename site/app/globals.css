@@ -1,0 +1,133 @@
+@import 'tailwindcss';
+
+/* Thème clair / sombre piloté par la classe .dark (next-themes). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Jetons de couleur (convention shadcn/ui). Bleu Blackstart repris du CRM, assombri pour le contraste AA. */
+:root {
+  --background: #ffffff;
+  --foreground: #0b1220;
+  --card: #ffffff;
+  --card-foreground: #0b1220;
+  --popover: #ffffff;
+  --popover-foreground: #0b1220;
+  --primary: #2563c9;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f4f9;
+  --secondary-foreground: #0b1220;
+  --muted: #f1f4f9;
+  --muted-foreground: #4a5568;
+  --accent: #e8f0fc;
+  --accent-foreground: #163f85;
+  --destructive: #c42b2b;
+  --destructive-foreground: #ffffff;
+  --success: #116330;
+  --border: #e2e7ef;
+  --input: #d5dce7;
+  --ring: #2563c9;
+  --radius: 0.75rem;
+  --glow: rgb(56 124 213 / 0.18);
+  color-scheme: light;
+}
+
+.dark {
+  --background: #070b14;
+  --foreground: #e8edf6;
+  --card: #0d1424;
+  --card-foreground: #e8edf6;
+  --popover: #0d1424;
+  --popover-foreground: #e8edf6;
+  --primary: #4f8cdb;
+  --primary-foreground: #050912;
+  --secondary: #141d31;
+  --secondary-foreground: #e8edf6;
+  --muted: #141d31;
+  --muted-foreground: #9aa8bf;
+  --accent: #15244a;
+  --accent-foreground: #b9d2f5;
+  --destructive: #f26b6b;
+  --destructive-foreground: #050912;
+  --success: #4ade80;
+  --border: #1e2a42;
+  --input: #2a3854;
+  --ring: #6a9fe3;
+  --glow: rgb(79 140 219 / 0.22);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01', 'cv11';
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Halo lumineux et grille décorative des sections d'en-tête. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--foreground) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--foreground) 6%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+.bg-glow {
+  background: radial-gradient(60% 50% at 50% 0%, var(--glow), transparent 70%);
+}

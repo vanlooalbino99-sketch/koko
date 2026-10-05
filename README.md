@@ -17,6 +17,14 @@ Le projet fournit **deux façons de l'utiliser, à partir des mêmes sources** :
 
 ---
 
+## Site internet de l'agence
+
+Le dossier [`site/`](site/) contient le site vitrine (Next.js 15) : accueil, services, à propos, contact et prise
+de rendez-vous. Les messages et les rendez-vous arrivent dans le CRM comme leads à rappeler, via
+`/api/site` (clé `SITE_API_KEY`, voir la configuration). Détails dans [`site/README.md`](site/README.md).
+
+---
+
 ## Version autonome
 
 `npm run build` produit `dist/Blackstart_CRM_App.html`, à ouvrir dans n'importe quel navigateur.
@@ -67,6 +75,8 @@ Variables d'environnement (voir [`.env.example`](.env.example)) :
 | `TRUST_PROXY` | Nombre de proxys HTTPS devant le serveur (Nginx, Caddy, hébergeur) | désactivé |
 | `COOKIE_SECURE` | `1` : cookies de session réservés au HTTPS | `0` |
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Crée le premier administrateur au démarrage (déploiement sans écran) | — |
+| `SITE_API_KEY` | Clé partagée avec le site internet (`site/`) pour déposer contacts et rendez-vous dans le CRM | désactivé |
+| `SITE_TIMEZONE` | Fuseau des dates de rappel créées par le site | `Europe/Paris` |
 
 ### Déploiement
 
@@ -108,9 +118,10 @@ server/src/               Serveur Express
   auth.js                 Mots de passe (scrypt), sessions, CSRF, limitation des essais
   db.js                   SQLite (node:sqlite) et migrations
   merge.js                Fusion à trois voies des données
-  routes/                 auth, users, data, ambiance, formation
+  routes/                 auth, users, data, ambiance, formation, site (passerelle du site internet)
 server/test/              Tests de l'API et de la fusion (node --test)
 e2e/                      Test de bout en bout dans Chromium (deux sessions en parallèle)
+site/                     Site internet de l'agence (Next.js 15), relié au CRM
 legacy/                   Sources des versions 3 et 4 (historique)
 versions/                 Fichiers HTML livrés
 ```

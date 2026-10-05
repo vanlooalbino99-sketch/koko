@@ -58,6 +58,16 @@ const MIGRATIONS = [
      quiz INTEGER,
      PRIMARY KEY (user_id, module)
    );`,
+  // v3 : demandes reçues du site internet (contact, rendez-vous) ; l'identifiant évite les doublons.
+  `CREATE TABLE site_requests (
+     id TEXT PRIMARY KEY,
+     kind TEXT NOT NULL CHECK (kind IN ('contact', 'rdv')),
+     prospect_id TEXT NOT NULL,
+     rdv_date TEXT,
+     rdv_time TEXT,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX site_requests_rdv ON site_requests(rdv_date) WHERE kind = 'rdv';`,
 ];
 
 export function openDb(dataDir) {

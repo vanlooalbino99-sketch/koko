@@ -11,7 +11,10 @@ const { app, db } = createApp({
   dev: env.BS_DEV === '1' || process.argv.includes('--dev'),
   secureCookies: env.COOKIE_SECURE === '1',
   trustProxy: env.TRUST_PROXY ? (/^\d+$/.test(env.TRUST_PROXY) ? Number(env.TRUST_PROXY) : env.TRUST_PROXY) : false,
+  siteApiKey: env.SITE_API_KEY || null,
+  siteTimeZone: env.SITE_TIMEZONE || 'Europe/Paris',
 });
+if (env.SITE_API_KEY && env.SITE_API_KEY.length < 24) console.warn('SITE_API_KEY est courte : utilisez au moins 24 caractères aléatoires.');
 
 // Déploiement sans écran : ADMIN_EMAIL + ADMIN_PASSWORD créent le premier administrateur au démarrage.
 if (env.ADMIN_EMAIL && env.ADMIN_PASSWORD && db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0) {

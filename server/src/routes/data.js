@@ -12,6 +12,19 @@ const MAX_VALUE = 20 * 1024 * 1024;
 
 function parse(s) { try { return JSON.parse(s); } catch { return undefined; } }
 
+/** Clé des données du CRM (prospects, devis, tâches…) utilisée par l'application. */
+export const DATA_KEY = 'blackstart-data-v1';
+
+/** Enregistre une nouvelle version d'une clé et la garde dans l'historique (à appeler dans une transaction). */
+export function writeKv(db, key, value, version, userId) {
+  const at = new Date().toISOString();
+  db.prepare(`INSERT INTO kv (key, value, version, updated_at, updated_by) VALUES (?, ?, ?, ?, ?)
+              ON CONFLICT(key) DO UPDATE SET value = excluded.value, version = excluded.version, updated_at = excluded.updated_at, updated_by = excluded.updated_by`)
+    .run(key, value, version, at, userId);
+  db.prepare('INSERT INTO kv_history (key, version, value, updated_at, updated_by) VALUES (?, ?, ?, ?, ?)').run(key, version, value, at, userId);
+  db.prepare('DELETE FROM kv_history WHERE key = ? AND version <= ?').run(key, version - HISTORY_KEEP);
+}
+
 export function dataRoutes({ db }) {
   const r = Router();
   const get = (key) => db.prepare('SELECT * FROM kv WHERE key = ?').get(key);
@@ -19,14 +32,7 @@ export function dataRoutes({ db }) {
 
   r.param('key', (req, res, next, key) => (KEY_RE.test(key) ? next() : res.status(400).json({ error: 'Clé invalide.' })));
 
-  function write(key, value, version, userId) {
-    const at = new Date().toISOString();
-    db.prepare(`INSERT INTO kv (key, value, version, updated_at, updated_by) VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(key) DO UPDATE SET value = excluded.value, version = excluded.version, updated_at = excluded.updated_at, updated_by = excluded.updated_by`)
-      .run(key, value, version, at, userId);
-    db.prepare('INSERT INTO kv_history (key, version, value, updated_at, updated_by) VALUES (?, ?, ?, ?, ?)').run(key, version, value, at, userId);
-    db.prepare('DELETE FROM kv_history WHERE key = ? AND version <= ?').run(key, version - HISTORY_KEEP);
-  }
+  const write = (key, value, version, userId) => writeKv(db, key, value, version, userId);
 
   r.get('/:key', (req, res) => {
     const row = get(req.params.key);

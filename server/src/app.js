@@ -11,13 +11,14 @@ import { usersRoutes } from './routes/users.js';
 import { dataRoutes } from './routes/data.js';
 import { ambianceStore, ambianceApi, ambianceFiles } from './routes/ambiance.js';
 import { formationRoutes } from './routes/formation.js';
+import { siteRoutes } from './routes/site.js';
 import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
 
-export function createApp({ dataDir, dev = false, secureCookies = false, trustProxy = false } = {}) {
+export function createApp({ dataDir, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone } = {}) {
   const db = openDb(dataDir);
   const app = express();
   const limiter = loginLimiter();
@@ -33,6 +34,8 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
   app.use(attachUser(db));
 
   // API
+  // Passerelle du site internet : appelée de serveur à serveur avec une clé, donc hors cookies et hors garde CSRF.
+  app.use('/api/site', express.json({ limit: '50kb' }), siteRoutes({ db, apiKey: siteApiKey, timeZone: siteTimeZone }));
   app.use('/api', csrfGuard);
   app.use('/api/auth', express.json({ limit: '100kb' }), authRoutes({ db, limiter, secureCookies }));
   app.use('/api/users', requireAdmin, express.json({ limit: '100kb' }), usersRoutes({ db }));

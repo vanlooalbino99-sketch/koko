@@ -131,3 +131,91 @@
 .bg-glow {
   background: radial-gradient(60% 50% at 50% 0%, var(--glow), transparent 70%);
 }
+
+/* ---------------------------------------------------------------- Mouvement
+ * Apparitions au défilement ([data-reveal], déclenchées par RevealObserver), halo animé de l'accroche,
+ * conversation qui se joue d'elle-même, bandeau défilant, reflets. Tout s'arrête avec « réduire les animations ». */
+.motion [data-reveal] {
+  opacity: 0;
+  transform: translateY(28px) scale(0.98);
+  filter: blur(6px);
+  transition:
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--d, 0) * 90ms);
+}
+.motion [data-reveal='left'] { transform: translateX(-36px); }
+.motion [data-reveal='right'] { transform: translateX(36px); }
+.motion [data-reveal='zoom'] { transform: scale(0.92); }
+.motion [data-reveal][data-in] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes msg-in { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes aurora {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  33% { transform: translate3d(6%, -4%, 0) rotate(8deg) scale(1.08); }
+  66% { transform: translate3d(-5%, 5%, 0) rotate(-6deg) scale(0.96); }
+}
+@keyframes shimmer { to { background-position: 200% center; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes ring { 0% { transform: scale(0.8); opacity: 0.7; } 100% { transform: scale(2.2); opacity: 0; } }
+@keyframes marquee { to { transform: translateX(-50%); } }
+@keyframes typing { 0%, 60%, 100% { opacity: 0.25; transform: none; } 30% { opacity: 1; transform: translateY(-3px); } }
+@keyframes typing-out { to { opacity: 0; height: 0; margin: 0; padding: 0; } }
+
+.rise { animation: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--d, 0) * 110ms); }
+.msg { animation: msg-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: var(--at, 0s); }
+.typing { display: flex; gap: 4px; animation: typing-out 0.2s ease forwards; animation-delay: var(--until, 1s); }
+.typing i { width: 6px; height: 6px; border-radius: 9999px; background: currentColor; animation: typing 1s infinite; }
+.typing i:nth-child(2) { animation-delay: 0.15s; }
+.typing i:nth-child(3) { animation-delay: 0.3s; }
+.float { animation: float 7s ease-in-out infinite; }
+.ring-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid currentColor;
+  animation: ring 1.8s ease-out infinite;
+}
+
+.aurora { position: absolute; inset: -20%; filter: blur(60px); opacity: 0.55; }
+.aurora i {
+  position: absolute;
+  border-radius: 9999px;
+  animation: aurora 18s ease-in-out infinite;
+}
+.aurora i:nth-child(1) { left: 10%; top: 0%; width: 45%; height: 45%; background: color-mix(in srgb, var(--primary) 55%, transparent); }
+.aurora i:nth-child(2) { right: 5%; top: 10%; width: 40%; height: 40%; background: color-mix(in srgb, #22d3ee 35%, transparent); animation-duration: 22s; animation-delay: -6s; }
+.aurora i:nth-child(3) { left: 35%; bottom: 10%; width: 35%; height: 35%; background: color-mix(in srgb, #a78bfa 35%, transparent); animation-duration: 26s; animation-delay: -12s; }
+.dark .aurora { opacity: 0.45; }
+
+.text-shine {
+  background: linear-gradient(90deg, var(--primary) 0%, #22d3ee 25%, var(--primary) 50%, #a78bfa 75%, var(--primary) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+
+.marquee { mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+.marquee > ul { display: flex; width: max-content; animation: marquee 32s linear infinite; }
+.marquee:hover > ul { animation-play-state: paused; }
+
+/* Cartes : légère élévation et reflet qui suit la survol. */
+.lift { transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s, border-color 0.35s; }
+.lift:hover { transform: translateY(-4px); box-shadow: 0 18px 40px -18px color-mix(in srgb, var(--primary) 45%, transparent); border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
+
+/* Changement de mois du calendrier : glissement doux. */
+.rdp-month_grid { animation: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora i, .text-shine, .marquee > ul, .float, .ring-pulse::after { animation: none !important; }
+  .marquee > ul { flex-wrap: wrap; justify-content: center; width: auto; }
+}

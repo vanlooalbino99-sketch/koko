@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { CalendarCheck, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, ChevronsLeft, ChevronsRight, Clock, Loader2 } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,8 +23,14 @@ type Slots = { state: 'idle' } | { state: 'loading' } | { state: 'ready'; slots:
 
 export function BookingForm() {
   // Calculée dans le navigateur (la page est pré-générée : la date du jour n'est pas celle de la génération).
-  const [win, setWin] = useState<{ from: string; to: string } | null>(null);
-  useEffect(() => setWin(bookingWindow()), []);
+  const [win, setWin] = useState<{ from: string; to: string | null } | null>(null);
+  // Mois affiché : navigation libre, mois par mois ou année par année, sans date limite.
+  const [month, setMonth] = useState<Date | null>(null);
+  useEffect(() => {
+    const w = bookingWindow();
+    setWin(w);
+    setMonth(fromYmd(w.from.slice(0, 8) + '01'));
+  }, []);
   const [requestId, setRequestId] = useState(() => newRequestId());
   const [slots, setSlots] = useState<Slots>({ state: 'idle' });
   const [confirmed, setConfirmed] = useState<string | null>(null);
@@ -103,20 +109,25 @@ export function BookingForm() {
       <fieldset className="rounded-2xl border bg-card p-4 sm:p-6 lg:w-[400px]">
         <legend className="sr-only">Date et heure</legend>
         <h2 className="flex items-center gap-2 px-1 font-semibold"><Step n={1} />Choisissez un jour</h2>
-        {!win ? (
+        {!win || !month ? (
           <div className="mt-2 h-[352px] animate-pulse rounded-lg bg-muted/60" aria-label="Chargement du calendrier" />
         ) : (
-        <Calendar
-          mode="single"
-          selected={date ? fromYmd(date) : undefined}
-          onSelect={pickDate}
-          startMonth={fromYmd(win.from)}
-          endMonth={fromYmd(win.to)}
-          // Jours sans aucun créneau possible (fermés, passés, délai de prévenance dépassé) : grisés.
-          disabled={[{ before: fromYmd(win.from) }, { after: fromYmd(win.to) }, (d: Date) => availableSlots(ymd(d)).length === 0]}
-          className="mx-auto mt-2 px-0"
-          classNames={{ root: 'w-full', months: 'w-full' }}
-        />
+          <>
+            <MonthJump month={month} first={fromYmd(win.from.slice(0, 8) + '01')} onChange={setMonth} />
+            <Calendar
+              mode="single"
+              month={month}
+              onMonthChange={setMonth}
+              selected={date ? fromYmd(date) : undefined}
+              onSelect={pickDate}
+              startMonth={fromYmd(win.from)}
+              endMonth={win.to ? fromYmd(win.to) : undefined}
+              // Jours sans aucun créneau possible (fermés, passés, délai de prévenance dépassé) : grisés.
+              disabled={[{ before: fromYmd(win.from) }, ...(win.to ? [{ after: fromYmd(win.to) }] : []), (d: Date) => availableSlots(ymd(d)).length === 0]}
+              className="mx-auto mt-1 px-0"
+              classNames={{ root: 'w-full', months: 'w-full' }}
+            />
+          </>
         )}
         {errors.date && <p role="alert" className="mt-1 px-1 text-sm text-destructive">{errors.date.message}</p>}
 
@@ -203,6 +214,35 @@ export function BookingForm() {
         </Button>
       </fieldset>
     </form>
+  );
+}
+
+const MONTHS = Array.from({ length: 12 }, (_, i) => new Intl.DateTimeFormat('fr-FR', { month: 'long' }).format(new Date(2026, i, 1)));
+
+/** Saut rapide : mois (liste) et année (‹ 2027 ›), sans limite vers le futur. */
+function MonthJump({ month, first, onChange }: { month: Date; first: Date; onChange: (d: Date) => void }) {
+  const y = month.getFullYear(), m = month.getMonth();
+  const go = (yy: number, mm: number) => {
+    const d = new Date(yy, mm, 1);
+    onChange(d < first ? first : d);
+  };
+  const atStart = y <= first.getFullYear();
+  const btn = 'inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-35';
+  return (
+    <div className="mt-3 flex items-center gap-1.5 rounded-xl border bg-background/60 p-1">
+      <button type="button" className={btn} onClick={() => go(y - 1, m)} disabled={atStart} aria-label="Année précédente"><ChevronsLeft className="size-4" aria-hidden /></button>
+      <select
+        aria-label="Mois"
+        value={m}
+        onChange={(e) => go(y, +e.target.value)}
+        className="h-9 min-w-0 flex-1 cursor-pointer rounded-md bg-transparent px-2 text-sm font-medium capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {MONTHS.map((label, i) => <option key={label} value={i} disabled={y === first.getFullYear() && i < first.getMonth()}>{label}</option>)}
+      </select>
+      <span className="w-12 text-center text-sm font-semibold tabular-nums" aria-live="polite" aria-label={`Année ${y}`}>{y}</span>
+      <button type="button" className={btn} onClick={() => go(y + 1, m)} aria-label="Année suivante"><ChevronsRight className="size-4" aria-hidden /></button>
+      <button type="button" onClick={() => onChange(first)} className="h-9 rounded-md px-2.5 text-xs font-medium text-primary transition-colors hover:bg-accent">Aujourd’hui</button>
+    </div>
   );
 }
 

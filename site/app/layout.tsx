@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { ThemeProvider } from '@/components/theme-provider';
+import { RevealObserver } from '@/components/motion/reveal-observer';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { JsonLd, organizationJsonLd } from '@/lib/seo';
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <Footer />
+          <RevealObserver />
         </ThemeProvider>
         <JsonLd data={organizationJsonLd()} />
       </body>

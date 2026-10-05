@@ -20,7 +20,7 @@ export default function ServicesPage() {
       <Section>
         <div className="space-y-6">
           {services.map((s, i) => (
-            <article key={s.slug} id={s.slug} className="grid scroll-mt-24 gap-8 rounded-2xl border bg-card p-6 sm:p-10 md:grid-cols-[1.2fr_1fr]">
+            <article key={s.slug} id={s.slug} data-reveal className="lift grid scroll-mt-24 gap-8 rounded-2xl border bg-card p-6 sm:p-10 md:grid-cols-[1.2fr_1fr]">
               <div>
                 <div className="flex items-center gap-3">
                   <ServiceIcon icon={s.icon} />

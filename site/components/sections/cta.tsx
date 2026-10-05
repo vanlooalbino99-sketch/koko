@@ -6,8 +6,9 @@ import { site } from '@/lib/site';
 export function Cta({ title = 'Combien d’appels avez-vous manqués cette semaine ?', text = 'Réservez un audit gratuit de 20 minutes : nous chiffrons ce que vous perdez et ce que l’IA peut récupérer.' }: { title?: string; text?: string }) {
   return (
     <section className="px-4 pb-20 sm:px-6 md:pb-28">
-      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl bg-foreground px-6 py-14 text-background sm:px-12 md:py-16">
-        <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-primary/40 blur-3xl" aria-hidden />
+      <div data-reveal="zoom" className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl bg-foreground px-6 py-14 text-background sm:px-12 md:py-16">
+        <div className="float pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-primary/40 blur-3xl" aria-hidden />
+        <div className="float pointer-events-none absolute -bottom-28 left-1/3 size-64 rounded-full bg-cyan-400/20 blur-3xl [animation-delay:-3s]" aria-hidden />
         <div className="relative max-w-2xl">
           <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{title}</h2>
           <p className="mt-4 text-lg opacity-80">{text}</p>

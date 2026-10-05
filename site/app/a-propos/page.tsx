@@ -40,7 +40,7 @@ export default function AboutPage() {
           {values.map((v, i) => {
             const Icon = ICONS[i % ICONS.length];
             return (
-              <div key={v.title} className="rounded-xl border bg-card p-6">
+              <div key={v.title} data-reveal style={{ "--d": i } as React.CSSProperties} className="lift rounded-xl border bg-card p-6">
                 <span className="inline-flex size-11 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Icon className="size-5" aria-hidden /></span>
                 <h3 className="mt-4 text-lg font-semibold">{v.title}</h3>
                 <p className="mt-2 text-muted-foreground">{v.text}</p>

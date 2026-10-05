@@ -31,6 +31,8 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
     next();
   });
   app.get('/healthz', (_req, res) => res.json({ ok: true, version: VERSION }));
+  // Voix off de la formation (fichiers MP3 nommés par l'empreinte du texte : jamais modifiés, cache long).
+  app.use('/voix', express.static(join(ROOT, 'app', 'voix'), { immutable: true, maxAge: '30d', fallthrough: false, index: false }));
   app.use(attachUser(db));
 
   // API

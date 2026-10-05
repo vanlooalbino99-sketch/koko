@@ -4,7 +4,8 @@
  * Chaque module est un film d'animation dessiné en direct dans le navigateur (aucun fichier vidéo) : maquettes du
  * CRM qui se construisent, curseur qui clique, chiffres qui défilent, graphiques qui se tracent, sous-titres.
  * - Lecteur complet : lecture / pause, barre de progression avec chapitres, retour en arrière, vitesse,
- *   plein écran, sous-titres, voix off (synthèse vocale du navigateur, en français), clavier.
+ *   plein écran, sous-titres, voix off neuronale française (fichiers voix/, synthèse du navigateur en secours),
+ *   musique entraînante générée en direct qui baisse sous la voix, clavier.
  * - Le moteur pilote toutes les animations sur une même horloge (Web Animations API, en pause, positionnées à
  *   l'instant voulu) : on peut avancer, reculer ou sauter à un chapitre sans rien casser.
  * - À la fin de chaque module : quiz de 3 questions ; progression enregistrée ; certificat quand tout est vu.
@@ -16,7 +17,7 @@
   if (window.bsFormation) return;
 
   var W = 1280, H = 720;
-  var SEEN_KEY = 'bs_formations_vus', QUIZ_KEY = 'bs-formation-quiz', PREF_KEY = 'bs-formation-prefs';
+  var SEEN_KEY = 'bs_formations_vus', QUIZ_KEY = 'bs-formation-quiz', PREF_KEY = 'bs-formation-prefs-v2';
   var SERVER = !!window.BS_SERVER;
   var C = { bg: '#0a1220', surf: '#0f1b2e', surf2: '#16233a', line: 'rgba(148,163,184,.18)', text: '#eaf1fb', text2: '#a9bfdd', text3: '#7d93b5',
     acc: '#3b82f6', acc2: '#60a5fa', cyan: '#22d3ee', green: '#34d399', amber: '#fbbf24', rose: '#fb7185', violet: '#a78bfa', orange: '#fb923c' };
@@ -28,16 +29,24 @@
       '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (lib || '<circle cx="12" cy="12" r="8"/>') + '</svg>';
   }
   var EXTRA = { 'arrow-right': '<path d="M5 12h14M13 6l6 6-6 6"/>' };
+  var MUSIC_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
   function fmtTime(ms) { var s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
   function euro(v) { return Math.round(v).toLocaleString('fr-FR') + ' €'; }
   var EASE = 'cubic-bezier(.16,1,.3,1)', EASE_IO = 'cubic-bezier(.65,0,.35,1)', SPRING = 'cubic-bezier(.34,1.56,.64,1)';
+
+  // ================================================================== voix off et durées
+  // Voix off neuronale pré-enregistrée (fichiers voix/<empreinte>.mp3, durées dans window.BS_VOIX) ; sinon la
+  // synthèse vocale du navigateur prend le relais. L'empreinte (FNV-1a 32 bits) est la même côté générateur.
+  function hashCap(s) { var h = 0x811c9dc5; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function voixMs(c) { var v = window.BS_VOIX; return v && v[hashCap(c)] || 0; }
+  function capDur(c) { var v = voixMs(c); return v ? Math.max(2200, v + 650) : Math.max(2600, c.length * 62 + 900); }
 
   // ================================================================== moteur de scène
   // Une scène reçoit S : éléments positionnés, animations sur l'horloge de la scène, sous-titres synchronisés.
   function makeScene(def, layer) {
     var anims = [], tickers = [];
     var beats = [], t = 500;
-    def.captions.forEach(function (c) { beats.push(t); t += Math.max(2600, c.length * 62 + 900); });
+    def.captions.forEach(function (c) { beats.push(t); t += capDur(c); });
     var dur = Math.max(def.min || 0, t + 600);
     var S = {
       d: dur, beats: beats,
@@ -106,8 +115,10 @@
       return pts[pts.length - 1];
     }
     // Entrée et sortie de la scène.
-    S.a(layer, [{ opacity: 0 }, { opacity: 1 }], 0, 450, 'linear');
-    S.a(layer, [{ opacity: 1 }, { opacity: 0 }], dur - 380, 380, 'linear', { fill: 'forwards' });
+    // Fondu flou à l'entrée et à la sortie, et lent travelling avant pendant toute la scène (effet caméra).
+    S.a(layer, [{ opacity: 0, filter: 'blur(12px) brightness(1.4)' }, { opacity: 1, filter: 'blur(0) brightness(1)' }], 0, 700, EASE);
+    S.a(layer, [{ opacity: 1, filter: 'blur(0)' }, { opacity: 0, filter: 'blur(10px)' }], dur - 420, 420, 'ease-in', { fill: 'forwards' });
+    S.a(layer, [{ transform: 'scale(1.06)' }, { transform: 'scale(1)', offset: .12 }, { transform: 'scale(1.03)' }], 0, dur, 'linear');
     def.build(S);
     return {
       dur: dur, beats: beats, captions: def.captions,
@@ -121,7 +132,7 @@
   // ================================================================== éléments réutilisables
   var NAV = [['today', 'Aujourd’hui', 'phone'], ['agenda', 'Agenda', 'calendar'], ['prospects', 'Prospects', 'users'], ['pipeline', 'Pipeline', 'kanban'],
     ['tasks', 'Tâches', 'square-check'], ['devis', 'Devis & factures', 'file-text'], ['clients', 'Clients', 'briefcase'], ['payments', 'Paiements', 'wallet'],
-    ['dashboard', 'Tableau de bord', 'layout-dashboard'], ['reports', 'Rapports', 'chart-line'], ['formations', 'Formations', 'graduation-cap'], ['tools', 'Outils', 'wrench'], ['settings', 'Réglages', 'settings']];
+    ['dashboard', 'Tableau de bord', 'layout-dashboard'], ['reports', 'Rapports', 'chart-line'], ['carte', 'Carte clients', 'globe'], ['formations', 'Formations', 'graduation-cap'], ['tools', 'Outils', 'wrench'], ['settings', 'Réglages', 'settings']];
 
   // Fenêtre du CRM stylisée : menu, barre du haut, zone de contenu (coordonnées relatives à la zone de contenu).
   function appWindow(S, o) {
@@ -192,7 +203,28 @@
     };
   }
 
-  // ================================================================== les 7 modules
+  // Planète stylisée (SVG) pour les scènes « carte clients ».
+  function globeSvg(zoomed) {
+    var pts = '', arcs = '', P = [[300, 250], [338, 214], [262, 300], [352, 300], [228, 220], [390, 258], [300, 340], [250, 170]];
+    var dots = '';
+    for (var y = 70; y <= 530; y += 18) for (var x = 70; x <= 530; x += 18) {
+      var dx = x - 300, dy = y - 300, r = Math.sqrt(dx * dx + dy * dy);
+      if (r < 238 && (Math.sin(x * .05) + Math.cos(y * .045) + Math.sin((x + y) * .02)) > .35) dots += '<circle cx="' + x + '" cy="' + y + '" r="' + (2.6 - r / 200) + '" fill="#60a5fa" opacity="' + (0.85 - r / 330).toFixed(2) + '"/>';
+    }
+    P.forEach(function (p, i) {
+      var c = i < 3 ? '#34d399' : '#60a5fa';
+      pts += '<circle class="pt" cx="' + p[0] + '" cy="' + p[1] + '" r="6" fill="' + c + '" style="transform-origin:' + p[0] + 'px ' + p[1] + 'px;filter:drop-shadow(0 0 8px ' + c + ')"/>';
+      if (i) arcs += '<path class="arc" pathLength="1" d="M300 250 Q ' + ((300 + p[0]) / 2) + ' ' + (Math.min(250, p[1]) - 60) + ' ' + p[0] + ' ' + p[1] + '" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="1" stroke-dashoffset="1" opacity=".8"/>';
+    });
+    return '<svg width="100%" height="100%" viewBox="0 0 600 600"><defs><radialGradient id="bsfG' + (zoomed ? 'z' : '') + '" cx="40%" cy="35%"><stop offset="0" stop-color="#1e3a8a"/><stop offset="1" stop-color="#030712"/></radialGradient></defs>' +
+      '<circle cx="300" cy="300" r="262" fill="none" stroke="rgba(96,165,250,.25)" stroke-width="18" style="filter:blur(10px)"/>' +
+      '<circle cx="300" cy="300" r="250" fill="url(#bsfG' + (zoomed ? 'z' : '') + ')" stroke="rgba(96,165,250,.5)"/>' +
+      [0, 1, 2, 3, 4, 5].map(function () { return '<ellipse class="mer" cx="300" cy="300" rx="250" ry="250" fill="none" stroke="rgba(148,163,184,.14)"/>'; }).join('') +
+      [-150, -75, 0, 75, 150].map(function (d) { var w = Math.sqrt(250 * 250 - d * d); return '<ellipse cx="300" cy="' + (300 + d) + '" rx="' + w + '" ry="' + (w * .12) + '" fill="none" stroke="rgba(148,163,184,.12)"/>'; }).join('') +
+      dots + arcs + pts + '<circle cx="300" cy="250" r="8" fill="#fbbf24" style="filter:drop-shadow(0 0 10px #fbbf24)"/></svg>';
+  }
+
+  // ================================================================== les 8 modules
   var MODULES = [
     { f: '01-prise-en-main', t: 'Prise en main de l’interface', s: 'Menu, recherche Ctrl K, bouton Créer, mode clair ou sombre.',
       quiz: [
@@ -622,12 +654,176 @@
             S.fadeUp(cloud, S.b(1) - 300);
             Array.prototype.forEach.call(cloud.querySelectorAll('i'), function (v, i) { S.slide(v, S.b(1) + i * 150, 0, -16, 400); });
           } },
-        recapScene(['Enregistreur, script et modèles : vos outils au quotidien.', 'Réglages : un CRM à votre image.', 'Sauvegardes : exportez, ou laissez le serveur s’en charger.'], null),
+        recapScene(['Enregistreur, script et modèles : vos outils au quotidien.', 'Réglages : un CRM à votre image.', 'Sauvegardes : exportez, ou laissez le serveur s’en charger.'], 'Les nouveautés'),
+      ] },
+    { f: '08-nouveautes-site-carte', t: 'Les nouveautés : site, rendez-vous et carte clients', s: 'Les RDV du site arrivent dans le CRM, la carte clients montre votre territoire.',
+      quiz: [
+        ['Que se passe-t-il quand un visiteur réserve sur le site ?', ['Rien, il faut recopier le rendez-vous', 'Le RDV et une tâche de rappel arrivent dans le CRM', 'Un email part sans rien créer'], 1],
+        ['Jusqu’à quand peut-on réserver sur le site ?', ['45 jours maximum', 'Seulement la semaine en cours', 'Sans limite : toutes les années'], 2],
+        ['À quoi sert la visite guidée de la carte clients ?', ['À survoler vos principales villes une à une', 'À imprimer la carte', 'À supprimer des fiches'], 0],
+      ],
+      scenes: [
+        titleScene(8, 'Les nouveautés', 'Votre site remplit l’agenda tout seul, et la planète montre votre territoire.', ['Site internet', 'Rendez-vous', 'Carte clients', 'Fiches']),
+        { captions: ['Sur votre site, un visiteur choisit un jour et un horaire, sans limite de date : toutes les années sont ouvertes.', 'Il remplit ses coordonnées et confirme : le rendez-vous est réservé en deux clics.'],
+          build: function (S) {
+            var br = S.el('<div class="bsf-brw-bar"><i></i><i></i><i></i><span>blackstart.fr/rendez-vous</span></div><div class="bsf-brw-body"></div>', 'left:150px;top:60px;width:980px;height:600px', 'bsf-brw');
+            S.a(br, [{ opacity: 0, transform: 'translateY(40px) rotateX(12deg) scale(.94)' }, { opacity: 1, transform: 'none' }], 0, 1000);
+            var body = br.querySelector('.bsf-brw-body');
+            var h = '<div class="bsf-cal"><div class="bsf-cal-h"><b>«</b><span>Octobre</span><strong>2029</strong><b>»</b></div><div class="bsf-cal-g">';
+            for (var d = 1; d <= 31; d++) h += '<i class="' + ([6, 7, 13, 14, 20, 21, 27, 28].indexOf(d) >= 0 ? 'off' : '') + (d === 4 ? ' pick' : '') + '">' + d + '</i>';
+            h += '</div></div><div class="bsf-slots">' + ['9 h 00', '9 h 30', '10 h 00', '10 h 30', '11 h 00', '14 h 00', '14 h 30', '15 h 00'].map(function (t, i) { return '<i class="' + (i === 2 ? 'pick' : '') + '">' + t + '</i>'; }).join('') + '</div>' +
+              '<div class="bsf-form"><span>Nom</span><em class="n"></em><span>Téléphone</span><em class="t"></em><div class="bsf-cta">Confirmer le rendez-vous</div></div>' +
+              '<div class="bsf-ok">' + ic('circle-check', 54, C.green) + '<b>Rendez-vous confirmé</b><span>jeudi 4 octobre 2029 à 10 h 00</span></div>';
+            body.innerHTML = h;
+            var year = body.querySelector('.bsf-cal-h strong');
+            S.tick(function (lt) { year.textContent = String(2026 + Math.max(0, Math.min(3, Math.floor((lt - 900) / 450)))); });
+            Array.prototype.forEach.call(body.querySelectorAll('.bsf-cal-g i'), function (c, i) { S.a(c, [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'none' }], 700 + i * 22, 380, SPRING); });
+            S.a(body.querySelector('.bsf-cal-g .pick'), [{ background: 'rgba(59,130,246,0)', color: C.text }, { background: C.acc, color: '#fff' }], 3300, 250, 'linear');
+            Array.prototype.forEach.call(body.querySelectorAll('.bsf-slots i'), function (c, i) { S.fadeUp(c, 3500 + i * 70, 400, 10); });
+            S.a(body.querySelector('.bsf-slots .pick'), [{ background: 'rgba(59,130,246,0)' }, { background: C.acc }], 4700, 250, 'linear');
+            S.fadeUp(body.querySelector('.bsf-form'), S.b(1) - 200, 600);
+            S.type(body.querySelector('.n'), S.b(1) + 300, 'Julie Martin · Boulangerie Martin', 26);
+            S.type(body.querySelector('.t'), S.b(1) + 1700, '06 12 34 56 78', 18);
+            S.a(body.querySelector('.bsf-cta'), [{ transform: 'scale(1)' }, { transform: 'scale(.94)' }, { transform: 'scale(1)' }], S.b(1) + 2900, 300);
+            S.a(body.querySelector('.bsf-ok'), [{ opacity: 0, transform: 'scale(.7)' }, { opacity: 1, transform: 'none' }], S.b(1) + 3200, 700, SPRING);
+            S.cursor([[700, 640, 600], [520, 130, 1900], [548, 238, 3100], [700, 318, 4500], [1010, 520, S.b(1) + 2700], [1010, 520, S.b(1) + 3600]], [1950, 2350, 2750, 3250, 4750, S.b(1) + 2900]);
+          } },
+        { captions: ['Aussitôt, le rendez-vous arrive dans votre agenda du CRM, avec une tâche pour rappeler le lead.', 'Le prospect est créé tout seul : canal « Site internet », priorité haute. Vous n’avez plus qu’à appeler.'],
+          build: function (S) {
+            var w = appWindow(S, { active: 'agenda' });
+            w.title('Agenda', 'Semaine du 1er octobre 2029', 400);
+            var days = ['Lun 1', 'Mar 2', 'Mer 3', 'Jeu 4', 'Ven 5'];
+            days.forEach(function (d, i) {
+              var col = w.add('<b>' + d + '</b>', 'left:' + (28 + i * 168) + 'px;top:96px;width:156px;height:380px', 'bsf-daycol');
+              S.fadeUp(col, 600 + i * 90, 500, 16);
+            });
+            [[0, 140, 'Garage du Centre', C.violet], [1, 230, 'Studio Nova', C.amber], [4, 180, 'Cabinet Lefèvre', C.violet]].forEach(function (e, i) {
+              var ev = w.add(esc(e[2]), 'left:' + (36 + e[0] * 168) + 'px;top:' + e[1] + 'px;width:140px;border-color:' + e[3], 'bsf-evt');
+              S.fadeIn(ev, 1100 + i * 120, 400);
+            });
+            var nev = w.add('<em>Nouveau · Site</em><b>Boulangerie Martin</b><span>10 h 00 · Audit gratuit</span>', 'left:' + (36 + 3 * 168) + 'px;top:200px;width:140px', 'bsf-evt new');
+            S.a(nev, [{ opacity: 0, transform: 'translateY(-120px) scale(.6)' }, { opacity: 1, transform: 'none' }], 1500, 900, SPRING);
+            var toast = S.el(ic('calendar', 18, C.green) + '<div><b>Nouveau rendez-vous depuis le site</b><span>Boulangerie Martin · jeudi 10 h 00</span></div>', 'left:780px;top:600px;width:400px', 'bsf-toast');
+            S.slide(toast, 1800, 60, 0, 700);
+            S.fadeOut(toast, S.b(1) - 300, 400);
+            var task = w.add(ic('square-check', 16, C.acc2) + '<div><b>Audit : appeler Julie Martin</b><span>Tâche créée automatiquement · priorité haute</span></div>', 'left:28px;top:494px;width:520px', 'bsf-taskrow');
+            S.slide(task, S.b(1), -40, 0, 700);
+            var badge = w.add('<i>' + ic('globe', 13) + ' Site internet</i><i class="hot">Priorité haute</i>', 'left:572px;top:504px', 'bsf-badges');
+            Array.prototype.forEach.call(badge.children, function (b, i) { S.pop(b, S.b(1) + 600 + i * 200, 500); });
+          } },
+        { captions: ['Nouvelle rubrique : la carte clients. Une planète qui montre où sont vos clients et vos prospects, en direct.', 'En haut, les chiffres clés défilent : clients actifs, abonnements par mois et montants en jeu.'],
+          build: function (S) {
+            var g = S.el(globeSvg(), 'left:120px;top:100px;width:560px;height:560px', 'bsf-globe');
+            S.a(g, [{ opacity: 0, transform: 'scale(.4) rotate(-30deg)' }, { opacity: 1, transform: 'none' }], 100, 1500, EASE);
+            var mer = g.querySelectorAll('.mer');
+            S.tick(function (lt) { Array.prototype.forEach.call(mer, function (m, i) { var a = ((lt / 40 + i * 30) % 180) - 90; m.setAttribute('rx', Math.abs(Math.cos(a * Math.PI / 180)) * 250); }); });
+            Array.prototype.forEach.call(g.querySelectorAll('.pt'), function (p, i) { S.a(p, [{ opacity: 0, transform: 'scale(0)' }, { opacity: 1, transform: 'scale(1)' }], 1300 + i * 110, 500, SPRING); });
+            Array.prototype.forEach.call(g.querySelectorAll('.arc'), function (p, i) { S.draw(p, 1800 + i * 160, 900); });
+            [['Clients actifs', 7, '', C.green], ['Abonnements / mois', 1748, ' €', C.green], ['En négociation', 5200, ' €', C.amber]].forEach(function (k, i) {
+              var c = S.el('<span>' + esc(k[0]) + '</span><b style="color:' + k[3] + '">0</b>', 'left:760px;top:' + (150 + i * 130) + 'px;width:380px;height:108px', 'bsf-card bsf-gkpi');
+              S.slide(c, S.b(1) - 300 + i * 180, 60, 0, 700);
+              S.count(c.querySelector('b'), S.b(1) + i * 180, 1400, 0, k[1], function (v) { return Math.round(v).toLocaleString('fr-FR') + k[2]; });
+            });
+          } },
+        { captions: ['Cliquez sur une ville : ses fiches s’affichent, avec le statut, le montant et la prochaine relance.', 'Lancez la visite guidée : la caméra survole vos villes une à une. Un clic ouvre la fiche, un autre lance l’appel.'],
+          build: function (S) {
+            var g = S.el(globeSvg(true), 'left:60px;top:80px;width:600px;height:600px', 'bsf-globe');
+            S.a(g, [{ transform: 'scale(1)' }, { transform: 'scale(1.35) translate(40px,20px)' }], 600, 2400, EASE_IO);
+            var spot = S.el('<span>Ville sélectionnée</span><b>Lyon</b><p>3 clients · 12 prospects · <strong>829 €/mois</strong></p>', 'left:90px;top:470px;width:330px', 'bsf-spot');
+            S.slide(spot, 2200, 0, 30, 700);
+            [['Cabinet Dentaire Lumière', 'Client actif', '390 €/mois', C.green], ['Agence Immo du Centre', 'Client actif', '290 €/mois', C.green], ['Square Habitat', 'Audit réalisé', '2 oct. · 11:00', C.cyan], ['Boulangerie Martin', 'RDV pris', 'jeu. · 10:00', C.violet]].forEach(function (p, i) {
+              var c = S.el('<span class="av" style="background:' + p[3] + '">' + p[0].split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('') + '</span><div><b>' + esc(p[0]) + '</b><em style="color:' + p[3] + '">' + esc(p[1]) + '</em></div><strong>' + esc(p[2]) + '</strong>', 'left:720px;top:' + (110 + i * 104) + 'px;width:470px;border-left-color:' + p[3], 'bsf-person');
+              S.slide(c, 2600 + i * 160, 50, 0, 600);
+            });
+            var tourBtn = S.el(ic('play', 15) + ' Visite guidée', 'left:90px;top:96px', 'bsf-tourbtn');
+            S.pop(tourBtn, S.b(1) - 400);
+            S.a(tourBtn, [{ background: 'rgba(59,130,246,.15)' }, { background: C.acc }], S.b(1) + 500, 300, 'linear');
+            Array.prototype.forEach.call(g.querySelectorAll('.pt'), function (p, i) { S.a(p, [{ r: 4 }, { r: 11 }, { r: 4 }], S.b(1) + 800 + i * 500, 600, EASE_IO); });
+            S.cursor([[600, 640, 300], [272, 288, 1700], [272, 288, 2300], [160, 112, S.b(1) + 200], [1150, 160, S.b(1) + 2600]], [1900, S.b(1) + 500, S.b(1) + 2900]);
+          } },
+        recapScene(['Les RDV du site arrivent dans le CRM, avec un rappel.', 'Le calendrier du site couvre toutes les années.', 'La carte clients montre votre territoire en direct.'], null),
       ] },
   ];
 
+  // ================================================================== musique
+  // Petite musique entraînante générée en direct (Web Audio) : marimba, ukulélé, basse, claquements de mains et
+  // sifflement. Aucun fichier, aucun droit d'auteur. Elle baisse toute seule quand la voix off parle.
+  var Musique = (function () {
+    var ctx = null, master = null, duck = null, noise = null, timer = 0, step = 0, nextT = 0, cycle = 0;
+    var SPB = 60 / 112 / 4; // double croche à 112 battements par minute
+    var CH = [[60, 64, 67, 71], [57, 60, 64, 67], [53, 57, 60, 64], [55, 59, 62, 65]];
+    var MEL = [
+      [72, 0, 76, 0, 79, 0, 76, 0, 74, 0, 72, 0, 76, 0, 0, 0], [72, 0, 72, 74, 76, 0, 74, 0, 72, 0, 69, 0, 72, 0, 0, 0],
+      [69, 0, 72, 0, 77, 0, 76, 0, 74, 0, 72, 0, 69, 0, 0, 0], [71, 0, 74, 0, 79, 0, 77, 0, 76, 0, 74, 0, 71, 0, 74, 0]];
+    function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+    function tone(m, t, v, d, type, dest, detune) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = hz(m); if (detune) o.detune.value = detune;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g); g.connect(dest || duck); o.start(t); o.stop(t + d + 0.05);
+    }
+    function marimba(m, t, v) { tone(m, t, v, 0.45, 'sine'); tone(m + 24, t, v * 0.25, 0.08, 'sine'); }
+    function whistle(m, t, v) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(hz(m) * 0.97, t); o.frequency.exponentialRampToValueAtTime(hz(m), t + 0.06);
+      lfo.frequency.value = 5.5; lg.gain.value = hz(m) * 0.012; lfo.connect(lg); lg.connect(o.frequency);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+      o.connect(g); g.connect(duck); o.start(t); lfo.start(t); o.stop(t + 0.36); lfo.stop(t + 0.36);
+    }
+    function hit(t, f, q, v, d) {
+      var s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+      s.buffer = noise; fl.type = 'bandpass'; fl.frequency.value = f; fl.Q.value = q;
+      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      s.connect(fl); fl.connect(g); g.connect(duck); s.start(t); s.stop(t + d + 0.02);
+    }
+    function kick(t) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.14);
+      g.gain.setValueAtTime(0.55, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      o.connect(g); g.connect(duck); o.start(t); o.stop(t + 0.22);
+    }
+    function play16(i, t) {
+      var bar = Math.floor(i / 16) % 4, k = i % 16, ch = CH[bar];
+      if (k === 0 || k === 8 || (k === 11 && cycle % 2)) kick(t);
+      if (k === 4 || k === 12) { hit(t, 1400, 0.8, 0.28, 0.13); hit(t + 0.012, 2200, 1.2, 0.18, 0.1); }
+      if (k % 2 === 0) hit(t, 8000, 1.5, k % 4 === 2 ? 0.09 : 0.05, 0.04);
+      if (k === 0 || k === 8) tone(ch[0] - 24, t, 0.28, 0.32, 'triangle');
+      if (k === 6 || k === 14) tone(ch[2] - 24, t, 0.22, 0.22, 'triangle');
+      if (k % 4 === 2) ch.slice(0, 3).forEach(function (n, j) { tone(n, t + j * 0.012, 0.045, 0.22, 'triangle', null, j * 4); });
+      var m = MEL[bar][k];
+      if (m) { if (cycle % 4 === 3) whistle(m + 12, t, 0.06); else if (cycle % 4) marimba(m, t, 0.12); }
+    }
+    function sched() {
+      while (nextT < ctx.currentTime + 0.15) {
+        play16(step, nextT); nextT += SPB * (step % 2 ? 0.92 : 1.08); // léger swing
+        step++; if (step % 64 === 0) cycle++;
+      }
+    }
+    return {
+      start: function (vol) {
+        try {
+          if (!ctx) {
+            ctx = new (window.AudioContext || window.webkitAudioContext)();
+            master = ctx.createGain(); duck = ctx.createGain(); duck.connect(master); master.connect(ctx.destination);
+            noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+            var d = noise.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+          }
+          ctx.resume(); master.gain.cancelScheduledValues(ctx.currentTime);
+          master.gain.setTargetAtTime(vol == null ? 0.2 : vol, ctx.currentTime, 0.4);
+          if (!timer) { nextT = ctx.currentTime + 0.08; timer = setInterval(sched, 25); }
+        } catch (e) {}
+      },
+      stop: function () {
+        if (!ctx) return;
+        master.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.12);
+        clearInterval(timer); timer = 0;
+      },
+      duck: function (on) { if (ctx) duck.gain.setTargetAtTime(on ? 0.32 : 1, ctx.currentTime, on ? 0.08 : 0.5); },
+    };
+  })();
+
   // ================================================================== progression (navigateur + serveur)
-  var seen = readJson(SEEN_KEY, []), quiz = readJson(QUIZ_KEY, {}), prefs = Object.assign({ voix: false, st: true, vit: 1 }, readJson(PREF_KEY, {}));
+  var seen = readJson(SEEN_KEY, []), quiz = readJson(QUIZ_KEY, {}), prefs = Object.assign({ voix: true, musique: true, st: true, vit: 1 }, readJson(PREF_KEY, {}));
   var team = null;
   function readJson(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
   function writeJson(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -665,7 +861,7 @@
     // Durées calculées une fois (scène construite à blanc, sans rien afficher).
     var durs = scenes.map(function (def) {
       var tLoc = 500;
-      def.captions.forEach(function (c) { tLoc += Math.max(2600, c.length * 62 + 900); });
+      def.captions.forEach(function (c) { tLoc += capDur(c); });
       return Math.max(def.min || 0, tLoc + 600);
     });
     var starts = [], total = 0;
@@ -701,16 +897,36 @@
       }
       hooks.onTime(t, total, i);
     }
+    // Voix off : fichier neuronal pré-enregistré quand le serveur le fournit, sinon synthèse du navigateur.
+    var audio = null, AUDIO_OK = /^https?:/.test(location.protocol) && !!window.BS_VOIX;
+    function stopVoice() {
+      if (audio) { audio.onended = audio.onerror = null; try { audio.pause(); } catch (e) {} audio = null; }
+      try { speechSynthesis.cancel(); } catch (e) {}
+      speaking = false; Musique.duck(false);
+    }
     function speak(text) {
-      if (!window.speechSynthesis) return;
+      stopVoice();
+      if (AUDIO_OK && voixMs(text)) {
+        var a = audio = new Audio('voix/' + hashCap(text) + '.mp3');
+        a.playbackRate = prefs.vit; a.preservesPitch = true;
+        speaking = true; spoken = text; Musique.duck(true);
+        a.onended = function () { if (audio === a) { speaking = false; Musique.duck(false); } };
+        a.onerror = function () { if (audio === a) { audio = null; synth(text); } };
+        var pr = a.play(); if (pr && pr.catch) pr.catch(function () { if (audio === a) { audio = null; synth(text); } });
+        return;
+      }
+      synth(text);
+    }
+    function synth(text) {
+      if (!window.speechSynthesis) { speaking = false; Musique.duck(false); return; }
       try {
         speechSynthesis.cancel();
         var u = new SpeechSynthesisUtterance(text);
         u.lang = 'fr-FR'; u.rate = Math.min(1.6, .98 * prefs.vit);
         var v = speechSynthesis.getVoices().filter(function (x) { return /^fr/i.test(x.lang); });
         if (v.length) u.voice = v.filter(function (x) { return /Google|Amélie|Thomas|Audrey|Denise|Henri|Natural/i.test(x.name); })[0] || v[0];
-        speaking = true; spoken = text;
-        u.onend = u.onerror = function () { if (spoken === text) speaking = false; };
+        speaking = true; spoken = text; Musique.duck(true);
+        u.onend = u.onerror = function () { if (spoken === text) { speaking = false; Musique.duck(false); } };
         speechSynthesis.speak(u);
       } catch (e) { speaking = false; }
     }
@@ -730,9 +946,9 @@
       if (t >= total) { t = total; render(); pause(); hooks.onEnd(); return; }
       render();
     }
-    function play() { if (t >= total) seek(0); playing = true; lastCap = ''; render(); hooks.onState(true); }
-    function pause() { playing = false; speaking = false; try { speechSynthesis.cancel(); } catch (e) {} hooks.onState(false); }
-    function seek(time) { t = Math.max(0, Math.min(total, time)); speaking = false; try { speechSynthesis.cancel(); } catch (e) {} lastCap = '__'; render(); }
+    function play() { if (t >= total) seek(0); playing = true; lastCap = ''; if (prefs.musique) Musique.start(); render(); hooks.onState(true); }
+    function pause() { playing = false; stopVoice(); Musique.stop(); hooks.onState(false); }
+    function seek(time) { t = Math.max(0, Math.min(total, time)); stopVoice(); lastCap = '__'; render(); }
     raf = requestAnimationFrame(frame);
     render();
     return {
@@ -741,6 +957,8 @@
       chapter: function (i) { seek(starts[i] + 1); },
       destroy: function () { cancelAnimationFrame(raf); pause(); },
       refreshCaption: function () { lastCap = '__'; render(); },
+      musique: function (on) { if (on && playing) Musique.start(); else Musique.stop(); },
+      stopVoice: stopVoice,
     };
   }
 
@@ -769,6 +987,7 @@
         '<button type="button" class="bsf-cb-btn txt" data-act="speed" title="Vitesse">' + prefs.vit + '×</button>' +
         '<button type="button" class="bsf-cb-btn' + (prefs.st ? ' on' : '') + '" data-act="st" title="Sous-titres (C)">CC</button>' +
         '<button type="button" class="bsf-cb-btn' + (prefs.voix ? ' on' : '') + '" data-act="voix" title="Voix off (V)">' + ic('mic', 17) + '</button>' +
+        '<button type="button" class="bsf-cb-btn' + (prefs.musique ? ' on' : '') + '" data-act="musique" title="Musique (M)" aria-label="Musique">' + MUSIC_ICON + '</button>' +
         '<button type="button" class="bsf-cb-btn" data-act="full" title="Plein écran (F)">' + ic('fullscreen', 17) + '</button></div>' +
         '<div class="bsf-meta"><div class="min-w-0"><div class="bsf-kick">Module ' + (ui.idx + 1) + ' sur ' + MODULES.length + ' · <span class="bsf-dur"></span></div><h2 class="bsf-title">' + esc(m.t) + '</h2><p class="bsf-sub">' + esc(m.s) + '</p></div>' +
         '<div class="bsf-actions">' + (seen.indexOf(m.f) < 0 ? '<button type="button" class="btn btn-ghost btn-sm" data-act="seen">' + ic('check', 15) + ' Marquer comme vu</button>' : '') +
@@ -881,9 +1100,9 @@
       else if (act === 'st') { prefs.st = !prefs.st; writeJson(PREF_KEY, prefs); t.classList.toggle('on', prefs.st); player.refreshCaption(); }
       else if (act === 'voix') {
         prefs.voix = !prefs.voix; writeJson(PREF_KEY, prefs); t.classList.toggle('on', prefs.voix);
-        if (!window.speechSynthesis) alert('La voix off n’est pas disponible dans ce navigateur.');
-        else if (!prefs.voix) speechSynthesis.cancel(); else player.refreshCaption();
+        if (!prefs.voix) player.stopVoice(); else player.refreshCaption();
       }
+      else if (act === 'musique') { prefs.musique = !prefs.musique; writeJson(PREF_KEY, prefs); t.classList.toggle('on', prefs.musique); player.musique(prefs.musique); }
       else if (act === 'full') { var sc = root.querySelector('.bsf-player'); if (document.fullscreenElement) document.exitFullscreen(); else if (sc.requestFullscreen) sc.requestFullscreen().catch(function () {}); }
       else if (act === 'seen') { markSeen(MODULES[ui.idx].f); render(); }
       else if (act === 'next') { markSeen(MODULES[ui.idx].f); ui.idx = Math.min(MODULES.length - 1, ui.idx + 1); closeOver(); render(); player.play(); }
@@ -911,6 +1130,7 @@
       else if (k === 'f' || k === 'F') root.querySelector('[data-act="full"]').click();
       else if (k === 'c' || k === 'C') root.querySelector('[data-act="st"]').click();
       else if (k === 'v' || k === 'V') root.querySelector('[data-act="voix"]').click();
+      else if (k === 'm' || k === 'M') root.querySelector('[data-act="musique"]').click();
     });
     // On quitte la page : le film s'arrête.
     var mo = new MutationObserver(function () { if (!root.isConnected) { if (player) player.destroy(); if (resizeObs) resizeObs.disconnect(); mo.disconnect(); } });
@@ -1073,7 +1293,7 @@
     '.bsf-focus{border-radius:12px;border:2px solid #60a5fa;box-shadow:0 0 0 6px rgb(96 165 250/.18),0 0 30px rgb(96 165 250/.5)}',
     '.bsf-focus.warn{border-color:#fbbf24;box-shadow:0 0 0 6px rgb(251 191 36/.16),0 0 30px rgb(251 191 36/.45)}',
     '.bsf-cursor{filter:drop-shadow(0 4px 6px rgb(0 0 0/.5))}',
-    '.bsf-ripple{border-radius:50%;border:3px solid #fff}',
+    '.bsf-ripple{border-radius:50%;border:3px solid #fff;opacity:0}',
     '.bsf-key{min-width:70px;height:70px;padding:0 16px;border-radius:14px;display:grid;place-items:center;font-size:24px;font-weight:800;background:linear-gradient(180deg,#22314d,#16233a);border:1px solid rgb(148 163 184/.3);box-shadow:0 5px 0 #0b1426;z-index:40}',
     '.bsf-dim{background:rgb(3 7 15/.6)}',
     '.bsf-pal{border-radius:16px;background:#101d33;border:1px solid rgb(148 163 184/.25);box-shadow:0 40px 80px -20px #000;overflow:hidden;z-index:30}',
@@ -1205,6 +1425,43 @@
     '.bsf-vers i{display:block;font-style:normal;padding:10px 14px;border-radius:10px;background:rgb(255 255 255/.05);font-weight:700}',
     '.bsf-vers i:first-child{background:rgb(16 185 129/.18);color:#34d399}',
     '[data-motion="reduced"] .bsf-bgfx i{transform:none!important}',
+  
+    /* module 08 : site, agenda, carte clients */
+    '.bsf-brw{border-radius:18px;overflow:hidden;background:#0b1424;border:1px solid rgba(148,163,184,.22);box-shadow:0 40px 80px -30px #000}',
+    '.bsf-brw-bar{display:flex;align-items:center;gap:7px;height:40px;padding:0 16px;background:#111c30;border-bottom:1px solid rgba(148,163,184,.15)}',
+    '.bsf-brw-bar i{width:11px;height:11px;border-radius:50%;background:#fb7185}.bsf-brw-bar i:nth-child(2){background:#fbbf24}.bsf-brw-bar i:nth-child(3){background:#34d399}',
+    '.bsf-brw-bar span{margin-left:14px;padding:4px 14px;border-radius:8px;background:#0a1220;color:#a9bfdd;font-size:13px}',
+    '.bsf-brw-body{position:relative;height:560px}',
+    '.bsf-cal{position:absolute;left:36px;top:30px;width:360px;padding:16px;border-radius:16px;background:#0f1b2e;border:1px solid rgba(148,163,184,.18)}',
+    '.bsf-cal-h{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:#eaf1fb;font-size:15px}.bsf-cal-h b{color:#7d93b5}.bsf-cal-h span{flex:1;font-weight:700}.bsf-cal-h strong{font-size:18px;color:#60a5fa;font-variant-numeric:tabular-nums}',
+    '.bsf-cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}',
+    '.bsf-cal-g i{font-style:normal;height:38px;border-radius:10px;display:grid;place-items:center;color:#eaf1fb;font-size:14px;font-weight:600}',
+    '.bsf-cal-g i.off{color:#3b4a63;text-decoration:line-through}',
+    '.bsf-slots{position:absolute;left:36px;top:400px;width:360px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}',
+    '.bsf-slots i{font-style:normal;height:40px;border-radius:10px;border:1px solid rgba(148,163,184,.25);display:grid;place-items:center;color:#eaf1fb;font-size:13px;font-weight:600}',
+    '.bsf-form{position:absolute;left:440px;top:30px;width:500px;padding:24px;border-radius:16px;background:#0f1b2e;border:1px solid rgba(148,163,184,.18);display:flex;flex-direction:column;gap:8px}',
+    '.bsf-form span{color:#a9bfdd;font-size:13px;font-weight:600}',
+    '.bsf-form em{font-style:normal;height:44px;line-height:44px;padding:0 14px;border-radius:10px;background:#0a1220;border:1px solid rgba(148,163,184,.2);color:#eaf1fb;font-size:15px;margin-bottom:8px}',
+    '.bsf-cta{margin-top:12px;height:52px;border-radius:12px;background:linear-gradient(90deg,#3b82f6,#22d3ee);color:#fff;font-weight:800;font-size:16px;display:grid;place-items:center}',
+    '.bsf-ok{position:absolute;left:440px;top:330px;width:500px;padding:26px;border-radius:16px;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.45);display:flex;flex-direction:column;align-items:center;gap:6px;color:#eaf1fb}',
+    '.bsf-ok b{font-size:22px}.bsf-ok span{color:#6ee7b7;font-size:15px}',
+    '.bsf-daycol{border-radius:14px;background:rgba(148,163,184,.06);border:1px solid rgba(148,163,184,.12);padding:10px;color:#a9bfdd;font-size:13px}',
+    '.bsf-evt.new{padding:10px 12px;border-radius:12px;background:linear-gradient(160deg,rgba(167,139,250,.35),rgba(59,130,246,.25));border:1px solid #a78bfa;color:#fff;box-shadow:0 0 0 4px rgba(167,139,250,.15),0 20px 30px -12px #000}',
+    '.bsf-evt.new em{display:block;font-style:normal;font-size:11px;font-weight:800;color:#c4b5fd;text-transform:uppercase;letter-spacing:.06em}',
+    '.bsf-evt.new b{display:block;font-size:14px;margin:2px 0}.bsf-evt.new span{font-size:12px;color:#dbeafe}',
+    '.bsf-taskrow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:14px;background:#0f1b2e;border:1px solid rgba(96,165,250,.4);color:#eaf1fb}',
+    '.bsf-taskrow b{display:block;font-size:15px}.bsf-taskrow span{font-size:12.5px;color:#a9bfdd}',
+    '.bsf-badges{display:flex;gap:8px}.bsf-badges i{display:flex;align-items:center;gap:6px;font-style:normal;padding:7px 12px;border-radius:99px;background:rgba(59,130,246,.18);color:#93c5fd;font-size:13px;font-weight:700}',
+    '.bsf-badges i.hot{background:rgba(251,113,133,.16);color:#fda4af}',
+    '.bsf-globe svg{overflow:visible}',
+    '.bsf-gkpi{display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 26px}',
+    '.bsf-gkpi span{color:#a9bfdd;font-size:15px;font-weight:600}.bsf-gkpi b{font-size:40px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}',
+    '.bsf-spot{padding:16px 18px;border-radius:16px;background:linear-gradient(160deg,rgba(15,27,46,.95),rgba(8,16,32,.9));border:1px solid rgba(96,165,250,.4);color:#eaf1fb;box-shadow:0 24px 40px -18px #000}',
+    '.bsf-spot span{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#93c5fd}.bsf-spot b{display:block;font-size:26px}.bsf-spot p{margin:4px 0 0;color:#a9bfdd;font-size:14px}.bsf-spot strong{color:#6ee7b7}',
+    '.bsf-person{display:grid;grid-template-columns:48px 1fr auto;gap:14px;align-items:center;padding:14px 18px;border-radius:16px;background:#0f1b2e;border:1px solid rgba(148,163,184,.18);border-left:4px solid;color:#eaf1fb}',
+    '.bsf-person .av{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;color:#06101f;font-weight:900;font-size:16px}',
+    '.bsf-person b{display:block;font-size:16px}.bsf-person em{font-style:normal;font-size:13px;font-weight:700}.bsf-person strong{font-size:15px;color:#eaf1fb}',
+    '.bsf-tourbtn{display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:99px;background:rgba(59,130,246,.15);border:1px solid rgba(96,165,250,.5);color:#dbeafe;font-weight:800;font-size:15px}',
   ].join('\n');
   function ensureCss() {
     if (document.getElementById('bs-formation-css')) return;

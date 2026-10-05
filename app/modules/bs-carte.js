@@ -100,30 +100,59 @@
       return { lon: lon, lat: lat, zoom: Math.max(1, Math.min(14, 0.32 / Math.sin(spread * Math.PI / 180))) };
     }
 
+    // ---------------------------------------------------------------- affichage
+    var STAT_COL = { a_appeler: '#60a5fa', injoignable: '#94a3b8', rdv_pris: '#a78bfa', audit_realise: '#22d3ee', proposition_envoyee: '#fbbf24', client_signe: '#34d399', resilie: '#fb7185', perdu: '#fb7185' };
+    function euro(v) { return Math.round(v || 0).toLocaleString('fr-FR') + ' €'; }
+    function initials(s) { return String(s || '?').replace(/[^\p{L}\p{N} ]/gu, ' ').trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase() || '?'; }
+    function hue(s) { var h = 0; String(s || '').split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) % 360; }); return h; }
+    function mrr(list) { return list.reduce(function (s, p) { return s + (isClient(p) ? +p.mrrValue || 0 : 0); }, 0); }
+    function pipe(list) { return list.reduce(function (s, p) { return s + (isProspect(p) ? +p.dealValue || 0 : 0); }, 0); }
+    function frDate(d) { if (!d) return ''; var x = new Date(d + 'T12:00:00'); return isNaN(x) ? '' : x.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); }
+    function openFiche(id) { if (window.__bsY) window.__bsY.set(function (s) { return { overlays: (s.overlays || []).concat([{ key: 'bsc' + Date.now(), type: 'prospect', id: id }]) }; }); }
+    function placeOf(key) { return places.filter(function (x) { return x.key === key; })[0]; }
+    // Zoom qui montre une ville et ses voisines, sans perdre le relief de la planète.
+    function cityZoom() { return Math.max(5, Math.min(12, initialView().zoom * 0.8)); }
+
     function render() {
       if (globe) { globe.destroy(); globe = null; }
-      clearInterval(feedTimer);
+      clearInterval(feedTimer); stopTour(true);
       compute();
       var st = store(), all = (st.prospects || []), nbClients = all.filter(isClient).length;
       var located = places.reduce(function (s, g) { return s + g.items.length; }, 0), total = located + unlocated.length;
       var max = Math.max(1, places.length ? places[0].items.length : 1);
+      var listed = places.reduce(function (a, g) { return a.concat(g.items); }, []).concat(unlocated);
+      var kpis = [
+        ['map-pin', located, '/' + total, 'fiches localisées', ''],
+        ['globe', places.length, '', places.length > 1 ? 'villes' : 'ville', ''],
+        ['award', nbClients, '', 'clients actifs', 'green'],
+        ['trending-up', mrr(listed), ' €', 'abonnements / mois', 'green'],
+        ['target', pipe(listed), ' €', 'en négociation', 'amber'],
+      ];
       root.innerHTML =
-        '<div class="page-head"><div class="page-head-text"><h1 class="page-title">Carte clients</h1><p class="page-sub">Où se trouvent vos clients et prospects, en direct sur la planète</p></div>' +
+        '<div class="page-head bsc-head"><div class="page-head-text"><h1 class="page-title">Carte clients</h1><p class="page-sub">Votre territoire en direct : qui, où, combien, et ce qui bouge en ce moment</p></div>' +
+        '<div class="bsc-headtools"><label class="bsc-search">' + ic('search', 15) + '<input type="search" placeholder="Trouver un client ou une ville…" aria-label="Trouver un client ou une ville" list="bsc-dl"><datalist id="bsc-dl">' +
+        listed.slice(0, 400).map(function (p) { return '<option value="' + esc(p.entreprise) + '">'; }).join('') + places.map(function (g) { return '<option value="' + esc(g.name) + '">'; }).join('') + '</datalist></label>' +
         '<div role="tablist" class="segmented">' + [['tous', 'Tous'], ['clients', 'Clients'], ['prospects', 'Prospects']].map(function (f) {
           return '<button type="button" role="tab" aria-selected="' + (ui.filtre === f[0]) + '" class="seg' + (ui.filtre === f[0] ? ' active' : '') + '" data-f="' + f[0] + '"><span>' + f[1] + '</span></button>';
-        }).join('') + '</div></div>' +
+        }).join('') + '</div></div></div>' +
+        '<div class="bsc-kpis">' + kpis.map(function (k, i) {
+          return '<div class="bsc-kpi ' + k[4] + '" style="--i:' + i + '"><span class="bsc-kic">' + ic(k[0], 16) + '</span><div><b data-count="' + k[1] + '" data-suffix="' + esc(k[2]) + '">' + (k[2] === ' €' ? euro(k[1]) : k[1] + '<small>' + esc(k[2]) + '</small>') + '</b><span>' + k[3] + '</span></div></div>';
+        }).join('') + '</div>' +
         '<div class="bsc-layout"><div class="card bsc-globe-card"><canvas class="bsc-canvas" aria-label="Planète des clients : glissez pour la faire tourner"></canvas>' +
+        '<div class="bsc-vignette" aria-hidden="true"></div>' +
         '<div class="bsc-tip" hidden></div>' +
-        '<div class="bsc-live"><i></i>En direct</div>' +
-        '<div class="bsc-tools"><button type="button" data-z="1.5" title="Zoomer">+</button><button type="button" data-z="0.67" title="Dézoomer">−</button><button type="button" data-act="home" title="Recentrer">' + ic('target', 15) + '</button></div>' +
+        '<div class="bsc-topbar"><div class="bsc-live"><i></i>En direct</div><button type="button" class="bsc-tour" data-act="tour" aria-pressed="false">' + ic('play', 13) + '<span>Visite guidée</span></button></div>' +
+        '<div class="bsc-tools"><button type="button" data-z="1.5" title="Zoomer" aria-label="Zoomer">+</button><button type="button" data-z="0.67" title="Dézoomer" aria-label="Dézoomer">−</button><button type="button" data-act="home" title="Recentrer sur mes fiches" aria-label="Recentrer">' + ic('target', 15) + '</button><button type="button" data-act="world" title="Vue du monde" aria-label="Vue du monde">' + ic('globe', 15) + '</button></div>' +
+        '<div class="bsc-spot" hidden></div>' +
         '<div class="bsc-legend"><span><i style="background:' + COL.client + '"></i>Clients</span><span><i style="background:' + COL.prospect + '"></i>Prospects</span>' + (hub ? '<span><i style="background:' + COL.hub + '"></i>Siège</span>' : '') + '</div>' +
-        '<div class="bsc-hint">Glissez pour faire tourner · molette pour zoomer · clic sur une ville</div></div>' +
+        '<div class="bsc-hint">Glissez pour tourner · molette pour zoomer · clic sur une ville</div></div>' +
         '<div class="bsc-side">' +
-        '<div class="bsc-kpis"><div class="bsc-kpi"><b>' + located + '<small>/' + total + '</small></b><span>fiches localisées</span></div><div class="bsc-kpi"><b>' + places.length + '</b><span>villes</span></div><div class="bsc-kpi"><b>' + nbClients + '</b><span>clients actifs</span></div></div>' +
-        (ui.sel ? selHtml() : '') +
-        '<section class="card bsc-card"><h3>' + ic('map-pin', 15) + ' Par ville</h3>' + (places.length ? '<div class="bsc-places">' + places.slice(0, 12).map(function (g, i) {
-          return '<button type="button" class="bsc-place" data-p="' + i + '"><span class="bsc-dot" style="background:' + (g.clients >= g.items.length - g.clients ? COL.client : COL.prospect) + '"></span><span class="bsc-pn">' + esc(g.name) + (g.approx ? ' <em>(département)</em>' : '') + '</span>' +
-            '<span class="bsc-pbar"><i style="width:' + Math.round(g.items.length / max * 100) + '%"></i></span><b>' + g.items.length + '</b></button>';
+        '<div class="bsc-selwrap">' + (ui.sel ? selHtml() : '') + '</div>' +
+        '<section class="card bsc-card"><h3>' + ic('map-pin', 15) + ' Top villes<span class="bsc-h3s">clients · prospects</span></h3>' + (places.length ? '<div class="bsc-places">' + places.slice(0, 10).map(function (g, i) {
+          var c = g.clients, pr = g.items.length - c, m = mrr(g.items);
+          return '<button type="button" class="bsc-place' + (ui.sel === g.key ? ' on' : '') + '" data-p="' + i + '" style="--i:' + i + '"><span class="bsc-rank">' + (i + 1) + '</span><span class="bsc-pn">' + esc(g.name) + (g.approx ? ' <em>(département)</em>' : '') +
+            '<small>' + (m ? euro(m) + '/mois' : g.items.length + (g.items.length > 1 ? ' fiches' : ' fiche')) + '</small></span>' +
+            '<span class="bsc-pbar" title="' + c + ' client(s), ' + pr + ' prospect(s)"><i class="c" style="width:' + (c / max * 100) + '%"></i><i class="p" style="width:' + (pr / max * 100) + '%"></i></span><b>' + g.items.length + '</b></button>';
         }).join('') + '</div>' : '<p class="sr-hint">Aucune fiche localisée pour l’instant. Renseignez la ville de vos prospects.</p>') + '</section>' +
         '<section class="card bsc-card"><h3>' + ic('activity', 15) + ' Activité récente</h3>' + (feed.length ? '<div class="bsc-feed">' + feed.slice(0, 7).map(function (f, i) {
           return '<div class="bsc-ev" data-ev="' + i + '"><span class="bsc-evi">' + ic(f.type === 'call' || f.type === 'appel' ? 'phone' : f.type === 'email' ? 'mail' : f.type === 'rdv' ? 'calendar' : f.type === 'signature' ? 'award' : 'sparkles', 14) + '</span><div><b>' + esc(f.p.entreprise) + '</b><span>' + esc(f.label + ' · ' + (f.p.ville || f.loc.name)) + '</span></div><em>' + esc(ago(f.ts)) + '</em></div>';
@@ -132,44 +161,119 @@
           '<div class="bsc-actions"><button type="button" class="btn btn-secondary btn-sm" data-act="osm"' + (ui.busy ? ' disabled' : '') + '>' + ic('globe', 15) + ' Chercher sur OpenStreetMap</button></div>' +
           '<p class="sr-hint bsc-small">Envoie seulement le nom de la ville (ou l’adresse) au service public OpenStreetMap, une à la fois. Résultat gardé dans ce navigateur.</p>' + (ui.msg ? '<p class="bsc-msg">' + esc(ui.msg) + '</p>' : '') + '</section>' : '') +
         '</div></div>';
+      countUp();
       var canvas = root.querySelector('.bsc-canvas'), tip = root.querySelector('.bsc-tip'), view = initialView();
       globe = window.bsGlobe.create(canvas, {
-        background: 'space', center: [0.5, 0.52], radius: 0.38, lon: view.lon, lat: view.lat, autoRotate: 5, maxZoom: 40, markers: markers(), hub: hub, labels: true,
+        background: 'space', center: [0.5, 0.52], radius: 0.38, lon: view.lon - 70, lat: view.lat * 0.4, autoRotate: 5, maxZoom: 40, markers: markers(), hub: hub, labels: true,
         onHover: function (m, mx, my) {
           if (!m || !m.place) { tip.hidden = true; return; }
-          var g = m.place;
-          tip.innerHTML = '<b>' + esc(g.name) + '</b><span>' + g.items.length + (g.items.length > 1 ? ' fiches' : ' fiche') + ' · ' + g.clients + ' client' + (g.clients > 1 ? 's' : '') + '</span>' +
-            g.items.slice(0, 5).map(function (p) { return '<div><i style="background:' + (isClient(p) ? COL.client : COL.prospect) + '"></i>' + esc(p.entreprise) + '</div>'; }).join('') + (g.items.length > 5 ? '<div class="more">+ ' + (g.items.length - 5) + ' autres</div>' : '');
+          var g = m.place, mm = mrr(g.items);
+          tip.innerHTML = '<b>' + esc(g.name) + '</b><span>' + g.items.length + (g.items.length > 1 ? ' fiches' : ' fiche') + ' · ' + g.clients + ' client' + (g.clients > 1 ? 's' : '') + (mm ? ' · ' + euro(mm) + '/mois' : '') + '</span>' +
+            g.items.slice(0, 5).map(function (p) { return '<div><i style="background:' + (STAT_COL[p.statut] || COL.prospect) + '"></i>' + esc(p.entreprise) + '</div>'; }).join('') + (g.items.length > 5 ? '<div class="more">+ ' + (g.items.length - 5) + ' autres</div>' : '');
           tip.style.left = Math.min(mx + 14, canvas.clientWidth - 230) + 'px'; tip.style.top = Math.max(8, my - 20) + 'px'; tip.hidden = false;
         },
-        onPick: function (m) { if (m.place) { ui.sel = m.place.key; globe.focus(m.place.lon, m.place.lat); refreshSide(); } },
+        onPick: function (m) { if (m.place) { stopTour(); select(m.place, true); } },
       });
-      // La planète arrive en tournant, puis se cale sur vos fiches.
-      setTimeout(function () { if (globe) globe.focus(view.lon, view.lat, 1.15); }, 400);
+      // Entrée en scène : la planète arrive de loin en tournant, puis plonge sur vos fiches.
+      setTimeout(function () { if (globe) globe.focus(view.lon, view.lat, Math.min(view.zoom, 5.5)); }, 700);
+      if (ui.sel) { var g0 = placeOf(ui.sel); if (g0) spot(g0); }
       // Activité en direct : chaque événement s'allume tour à tour.
       feedIdx = 0;
       feedTimer = setInterval(function () {
         if (!root.isConnected) { cleanup(); return; }
-        if (!feed.length || document.hidden || !globe) return;
+        if (!feed.length || document.hidden || !globe || tour) return;
         var f = feed[feedIdx++ % Math.min(feed.length, 7)];
         globe.ping(f.loc.lon, f.loc.lat, f.type === 'signature' || isClient(f.p) ? COL.client : COL.prospect, f.label + ' · ' + f.p.entreprise);
         Array.prototype.forEach.call(root.querySelectorAll('.bsc-ev'), function (el) { el.classList.toggle('on', +el.getAttribute('data-ev') === (feedIdx - 1) % Math.min(feed.length, 7)); });
       }, 3800);
     }
+    // Les chiffres défilent jusqu'à leur valeur.
+    function countUp() {
+      var reduce = document.documentElement.getAttribute('data-motion') === 'reduced' || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+      if (reduce) return;
+      Array.prototype.forEach.call(root.querySelectorAll('[data-count]'), function (el) {
+        var to = +el.getAttribute('data-count'), suf = el.getAttribute('data-suffix'), t0 = performance.now(), d = 1100;
+        (function step(t) {
+          if (!el.isConnected) return;
+          var k = Math.min(1, (t - t0) / d), v = to * (1 - Math.pow(1 - k, 3));
+          el.innerHTML = suf === ' €' ? euro(v) : Math.round(v) + '<small>' + esc(suf) + '</small>';
+          if (k < 1) requestAnimationFrame(step);
+        })(t0);
+      });
+    }
+    function personHtml(p, i) {
+      var col = STAT_COL[p.statut] || COL.prospect, val = isClient(p) ? (+p.mrrValue ? euro(p.mrrValue) + '<small>/mois</small>' : '') : (+p.dealValue ? euro(p.dealValue) + '<small> en jeu</small>' : '');
+      var tel = String(p.telephone || '').replace(/[^\d+]/g, '');
+      return '<article class="bsc-person" style="--i:' + i + ';--c:' + col + '" data-pid="' + esc(p.id) + '">' +
+        '<span class="bsc-av" style="--h:' + hue(p.entreprise) + '">' + esc(initials(p.entreprise)) + '</span>' +
+        '<div class="bsc-pm"><b>' + esc(p.entreprise) + '</b><span>' + esc([p.contact, p.secteur].filter(Boolean).join(' · ')) + '</span>' +
+        '<div class="bsc-tags"><em class="bsc-stat">' + esc(STATUTS[p.statut] || 'Prospect') + '</em>' + (p.prochaineRelance ? '<em>' + ic('calendar', 11) + ' ' + esc(frDate(p.prochaineRelance) + (p.prochaineRelanceHeure ? ' · ' + p.prochaineRelanceHeure : '')) + '</em>' : '') + (p.priorite === 'haute' ? '<em class="hot">Priorité haute</em>' : '') + '</div></div>' +
+        '<div class="bsc-pv">' + (val ? '<strong>' + val + '</strong>' : '') + '<div class="bsc-pa">' + (tel ? '<a href="tel:' + esc(tel) + '" title="Appeler ' + esc(p.contact || p.entreprise) + '" aria-label="Appeler">' + ic('phone', 14) + '</a>' : '') +
+        '<button type="button" data-open="' + esc(p.id) + '" title="Ouvrir la fiche" aria-label="Ouvrir la fiche de ' + esc(p.entreprise) + '">' + ic('external-link', 14) + '</button></div></div></article>';
+    }
     function selHtml() {
-      var g = places.filter(function (x) { return x.key === ui.sel; })[0];
+      var g = placeOf(ui.sel);
       if (!g) return '';
-      return '<section class="card bsc-card bsc-sel"><h3>' + ic('map-pin', 15) + ' ' + esc(g.name) + '<button type="button" data-act="unsel" aria-label="Fermer">×</button></h3><div class="bsc-people">' + g.items.map(function (p) {
-        return '<div><span class="bsc-dot" style="background:' + (isClient(p) ? COL.client : COL.prospect) + '"></span><b>' + esc(p.entreprise) + '</b><span>' + esc(p.contact || '') + '</span><em>' + esc(STATUTS[p.statut] || '') + '</em></div>';
-      }).join('') + '</div></section>';
+      var items = g.items.slice().sort(function (a, b) { return (isClient(b) - isClient(a)) || ((+b.mrrValue || +b.dealValue || 0) - (+a.mrrValue || +a.dealValue || 0)); });
+      var m = mrr(g.items), pv = pipe(g.items);
+      return '<section class="card bsc-card bsc-sel"><h3>' + ic('map-pin', 15) + ' ' + esc(g.name) + '<button type="button" data-act="unsel" aria-label="Fermer">×</button></h3>' +
+        '<div class="bsc-selk"><div><b>' + g.clients + '</b><span>client' + (g.clients > 1 ? 's' : '') + '</span></div><div><b>' + (g.items.length - g.clients) + '</b><span>prospect' + (g.items.length - g.clients > 1 ? 's' : '') + '</span></div><div><b>' + euro(m) + '</b><span>par mois</span></div><div><b>' + euro(pv) + '</b><span>en jeu</span></div></div>' +
+        '<div class="bsc-people">' + items.map(personHtml).join('') + '</div></section>';
+    }
+    // Carte flottante sur la planète : la ville en cours (sélection ou visite guidée).
+    function spot(g) {
+      var el = root.querySelector('.bsc-spot'); if (!el) return;
+      if (!g) { el.hidden = true; return; }
+      var m = mrr(g.items), top = g.items.slice().sort(function (a, b) { return (isClient(b) - isClient(a)); }).slice(0, 3);
+      el.innerHTML = '<div class="bsc-spot-in"><span class="bsc-spot-k">' + (tour ? 'Visite · ' + (tourIdx) + '/' + Math.min(places.length, 8) : 'Ville sélectionnée') + '</span><b>' + esc(g.name) + '</b>' +
+        '<p>' + g.clients + ' client' + (g.clients > 1 ? 's' : '') + ' · ' + (g.items.length - g.clients) + ' prospect' + (g.items.length - g.clients > 1 ? 's' : '') + (m ? ' · <strong>' + euro(m) + '/mois</strong>' : '') + '</p>' +
+        '<ul>' + top.map(function (p) { return '<li><i style="background:' + (STAT_COL[p.statut] || COL.prospect) + '"></i>' + esc(p.entreprise) + '</li>'; }).join('') + '</ul></div>';
+      el.hidden = false; el.classList.remove('in'); void el.offsetWidth; el.classList.add('in');
+    }
+    function select(g, fly) {
+      ui.sel = g.key;
+      if (fly && globe) globe.focus(g.lon, g.lat, cityZoom());
+      if (globe) globe.ping(g.lon, g.lat, g.clients ? COL.client : COL.prospect, g.name);
+      refreshSide(); spot(g);
+      Array.prototype.forEach.call(root.querySelectorAll('.bsc-place'), function (b) { b.classList.toggle('on', places[+b.getAttribute('data-p')] === g); });
     }
     // Mise à jour du panneau sans recréer la planète.
     function refreshSide() {
-      var side = root.querySelector('.bsc-side'), old = side && side.querySelector('.bsc-sel');
-      if (old) old.remove();
-      if (ui.sel && side) { var d = document.createElement('div'); d.innerHTML = selHtml(); var kp = side.querySelector('.bsc-kpis'); if (d.firstChild) kp.parentNode.insertBefore(d.firstChild, kp.nextSibling); }
+      var w = root.querySelector('.bsc-selwrap'); if (w) w.innerHTML = ui.sel ? selHtml() : '';
+      if (!ui.sel) spot(null);
     }
-    function cleanup() { clearInterval(feedTimer); if (globe) globe.destroy(); globe = null; if (unsub) unsub(); unsub = null; }
+    // Visite guidée : la caméra survole vos principales villes, une à une.
+    var tour = 0, tourIdx = 0;
+    function startTour() {
+      if (!places.length || !globe) return;
+      tourIdx = 0; step();
+      tour = setInterval(step, 5200);
+      var b = root.querySelector('.bsc-tour'); if (b) { b.setAttribute('aria-pressed', 'true'); b.innerHTML = ic('pause', 13) + '<span>Arrêter la visite</span>'; }
+      function step() {
+        if (!root.isConnected || !globe) { stopTour(true); return; }
+        var n = Math.min(places.length, 8);
+        if (tourIdx >= n) { stopTour(); var v = initialView(); globe.focus(v.lon, v.lat, Math.min(v.zoom, 5.5)); return; }
+        var g = places[tourIdx++]; select(g, true);
+      }
+    }
+    function stopTour(silent) {
+      if (!tour) return;
+      clearInterval(tour); tour = 0;
+      if (silent) return;
+      var b = root.querySelector('.bsc-tour'); if (b) { b.setAttribute('aria-pressed', 'false'); b.innerHTML = ic('play', 13) + '<span>Visite guidée</span>'; }
+    }
+    function find(q) {
+      q = window.bsGlobe.norm ? window.bsGlobe.norm(q) : String(q).toLowerCase(); if (!q) return;
+      var hit = null, pid = null;
+      places.some(function (g) {
+        if ((window.bsGlobe.norm ? window.bsGlobe.norm(g.name) : g.name.toLowerCase()).indexOf(q) === 0) { hit = g; return true; }
+        return g.items.some(function (p) { var n = window.bsGlobe.norm ? window.bsGlobe.norm(p.entreprise + ' ' + (p.contact || '')) : (p.entreprise + ' ' + (p.contact || '')).toLowerCase(); if (n.indexOf(q) >= 0) { hit = g; pid = p.id; return true; } return false; });
+      });
+      if (!hit) { ui.msg = ''; var s = root.querySelector('.bsc-search'); if (s) { s.classList.remove('miss'); void s.offsetWidth; s.classList.add('miss'); } return; }
+      stopTour(); select(hit, true);
+      if (pid) { var el = root.querySelector('.bsc-person[data-pid="' + (window.CSS && CSS.escape ? CSS.escape(pid) : pid) + '"]'); if (el) { el.classList.add('flash'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }
+    }
+    function cleanup() { clearInterval(feedTimer); stopTour(true); if (globe) globe.destroy(); globe = null; if (unsub) unsub(); unsub = null; }
 
     // Recherche en ligne des villes inconnues, une par seconde.
     function osm() {
@@ -189,16 +293,25 @@
     }
 
     root.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-f],[data-z],[data-act],[data-p],[data-ev]'); if (!t || t.disabled) return;
+      var t = e.target.closest('[data-f],[data-z],[data-act],[data-p],[data-ev],[data-open]'); if (!t || t.disabled) return;
+      if (t.hasAttribute('data-open')) { openFiche(t.getAttribute('data-open')); return; }
       if (t.hasAttribute('data-f')) { ui.filtre = t.getAttribute('data-f'); ui.sel = null; render(); return; }
+      stopTour();
       if (t.hasAttribute('data-z')) { globe && globe.zoomBy(+t.getAttribute('data-z')); return; }
-      if (t.hasAttribute('data-p')) { var g = places[+t.getAttribute('data-p')]; ui.sel = g.key; globe.focus(g.lon, g.lat, 12); refreshSide(); return; }
-      if (t.hasAttribute('data-ev')) { var f = feed[+t.getAttribute('data-ev')]; if (f) { globe.focus(f.loc.lon, f.loc.lat); globe.ping(f.loc.lon, f.loc.lat, isClient(f.p) ? COL.client : COL.prospect, f.p.entreprise); } return; }
+      if (t.hasAttribute('data-p')) { select(places[+t.getAttribute('data-p')], true); return; }
+      if (t.hasAttribute('data-ev')) { var f = feed[+t.getAttribute('data-ev')]; if (f) { globe.focus(f.loc.lon, f.loc.lat, cityZoom()); globe.ping(f.loc.lon, f.loc.lat, isClient(f.p) ? COL.client : COL.prospect, f.p.entreprise); } return; }
       var act = t.getAttribute('data-act');
-      if (act === 'home') { var v = initialView(); globe.focus(v.lon, v.lat, v.zoom); }
-      else if (act === 'unsel') { ui.sel = null; refreshSide(); }
+      if (act === 'home') { var v = initialView(); globe.focus(v.lon, v.lat, Math.min(v.zoom, 5.5)); }
+      else if (act === 'world') { var w = initialView(); globe.focus(w.lon, w.lat * 0.5, 0.8); }
+      else if (act === 'tour') { if (t.getAttribute('aria-pressed') === 'true') stopTour(); else startTour(); }
+      else if (act === 'unsel') { ui.sel = null; refreshSide(); Array.prototype.forEach.call(root.querySelectorAll('.bsc-place'), function (b) { b.classList.remove('on'); }); }
       else if (act === 'osm') osm();
     });
+    // Recherche : Entrée, ou choix dans la liste proposée.
+    root.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.matches('.bsc-search input')) { e.preventDefault(); find(e.target.value); } });
+    root.addEventListener('change', function (e) { if (e.target.matches('.bsc-search input')) find(e.target.value); });
+    // Toucher la planète arrête la visite guidée.
+    root.addEventListener('pointerdown', function (e) { if (e.target.classList && e.target.classList.contains('bsc-canvas')) stopTour(); });
     // Les fiches changent (nouveau client, ville corrigée, collègue) : la carte suit.
     if (window.__bsStore && window.__bsStore.subscribe) {
       var lastSig = '', tm = 0;
@@ -261,13 +374,80 @@
     '.bsc-ev b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '.bsc-ev span{font-size:12px;color:var(--text-3)}',
     '.bsc-ev em{font-style:normal;font-size:11.5px;color:var(--text-3);white-space:nowrap}',
-    '.bsc-people{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto}',
-    '.bsc-people div{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:8px;align-items:center;font-size:13px}',
-    '.bsc-people span:not(.bsc-dot){grid-column:2;color:var(--text-3);font-size:12px}',
-    '.bsc-people em{grid-column:3;grid-row:1;font-style:normal;font-size:11.5px;color:var(--text-2)}',
     '.bsc-actions{margin:8px 0}',
     '.bsc-small{font-size:11.5px}',
     '.bsc-msg{font-size:13px;color:var(--text-2);margin:6px 0 0}',
+    /* ---- v2 : en-tête, indicateurs, visite guidée, carte flottante, fiches riches */
+    '.bsc-head{flex-wrap:wrap;gap:12px}',
+    '.bsc-headtools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}',
+    '.bsc-search{display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text-3);min-width:min(260px,100%)}',
+    '.bsc-search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgb(var(--accent-rgb)/.18)}',
+    '.bsc-search input{flex:1;min-width:0;border:0;background:none;color:var(--text);font:inherit;font-size:13.5px;outline:none}',
+    '.bsc-search.miss{animation:bscShake .4s}',
+    '@keyframes bscShake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}',
+    '.bsc-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 16px}',
+    '.bsc-kpi{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:var(--surface);border:1px solid var(--border);position:relative;overflow:hidden;animation:bscUp .7s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i)*70ms)}',
+    '.bsc-kpi::after{content:"";position:absolute;inset:auto -30% -60% auto;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgb(var(--accent-rgb)/.18),transparent 70%)}',
+    '.bsc-kpi.green::after{background:radial-gradient(circle,rgb(52 211 153/.2),transparent 70%)}',
+    '.bsc-kpi.amber::after{background:radial-gradient(circle,rgb(251 191 36/.2),transparent 70%)}',
+    '.bsc-kic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex:none;background:rgb(var(--accent-rgb)/.14);color:var(--accent)}',
+    '.bsc-kpi.green .bsc-kic{background:rgb(52 211 153/.14);color:#10b981}',
+    '.bsc-kpi.amber .bsc-kic{background:rgb(251 191 36/.16);color:#d97706}',
+    '.bsc-kpi b{display:block;font-size:21px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}',
+    '.bsc-kpi span{font-size:12px;color:var(--text-3)}',
+    '@keyframes bscUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}',
+    '.bsc-globe-card{height:min(74vh,720px);box-shadow:0 30px 60px -30px rgb(2 6 23/.7)}',
+    '.bsc-vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 45%,transparent 55%,rgb(1 3 10/.75) 100%)}',
+    '.bsc-topbar{position:absolute;left:16px;top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;right:70px}',
+    '.bsc-topbar .bsc-live{position:static}',
+    '.bsc-tour{display:flex;align-items:center;gap:7px;height:31px;padding:0 13px;border-radius:99px;border:1px solid rgb(96 165 250/.45);background:rgb(3 8 18/.7);color:#dbeafe;font:700 12.5px Inter,system-ui;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:background .2s,border-color .2s}',
+    '.bsc-tour:hover{background:rgb(59 130 246/.35)}',
+    '.bsc-tour[aria-pressed=true]{background:rgb(59 130 246/.55);border-color:#93c5fd}',
+    '.bsc-spot{position:absolute;left:16px;bottom:58px;z-index:4;width:min(290px,calc(100% - 32px));pointer-events:none}',
+    '.bsc-spot-in{padding:14px 16px;border-radius:16px;background:linear-gradient(160deg,rgb(15 27 46/.92),rgb(8 16 32/.88));border:1px solid rgb(96 165 250/.35);color:#eaf1fb;box-shadow:0 20px 40px -18px #000;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}',
+    '.bsc-spot.in .bsc-spot-in{animation:bscSpot .6s cubic-bezier(.16,1,.3,1) both}',
+    '@keyframes bscSpot{from{opacity:0;transform:translateY(16px) scale(.96);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}',
+    '.bsc-spot-k{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#93c5fd}',
+    '.bsc-spot b{display:block;font-size:20px;letter-spacing:-.02em;margin-top:2px}',
+    '.bsc-spot p{margin:4px 0 8px;font-size:12.5px;color:#a9bfdd}',
+    '.bsc-spot strong{color:#6ee7b7}',
+    '.bsc-spot ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px}',
+    '.bsc-spot li{display:flex;align-items:center;gap:7px}',
+    '.bsc-spot li i{width:7px;height:7px;border-radius:50%;box-shadow:0 0 8px currentColor}',
+    '.bsc-h3s{margin-left:auto;font-size:11px;font-weight:600;color:var(--text-3)}',
+    '.bsc-place{grid-template-columns:22px minmax(0,1fr) 74px 26px;animation:bscUp .5s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i)*40ms);transition:background .2s}',
+    '.bsc-place.on{background:rgb(var(--accent-rgb)/.14);box-shadow:inset 3px 0 0 var(--accent)}',
+    '.bsc-rank{font-size:11.5px;font-weight:800;color:var(--text-3);text-align:center}',
+    '.bsc-pn small{display:block;font-size:11.5px;font-weight:500;color:var(--text-3)}',
+    '.bsc-pbar{display:flex;gap:1px}',
+    '.bsc-pbar i.c{background:linear-gradient(90deg,#10b981,#34d399)}',
+    '.bsc-pbar i.p{background:linear-gradient(90deg,#3b82f6,#60a5fa)}',
+    '.bsc-sel{border-color:rgb(var(--accent-rgb)/.45);animation:bscUp .5s cubic-bezier(.16,1,.3,1) both}',
+    '.bsc-selk{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 10px}',
+    '.bsc-selk div{padding:8px;border-radius:10px;background:var(--surface-2);text-align:center;min-width:0}',
+    '.bsc-selk b{display:block;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.bsc-selk span{font-size:11px;color:var(--text-3)}',
+    '.bsc-people{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding-right:2px}',
+    '.bsc-person{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);box-shadow:inset 3px 0 0 var(--c);animation:bscUp .45s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i)*45ms);transition:transform .2s,border-color .2s}',
+    '.bsc-person:hover{transform:translateY(-1px);border-color:rgb(var(--accent-rgb)/.4)}',
+    '.bsc-person.flash{animation:bscFlash 1.6s ease}',
+    '@keyframes bscFlash{0%,100%{box-shadow:inset 3px 0 0 var(--c)}30%{box-shadow:inset 3px 0 0 var(--c),0 0 0 3px rgb(var(--accent-rgb)/.5)}}',
+    '.bsc-av{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:13.5px;color:#fff;background:linear-gradient(135deg,hsl(var(--h) 70% 52%),hsl(calc(var(--h) + 40) 70% 42%))}',
+    '.bsc-pm{min-width:0}',
+    '.bsc-pm b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.bsc-pm>span{display:block;font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.bsc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}',
+    '.bsc-tags em{display:inline-flex;align-items:center;gap:3px;font-style:normal;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--surface-3);color:var(--text-2)}',
+    '.bsc-tags em.bsc-stat{background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c)}',
+    '.bsc-tags em.hot{background:rgb(251 113 133/.16);color:#fb7185}',
+    '.bsc-pv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}',
+    '.bsc-pv strong{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}',
+    '.bsc-pv strong small{font-size:10.5px;font-weight:600;color:var(--text-3)}',
+    '.bsc-pa{display:flex;gap:4px}',
+    '.bsc-pa a,.bsc-pa button{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;transition:background .2s,color .2s}',
+    '.bsc-pa a:hover,.bsc-pa button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}',
+    '@media (max-width:700px){.bsc-globe-card{height:62vh;min-height:380px}.bsc-spot{bottom:56px}.bsc-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.bsc-kpi{padding:12px}.bsc-kpi b{font-size:18px}.bsc-headtools{width:100%}.bsc-search{flex:1}}',
+    '@media (prefers-reduced-motion:reduce){.bsc-kpi,.bsc-place,.bsc-person,.bsc-sel,.bsc-spot.in .bsc-spot-in{animation:none}}',
   ].join('\n');
   function ensureCss() {
     if (document.getElementById('bs-carte-css')) return;

@@ -124,7 +124,11 @@ test('premier compte, données partagées et fusion entre deux sessions', async 
   // Carte clients : les fiches de la démo sont localisées sur la planète.
   await a.evaluate(() => { location.hash = '#/carte'; });
   await a.locator('.bsc-canvas').waitFor();
-  const kpi = await a.locator('.bsc-kpi b').first().innerText();
+  // Les compteurs défilent depuis 0 : lire la valeur une fois l'animation terminée.
+  const kpi = await (await a.waitForFunction(() => {
+    const b = document.querySelector('.bsc-kpi b');
+    return b && b.innerText.startsWith(b.dataset.count) && b.innerText;
+  }, null, { timeout: 10000 })).jsonValue();
   assert.match(kpi, /^\d+/);
   assert.ok(Number(kpi.match(/^\d+/)[0]) >= 20); // fiches de la démo, hors perdues et résiliées
 

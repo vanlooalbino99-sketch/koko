@@ -1,8 +1,9 @@
 
 /* Blackstart CRM : rubrique « Carte clients » (menu › Analyse).
  *
- * Une planète animée qui tourne et montre où se trouvent vos clients et prospects, à la manière de la vue
- * « en direct » de Shopify :
+ * Deux vues de votre territoire : une carte vectorielle nette (bs-carte-map : pays, départements teintés selon le
+ * nombre de fiches, bulles par ville, cadrage automatique) et la planète animée (bs-globe), à la manière de la vue
+ * « en direct » de Shopify. Le choix est gardé dans ce navigateur.
  * - un point lumineux par ville (taille = nombre de fiches), vert pour les clients, bleu pour les prospects ;
  * - des arcs partent du siège de l'entreprise (Réglages › Entreprise) vers chaque ville ;
  * - l'activité récente (appels, rendez-vous, signatures…) s'allume tour à tour sur la planète ;
@@ -24,6 +25,9 @@
     var p = window.bsIcones && window.bsIcones.svg ? window.bsIcones.svg(name) : '';
     return '<svg width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (p || '<circle cx="12" cy="12" r="8"/>') + '</svg>';
   }
+  var VUE_KEY = 'bs-carte-vue';
+  function readVue() { try { return localStorage.getItem(VUE_KEY) === 'globe' || !window.bsCarteMap ? 'globe' : 'carte'; } catch (e) { return 'carte'; } }
+  function writeVue(v) { try { localStorage.setItem(VUE_KEY, v); } catch (e) {} }
   function readCache() { try { return JSON.parse(localStorage.getItem(GEO_KEY) || '{}') || {}; } catch (e) { return {}; } }
   function writeCache(c) { try { localStorage.setItem(GEO_KEY, JSON.stringify(c)); } catch (e) {} }
   function ago(iso) {
@@ -40,8 +44,8 @@
     if (!root || root.getAttribute('data-bsc')) return;
     root.setAttribute('data-bsc', '1');
     ensureCss();
-    var ui = { filtre: 'tous', sel: null, busy: false, msg: '' };
-    var globe = null, cache = readCache(), places = [], unlocated = [], feed = [], feedIdx = 0, feedTimer = 0, hub = null, unsub = null;
+    var ui = { filtre: 'tous', sel: null, busy: false, msg: '', vue: readVue() };
+    var globe = null, eng = null, cache = readCache(), places = [], unlocated = [], feed = [], feedIdx = 0, feedTimer = 0, hub = null, unsub = null;
 
     function store() { return window.__bsStore ? window.__bsStore.get() : { prospects: [] }; }
     function compute() {
@@ -112,11 +116,22 @@
     function placeOf(key) { return places.filter(function (x) { return x.key === key; })[0]; }
     // Zoom qui montre une ville et ses voisines, sans perdre le relief de la planète.
     function cityZoom() { return Math.max(5, Math.min(12, initialView().zoom * 0.8)); }
+    // Vue carte : largeur (km) qui montre une ville et ses voisines les plus proches.
+    function nearSpan(g) {
+      var d = places.filter(function (o) { return o !== g; }).map(function (o) { return Math.hypot(o.lat - g.lat, (o.lon - g.lon) * Math.cos(g.lat * Math.PI / 180)) * 111; }).sort(function (a, b) { return a - b; });
+      return Math.max(14, Math.min(160, (d[Math.min(2, d.length - 1)] || 20) * 2.4));
+    }
 
+    function feedHtml() {
+      return '<section class="card bsc-card bsc-feedcard"><h3>' + ic('activity', 15) + ' Activité récente<span class="bsc-h3s">s’allume sur la carte</span></h3>' + (feed.length ? '<div class="bsc-feed">' + feed.slice(0, 8).map(function (f, i) {
+        return '<div class="bsc-ev" data-ev="' + i + '"><span class="bsc-evi">' + ic(f.type === 'call' || f.type === 'appel' ? 'phone' : f.type === 'email' ? 'mail' : f.type === 'rdv' ? 'calendar' : f.type === 'signature' ? 'award' : 'sparkles', 14) + '</span><div><b>' + esc(f.p.entreprise) + '</b><span>' + esc(f.label + ' · ' + (f.p.ville || f.loc.name)) + '</span></div><em>' + esc(ago(f.ts)) + '</em></div>';
+      }).join('') + '</div>' : '<p class="sr-hint">Les appels, emails et rendez-vous s’afficheront ici et s’allumeront sur la carte.</p>') + '</section>';
+    }
     function render() {
-      if (globe) { globe.destroy(); globe = null; }
+      if (eng) { eng.destroy(); eng = null; } globe = null;
       clearInterval(feedTimer); stopTour(true);
       compute();
+      var isMap = ui.vue === 'carte' && !!window.bsCarteMap;
       var st = store(), all = (st.prospects || []), nbClients = all.filter(isClient).length;
       var located = places.reduce(function (s, g) { return s + g.items.length; }, 0), total = located + unlocated.length;
       var max = Math.max(1, places.length ? places[0].items.length : 1);
@@ -138,14 +153,18 @@
         '<div class="bsc-kpis">' + kpis.map(function (k, i) {
           return '<div class="bsc-kpi ' + k[4] + '" style="--i:' + i + '"><span class="bsc-kic">' + ic(k[0], 16) + '</span><div><b data-count="' + k[1] + '" data-suffix="' + esc(k[2]) + '">' + (k[2] === ' €' ? euro(k[1]) : k[1] + '<small>' + esc(k[2]) + '</small>') + '</b><span>' + k[3] + '</span></div></div>';
         }).join('') + '</div>' +
-        '<div class="bsc-layout"><div class="card bsc-globe-card"><canvas class="bsc-canvas" aria-label="Planète des clients : glissez pour la faire tourner"></canvas>' +
-        '<div class="bsc-vignette" aria-hidden="true"></div>' +
+        '<div class="bsc-layout"><div class="bsc-main"><div class="card bsc-globe-card' + (isMap ? ' map' : '') + '"><canvas class="bsc-canvas" aria-label="' + (isMap ? 'Carte des clients : glissez pour déplacer, molette pour zoomer' : 'Planète des clients : glissez pour la faire tourner') + '"></canvas>' +
+        (isMap ? '' : '<div class="bsc-vignette" aria-hidden="true"></div>') +
         '<div class="bsc-tip" hidden></div>' +
-        '<div class="bsc-topbar"><div class="bsc-live"><i></i>En direct</div><button type="button" class="bsc-tour" data-act="tour" aria-pressed="false">' + ic('play', 13) + '<span>Visite guidée</span></button></div>' +
+        '<div class="bsc-topbar"><div class="bsc-live"><i></i>En direct</div><div class="bsc-mode" role="group" aria-label="Type de vue">' +
+        [['carte', 'map', 'Carte'], ['globe', 'globe', 'Globe 3D']].map(function (v) { return '<button type="button" data-vue="' + v[0] + '" aria-pressed="' + (ui.vue === v[0]) + '">' + ic(v[1], 13) + '<span>' + v[2] + '</span></button>'; }).join('') +
+        '</div><button type="button" class="bsc-tour" data-act="tour" aria-pressed="false">' + ic('play', 13) + '<span>Visite guidée</span></button></div>' +
         '<div class="bsc-tools"><button type="button" data-z="1.5" title="Zoomer" aria-label="Zoomer">+</button><button type="button" data-z="0.67" title="Dézoomer" aria-label="Dézoomer">−</button><button type="button" data-act="home" title="Recentrer sur mes fiches" aria-label="Recentrer">' + ic('target', 15) + '</button><button type="button" data-act="world" title="Vue du monde" aria-label="Vue du monde">' + ic('globe', 15) + '</button></div>' +
         '<div class="bsc-spot" hidden></div>' +
-        '<div class="bsc-legend"><span><i style="background:' + COL.client + '"></i>Clients</span><span><i style="background:' + COL.prospect + '"></i>Prospects</span>' + (hub ? '<span><i style="background:' + COL.hub + '"></i>Siège</span>' : '') + '</div>' +
-        '<div class="bsc-hint">Glissez pour tourner · molette pour zoomer · clic sur une ville</div></div>' +
+        '<div class="bsc-legend"><span><i style="background:' + COL.client + '"></i>Clients</span><span><i style="background:' + COL.prospect + '"></i>Prospects</span>' + (hub ? '<span><i class="hub" style="background:' + COL.hub + '"></i>Siège</span>' : '') +
+        (isMap ? '<span class="bsc-lg-heat" title="Teinte des départements selon le nombre de fiches"><b></b>Fiches par département</span>' : '') + '</div>' +
+        (isMap ? '' : '<div class="bsc-hint">Glissez pour tourner · molette pour zoomer · clic sur une ville</div>') + '</div>' +
+        feedHtml() + '</div>' +
         '<div class="bsc-side">' +
         '<div class="bsc-selwrap">' + (ui.sel ? selHtml() : '') + '</div>' +
         '<section class="card bsc-card"><h3>' + ic('map-pin', 15) + ' Top villes<span class="bsc-h3s">clients · prospects</span></h3>' + (places.length ? '<div class="bsc-places">' + places.slice(0, 10).map(function (g, i) {
@@ -154,37 +173,69 @@
             '<small>' + (m ? euro(m) + '/mois' : g.items.length + (g.items.length > 1 ? ' fiches' : ' fiche')) + '</small></span>' +
             '<span class="bsc-pbar" title="' + c + ' client(s), ' + pr + ' prospect(s)"><i class="c" style="width:' + (c / max * 100) + '%"></i><i class="p" style="width:' + (pr / max * 100) + '%"></i></span><b>' + g.items.length + '</b></button>';
         }).join('') + '</div>' : '<p class="sr-hint">Aucune fiche localisée pour l’instant. Renseignez la ville de vos prospects.</p>') + '</section>' +
-        '<section class="card bsc-card"><h3>' + ic('activity', 15) + ' Activité récente</h3>' + (feed.length ? '<div class="bsc-feed">' + feed.slice(0, 7).map(function (f, i) {
-          return '<div class="bsc-ev" data-ev="' + i + '"><span class="bsc-evi">' + ic(f.type === 'call' || f.type === 'appel' ? 'phone' : f.type === 'email' ? 'mail' : f.type === 'rdv' ? 'calendar' : f.type === 'signature' ? 'award' : 'sparkles', 14) + '</span><div><b>' + esc(f.p.entreprise) + '</b><span>' + esc(f.label + ' · ' + (f.p.ville || f.loc.name)) + '</span></div><em>' + esc(ago(f.ts)) + '</em></div>';
-        }).join('') + '</div>' : '<p class="sr-hint">Les appels, emails et rendez-vous s’afficheront ici et s’allumeront sur la planète.</p>') + '</section>' +
         (unlocated.length ? '<section class="card bsc-card"><h3>' + ic('search', 15) + ' Non localisées (' + unlocated.length + ')</h3><p class="sr-hint">Ville absente ou inconnue de l’annuaire intégré : ' + esc(unlocated.slice(0, 6).map(function (p) { return p.entreprise + (p.ville ? ' (' + p.ville + ')' : ''); }).join(', ')) + (unlocated.length > 6 ? '…' : '') + '</p>' +
           '<div class="bsc-actions"><button type="button" class="btn btn-secondary btn-sm" data-act="osm"' + (ui.busy ? ' disabled' : '') + '>' + ic('globe', 15) + ' Chercher sur OpenStreetMap</button></div>' +
           '<p class="sr-hint bsc-small">Envoie seulement le nom de la ville (ou l’adresse) au service public OpenStreetMap, une à la fois. Résultat gardé dans ce navigateur.</p>' + (ui.msg ? '<p class="bsc-msg">' + esc(ui.msg) + '</p>' : '') + '</section>' : '') +
         '</div></div>';
       countUp();
       var canvas = root.querySelector('.bsc-canvas'), tip = root.querySelector('.bsc-tip'), view = initialView();
-      globe = window.bsGlobe.create(canvas, {
-        background: 'space', center: [0.5, 0.52], radius: 0.38, lon: view.lon - 70, lat: view.lat * 0.4, autoRotate: 5, maxZoom: 40, markers: markers(), hub: hub, labels: true,
-        onHover: function (m, mx, my) {
-          if (!m || !m.place) { tip.hidden = true; return; }
-          var g = m.place, mm = mrr(g.items);
-          tip.innerHTML = '<b>' + esc(g.name) + '</b><span>' + g.items.length + (g.items.length > 1 ? ' fiches' : ' fiche') + ' · ' + g.clients + ' client' + (g.clients > 1 ? 's' : '') + (mm ? ' · ' + euro(mm) + '/mois' : '') + '</span>' +
-            g.items.slice(0, 5).map(function (p) { return '<div><i style="background:' + (STAT_COL[p.statut] || COL.prospect) + '"></i>' + esc(p.entreprise) + '</div>'; }).join('') + (g.items.length > 5 ? '<div class="more">+ ' + (g.items.length - 5) + ' autres</div>' : '');
-          tip.style.left = Math.min(mx + 14, canvas.clientWidth - 230) + 'px'; tip.style.top = Math.max(8, my - 20) + 'px'; tip.hidden = false;
-        },
-        onPick: function (m) { if (m.place) { stopTour(); select(m.place, true); } },
-      });
-      // Entrée en scène : la planète arrive de loin en tournant, puis plonge sur vos fiches.
-      setTimeout(function () { if (globe) globe.focus(view.lon, view.lat, Math.min(view.zoom, 5.5)); }, 700);
-      if (ui.sel) { var g0 = placeOf(ui.sel); if (g0) spot(g0); }
+      // Infobulle : une ville, ou un groupe de villes voisines (vue carte, avant de zoomer).
+      function showTip(list, mx, my) {
+        if (!list || !list.length) { tip.hidden = true; return; }
+        var items = list.reduce(function (a, g) { return a.concat(g.items); }, []), cl = list.reduce(function (s, g) { return s + g.clients; }, 0), mm = mrr(items);
+        tip.innerHTML = '<b>' + esc(list.length > 1 ? list[0].name + ' et ' + (list.length - 1) + ' ville' + (list.length > 2 ? 's' : '') + ' proche' + (list.length > 2 ? 's' : '') : list[0].name) + '</b><span>' + items.length + (items.length > 1 ? ' fiches' : ' fiche') + ' · ' + cl + ' client' + (cl > 1 ? 's' : '') + (mm ? ' · ' + euro(mm) + '/mois' : '') + '</span>' +
+          (list.length > 1 ? list.slice(0, 5).map(function (g) { return '<div><i style="background:' + (g.clients ? COL.client : COL.prospect) + '"></i>' + esc(g.name) + ' · ' + g.items.length + '</div>'; }).join('') + '<div class="more">Cliquez pour zoomer</div>'
+            : items.slice(0, 5).map(function (p) { return '<div><i style="background:' + (STAT_COL[p.statut] || COL.prospect) + '"></i>' + esc(p.entreprise) + '</div>'; }).join('') + (items.length > 5 ? '<div class="more">+ ' + (items.length - 5) + ' autres</div>' : ''));
+        tip.style.left = Math.max(8, Math.min(mx + 14, canvas.clientWidth - 240)) + 'px'; tip.style.top = Math.max(8, Math.min(my - 20, canvas.clientHeight - 170)) + 'px'; tip.hidden = false;
+      }
+      function pick(g) { stopTour(); select(g, true); }
+      if (isMap) {
+        var map = window.bsCarteMap.create(canvas, {
+          markers: places.map(function (g) {
+            var m = mrr(g.items);
+            return { key: g.key, lon: g.lon, lat: g.lat, n: g.items.length, clients: g.clients, name: g.name, place: g,
+              sub: g.items.length + (g.items.length > 1 ? ' fiches' : ' fiche') + (m ? ' · ' + euro(m) + '/mois' : '') };
+          }),
+          hub: hub,
+          onHover: function (c, mx, my) { showTip(c ? c.items.map(function (m) { return m.place; }) : null, mx, my); },
+          onPick: function (m) { if (m.place) pick(m.place); },
+        });
+        eng = {
+          home: function () { map.fit(places.length ? places : null); },
+          city: function (g) { map.focus(g.lon, g.lat, nearSpan(g)); },
+          at: function (lon, lat) { map.focus(lon, lat, 30); },
+          world: function () { map.world(); },
+          ping: map.ping, zoomBy: map.zoomBy, select: map.select, destroy: map.destroy,
+        };
+        // Entrée en scène : vue de la France, puis cadrage sur vos fiches.
+        map.fit([], 0);
+        if (places.length) setTimeout(function () { if (eng) eng.home(); }, 350);
+      } else {
+        globe = window.bsGlobe.create(canvas, {
+          background: 'space', center: [0.5, 0.52], radius: 0.38, lon: view.lon - 70, lat: view.lat * 0.4, autoRotate: 5, maxZoom: 40, markers: markers(), hub: hub, labels: true,
+          onHover: function (m, mx, my) { showTip(m && m.place ? [m.place] : null, mx, my); },
+          onPick: function (m) { if (m.place) pick(m.place); },
+        });
+        var gl = globe;
+        eng = {
+          home: function () { var v = initialView(); gl.focus(v.lon, v.lat, Math.min(v.zoom, 5.5)); },
+          city: function (g) { gl.focus(g.lon, g.lat, cityZoom()); },
+          at: function (lon, lat) { gl.focus(lon, lat, cityZoom()); },
+          world: function () { var w = initialView(); gl.focus(w.lon, w.lat * 0.5, 0.8); },
+          ping: gl.ping, zoomBy: gl.zoomBy, select: function () {}, destroy: gl.destroy,
+        };
+        // Entrée en scène : la planète arrive de loin en tournant, puis plonge sur vos fiches.
+        setTimeout(function () { if (eng) eng.home(); }, 700);
+      }
+      if (ui.sel) { var g0 = placeOf(ui.sel); if (g0) { spot(g0); eng.select(g0.key); } }
       // Activité en direct : chaque événement s'allume tour à tour.
       feedIdx = 0;
       feedTimer = setInterval(function () {
         if (!root.isConnected) { cleanup(); return; }
-        if (!feed.length || document.hidden || !globe || tour) return;
-        var f = feed[feedIdx++ % Math.min(feed.length, 7)];
-        globe.ping(f.loc.lon, f.loc.lat, f.type === 'signature' || isClient(f.p) ? COL.client : COL.prospect, f.label + ' · ' + f.p.entreprise);
-        Array.prototype.forEach.call(root.querySelectorAll('.bsc-ev'), function (el) { el.classList.toggle('on', +el.getAttribute('data-ev') === (feedIdx - 1) % Math.min(feed.length, 7)); });
+        if (!feed.length || document.hidden || !eng || tour) return;
+        var n = Math.min(feed.length, 8), f = feed[feedIdx++ % n];
+        eng.ping(f.loc.lon, f.loc.lat, f.type === 'signature' || isClient(f.p) ? COL.client : COL.prospect, f.label + ' · ' + f.p.entreprise);
+        Array.prototype.forEach.call(root.querySelectorAll('.bsc-ev'), function (el) { el.classList.toggle('on', +el.getAttribute('data-ev') === (feedIdx - 1) % n); });
       }, 3800);
     }
     // Les chiffres défilent jusqu'à leur valeur.
@@ -232,8 +283,8 @@
     }
     function select(g, fly) {
       ui.sel = g.key;
-      if (fly && globe) globe.focus(g.lon, g.lat, cityZoom());
-      if (globe) globe.ping(g.lon, g.lat, g.clients ? COL.client : COL.prospect, g.name);
+      if (fly && eng) eng.city(g);
+      if (eng) { eng.ping(g.lon, g.lat, g.clients ? COL.client : COL.prospect, g.name); eng.select(g.key); }
       refreshSide(); spot(g);
       Array.prototype.forEach.call(root.querySelectorAll('.bsc-place'), function (b) { b.classList.toggle('on', places[+b.getAttribute('data-p')] === g); });
     }
@@ -245,14 +296,14 @@
     // Visite guidée : la caméra survole vos principales villes, une à une.
     var tour = 0, tourIdx = 0;
     function startTour() {
-      if (!places.length || !globe) return;
+      if (!places.length || !eng) return;
       tourIdx = 0; step();
       tour = setInterval(step, 5200);
       var b = root.querySelector('.bsc-tour'); if (b) { b.setAttribute('aria-pressed', 'true'); b.innerHTML = ic('pause', 13) + '<span>Arrêter la visite</span>'; }
       function step() {
-        if (!root.isConnected || !globe) { stopTour(true); return; }
+        if (!root.isConnected || !eng) { stopTour(true); return; }
         var n = Math.min(places.length, 8);
-        if (tourIdx >= n) { stopTour(); var v = initialView(); globe.focus(v.lon, v.lat, Math.min(v.zoom, 5.5)); return; }
+        if (tourIdx >= n) { stopTour(); eng.home(); return; }
         var g = places[tourIdx++]; select(g, true);
       }
     }
@@ -273,7 +324,7 @@
       stopTour(); select(hit, true);
       if (pid) { var el = root.querySelector('.bsc-person[data-pid="' + (window.CSS && CSS.escape ? CSS.escape(pid) : pid) + '"]'); if (el) { el.classList.add('flash'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }
     }
-    function cleanup() { clearInterval(feedTimer); stopTour(true); if (globe) globe.destroy(); globe = null; if (unsub) unsub(); unsub = null; }
+    function cleanup() { clearInterval(feedTimer); stopTour(true); if (eng) eng.destroy(); eng = null; globe = null; if (unsub) unsub(); unsub = null; }
 
     // Recherche en ligne des villes inconnues, une par seconde.
     function osm() {
@@ -293,18 +344,20 @@
     }
 
     root.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-f],[data-z],[data-act],[data-p],[data-ev],[data-open]'); if (!t || t.disabled) return;
+      var t = e.target.closest('[data-f],[data-z],[data-act],[data-p],[data-ev],[data-open],[data-vue]'); if (!t || t.disabled) return;
       if (t.hasAttribute('data-open')) { openFiche(t.getAttribute('data-open')); return; }
       if (t.hasAttribute('data-f')) { ui.filtre = t.getAttribute('data-f'); ui.sel = null; render(); return; }
+      if (t.hasAttribute('data-vue')) { var nv = t.getAttribute('data-vue'); if (nv !== ui.vue) { ui.vue = nv; writeVue(nv); render(); } return; }
       stopTour();
-      if (t.hasAttribute('data-z')) { globe && globe.zoomBy(+t.getAttribute('data-z')); return; }
+      if (!eng) return;
+      if (t.hasAttribute('data-z')) { eng.zoomBy(+t.getAttribute('data-z')); return; }
       if (t.hasAttribute('data-p')) { select(places[+t.getAttribute('data-p')], true); return; }
-      if (t.hasAttribute('data-ev')) { var f = feed[+t.getAttribute('data-ev')]; if (f) { globe.focus(f.loc.lon, f.loc.lat, cityZoom()); globe.ping(f.loc.lon, f.loc.lat, isClient(f.p) ? COL.client : COL.prospect, f.p.entreprise); } return; }
+      if (t.hasAttribute('data-ev')) { var f = feed[+t.getAttribute('data-ev')]; if (f) { eng.at(f.loc.lon, f.loc.lat); eng.ping(f.loc.lon, f.loc.lat, isClient(f.p) ? COL.client : COL.prospect, f.p.entreprise); } return; }
       var act = t.getAttribute('data-act');
-      if (act === 'home') { var v = initialView(); globe.focus(v.lon, v.lat, Math.min(v.zoom, 5.5)); }
-      else if (act === 'world') { var w = initialView(); globe.focus(w.lon, w.lat * 0.5, 0.8); }
+      if (act === 'home') eng.home();
+      else if (act === 'world') eng.world();
       else if (act === 'tour') { if (t.getAttribute('aria-pressed') === 'true') stopTour(); else startTour(); }
-      else if (act === 'unsel') { ui.sel = null; refreshSide(); Array.prototype.forEach.call(root.querySelectorAll('.bsc-place'), function (b) { b.classList.remove('on'); }); }
+      else if (act === 'unsel') { ui.sel = null; eng.select(null); refreshSide(); Array.prototype.forEach.call(root.querySelectorAll('.bsc-place'), function (b) { b.classList.remove('on'); }); }
       else if (act === 'osm') osm();
     });
     // Recherche : Entrée, ou choix dans la liste proposée.
@@ -448,6 +501,37 @@
     '.bsc-pa a:hover,.bsc-pa button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}',
     '@media (max-width:700px){.bsc-globe-card{height:62vh;min-height:380px}.bsc-spot{bottom:56px}.bsc-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.bsc-kpi{padding:12px}.bsc-kpi b{font-size:18px}.bsc-headtools{width:100%}.bsc-search{flex:1}}',
     '@media (prefers-reduced-motion:reduce){.bsc-kpi,.bsc-place,.bsc-person,.bsc-sel,.bsc-spot.in .bsc-spot-in{animation:none}}',
+    /* ---- v3 : carte vectorielle, choix de la vue, activité sous la carte, mode clair */
+    '.bsc-main{display:flex;flex-direction:column;gap:16px;min-width:0}',
+    '.bsc-globe-card.map{background:#0a1630;height:min(70vh,660px)}',
+    '.bsc-mode{display:flex;padding:3px;border-radius:99px;background:rgb(3 8 18/.7);border:1px solid rgb(148 163 184/.3);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}',
+    '.bsc-mode button{display:flex;align-items:center;gap:6px;height:25px;padding:0 11px;border:0;border-radius:99px;background:none;color:#b7c8e2;font:700 12px Inter,system-ui;cursor:pointer;transition:background .2s,color .2s}',
+    '.bsc-mode button[aria-pressed=true]{background:rgb(59 130 246/.9);color:#fff;box-shadow:0 4px 14px -4px rgb(59 130 246/.8)}',
+    '.bsc-mode button:not([aria-pressed=true]):hover{color:#fff}',
+    '.bsc-legend i.hub{border-radius:2px;transform:rotate(45deg)}',
+    '.bsc-lg-heat b{width:30px;height:9px;border-radius:3px;background:linear-gradient(90deg,rgb(56 189 248/.12),rgb(56 189 248/.6))}',
+    '.bsc-globe-card.map .bsc-hint{bottom:12px}',
+    '.bsc-globe-card.map .bsc-legend{bottom:12px}',
+    '.bsc-feedcard .bsc-feed{display:grid;grid-template-columns:minmax(0,1fr);gap:2px 14px}',
+    '@media (min-width:900px){.bsc-feedcard .bsc-feed{grid-template-columns:repeat(2,minmax(0,1fr))}}',
+    '@media (max-width:700px){.bsc-kpi:last-child:nth-child(odd){grid-column:1/-1}.bsc-globe-card.map{height:58vh;min-height:360px}.bsc-mode button span{display:none}.bsc-mode button{padding:0 9px}.bsc-tour span{display:none}.bsc-tour{padding:0 10px}.bsc-legend{gap:10px;font-size:11.5px;padding:6px 10px;right:16px;flex-wrap:wrap}.bsc-lg-heat{display:none!important}}',
+    /* Mode clair : la carte et ses commandes passent en verre clair. */
+    '[data-scheme=light] .bsc-globe-card.map{background:#e3ecf7;box-shadow:0 24px 50px -30px rgb(30 58 138/.35)}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-live,[data-scheme=light] .bsc-globe-card.map .bsc-mode,[data-scheme=light] .bsc-globe-card.map .bsc-tour,[data-scheme=light] .bsc-globe-card.map .bsc-tools button,[data-scheme=light] .bsc-globe-card.map .bsc-legend{background:rgb(255 255 255/.82);border-color:rgb(148 163 184/.45);color:#0f172a;box-shadow:0 6px 18px -10px rgb(15 23 42/.35)}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-live{color:#047857;border-color:rgb(16 185 129/.45)}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-mode button{color:#475569}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-mode button[aria-pressed=true]{color:#fff;background:#2563eb}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-tour{color:#1d4ed8}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-tools button:hover,[data-scheme=light] .bsc-globe-card.map .bsc-tour:hover{background:#dbeafe}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-hint{color:#64748b}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-lg-heat b{background:linear-gradient(90deg,rgb(37 99 235/.1),rgb(37 99 235/.5))}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-tip{background:rgb(255 255 255/.97);border-color:rgb(148 163 184/.5);color:#0f172a;box-shadow:0 16px 34px -14px rgb(15 23 42/.4)}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-tip span{color:#2563eb}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-tip .more{color:#64748b}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-spot-in{background:rgb(255 255 255/.95);border-color:rgb(148 163 184/.5);color:#0f172a;box-shadow:0 18px 40px -18px rgb(15 23 42/.45)}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-spot p{color:#475569}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-spot strong{color:#047857}',
+    '[data-scheme=light] .bsc-globe-card.map .bsc-spot-k{color:#2563eb}',
   ].join('\n');
   function ensureCss() {
     if (document.getElementById('bs-carte-css')) return;

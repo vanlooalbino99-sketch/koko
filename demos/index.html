@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CRM métier — Blackstart AI</title>
+<meta name="description" content="Trois CRM de démonstration prêts à l'emploi : agences immobilières, rénovation énergétique, courtage en assurance et crédit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7fb; --surface:#fff; --surface-2:#eef0f6; --border:#e1e4ec;
+  --text:#121620; --muted:#5b6475; --brand:#2f5fe0;
+  --immo:#0e7c66; --reno:#c2410c; --court:#4338ca;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 12px 32px rgba(16,24,40,.08);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b0e14; --surface:#141922; --surface-2:#1b212c; --border:#262d3a;
+    --text:#e9ecf2; --muted:#9aa4b5; --brand:#7c9cff;
+    --immo:#34c3a2; --reno:#fb8a4c; --court:#8b85ff;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b0e14; --surface:#141922; --surface-2:#1b212c; --border:#262d3a;
+  --text:#e9ecf2; --muted:#9aa4b5; --brand:#7c9cff;
+  --immo:#34c3a2; --reno:#fb8a4c; --court:#8b85ff;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.55 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header.hero{padding:72px 0 40px;text-align:center}
+.eyebrow{display:inline-flex;gap:8px;align-items:center;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  border:1px solid var(--border);background:var(--surface);padding:6px 12px;border-radius:999px}
+.eyebrow i{width:8px;height:8px;border-radius:50%;background:var(--immo);box-shadow:12px 0 0 var(--reno),24px 0 0 var(--court);margin-right:26px}
+h1{font-size:clamp(32px,5vw,54px);line-height:1.08;letter-spacing:-.025em;margin:22px auto 16px;max-width:820px;font-weight:800}
+h1 span{background:linear-gradient(90deg,var(--immo),var(--reno),var(--court));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:18px;color:var(--muted);max-width:680px;margin:0 auto}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:24px 0 56px}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;
+  transition:transform .25s ease, box-shadow .25s ease}
+.card:hover{transform:translateY(-4px)}
+.shot{aspect-ratio:16/10;background:var(--surface-2);border-bottom:1px solid var(--border);overflow:hidden;position:relative}
+.shot img{width:100%;height:100%;object-fit:cover;object-position:top left;display:block}
+.shot .tag{position:absolute;left:12px;top:12px;background:var(--c);color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px}
+.body{padding:20px 22px 22px;display:flex;flex-direction:column;gap:12px;flex:1}
+.card h2{margin:0;font-size:21px;letter-spacing:-.01em}
+.why{margin:0;color:var(--muted);font-size:14px}
+.card ul{margin:0;padding:0;list-style:none;display:grid;gap:8px;font-size:14px}
+.card li{display:flex;gap:10px;align-items:flex-start}
+.card li svg{flex:none;margin-top:3px;color:var(--c)}
+.kpi{font-size:13px;border-top:1px dashed var(--border);padding-top:12px;color:var(--muted)}
+.kpi b{color:var(--text)}
+.cta{margin-top:auto;display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 18px;border-radius:10px;font-weight:600;font-size:14px;text-decoration:none;
+  background:var(--c);color:#fff;border:0}
+.btn:hover{filter:brightness(1.08)}
+.btn:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+.immo{--c:var(--immo)} .reno{--c:var(--reno)} .court{--c:var(--court)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#0b0e14}}
+:root[data-theme="dark"] .btn{color:#0b0e14}
+section.common{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px;margin-bottom:56px}
+section.common h3{margin:0 0 16px;font-size:18px}
+.feats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 24px;font-size:14px;color:var(--muted)}
+.feats b{display:block;color:var(--text);margin-bottom:2px}
+@media (max-width:860px){.feats{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.feats{grid-template-columns:1fr}}
+footer{text-align:center;color:var(--muted);font-size:13px;padding:0 0 40px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow"><i></i>Blackstart AI · CRM métier</div>
+    <h1>Le CRM qui parle <span>la langue de votre métier</span></h1>
+    <p class="lead">Trois démonstrations prêtes à l'emploi. Ouvrez-en une, mettez le nom et la couleur de votre client dans Réglages, et montrez-lui son futur outil en direct.</p>
+  </header>
+
+  <main class="grid">
+    <article class="card immo">
+      <div class="shot"><span class="tag">Immobilier</span><img src="captures/immobilier.png" alt="Aperçu du CRM immobilier : pipeline des mandats" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h2>Agences immobilières</h2>
+        <p class="why">Honoraires élevés à chaque vente, mandats qui expirent, acquéreurs oubliés dans un tableur.</p>
+        <ul>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Rapprochement automatique biens ↔ acquéreurs, avec score</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Alerte fin de mandat à J-30 et prix à revoir</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Annonces et comptes rendus de visite rédigés en un clic</li>
+        </ul>
+        <p class="kpi">Chiffre clé : <b>visites par mandat avant offre</b></p>
+        <div class="cta"><a class="btn" href="immobilier.html">Ouvrir la démo</a></div>
+      </div>
+    </article>
+
+    <article class="card reno">
+      <div class="shot"><span class="tag">Rénovation énergétique</span><img src="captures/renovation.png" alt="Aperçu du CRM rénovation : chantiers et aides" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h2>Rénovation énergétique</h2>
+        <p class="why">Marché porté par les aides de l'État, où l'artisan qui répond le premier remporte le chantier.</p>
+        <ul>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Simulateur d'aides et reste à charge, devant le client</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Relances de devis automatiques à J+5 et J+12</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Planning des équipes et marge par chantier</li>
+        </ul>
+        <p class="kpi">Chiffre clé : <b>taux d'acceptation des devis</b></p>
+        <div class="cta"><a class="btn" href="renovation.html">Ouvrir la démo</a></div>
+      </div>
+    </article>
+
+    <article class="card court">
+      <div class="shot"><span class="tag">Courtage</span><img src="captures/courtage.png" alt="Aperçu du CRM courtage : portefeuille et échéancier" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h2>Courtage assurance &amp; crédit</h2>
+        <p class="why">Commissions récurrentes chaque année, et un devoir de conseil contrôlé de près.</p>
+        <ul>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Échéancier sur 12 mois avec relance à J-45</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Ventes croisées détectées dans le portefeuille</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Conformité devoir de conseil suivie dossier par dossier</li>
+        </ul>
+        <p class="kpi">Chiffre clé : <b>contrats par assuré</b></p>
+        <div class="cta"><a class="btn" href="courtage.html">Ouvrir la démo</a></div>
+      </div>
+    </article>
+  </main>
+
+  <section class="common">
+    <h3>Dans chacun des trois</h3>
+    <div class="feats">
+      <div><b>Pipeline glisser-déposer</b>Totaux par étape, échéances en retard signalées, menu « Déplacer vers » au téléphone.</div>
+      <div><b>Tableau de bord</b>Le chiffre qui compte dans le métier en premier, tendances sur 12 semaines.</div>
+      <div><b>Relances et tâches</b>En retard, aujourd'hui, cette semaine : rien ne passe entre les mailles.</div>
+      <div><b>Recherche Ctrl+K</b>Toute la base au clavier, avec les actions courantes.</div>
+      <div><b>Rédaction assistée</b>Relances, comptes rendus et messages clients en brouillon modifiable.</div>
+      <div><b>Import et export CSV</b>Le fichier Excel du client entre dans le CRM le premier jour.</div>
+      <div><b>À la marque du client</b>Nom, couleur, étapes et équipe modifiables en direct.</div>
+      <div><b>Sans installation</b>Un seul fichier, clair ou sombre, utilisable sur ordinateur et téléphone.</div>
+    </div>
+  </section>
+</div>
+<footer>Démonstrations : données fictives enregistrées dans le navigateur. Bouton « Réinitialiser la démo » dans chaque CRM.</footer>
+</body>
+</html>

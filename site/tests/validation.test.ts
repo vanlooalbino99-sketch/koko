@@ -18,8 +18,27 @@ test('contact invalide : messages en français par champ', () => {
   assert.match(r.error!.issues.find((i) => i.path[0] === 'email')!.message, /e-mail invalide/i);
 });
 
+const booking = { date: '2026-10-13', heure: '09:30', prenom: 'Julie', nom: 'Petit', entreprise: 'Cabinet Petit', email: 'julie@petit.fr', telephone: '+33 6 12 34 56 78', pays: 'France', codePostal: '69003', ville: 'Lyon', service: 'assistant-telephonique', consentement: true };
+
+test('réservation : prénom, nom, pays, code postal et ville obligatoires', () => {
+  const r = bookingSchema.safeParse({ ...booking, prenom: ' ', nom: '', pays: '', codePostal: '', ville: '' });
+  assert.equal(r.success, false);
+  const paths = r.error!.issues.map((i) => i.path[0]);
+  for (const f of ['prenom', 'nom', 'pays', 'ville']) assert.ok(paths.includes(f), f);
+});
+
+test('réservation : code postal selon le pays', () => {
+  assert.equal(bookingSchema.safeParse({ ...booking, codePostal: '6900' }).success, false);
+  assert.equal(bookingSchema.safeParse({ ...booking, codePostal: '97400', ville: 'Saint-Denis' }).success, true);
+  assert.equal(bookingSchema.safeParse({ ...booking, pays: 'Belgique', codePostal: '1000', ville: 'Bruxelles' }).success, true);
+  assert.equal(bookingSchema.safeParse({ ...booking, pays: 'Suisse', codePostal: '12010' }).success, false);
+  assert.equal(bookingSchema.safeParse({ ...booking, pays: 'Royaume-Uni', codePostal: 'sw1a 1aa', ville: 'Londres' }).data?.codePostal, 'SW1A 1AA');
+  const r = bookingSchema.safeParse({ ...booking, codePostal: '' });
+  assert.match(r.error!.issues.find((i) => i.path[0] === 'codePostal')!.message, /code postal/i);
+});
+
 test('réservation : date et heure obligatoires et bien formées', () => {
-  const base = { date: '2026-10-13', heure: '09:30', nom: 'Julie Petit', entreprise: 'Cabinet Petit', email: 'julie@petit.fr', telephone: '+33 6 12 34 56 78', service: 'assistant-telephonique', consentement: true };
+  const base = booking;
   assert.equal(bookingSchema.safeParse(base).success, true);
   assert.equal(bookingSchema.safeParse({ ...base, heure: '9h' }).success, false);
   assert.equal(bookingSchema.safeParse({ ...base, date: '' }).success, false);

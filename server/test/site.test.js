@@ -70,6 +70,26 @@ test('un message de contact crée un prospect à rappeler aujourd’hui, avec un
   assert.equal(data.version, 4);
 });
 
+test('un rendez-vous garde prénom, nom, pays, code postal et ville dans la fiche', async () => {
+  const r = await call('POST', '/api/site/leads', rdv({ date: '2030-04-02', nom: 'Léa Martin', prenom: 'Léa', nomFamille: 'Martin', entreprise: 'Martin Kiné', email: 'lea@martin-kine.fr', telephone: '06 98 76 54 32', pays: 'France', codePostal: '69003', ville: 'Lyon' }));
+  assert.equal(r.status, 201);
+  const p = crm().prospects.find((x) => x.id === r.body.prospectId);
+  assert.equal(p.contact, 'Léa Martin');
+  assert.equal(p.prenom, 'Léa');
+  assert.equal(p.nomFamille, 'Martin');
+  assert.equal(p.ville, 'Lyon');
+  assert.equal(p.codePostal, '69003');
+  assert.equal(p.pays, 'France');
+  assert.equal(p.adresse, '69003 Lyon, France');
+  assert.match(p.notes, /Coordonnées : Léa Martin · 69003 Lyon, France/);
+  // Une fiche déjà connue garde sa ville, mais reçoit le code postal et le pays qui lui manquaient.
+  const again = await call('POST', '/api/site/leads', { type: 'contact', requestId: uuid(), nom: 'Léa Martin', email: 'lea@martin-kine.fr', telephone: '06 98 76 54 32', ville: 'Villeurbanne', codePostal: '69100', pays: 'France', message: 'Petite question.' });
+  assert.equal(again.status, 201);
+  const q = crm().prospects.find((x) => x.id === r.body.prospectId);
+  assert.equal(q.ville, 'Lyon');
+  assert.equal(q.codePostal, '69003');
+});
+
 test('un rendez-vous arrive dans l’agenda (RDV pris à la date et l’heure) et bloque le créneau', async () => {
   const r = await call('POST', '/api/site/leads', rdv());
   assert.equal(r.status, 201);

@@ -6,8 +6,14 @@ export type CrmLead = {
   type: 'contact' | 'rdv';
   /** Identifiant unique de la demande : un renvoi ne crée pas de doublon. */
   requestId: string;
+  /** Nom complet (prénom et nom), lu par toutes les versions du CRM. */
   nom: string;
+  prenom?: string;
+  nomFamille?: string;
   entreprise?: string;
+  pays?: string;
+  codePostal?: string;
+  ville?: string;
   email: string;
   telephone: string;
   message?: string;

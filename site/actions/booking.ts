@@ -21,12 +21,17 @@ export async function submitBooking(input: unknown, rawRequestId?: string): Prom
   if (isBot(d)) return { ok: true, quand };
   const requestId = safeRequestId(rawRequestId);
   const service = labelOf(SERVICE_OPTIONS, d.service);
+  const nomComplet = `${d.prenom} ${d.nom}`;
+  const lieu = `${d.codePostal} ${d.ville}, ${d.pays}`;
 
   let crmNote = 'Ajouté au CRM : RDV dans l’agenda et tâche de rappel.';
   try {
     const taken = (await bookedSlots(d.date, d.date)).map((s) => s.heure);
     if (!isSlotAvailable(d.date, d.heure, taken)) return { ok: false, error: TAKEN, fieldErrors: { heure: TAKEN } };
-    const r = await pushLead({ type: 'rdv', requestId, nom: d.nom, entreprise: d.entreprise, email: d.email, telephone: d.telephone, service, message: d.message, date: d.date, heure: d.heure, page: '/rendez-vous' });
+    const r = await pushLead({
+      type: 'rdv', requestId, nom: nomComplet, prenom: d.prenom, nomFamille: d.nom, entreprise: d.entreprise, email: d.email, telephone: d.telephone,
+      pays: d.pays, codePostal: d.codePostal, ville: d.ville, service, message: d.message, date: d.date, heure: d.heure, page: '/rendez-vous',
+    });
     if (r.skipped) crmNote = 'CRM non configuré : RDV à saisir à la main.';
   } catch (e) {
     if (e instanceof CrmError && e.status === 409) return { ok: false, error: TAKEN, fieldErrors: { heure: TAKEN } };
@@ -45,11 +50,11 @@ export async function submitBooking(input: unknown, rawRequestId?: string): Prom
     organizer: site.email,
     location: `Appel téléphonique (${d.telephone})`,
   });
-  const confirmation = bookingConfirmation({ nom: d.nom, quand, service });
+  const confirmation = bookingConfirmation({ nom: d.prenom, quand, service });
   const notif = agencyNotification({
     titre: `Nouveau RDV : ${d.entreprise}, ${quand}`,
     crm: crmNote,
-    details: [['Créneau', quand], ['Service', service], ['Nom', d.nom], ['Entreprise', d.entreprise], ['E-mail', d.email], ['Téléphone', d.telephone], ['Message', d.message]],
+    details: [['Créneau', quand], ['Service', service], ['Prénom', d.prenom], ['Nom', d.nom], ['Entreprise', d.entreprise], ['E-mail', d.email], ['Téléphone', d.telephone], ['Lieu', lieu], ['Message', d.message]],
   });
   await Promise.allSettled([
     sendMail({

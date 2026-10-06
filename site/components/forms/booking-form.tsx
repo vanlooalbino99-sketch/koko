@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { a11y, Consent, Field, Honeypot, selectClass } from './field';
-import { bookingSchema, SERVICE_OPTIONS, type BookingData, type BookingInput } from '@/lib/validation';
+import { bookingSchema, PAYS, SERVICE_OPTIONS, type BookingData, type BookingInput } from '@/lib/validation';
 import { availableSlots, booking, bookingWindow, formatSlot, formatTime } from '@/lib/slots';
 import { submitBooking } from '@/actions/booking';
 import { cn, newRequestId } from '@/lib/utils';
@@ -40,10 +40,11 @@ export function BookingForm() {
   const { register, handleSubmit, setValue, watch, setError, clearErrors, formState: { errors, isSubmitting } } = useForm<BookingInput, unknown, BookingData>({
     resolver: zodResolver(bookingSchema),
     mode: 'onTouched',
-    defaultValues: { date: '', heure: '', nom: '', entreprise: '', email: '', telephone: '', service: 'assistant-telephonique', message: '', consentement: false, website: '' },
+    defaultValues: { date: '', heure: '', prenom: '', nom: '', entreprise: '', email: '', telephone: '', pays: 'France', codePostal: '', ville: '', service: 'assistant-telephonique', message: '', consentement: false, website: '' },
   });
   const date = watch('date');
   const heure = watch('heure');
+  const pays = watch('pays');
 
   // Service présélectionné depuis la page Services (?service=…).
   useEffect(() => {
@@ -176,18 +177,32 @@ export function BookingForm() {
       <fieldset className="grid content-start gap-5 rounded-2xl border bg-card p-6 sm:p-8">
         <legend className="sr-only">Vos coordonnées</legend>
         <h2 className="flex items-center gap-2 font-semibold"><Step n={3} />Vos coordonnées</h2>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field id="nom" label="Nom et prénom" error={errors.nom?.message}>
-            <Input {...a11y('nom', errors.nom?.message)} autoComplete="name" {...register('nom')} />
+        <div className="grid gap-5 sm:grid-cols-6">
+          <Field id="prenom" label="Prénom" error={errors.prenom?.message} className="sm:col-span-3">
+            <Input {...a11y('prenom', errors.prenom?.message)} autoComplete="given-name" {...register('prenom')} />
           </Field>
-          <Field id="entreprise" label="Entreprise" error={errors.entreprise?.message}>
-            <Input {...a11y('entreprise', errors.entreprise?.message)} autoComplete="organization" {...register('entreprise')} />
+          <Field id="nom" label="Nom" error={errors.nom?.message} className="sm:col-span-3">
+            <Input {...a11y('nom', errors.nom?.message)} autoComplete="family-name" {...register('nom')} />
           </Field>
-          <Field id="email" label="E-mail" error={errors.email?.message}>
+          <Field id="email" label="E-mail" error={errors.email?.message} className="sm:col-span-3">
             <Input {...a11y('email', errors.email?.message)} type="email" autoComplete="email" inputMode="email" {...register('email')} />
           </Field>
-          <Field id="telephone" label="Téléphone" error={errors.telephone?.message} hint="Nous vous appelons à ce numéro.">
+          <Field id="telephone" label="Numéro de téléphone" error={errors.telephone?.message} hint="Nous vous appelons à ce numéro." className="sm:col-span-3">
             <Input {...a11y('telephone', errors.telephone?.message, true)} type="tel" autoComplete="tel" inputMode="tel" {...register('telephone')} />
+          </Field>
+          <Field id="entreprise" label="Entreprise" error={errors.entreprise?.message} className="sm:col-span-6">
+            <Input {...a11y('entreprise', errors.entreprise?.message)} autoComplete="organization" {...register('entreprise')} />
+          </Field>
+          <Field id="pays" label="Pays" error={errors.pays?.message} className="sm:col-span-2">
+            <select {...a11y('pays', errors.pays?.message)} autoComplete="country-name" className={selectClass} {...register('pays')}>
+              {PAYS.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </Field>
+          <Field id="codePostal" label="Code postal" error={errors.codePostal?.message} className="sm:col-span-2">
+            <Input {...a11y('codePostal', errors.codePostal?.message)} autoComplete="postal-code" inputMode={pays === 'France' || pays === 'Monaco' ? 'numeric' : 'text'} maxLength={12} {...register('codePostal')} />
+          </Field>
+          <Field id="ville" label="Ville" error={errors.ville?.message} className="sm:col-span-2">
+            <Input {...a11y('ville', errors.ville?.message)} autoComplete="address-level2" {...register('ville')} />
           </Field>
         </div>
         <Field id="service" label="Ce qui vous intéresse" error={errors.service?.message}>

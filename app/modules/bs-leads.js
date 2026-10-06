@@ -584,5 +584,15 @@
     (document.head || document.documentElement).appendChild(s);
   }
 
-  window.bsLeads = { monter: monter, _interne: { toLead: toLead, sameName: sameName, joli: joli, searchKey: searchKey } };
+  // Ouvre le générateur sur une recherche donnée (ex. le client idéal défini dans Rapports › Suivi de ma niche).
+  function cibler(p) {
+    var cur = readPrefs();
+    state.prefs = Object.assign(cur, p || {});
+    if (!metierOf(secteurOf(state.prefs.secteur), state.prefs.metier)) state.prefs.metier = '';
+    writeJson(PREFS_KEY, state.prefs);
+    state.leads = []; state.stats = null; state.statut = {}; state.err = '';
+    location.hash = '#/leads';
+  }
+
+  window.bsLeads = { monter: monter, cibler: cibler, SECTEURS: SECTEURS, TAILLES: TAILLES, CANAL: CANAL, _interne: { toLead: toLead, sameName: sameName, joli: joli, searchKey: searchKey } };
 })();

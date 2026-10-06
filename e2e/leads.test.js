@@ -146,3 +146,48 @@ test('génère des lots toujours nouveaux, sans doublon, et les ajoute au CRM', 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('Rapports : suivi de ma niche (client idéal, entonnoir, tableau par secteur)', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(pathToFileURL(file).href);
+  await page.waitForFunction(() => window.__bsStore && window.__bsStore.get().loaded);
+  await page.evaluate(() => document.getElementById('splash')?.remove());
+  await page.evaluate(() => {
+    const p = (id, secteur, ville, adresse, statut, tags = [], callLog = []) => ({ id, entreprise: id, secteur, ville, adresse, statut, tags, callLog, events: [], createdAt: '2026-01-10', mrrValue: statut === 'client_signe' ? 200 : 0 });
+    window.__bsStore.set({ prospects: [
+      p('d1', 'Santé & bien-être', 'Lyon', '1 rue A 69003 Lyon', 'client_signe', ['Lead généré', 'Cabinets dentaires']),
+      p('d2', 'Santé & bien-être', 'Lyon', '2 rue A 69003 Lyon', 'rdv_pris', ['Cabinets dentaires']),
+      p('d3', 'Santé & bien-être', 'Villeurbanne', '3 rue A 69100 Villeurbanne', 'a_appeler', ['Cabinets dentaires']),
+      p('k1', 'Santé & bien-être', 'Lyon', '4 rue A 69003 Lyon', 'injoignable', ['Kinés & rééducation']),
+      p('d4', 'Santé & bien-être', 'Paris', '5 rue A 75011 Paris', 'client_signe', ['Cabinets dentaires']),
+      p('b1', 'Artisans / BTP', 'Lyon', '6 rue A 69003 Lyon', 'perdu'),
+    ] });
+  });
+  await page.evaluate(() => { location.hash = '#/reports'; });
+  await page.locator('.bsn-card').waitFor();
+  await page.getByText('Définir mon client idéal').click();
+  await page.locator('.bsn-opt[data-sect="Santé & bien-être"]').click();
+  await page.locator('.bsn-opt[data-met="dentiste"]').click();
+  await page.fill('.bsn-card input[name=zones]', '69');
+  await page.locator('.bsn-card [data-act=save]').click();
+  await page.locator('.bsn-kpis').waitFor();
+  const ideal = await page.evaluate(() => window.__bsStore.get().settings.clientIdeal);
+  assert.deepEqual([ideal.secteurs, ideal.metiers, ideal.zones], [['Santé & bien-être'], ['dentiste'], ['69']]);
+  // Niche : dentistes du 69 → d1, d2, d3 (k1 autre métier, d4 hors zone, b1 autre secteur).
+  const kpis = await page.locator('.bsn-kpis .kpi-value').allInnerTexts();
+  assert.deepEqual(kpis, ['3', '2', '2', '1']);
+  const ligne = await page.locator('.bsn-table tr.cible', { hasText: 'Santé & bien-être' }).innerText();
+  assert.match(ligne, /Santé & bien-être\s+Cible\s+5\s+4\s+3\s+2\s+40 %/);
+  await page.locator('.bsn-table tr.cible', { hasText: 'Cabinets dentaires' }).waitFor();
+  // « Générer des leads dans ma niche » ouvre le générateur réglé sur la niche.
+  await page.route('https://**', (route) => route.abort());
+  await page.locator('.bsn-card [data-act=gen]').click();
+  await page.locator('.bsl-root .page-title').waitFor();
+  assert.equal(await page.inputValue('select[name=metier]'), 'dentiste');
+  assert.equal(await page.inputValue('input[name=zone]'), '69');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

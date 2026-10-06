@@ -1,7 +1,7 @@
 # Blackstart AI — CRM
 
 CRM de prospection : file d'appels, agenda, prospects, **générateur de vrais leads** (base officielle Sirene, un lot neuf à chaque fois), pipeline, devis et factures, paiements, tableau de bord,
-rapports avec courbes de tendance, **carte des clients sur une planète 3D**, **formations en motion design**, ambiances
+rapports avec courbes de tendance et **suivi de niche** (client idéal), **carte des clients sur une planète 3D**, **formations en motion design**, ambiances
 animées (globe interactif), icônes du menu personnalisables.
 
 Le projet fournit **deux façons de l'utiliser, à partir des mêmes sources** :

@@ -159,7 +159,7 @@
         '<div class="bsc-topbar"><div class="bsc-live"><i></i>En direct</div><div class="bsc-mode" role="group" aria-label="Type de vue">' +
         [['carte', 'map', 'Carte'], ['globe', 'globe', 'Globe 3D']].map(function (v) { return '<button type="button" data-vue="' + v[0] + '" aria-pressed="' + (ui.vue === v[0]) + '">' + ic(v[1], 13) + '<span>' + v[2] + '</span></button>'; }).join('') +
         '</div><button type="button" class="bsc-tour" data-act="tour" aria-pressed="false">' + ic('play', 13) + '<span>Visite guidée</span></button></div>' +
-        '<div class="bsc-tools"><button type="button" data-z="1.5" title="Zoomer" aria-label="Zoomer">+</button><button type="button" data-z="0.67" title="Dézoomer" aria-label="Dézoomer">−</button><button type="button" data-act="home" title="Recentrer sur mes fiches" aria-label="Recentrer">' + ic('target', 15) + '</button><button type="button" data-act="world" title="Vue du monde" aria-label="Vue du monde">' + ic('globe', 15) + '</button></div>' +
+        '<div class="bsc-tools">' + fsButton() + '<button type="button" data-z="1.5" title="Zoomer" aria-label="Zoomer">+</button><button type="button" data-z="0.67" title="Dézoomer" aria-label="Dézoomer">−</button><button type="button" data-act="home" title="Recentrer sur mes fiches" aria-label="Recentrer">' + ic('target', 15) + '</button><button type="button" data-act="world" title="Vue du monde" aria-label="Vue du monde">' + ic('globe', 15) + '</button></div>' +
         '<div class="bsc-spot" hidden></div>' +
         '<div class="bsc-legend"><span><i style="background:' + COL.client + '"></i>Clients</span><span><i style="background:' + COL.prospect + '"></i>Prospects</span>' + (hub ? '<span><i class="hub" style="background:' + COL.hub + '"></i>Siège</span>' : '') +
         (isMap ? '<span class="bsc-lg-heat" title="Teinte des départements selon le nombre de fiches"><b></b>Fiches par département</span>' : '') + '</div>' +
@@ -324,7 +324,7 @@
       stopTour(); select(hit, true);
       if (pid) { var el = root.querySelector('.bsc-person[data-pid="' + (window.CSS && CSS.escape ? CSS.escape(pid) : pid) + '"]'); if (el) { el.classList.add('flash'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }
     }
-    function cleanup() { clearInterval(feedTimer); stopTour(true); if (eng) eng.destroy(); eng = null; globe = null; if (unsub) unsub(); unsub = null; }
+    function cleanup() { clearInterval(feedTimer); stopTour(true); if (eng) eng.destroy(); eng = null; globe = null; if (unsub) unsub(); unsub = null; if (!root.isConnected) fsOff(); }
 
     // Recherche en ligne des villes inconnues, une par seconde.
     function osm() {
@@ -343,9 +343,53 @@
       })();
     }
 
+    // Plein écran : toute la rubrique passe en plein écran (la carte occupe l'écran, le reste est masqué), pour que
+    // changer de vue ou de filtre n'en fasse pas sortir. Sans l'API (iPhone), la carte couvre la fenêtre.
+    var pseudoFs = false;
+    function isFs() { return pseudoFs || document.fullscreenElement === root || document.webkitFullscreenElement === root; }
+    function fsSvg(on) {
+      var d = on ? ['M8 3v3a2 2 0 0 1-2 2H3', 'M21 8h-3a2 2 0 0 1-2-2V3', 'M3 16h3a2 2 0 0 1 2 2v3', 'M16 21v-3a2 2 0 0 1 2-2h3']
+        : ['M8 3H5a2 2 0 0 0-2 2v3', 'M21 8V5a2 2 0 0 0-2-2h-3', 'M3 16v3a2 2 0 0 0 2 2h3', 'M16 21h3a2 2 0 0 0 2-2v-3'];
+      return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d.map(function (x) { return '<path d="' + x + '"/>'; }).join('') + '</svg>';
+    }
+    function fsButton() {
+      var on = isFs(), lab = on ? 'Quitter le plein écran (Échap)' : 'Plein écran';
+      return '<button type="button" class="bsc-fsbtn" data-act="fs" title="' + lab + '" aria-label="' + lab + '" aria-pressed="' + on + '">' + fsSvg(on) + '</button>';
+    }
+    function syncFs() {
+      if (!root.isConnected) { fsOff(); return; }
+      var on = isFs();
+      root.classList.toggle('bsc-is-fs', on);
+      root.classList.toggle('bsc-fs', pseudoFs);
+      document.documentElement.classList.toggle('bsc-noscroll', pseudoFs);
+      var b = root.querySelector('[data-act=fs]');
+      if (b) b.outerHTML = fsButton();
+      if (eng && eng.home) setTimeout(function () { if (eng) eng.home(); }, 120);
+    }
+    function pseudoOn() { pseudoFs = true; syncFs(); }
+    function enterFs() {
+      var req = root.requestFullscreen || root.webkitRequestFullscreen;
+      if (!req) { pseudoOn(); return; }
+      try { var pr = req.call(root); if (pr && pr.catch) pr.catch(pseudoOn); } catch (err) { pseudoOn(); }
+    }
+    function exitFs() {
+      if (pseudoFs) { pseudoFs = false; syncFs(); return; }
+      var ex = document.exitFullscreen || document.webkitExitFullscreen;
+      if (ex && (document.fullscreenElement || document.webkitFullscreenElement)) { try { var pr = ex.call(document); if (pr && pr.catch) pr.catch(function () {}); } catch (err) {} }
+    }
+    function onFsKey(e) { if (e.key === 'Escape' && pseudoFs) exitFs(); }
+    function fsOff() {
+      document.removeEventListener('fullscreenchange', syncFs); document.removeEventListener('webkitfullscreenchange', syncFs);
+      document.removeEventListener('keydown', onFsKey);
+      if (pseudoFs) { pseudoFs = false; document.documentElement.classList.remove('bsc-noscroll'); }
+    }
+    document.addEventListener('fullscreenchange', syncFs); document.addEventListener('webkitfullscreenchange', syncFs);
+    document.addEventListener('keydown', onFsKey);
+
     root.addEventListener('click', function (e) {
       var t = e.target.closest('[data-f],[data-z],[data-act],[data-p],[data-ev],[data-open],[data-vue]'); if (!t || t.disabled) return;
-      if (t.hasAttribute('data-open')) { openFiche(t.getAttribute('data-open')); return; }
+      if (t.hasAttribute('data-open')) { var oid = t.getAttribute('data-open'); if (isFs()) { exitFs(); setTimeout(function () { openFiche(oid); }, 150); } else openFiche(oid); return; }
+      if (t.getAttribute('data-act') === 'fs') { if (isFs()) exitFs(); else enterFs(); return; }
       if (t.hasAttribute('data-f')) { ui.filtre = t.getAttribute('data-f'); ui.sel = null; render(); return; }
       if (t.hasAttribute('data-vue')) { var nv = t.getAttribute('data-vue'); if (nv !== ui.vue) { ui.vue = nv; writeVue(nv); render(); } return; }
       stopTour();
@@ -391,6 +435,17 @@
     '.bsc-tools{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:6px}',
     '.bsc-tools button{width:36px;height:36px;border-radius:10px;border:1px solid rgb(148 163 184/.3);background:rgb(3 8 18/.7);color:#eaf1fb;font:700 18px/1 Inter,system-ui;display:grid;place-items:center;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}',
     '.bsc-tools button:hover{background:rgb(59 130 246/.35)}',
+    '.bsc-root.bsc-is-fs{background:var(--bg);overflow:hidden;width:100vw;height:100vh;max-width:none;margin:0;padding:0}',
+    '.bsc-root.bsc-fs{position:fixed;inset:0;z-index:1000;height:100dvh}',
+    '.bsc-root.bsc-is-fs>:not(.bsc-layout){display:none!important}',
+    '.bsc-is-fs .bsc-layout{display:block;height:100%}',
+    '.bsc-is-fs .bsc-side,.bsc-is-fs .bsc-main>:not(.bsc-globe-card){display:none!important}',
+    '.bsc-is-fs .bsc-main{height:100%}',
+    '.bsc-is-fs .bsc-globe-card,.bsc-is-fs .bsc-globe-card.map{height:100%!important;min-height:0;margin:0;border:0;border-radius:0;box-shadow:none}',
+    '.bsc-is-fs .bsc-tools{top:calc(14px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right))}',
+    '.bsc-tools .bsc-fsbtn{margin-bottom:4px}',
+    'html.bsc-noscroll,html.bsc-noscroll body{overflow:hidden}',
+    'html.bsc-noscroll .topbar,html.bsc-noscroll .bottom-nav,html.bsc-noscroll .sidebar,html.bsc-noscroll .fab{visibility:hidden}',
     '.bsc-legend{position:absolute;left:16px;bottom:14px;display:flex;gap:14px;padding:7px 12px;border-radius:12px;background:rgb(3 8 18/.7);color:#cfe0f7;font-size:12.5px;font-weight:600;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}',
     '.bsc-legend span{display:flex;align-items:center;gap:6px}',
     '.bsc-legend i,.bsc-dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 8px currentColor}',

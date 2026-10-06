@@ -6,7 +6,7 @@ export function Field({ id, label, error, hint, optional, className, children }:
   id: string; label: string; error?: string; hint?: string; optional?: boolean; className?: string; children: React.ReactNode;
 }) {
   return (
-    <div className={cn('grid gap-2', className)}>
+    <div className={cn('grid content-start gap-2', className)}>
       <Label htmlFor={id}>
         {label}
         {optional && <span className="font-normal text-muted-foreground">(facultatif)</span>}

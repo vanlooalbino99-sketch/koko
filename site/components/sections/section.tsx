@@ -11,7 +11,7 @@ export function Section({ className, children, ...props }: React.ComponentProps<
 export function SectionHeading({ eyebrow, title, intro, align = 'center', as: Tag = 'h2' }: { eyebrow?: string; title: string; intro?: string; align?: 'center' | 'left'; as?: 'h1' | 'h2' }) {
   return (
     <div data-reveal className={cn('mb-12 max-w-2xl', align === 'center' && 'mx-auto text-center')}>
-      {eyebrow && <p className="mb-3 text-sm font-semibold tracking-wide text-primary uppercase">{eyebrow}</p>}
+      {eyebrow && <p className="eyebrow mb-3 text-sm font-semibold tracking-wide text-primary uppercase">{eyebrow}</p>}
       <Tag className={cn('font-semibold tracking-tight text-balance', Tag === 'h1' ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl')}>{title}</Tag>
       {intro && <p className="mt-4 text-lg text-pretty text-muted-foreground">{intro}</p>}
     </div>
@@ -26,8 +26,10 @@ export function PageHero({ eyebrow, title, intro, children }: { eyebrow: string;
       <div className="bg-grid pointer-events-none absolute inset-0" aria-hidden />
       <div className="bg-glow pointer-events-none absolute inset-0" aria-hidden />
       <div className="relative mx-auto max-w-3xl text-center">
-        <p className="rise mb-3 text-sm font-semibold tracking-wide text-primary uppercase">{eyebrow}</p>
-        <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">{title}</h1>
+        <p className="rise eyebrow mb-3 text-sm font-semibold tracking-wide text-primary uppercase">{eyebrow}</p>
+        <h1 className="words text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+          {title.split(' ').map((w, i, all) => <span key={i} style={{ '--i': i } as React.CSSProperties}>{w}{i < all.length - 1 && <>&nbsp;</>}</span>)}
+        </h1>
         <p style={{ '--d': 1 } as React.CSSProperties} className="rise mx-auto mt-5 max-w-2xl text-lg text-pretty text-muted-foreground">{intro}</p>
         <div style={{ '--d': 2 } as React.CSSProperties} className="rise">{children}</div>
       </div>

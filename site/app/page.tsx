@@ -15,29 +15,33 @@ export default function HomePage() {
   return (
     <>
       {/* Accroche */}
-      <section className="relative overflow-hidden px-4 pt-14 pb-16 sm:px-6 md:pt-24 md:pb-24">
+      <section className="relative overflow-hidden px-4 pt-14 pb-20 sm:px-6 md:pt-24 md:pb-32">
         <div className="aurora pointer-events-none" aria-hidden><i /><i /><i /></div>
         <div className="bg-grid pointer-events-none absolute inset-0" aria-hidden />
         <div className="bg-glow pointer-events-none absolute inset-0" aria-hidden />
+        <div className="voice pointer-events-none absolute inset-x-0 -bottom-6 opacity-45 [mask-image:linear-gradient(to_top,#000_30%,transparent)]" aria-hidden>
+          {Array.from({ length: 64 }, (_, i) => <i key={i} style={{ '--i': i, '--k': ((i * 37) % 11) / 10 } as React.CSSProperties} />)}
+        </div>
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.15fr_1fr]">
           <div>
             <Badge variant="accent" className="rise mb-6 px-3 py-1 text-sm">
               <Sparkles aria-hidden /> Agence IA pour entreprises locales
             </Badge>
-            <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-              Ne perdez plus jamais <span className="text-shine">un appel client</span>.
+            <h1 className="words text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
+              {['Ne', 'perdez', 'plus', 'jamais'].map((w, i) => <span key={w} style={{ '--i': i } as React.CSSProperties}>{w}&nbsp;</span>)}
+              {['un', 'appel', 'client.'].map((w, i) => <span key={w} style={{ '--i': i + 4 } as React.CSSProperties} className="text-shine">{w}{i < 2 && <>&nbsp;</>}</span>)}
             </h1>
             <p style={{ '--d': 1 } as React.CSSProperties} className="rise mt-6 max-w-xl text-lg text-pretty text-muted-foreground sm:text-xl">
               Blackstart AI installe un assistant téléphonique qui décroche à chaque appel, qualifie la demande et prend les rendez-vous, même quand vous êtes sur le terrain.
             </p>
             <div style={{ '--d': 2 } as React.CSSProperties} className="rise mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="group">
+              <Button asChild size="lg" className="group sheen glow-btn" data-magnet>
                 <Link href="/rendez-vous">
                   Réserver un audit gratuit
                   <ArrowRight className="transition-transform group-hover:translate-x-1" aria-hidden />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
+              <Button asChild size="lg" variant="outline" data-magnet>
                 <Link href="/services">Découvrir nos services</Link>
               </Button>
             </div>
@@ -54,7 +58,10 @@ export default function HomePage() {
           {/* Illustration : un appel traité par l'assistant */}
           <div className="relative mx-auto w-full max-w-md" aria-hidden>
             <div className="absolute -inset-6 rounded-[2rem] bg-primary/10 blur-2xl" />
-            <div className="float relative rounded-2xl border bg-card/90 p-5 shadow-xl backdrop-blur">
+            <div className="orbit -inset-10 hidden sm:block"><b /></div>
+            <div className="orbit rev -inset-20 hidden opacity-70 lg:block"><b /></div>
+            <div data-tilt className="relative">
+            <div className="float beam relative rounded-2xl border bg-card/90 p-5 shadow-2xl backdrop-blur">
               <div className="flex items-center gap-3">
                 <span className="ring-pulse relative flex size-10 items-center justify-center rounded-full bg-success/15 text-success">
                   <PhoneIncoming className="size-5" />
@@ -80,6 +87,7 @@ export default function HomePage() {
                 </dl>
               </div>
             </div>
+            </div>
           </div>
         </div>
       </section>
@@ -90,7 +98,7 @@ export default function HomePage() {
           {stats.map((s, i) => (
             <div key={s.label} data-reveal style={{ '--d': i } as React.CSSProperties} className="flex flex-col-reverse px-2 py-8 text-center">
               <dt className="mt-1 text-sm text-muted-foreground">{s.label}</dt>
-              <dd className="text-3xl font-semibold tracking-tight sm:text-4xl"><CountUp value={s.value} /></dd>
+              <dd className="num-grad text-3xl font-semibold tracking-tight sm:text-5xl"><CountUp value={s.value} /></dd>
             </div>
           ))}
         </dl>
@@ -101,7 +109,7 @@ export default function HomePage() {
         <SectionHeading eyebrow="Services" title="Votre accueil client, automatisé de bout en bout" intro="Du premier appel au rendez-vous honoré, chaque étape est prise en charge. Vous gardez la main sur tout." />
         <div className="grid gap-5 sm:grid-cols-2">
           {services.map((s, i) => (
-            <Card key={s.slug} data-reveal style={{ '--d': i } as React.CSSProperties} className="lift">
+            <Card key={s.slug} data-reveal style={{ '--d': i } as React.CSSProperties} className="lift" data-spot>
               <CardHeader>
                 <ServiceIcon icon={s.icon} />
                 <CardTitle className="mt-3 text-xl">{s.title}</CardTitle>
@@ -121,12 +129,16 @@ export default function HomePage() {
       {/* Méthode */}
       <Section className="border-y bg-muted/40">
         <SectionHeading eyebrow="Méthode" title="Opérationnel en quatre étapes" />
-        <ol className="grid gap-6 md:grid-cols-4">
+        <ol className="relative grid gap-6 md:grid-cols-4">
+          <li aria-hidden className="track hidden md:block" data-reveal />
           {steps.map((s, i) => (
-            <li key={s.title} data-reveal style={{ '--d': i } as React.CSSProperties} className="lift relative rounded-xl border bg-card p-6">
+            <li key={s.title} data-reveal style={{ '--d': i } as React.CSSProperties} className="relative">
+              <span className="step-dot" style={{ '--d': i } as React.CSSProperties}>{i + 1}</span>
+              <div className="lift mt-5 rounded-xl border bg-card p-6" data-spot>
               <span className="text-sm font-semibold text-primary">Étape {i + 1}</span>
               <h3 className="mt-2 text-lg font-semibold">{s.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{s.text}</p>
+              </div>
             </li>
           ))}
         </ol>
@@ -144,7 +156,7 @@ export default function HomePage() {
         </div>
         <div className="grid gap-5 md:grid-cols-3">
           {testimonials.map((t, i) => (
-            <figure key={t.name} data-reveal style={{ '--d': i } as React.CSSProperties} className="lift flex flex-col rounded-xl border bg-card p-6">
+            <figure key={t.name} data-reveal style={{ '--d': i } as React.CSSProperties} className="lift flex flex-col rounded-xl border bg-card p-6" data-spot>
               <Quote className="size-6 text-primary" aria-hidden />
               <blockquote className="mt-4 flex-1 text-pretty">« {t.quote} »</blockquote>
               <figcaption className="mt-6 text-sm">

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { ThemeProvider } from '@/components/theme-provider';
 import { RevealObserver } from '@/components/motion/reveal-observer';
+import { PointerFx } from '@/components/motion/pointer-fx';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { JsonLd, organizationJsonLd } from '@/lib/seo';
@@ -36,12 +37,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr" suppressHydrationWarning className={GeistSans.variable}>
       <body className="flex min-h-dvh flex-col">
         <ThemeProvider>
+          <div className="scroll-progress" aria-hidden />
           <Header />
           <main id="contenu" className="flex-1">
             {children}
           </main>
           <Footer />
           <RevealObserver />
+          <PointerFx />
         </ThemeProvider>
         <JsonLd data={organizationJsonLd()} />
       </body>

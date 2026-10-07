@@ -307,19 +307,36 @@
         window.removeEventListener(t, deb, true);
       }, true);
     });
-    function note(a, t, f, d) {
-      var o = a.createOscillator(), g = a.createGain();
-      o.type = 'sine'; o.frequency.value = f;
+    // Une note : fréquence f, durée d, forme d'onde, volume relatif ; f2 fait glisser la note.
+    function note(a, t, f, d, type, vol, f2) {
+      var o = a.createOscillator(), g = a.createGain(), v = 0.18 * (vol || 1) * VOL[volume()];
+      if (v <= 0) return;
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+      if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d * 0.8);
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(v, t + 0.015);
       g.gain.exponentialRampToValueAtTime(0.0001, t + d);
       o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + 0.05);
     }
-    function sonner() {
+    // Sonneries au choix (Réglages › Équipe & compte), toutes synthétisées ici.
+    var SONS = {
+      carillon: { nom: 'Carillon', jouer: function (a, t) { [0, 0.75].forEach(function (x) { note(a, t + x, 880, 0.35); note(a, t + x + 0.18, 1318.5, 0.5); }); } },
+      aurore: { nom: 'Aurore', jouer: function (a, t) { [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { note(a, t + i * 0.14, f, 0.9, 'sine', 0.8); }); } },
+      marimba: { nom: 'Marimba', jouer: function (a, t) { [659.25, 783.99, 659.25, 987.77, 880].forEach(function (f, i) { note(a, t + i * 0.16, f, 0.28, 'triangle', 1.3); note(a, t + i * 0.16, f * 4, 0.06, 'sine', 0.25); }); } },
+      classique: { nom: 'Téléphone classique', jouer: function (a, t) { [0, 0.5].forEach(function (x) { note(a, t + x, 440, 0.4, 'sine', 0.6); note(a, t + x, 480, 0.4, 'sine', 0.6); }); } },
+      pulse: { nom: 'Pulsation', jouer: function (a, t) { [0, 0.22, 0.44].forEach(function (x) { note(a, t + x, 740, 0.16, 'square', 0.3); }); } },
+      bulles: { nom: 'Bulles', jouer: function (a, t) { [0, 0.2, 0.4].forEach(function (x, i) { note(a, t + x, 400 + i * 150, 0.18, 'sine', 1, 900 + i * 250); }); } },
+      cristal: { nom: 'Cristal', jouer: function (a, t) { [1567.98, 2093, 1567.98, 2637].forEach(function (f, i) { note(a, t + i * 0.2, f, 0.6, 'sine', 0.55); }); } },
+      silence: { nom: 'Aucun son (notification seule)', jouer: function () {} },
+    };
+    var VOL = { faible: 0.4, normal: 1, fort: 1.8 };
+    function lire(k, def) { try { return localStorage.getItem(k) || def; } catch (e) { return def; } }
+    function ecrire(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* stockage indisponible */ } }
+    function choix() { var c = lire('bsm-sonnerie', 'carillon'); return SONS[c] ? c : 'carillon'; }
+    function volume() { var v = lire('bsm-sonnerie-volume', 'normal'); return VOL[v] ? v : 'normal'; }
+    function sonner(id) {
       var a = audio(); if (!a || a.state !== 'running') return;
-      var t = a.currentTime + 0.02;
-      note(a, t, 880, 0.35); note(a, t + 0.18, 1318.5, 0.5);
-      note(a, t + 0.75, 880, 0.35); note(a, t + 0.93, 1318.5, 0.5);
+      SONS[id || choix()].jouer(a, a.currentTime + 0.02);
     }
     function stop(cid) {
       var x = en[cid]; if (!x) return;
@@ -341,7 +358,14 @@
         }
       } catch (e) { /* notifications indisponibles */ }
     }
-    return { start: start, stop: stop };
+    return {
+      start: start, stop: stop,
+      sons: function () { return Object.keys(SONS).map(function (k) { return { id: k, nom: SONS[k].nom }; }); },
+      choix: choix, volume: volume,
+      choisir: function (id) { if (SONS[id]) ecrire('bsm-sonnerie', id); },
+      regler: function (v) { if (VOL[v]) ecrire('bsm-sonnerie-volume', v); },
+      ecouter: function (id) { audio(); setTimeout(function () { sonner(id); }, 30); },
+    };
   })();
 
   // ------------------------------------------------------------------ rendu
@@ -1000,5 +1024,5 @@
   function auto() { if (serveur()) setTimeout(demarrer, 1200); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
 
-  window.bsMessages = { monter: monter, appel: Appel, etat: function () { return S; } };
+  window.bsMessages = { monter: monter, appel: Appel, sonnerie: Sonnerie, etat: function () { return S; } };
 })();

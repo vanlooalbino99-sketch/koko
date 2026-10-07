@@ -220,6 +220,12 @@
     '.bse-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--c)}',
     '.bse-code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;padding:2px 6px;border-radius:6px;background:rgb(var(--text-rgb)/.07)}',
     '.bse-sep{height:1px;background:var(--border);margin:16px 0}',
+    '.bse-sons{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}',
+    '.bse-son{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 12px;border-radius:12px;border:1px solid var(--border);transition:border-color .15s,background .15s}',
+    '.bse-son.on{border-color:rgb(var(--accent-rgb)/.7);background:rgb(var(--accent-rgb)/.08)}',
+    '.bse-son label{flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;font-weight:600;min-height:32px}',
+    '.bse-son input{accent-color:rgb(var(--accent-rgb))}',
+    '.bse-vol{display:flex;gap:6px}',
     // Photo de profil : dans Mon compte et en haut à droite.
     '.bse-av.ph,.bs-moi .ph{background:var(--ph) center/cover no-repeat;color:transparent}',
     '.bse-me .bse-av{width:64px;height:64px;border-radius:50%;font-size:22px}',
@@ -277,6 +283,7 @@
     user: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     cloud: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>',
     history: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/></svg>',
+    bell: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
     server: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/></svg>',
   };
   function initials(n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join('') || '?'; }
@@ -420,7 +427,19 @@
         if (i === act) focusKey = k;
       });
       ui.clear = {};
-      el.innerHTML = me + sync + team;
+      var son = '', SN = window.bsMessages && window.bsMessages.sonnerie;
+      if (SN) {
+        son = card('Sonnerie des visios', 'Le son joué quand un membre de l’équipe lance une visio. Réglage propre à cet appareil.',
+          '<div class="bse-sons">' + SN.sons().map(function (x) {
+            var on = x.id === SN.choix();
+            return '<div class="bse-son' + (on ? ' on' : '') + '"><label><input type="radio" name="bse-son" value="' + esc(x.id) + '"' + (on ? ' checked' : '') + '><span>' + esc(x.nom) + '</span></label>' +
+              (x.id === 'silence' ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-ecoute="' + esc(x.id) + '" aria-label="Écouter ' + esc(x.nom) + '">▶ Écouter</button>') + '</div>';
+          }).join('') + '</div>' +
+          '<div class="setting-row" style="margin-top:12px"><div class="sr-text"><div class="sr-label">Volume</div></div><div class="bse-vol">' +
+          [['faible', 'Faible'], ['normal', 'Normal'], ['fort', 'Fort']].map(function (v) { return '<button type="button" class="btn btn-sm ' + (SN.volume() === v[0] ? 'btn-primary' : 'btn-secondary') + '" data-vol="' + v[0] + '">' + v[1] + '</button>'; }).join('') +
+          '</div></div>', ICON.bell);
+      }
+      el.innerHTML = me + son + sync + team;
       Array.prototype.forEach.call(el.querySelectorAll('form[data-form] [name]'), function (i) {
         var k = i.form.getAttribute('data-form') + ':' + i.name;
         if (k in keep) i.value = keep[k];
@@ -446,12 +465,19 @@
       }
     });
     el.addEventListener('change', function (e) {
+      if (e.target.name === 'bse-son') { var SN = window.bsMessages.sonnerie; SN.choisir(e.target.value); SN.ecouter(e.target.value); render(); return; }
       var id = e.target.getAttribute && e.target.getAttribute('data-role'); if (!id) return;
       api('PATCH', '/api/users/' + encodeURIComponent(id), { role: e.target.value })
         .then(function () { setMsg('team', 'Rôle mis à jour.', 'ok'); loadUsers(); })
         .catch(function (er) { setMsg('team', er.message, 'err'); loadUsers(); });
     });
     el.addEventListener('click', function (e) {
+      var sb = e.target.closest('[data-ecoute],[data-vol]');
+      if (sb) {
+        var SN = window.bsMessages.sonnerie;
+        if (sb.hasAttribute('data-vol')) { SN.regler(sb.getAttribute('data-vol')); render(); SN.ecouter(); } else SN.ecouter(sb.getAttribute('data-ecoute'));
+        return;
+      }
       var t = e.target.closest('[data-act],[data-reset],[data-del],[data-restore]'); if (!t) return;
       var u = function (id) { return (ui.users || []).filter(function (x) { return x.id === id; })[0] || {}; };
       if (t.hasAttribute('data-reset')) {

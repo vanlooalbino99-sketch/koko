@@ -43,7 +43,7 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
   app.use('/api/site', express.json({ limit: '50kb' }), siteRoutes({ db, apiKey: siteApiKey, timeZone: siteTimeZone }));
   app.use('/api', csrfGuard);
   app.use('/api/auth', express.json({ limit: '100kb' }), authRoutes({ db, limiter, secureCookies }));
-  app.use('/api/users', requireAdmin, express.json({ limit: '100kb' }), usersRoutes({ db }));
+  app.use('/api/users', requireAdmin, express.json({ limit: '100kb' }), usersRoutes({ db, hub }));
   app.use('/api/data', requireUser, express.json({ limit: '25mb' }), dataRoutes({ db }));
   app.use('/api/ambiance', requireUser, express.json({ limit: '40mb' }), ambianceApi({ db, store }));
   app.use('/api/formation', requireUser, express.json({ limit: '10kb' }), formationRoutes({ db }));

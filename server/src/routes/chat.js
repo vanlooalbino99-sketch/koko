@@ -4,9 +4,10 @@
 //   relayer la mise en relation (offres, réponses, candidats ICE) et tenir la liste des participants, en mémoire.
 import express, { Router } from 'express';
 import { randomUUID } from 'node:crypto';
-import { tx } from '../db.js';
+import { tx, getSetting, setSetting } from '../db.js';
 
 export const EQUIPE = 'equipe';
+export const POSTES = ['CEO', 'Directeur commercial', 'Manager', 'Commercial', 'Seller', 'Prospecteur (SDR)', 'Assistant(e)', 'Support client'];
 const MAX_BODY = 4000;
 const MAX_NAME = 60;
 const MAX_SIGNAL = 64 * 1024;
@@ -60,7 +61,7 @@ export function chatHub() {
 export function chatRoutes({ db, hub = chatHub() }) {
   const r = Router();
 
-  const users = () => db.prepare(`SELECT u.id, u.name, u.role, p.updated_at AS photo FROM users u LEFT JOIN user_photos p ON p.user_id = u.id
+  const users = () => db.prepare(`SELECT u.id, u.name, u.role, u.poste, u.manager_id AS managerId, p.updated_at AS photo FROM users u LEFT JOIN user_photos p ON p.user_id = u.id
                                    ORDER BY u.name COLLATE NOCASE`).all();
   const userName = (id) => db.prepare('SELECT name FROM users WHERE id = ?').get(id)?.name || 'Ancien membre';
   const conv = (id) => db.prepare('SELECT * FROM chat_conversations WHERE id = ?').get(id);
@@ -121,7 +122,18 @@ export function chatRoutes({ db, hub = chatHub() }) {
       users: users(),
       online: hub.online(),
       conversations: visible(req.user.id).map((c) => view(c, req.user.id)),
+      postes: getSetting(db, 'postes', POSTES),
     });
+  });
+
+  // Postes proposés dans l'organigramme : modifiables par un administrateur.
+  r.put('/postes', (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Réservé aux administrateurs.' });
+    const list = [...new Set((Array.isArray(req.body?.postes) ? req.body.postes : []).map((x) => String(x).trim().replace(/\s+/g, ' ').slice(0, 60)).filter(Boolean))].slice(0, 40);
+    if (!list.length) return res.status(400).json({ error: 'Gardez au moins un poste.' });
+    setSetting(db, 'postes', list);
+    hub.send(users().map((u) => u.id), 'equipe', { postes: list });
+    res.json({ postes: list });
   });
 
   r.get('/conversations/:id/messages', (req, res) => {

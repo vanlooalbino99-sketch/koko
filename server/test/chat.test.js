@@ -135,6 +135,25 @@ test('pièces jointes : envoi, message, lecture réservée aux membres', async (
   fm.close();
 });
 
+test('organigramme : postes, responsable, pas de boucle', async () => {
+  const st = await marie('GET', '/api/chat');
+  assert.ok(st.body.postes.includes('CEO'));
+  assert.equal((await marie('PUT', '/api/chat/postes', { postes: ['X'] })).status, 403);
+  assert.deepEqual((await admin('PUT', '/api/chat/postes', { postes: [' CEO ', 'Manager', 'Seller', 'Manager', ''] })).body.postes, ['CEO', 'Manager', 'Seller']);
+  const fm = await marie.flux();
+  assert.equal((await admin('PATCH', `/api/users/${ids.Albino}`, { poste: 'CEO' })).status, 200);
+  await fm.wait('equipe');
+  assert.equal((await admin('PATCH', `/api/users/${ids.Marie}`, { poste: 'Manager', managerId: ids.Albino })).status, 200);
+  assert.equal((await admin('PATCH', `/api/users/${ids.Paul}`, { poste: 'Seller', managerId: ids.Marie })).status, 200);
+  assert.equal((await admin('PATCH', `/api/users/${ids.Albino}`, { managerId: ids.Paul })).status, 400, 'boucle refusée');
+  const u = (await paul('GET', '/api/chat')).body.users;
+  assert.equal(u.find((x) => x.id === ids.Paul).managerId, ids.Marie);
+  assert.equal(u.find((x) => x.id === ids.Marie).poste, 'Manager');
+  assert.equal((await paul('GET', '/api/auth/me')).body.user.poste, 'Seller');
+  assert.equal((await paul('PATCH', `/api/users/${ids.Paul}`, { poste: 'CEO' })).status, 403, 'réservé aux administrateurs');
+  fm.close();
+});
+
 test('photo de profil : envoi, lecture, annonce, retrait', async () => {
   const fm = await marie.flux();
   const jpeg = 'data:image/jpeg;base64,' + Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]).toString('base64');

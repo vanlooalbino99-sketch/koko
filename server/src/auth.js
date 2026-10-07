@@ -40,14 +40,14 @@ export function destroySession(db, token) {
 
 export function sessionUser(db, token) {
   if (!token) return null;
-  const row = db.prepare(`SELECT u.id, u.email, u.name, u.role, s.expires_at, p.updated_at AS photo FROM sessions s JOIN users u ON u.id = s.user_id
+  const row = db.prepare(`SELECT u.id, u.email, u.name, u.role, u.poste, s.expires_at, p.updated_at AS photo FROM sessions s JOIN users u ON u.id = s.user_id
                           LEFT JOIN user_photos p ON p.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > ?`).get(sha(token), now());
   if (!row) return null;
   // Session glissante : prolongée quand on s'en sert, si elle a plus de la moitié de son âge.
   if (Date.parse(row.expires_at) - Date.now() < (SESSION_DAYS / 2) * 864e5) {
     db.prepare('UPDATE sessions SET expires_at = ? WHERE token_hash = ?').run(new Date(Date.now() + SESSION_DAYS * 864e5).toISOString(), sha(token));
   }
-  return { id: row.id, email: row.email, name: row.name, role: row.role, photo: row.photo || null };
+  return { id: row.id, email: row.email, name: row.name, role: row.role, poste: row.poste || null, photo: row.photo || null };
 }
 
 export function parseCookies(header) {
@@ -134,5 +134,5 @@ export function createUser(db, { name, email, password, role }) {
 }
 
 export function publicUser(u) {
-  return u && { id: u.id, email: u.email, name: u.name, role: u.role, createdAt: u.created_at, lastLogin: u.last_login || null };
+  return u && { id: u.id, email: u.email, name: u.name, role: u.role, poste: u.poste || null, managerId: u.manager_id || null, createdAt: u.created_at, lastLogin: u.last_login || null };
 }

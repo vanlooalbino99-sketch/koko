@@ -119,6 +119,9 @@ const MIGRATIONS = [
      created_at TEXT NOT NULL
    );
    ALTER TABLE chat_messages ADD COLUMN file_id TEXT REFERENCES chat_files(id) ON DELETE SET NULL;`,
+  // v7 : organigramme (poste de chaque membre et son responsable).
+  `ALTER TABLE users ADD COLUMN poste TEXT;
+   ALTER TABLE users ADD COLUMN manager_id TEXT REFERENCES users(id) ON DELETE SET NULL;`,
 ];
 
 export function openDb(dataDir) {

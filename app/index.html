@@ -28,18 +28,24 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23387CD5'/%3E%3Ctext x='32' y='44' font-family='Arial,sans-serif' font-size='34' font-weight='900' fill='white' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" />
 <script src="core/pre-theme.js" data-inline></script>
 <link rel="stylesheet" href="styles/main.css" data-inline>
 <link rel="stylesheet" id="fm-style" href="styles/formations.css" data-inline>
 <link rel="stylesheet" id="bs-textes-fonces" href="styles/textes-fonces.css" data-inline>
 <link rel="stylesheet" id="bs-fix-mode-clair" href="styles/fix-mode-clair.css" data-inline>
 <link rel="stylesheet" id="bs-logo" href="styles/logo.css" data-inline>
+<link rel="stylesheet" id="bs-aurore" href="styles/aurore.css" data-inline>
 </head>
 <body>
 <div id="splash" aria-hidden="true">
   <svg class="splash-trend" viewBox="0 0 160 90" role="img" aria-label="Chargement">
     <defs>
+      <linearGradient id="splashTrendStroke" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="var(--aur-3, #22d3ee)"/>
+        <stop offset=".5" stop-color="var(--accent)"/>
+        <stop offset="1" stop-color="var(--aur-2, #8b5cf6)"/>
+      </linearGradient>
       <linearGradient id="splashTrendFill" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/>
         <stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
@@ -57,6 +63,20 @@
   </svg>
   <div class="splash-brand">BLACKSTART <span>AI</span></div>
 </div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="aurBar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--aur-3, #22d3ee)"/>
+      <stop offset=".55" stop-color="var(--accent, #387CD5)"/>
+      <stop offset="1" stop-color="var(--aur-2, #8b5cf6)"/>
+    </linearGradient>
+    <linearGradient id="aurRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="var(--aur-3, #22d3ee)"/>
+      <stop offset=".5" stop-color="var(--accent, #387CD5)"/>
+      <stop offset="1" stop-color="var(--aur-2, #8b5cf6)"/>
+    </linearGradient>
+  </defs>
+</svg>
 <div id="root"></div>
 <noscript><p style="padding:24px;font-family:sans-serif">Activez JavaScript pour utiliser Blackstart CRM.</p></noscript>
 <script src="core/app.min.js" data-inline></script>

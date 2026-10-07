@@ -111,7 +111,7 @@ app/                      Le CRM (navigateur), découpé en fichiers
   modules/bs-tendance.js  Courbes de tendance des graphiques en barres
   modules/bs-icones*.js   Icônes du menu (≈ 1 000 icônes, styles, couleurs)
   modules/bs-reglement.js Règlement des devis et factures, QR codes
-  styles/*.css
+  styles/*.css            Styles ; aurore.css (v5.9) : aurore, verre et dégradés tirés de la couleur d'accent
 scripts/build.mjs         Assemble app/ en un seul fichier HTML
 server/src/               Serveur Express
   app.js                  Routes, page de connexion, CRM servi avec sa configuration

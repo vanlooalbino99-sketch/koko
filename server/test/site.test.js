@@ -1,29 +1,24 @@
 // Passerelle du site internet : contact et rendez-vous deviennent des leads à rappeler dans le CRM.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { createApp } from '../src/app.js';
+import { testApp } from './helpers.js';
 import { DATA_KEY } from '../src/routes/data.js';
 
 const KEY = 'cle-de-test-du-site-0123456789';
-let server, base, dir, db, off, offDir;
+let server, base, db, made, off;
 
 before(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'bs-site-'));
-  const made = createApp({ dataDir: dir, siteApiKey: KEY });
+  made = await testApp({ siteApiKey: KEY });
   db = made.db;
   await new Promise((res) => { server = made.app.listen(0, res); });
   base = `http://127.0.0.1:${server.address().port}`;
   // Même serveur sans clé : passerelle désactivée.
-  offDir = mkdtempSync(join(tmpdir(), 'bs-site-off-'));
-  const o = createApp({ dataDir: offDir });
+  const o = await testApp();
   await new Promise((res) => { off = { ...o, server: o.app.listen(0, res) }; });
 });
-after(() => {
-  server.close(); db.close(); rmSync(dir, { recursive: true, force: true });
-  off.server.close(); off.db.close(); rmSync(offDir, { recursive: true, force: true });
+after(async () => {
+  server.close(); await made.cleanup();
+  off.server.close(); await off.cleanup();
 });
 
 async function call(method, path, body, { key = KEY, url = base } = {}) {
@@ -32,7 +27,7 @@ async function call(method, path, body, { key = KEY, url = base } = {}) {
   const r = await fetch(url + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   return { status: r.status, body: await r.json().catch(() => null) };
 }
-const crm = () => JSON.parse(db.prepare('SELECT value FROM kv WHERE key = ?').get(DATA_KEY).value);
+const crm = async () => JSON.parse((await db.get('SELECT value FROM kv WHERE key = ?', DATA_KEY)).value);
 const uuid = () => crypto.randomUUID();
 const rdv = (over = {}) => ({ type: 'rdv', requestId: uuid(), nom: 'Julie Petit', entreprise: 'Cabinet Petit', email: 'julie@petit.fr', telephone: '06 12 34 56 78', service: 'Assistant téléphonique IA', date: '2030-03-12', heure: '10:30', ...over });
 
@@ -55,7 +50,7 @@ test('validation des demandes', async () => {
 test('un message de contact crée un prospect à rappeler aujourd’hui, avec une tâche', async () => {
   const r = await call('POST', '/api/site/leads', { type: 'contact', requestId: uuid(), nom: 'Marc Durand', entreprise: 'Durand BTP', email: 'Marc@Durand.fr', telephone: '+33 6 11 22 33 44', sujet: 'Demande de devis', message: 'Bonjour, je rate des appels.' });
   assert.equal(r.status, 201);
-  const data = crm();
+  const data = await crm();
   const p = data.prospects.find((x) => x.id === r.body.prospectId);
   assert.equal(p.entreprise, 'Durand BTP');
   assert.equal(p.contact, 'Marc Durand');
@@ -73,7 +68,7 @@ test('un message de contact crée un prospect à rappeler aujourd’hui, avec un
 test('un rendez-vous garde prénom, nom, pays, code postal et ville dans la fiche', async () => {
   const r = await call('POST', '/api/site/leads', rdv({ date: '2030-04-02', nom: 'Léa Martin', prenom: 'Léa', nomFamille: 'Martin', entreprise: 'Martin Kiné', email: 'lea@martin-kine.fr', telephone: '06 98 76 54 32', pays: 'France', codePostal: '69003', ville: 'Lyon' }));
   assert.equal(r.status, 201);
-  const p = crm().prospects.find((x) => x.id === r.body.prospectId);
+  const p = (await crm()).prospects.find((x) => x.id === r.body.prospectId);
   assert.equal(p.contact, 'Léa Martin');
   assert.equal(p.prenom, 'Léa');
   assert.equal(p.nomFamille, 'Martin');
@@ -85,7 +80,7 @@ test('un rendez-vous garde prénom, nom, pays, code postal et ville dans la fich
   // Une fiche déjà connue garde sa ville, mais reçoit le code postal et le pays qui lui manquaient.
   const again = await call('POST', '/api/site/leads', { type: 'contact', requestId: uuid(), nom: 'Léa Martin', email: 'lea@martin-kine.fr', telephone: '06 98 76 54 32', ville: 'Villeurbanne', codePostal: '69100', pays: 'France', message: 'Petite question.' });
   assert.equal(again.status, 201);
-  const q = crm().prospects.find((x) => x.id === r.body.prospectId);
+  const q = (await crm()).prospects.find((x) => x.id === r.body.prospectId);
   assert.equal(q.ville, 'Lyon');
   assert.equal(q.codePostal, '69003');
 });
@@ -93,11 +88,11 @@ test('un rendez-vous garde prénom, nom, pays, code postal et ville dans la fich
 test('un rendez-vous arrive dans l’agenda (RDV pris à la date et l’heure) et bloque le créneau', async () => {
   const r = await call('POST', '/api/site/leads', rdv());
   assert.equal(r.status, 201);
-  const p = crm().prospects.find((x) => x.id === r.body.prospectId);
+  const p = (await crm()).prospects.find((x) => x.id === r.body.prospectId);
   assert.equal(p.statut, 'rdv_pris');
   assert.equal(p.prochaineRelance, '2030-03-12');
   assert.equal(p.prochaineRelanceHeure, '10:30');
-  const t = crm().tasks.find((x) => x.prospectId === p.id);
+  const t = (await crm()).tasks.find((x) => x.prospectId === p.id);
   assert.equal(t.due, '2030-03-12');
   assert.equal(t.heure, '10:30');
 
@@ -110,21 +105,21 @@ test('un rendez-vous arrive dans l’agenda (RDV pris à la date et l’heure) e
 test('même demande renvoyée : aucun doublon', async () => {
   const body = rdv({ requestId: uuid(), heure: '14:00', email: 'idem@x.fr', telephone: '07 99 99 99 99' });
   const a = await call('POST', '/api/site/leads', body);
-  const n = crm().prospects.length;
+  const n = (await crm()).prospects.length;
   const b = await call('POST', '/api/site/leads', body);
   assert.equal(b.status, 200);
   assert.equal(b.body.duplicate, true);
   assert.equal(b.body.prospectId, a.body.prospectId);
-  assert.equal(crm().prospects.length, n);
+  assert.equal((await crm()).prospects.length, n);
 });
 
 test('prospect déjà connu (même e-mail) : complété, pas dupliqué', async () => {
-  const n = crm().prospects.length;
+  const n = (await crm()).prospects.length;
   const r = await call('POST', '/api/site/leads', { type: 'contact', requestId: uuid(), nom: 'Julie Petit', email: 'julie@petit.fr', telephone: '06 12 34 56 78', message: 'Une question avant le rendez-vous.' });
   assert.equal(r.status, 201);
   assert.equal(r.body.existing, true);
-  assert.equal(crm().prospects.length, n);
-  const p = crm().prospects.find((x) => x.id === r.body.prospectId);
+  assert.equal((await crm()).prospects.length, n);
+  const p = (await crm()).prospects.find((x) => x.id === r.body.prospectId);
   // Le rendez-vous déjà fixé n'est pas écrasé par le message.
   assert.equal(p.statut, 'rdv_pris');
   assert.equal(p.prochaineRelance, '2030-03-12');
@@ -132,11 +127,11 @@ test('prospect déjà connu (même e-mail) : complété, pas dupliqué', async (
 });
 
 test('rendez-vous déplacé par l’équipe dans le CRM : l’ancien créneau se libère, le nouveau est pris', async () => {
-  const data = crm();
+  const data = await crm();
   const p = data.prospects.find((x) => x.email === 'julie@petit.fr');
   p.prochaineRelanceHeure = '11:15';
-  const cur = db.prepare('SELECT version FROM kv WHERE key = ?').get(DATA_KEY).version;
-  db.prepare('UPDATE kv SET value = ?, version = ? WHERE key = ?').run(JSON.stringify(data), cur + 1, DATA_KEY);
+  const cur = (await db.get('SELECT version FROM kv WHERE key = ?', DATA_KEY)).version;
+  await db.run('UPDATE kv SET value = ?, version = ? WHERE key = ?', JSON.stringify(data), cur + 1, DATA_KEY);
   const slots = await call('GET', '/api/site/creneaux?from=2030-03-12&to=2030-03-12');
   assert.deepEqual(slots.body.pris.map((s) => s.heure), ['11:15', '14:00']);
   // 11:00 chevauche le rendez-vous de 11:15 ; 10:30 est libre à nouveau.
@@ -145,20 +140,20 @@ test('rendez-vous déplacé par l’équipe dans le CRM : l’ancien créneau se
 });
 
 test('les données écrites par le site sont versionnées comme celles de l’équipe', async () => {
-  const h = db.prepare('SELECT COUNT(*) AS n FROM kv_history WHERE key = ?').get(DATA_KEY).n;
+  const h = (await db.get('SELECT COUNT(*) AS n FROM kv_history WHERE key = ?', DATA_KEY)).n;
   assert.ok(h >= 4);
 });
 
 test('offre choisie sur le site : étiquette et montants sur la fiche', async () => {
   const r = await call('POST', '/api/site/leads', rdv({ date: '2030-05-14', email: 'nina@scale.fr', telephone: '06 55 44 33 22', service: 'Pack Scale (3 490 € + 199 €/mois)', pack: 'Pack Scale', dealValue: 3490, mrrValue: 199 }));
   assert.equal(r.status, 201);
-  const p = crm().prospects.find((x) => x.id === r.body.prospectId);
+  const p = (await crm()).prospects.find((x) => x.id === r.body.prospectId);
   assert.deepEqual(p.tags, ['Site', 'Pack Scale']);
   assert.equal(p.dealValue, 3490);
   assert.equal(p.mrrValue, 199);
   assert.match(p.notes, /Pack Scale/);
   const bad = await call('POST', '/api/site/leads', rdv({ date: '2030-05-15', email: 'z@z.fr', telephone: '06 00 00 00 01', dealValue: 'x', mrrValue: -5 }));
-  const q = crm().prospects.find((x) => x.id === bad.body.prospectId);
+  const q = (await crm()).prospects.find((x) => x.id === bad.body.prospectId);
   assert.equal(q.dealValue, 0);
   assert.equal(q.mrrValue, 0);
 });

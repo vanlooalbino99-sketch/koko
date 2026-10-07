@@ -4,7 +4,8 @@ import express from 'express';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { openDb } from './db.js';
+import { openStore } from './store.js';
+import { localIdentity, supabaseIdentity } from './identity.js';
 import { attachUser, csrfGuard, requireUser, requireAdmin, loginLimiter } from './auth.js';
 import { authRoutes } from './routes/auth.js';
 import { usersRoutes } from './routes/users.js';
@@ -20,8 +21,11 @@ import { assemble } from '../../scripts/build.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
 
-export function createApp({ dataDir, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone } = {}) {
-  const db = openDb(dataDir);
+// Base : PostgreSQL (Supabase) si databaseUrl est donné, sinon SQLite dans dataDir.
+// Mots de passe : Supabase Auth si supabase = { url, serviceKey } est donné, sinon vérifiés par le serveur.
+export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone } = {}) {
+  const db = await openStore({ dataDir, databaseUrl });
+  const identity = supabase ? supabaseIdentity(supabase) : localIdentity();
   const app = express();
   const limiter = loginLimiter();
   const store = ambianceStore({ db, dataDir });
@@ -42,8 +46,8 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
   // Passerelle du site internet : appelée de serveur à serveur avec une clé, donc hors cookies et hors garde CSRF.
   app.use('/api/site', express.json({ limit: '50kb' }), siteRoutes({ db, apiKey: siteApiKey, timeZone: siteTimeZone }));
   app.use('/api', csrfGuard);
-  app.use('/api/auth', express.json({ limit: '100kb' }), authRoutes({ db, limiter, secureCookies }));
-  app.use('/api/users', requireAdmin, express.json({ limit: '100kb' }), usersRoutes({ db, hub }));
+  app.use('/api/auth', express.json({ limit: '100kb' }), authRoutes({ db, identity, limiter, secureCookies }));
+  app.use('/api/users', requireAdmin, express.json({ limit: '100kb' }), usersRoutes({ db, identity, hub }));
   app.use('/api/data', requireUser, express.json({ limit: '25mb' }), dataRoutes({ db }));
   app.use('/api/ambiance', requireUser, express.json({ limit: '40mb' }), ambianceApi({ db, store }));
   app.use('/api/formation', requireUser, express.json({ limit: '10kb' }), formationRoutes({ db }));
@@ -53,9 +57,9 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
   app.use('/ambiance', ambianceFiles({ store }));
 
   // Pages
-  app.get('/connexion', (req, res) => {
+  app.get('/connexion', async (req, res) => {
     if (req.user) return res.redirect(safeReturn(req.query.retour));
-    const needsSetup = db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0;
+    const needsSetup = (await db.get('SELECT COUNT(*) AS n FROM users')).n === 0;
     res.set('Cache-Control', 'no-store').type('html').send(loginPage({ needsSetup, retour: safeReturn(req.query.retour) }));
   });
 
@@ -77,5 +81,5 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
     res.status(status).json({ error: status === 413 ? 'Envoi trop volumineux.' : status === 400 ? 'Requête illisible.' : 'Erreur du serveur.' });
   });
 
-  return { app, db, hub };
+  return { app, db, hub, identity };
 }

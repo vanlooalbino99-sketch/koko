@@ -1,20 +1,15 @@
 // Tests de l'API : serveur réel sur un port libre, base dans un dossier temporaire.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { createApp } from '../src/app.js';
+import { testApp } from './helpers.js';
 
-let server, base, dir, db;
+let server, base, made;
 before(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'bs-test-'));
-  const made = createApp({ dataDir: dir });
-  db = made.db;
+  made = await testApp();
   await new Promise((res) => { server = made.app.listen(0, res); });
   base = `http://127.0.0.1:${server.address().port}`;
 });
-after(() => { server.close(); db.close(); rmSync(dir, { recursive: true, force: true }); });
+after(async () => { server.close(); await made.cleanup(); });
 
 // Petit client avec cookie de session.
 function client() {

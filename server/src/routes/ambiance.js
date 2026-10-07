@@ -1,11 +1,11 @@
 // Images d'ambiance partagées par l'équipe (Réglages › Ambiance) : réglages, envoi, suppression, lecture.
-// Les fichiers sont rangés dans DATA_DIR/ambiance/, les informations dans SQLite.
+// Les fichiers sont rangés dans DATA_DIR/ambiance/, les informations dans la base.
 // Lecture pour tout membre connecté ; modification réservée aux administrateurs.
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { getSetting, setSetting } from '../db.js';
+import { getSetting, setSetting } from '../store.js';
 import { requireAdmin } from '../auth.js';
 
 const MAX_IMAGES = 60;
@@ -26,7 +26,7 @@ export function ambianceStore({ db, dataDir }) {
   const dir = join(dataDir, 'ambiance');
   mkdirSync(dir, { recursive: true });
   const meta = (r) => ({ id: r.id, nom: r.nom, largeur: r.largeur, hauteur: r.hauteur, couleur: r.couleur, created: r.created });
-  const list = () => db.prepare('SELECT * FROM ambiance_images ORDER BY created').all().map(meta);
+  const list = async () => (await db.all('SELECT * FROM ambiance_images ORDER BY created')).map(meta);
   const config = () => getSetting(db, 'ambiance', {});
   // Fichier d'une image (pleine taille ou miniature), quelle que soit son extension.
   function file(id, mini) {
@@ -43,19 +43,19 @@ export function ambianceStore({ db, dataDir }) {
 export function ambianceApi({ db, store }) {
   const r = Router();
 
-  r.get('/', (req, res) => res.json({ config: store.config(), images: store.list(), canEdit: req.user.role === 'admin' }));
+  r.get('/', async (req, res) => res.json({ config: await store.config(), images: await store.list(), canEdit: req.user.role === 'admin' }));
 
-  r.put('/config', requireAdmin, (req, res) => {
+  r.put('/config', requireAdmin, async (req, res) => {
     const cfg = req.body;
     if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) return res.status(400).json({ error: 'Réglages invalides.' });
     if (JSON.stringify(cfg).length > 64 * 1024) return res.status(413).json({ error: 'Réglages trop volumineux.' });
-    setSetting(db, 'ambiance', cfg);
+    await setSetting(db, 'ambiance', cfg);
     res.json({ config: cfg });
   });
 
-  r.post('/images', requireAdmin, (req, res) => {
+  r.post('/images', requireAdmin, async (req, res) => {
     const b = req.body || {};
-    if (store.list().length >= MAX_IMAGES) return res.status(400).json({ error: `Maximum ${MAX_IMAGES} images.` });
+    if ((await store.list()).length >= MAX_IMAGES) return res.status(400).json({ error: `Maximum ${MAX_IMAGES} images.` });
     const full = decodeImage(b.image), mini = decodeImage(b.mini);
     if (!full || !mini) return res.status(400).json({ error: 'Image illisible (JPG, PNG ou WebP, 12 Mo au plus).' });
     const id = randomUUID();
@@ -66,13 +66,13 @@ export function ambianceApi({ db, store }) {
       largeur: Number(b.largeur) || null, hauteur: Number(b.hauteur) || null,
       couleur: /^#[0-9a-f]{6}$/i.test(b.couleur || '') ? b.couleur : null, created: new Date().toISOString(),
     };
-    db.prepare('INSERT INTO ambiance_images (id, nom, largeur, hauteur, couleur, created, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .run(row.id, row.nom, row.largeur, row.hauteur, row.couleur, row.created, req.user.id);
+    await db.run('INSERT INTO ambiance_images (id, nom, largeur, hauteur, couleur, created, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      row.id, row.nom, row.largeur, row.hauteur, row.couleur, row.created, req.user.id);
     res.status(201).json(row);
   });
 
-  r.delete('/images/:id', requireAdmin, (req, res) => {
-    const info = db.prepare('DELETE FROM ambiance_images WHERE id = ?').run(req.params.id);
+  r.delete('/images/:id', requireAdmin, async (req, res) => {
+    const info = await db.run('DELETE FROM ambiance_images WHERE id = ?', req.params.id);
     if (!info.changes) return res.status(404).json({ error: 'Image introuvable.' });
     for (const mini of [false, true]) { const p = store.file(req.params.id, mini); if (p) unlinkSync(p); }
     res.status(204).end();
@@ -92,8 +92,8 @@ export function ambianceFiles({ store }) {
     res.sendFile(p);
   });
   // Visible sans compte : seulement si l'administrateur l'a permis (Réglages › Ambiance › Page de connexion).
-  r.get('/connexion', (_req, res) => {
-    const cfg = store.config(), imgs = store.list();
+  r.get('/connexion', async (_req, res) => {
+    const cfg = await store.config(), imgs = await store.list();
     if (cfg.connexion === false || !imgs.length) return res.status(404).end();
     const id = imgs.some((i) => i.id === cfg.vedette) ? cfg.vedette : imgs[imgs.length - 1].id;
     const p = store.file(id, false);

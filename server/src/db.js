@@ -107,6 +107,18 @@ const MIGRATIONS = [
      data BLOB NOT NULL,
      updated_at TEXT NOT NULL
    );`,
+  // v6 : pièces jointes de la messagerie (le fichier est gardé en base, lié à son message).
+  `CREATE TABLE chat_files (
+     id TEXT PRIMARY KEY,
+     conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+     user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+     name TEXT NOT NULL,
+     mime TEXT NOT NULL,
+     size INTEGER NOT NULL,
+     data BLOB NOT NULL,
+     created_at TEXT NOT NULL
+   );
+   ALTER TABLE chat_messages ADD COLUMN file_id TEXT REFERENCES chat_files(id) ON DELETE SET NULL;`,
 ];
 
 export function openDb(dataDir) {

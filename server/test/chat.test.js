@@ -27,6 +27,11 @@ function client() {
     if (set) cookie = set.split(';')[0];
     return { status: r.status, body: await r.json().catch(() => null) };
   };
+  call.raw = async (method, path, buf) => {
+    const r = await fetch(base + path, { method, headers: { 'X-Requested-With': 'blackstart', 'Content-Type': 'application/octet-stream', Cookie: cookie }, body: buf });
+    return { status: r.status, body: await r.json().catch(() => null) };
+  };
+  call.get = (path) => fetch(base + path, { headers: { Cookie: cookie } });
   // Flux temps réel : garde les événements reçus, et attend celui qu'on veut.
   call.flux = async () => {
     const ctrl = new AbortController();
@@ -100,6 +105,33 @@ test('conversation Équipe : message en direct, non lus, lecture', async () => {
   assert.equal(st.body.conversations[0].unread, 0);
   assert.equal((await marie('POST', '/api/chat/conversations/equipe/messages', { body: '   ' })).status, 400);
   assert.equal((await marie('POST', '/api/chat/conversations/equipe/messages', { body: 'x'.repeat(4001) })).status, 400);
+  fm.close();
+});
+
+test('pièces jointes : envoi, message, lecture réservée aux membres', async () => {
+  const fm = await marie.flux();
+  const send = (who, path, buf, extra = {}) => who.raw('POST', path, buf, extra);
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
+  const r = await send(admin, '/api/chat/conversations/equipe/fichiers?nom=' + encodeURIComponent('devis Dupont.png') + '&type=image/png&texte=Voici');
+  assert.equal(r.status, 400, 'fichier vide refusé');
+  const ok = await admin.raw('POST', '/api/chat/conversations/equipe/fichiers?nom=' + encodeURIComponent('devis Dupont.png') + '&type=image/png&texte=Voici', png);
+  assert.equal(ok.status, 201);
+  assert.equal(ok.body.message.body, 'Voici');
+  assert.deepEqual(ok.body.message.file, { id: ok.body.message.file.id, name: 'devis Dupont.png', mime: 'image/png', size: png.length });
+  assert.equal((await fm.wait('message', (m) => !!m.file)).file.name, 'devis Dupont.png');
+  const got = await marie.get(`/api/chat/fichiers/${ok.body.message.file.id}`);
+  assert.equal(got.status, 200);
+  assert.equal(got.headers.get('content-type'), 'image/png');
+  assert.deepEqual(Buffer.from(await got.arrayBuffer()), png);
+  const html = await admin.raw('POST', '/api/chat/conversations/equipe/fichiers?nom=x.html&type=text/html', Buffer.from('<script>alert(1)</script>'));
+  const h = await marie.get(`/api/chat/fichiers/${html.body.message.file.id}`);
+  assert.equal(h.headers.get('content-type'), 'application/octet-stream', 'jamais affiché comme une page');
+  assert.match(h.headers.get('content-disposition'), /^attachment/);
+  // Fichier d'un groupe : invisible pour qui n'en fait pas partie.
+  const g = await admin('POST', '/api/chat/groupes', { name: 'Privé', members: [] });
+  const priv = await admin.raw('POST', `/api/chat/conversations/${g.body.conversation.id}/fichiers?nom=a.txt&type=text/plain`, Buffer.from('secret'));
+  assert.equal((await paul.get(`/api/chat/fichiers/${priv.body.message.file.id}`)).status, 404);
+  assert.equal((await paul.raw('POST', `/api/chat/conversations/${g.body.conversation.id}/fichiers?nom=a.txt`, Buffer.from('x'))).status, 404);
   fm.close();
 });
 

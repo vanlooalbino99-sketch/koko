@@ -20,6 +20,8 @@ export const site = {
 export const nav = [
   { href: '/', label: 'Accueil' },
   { href: '/services', label: 'Services' },
+  { href: '/offres', label: 'Offres' },
+  { href: '/demos', label: 'Démos' },
   { href: '/a-propos', label: 'À propos' },
   { href: '/contact', label: 'Contact' },
 ] as const;
@@ -111,3 +113,118 @@ export const faq = [
   { q: 'Combien de temps pour démarrer ?', a: 'Environ deux semaines entre l’audit et la mise en service, formation comprise.' },
   { q: 'Y a-t-il un engagement ?', a: 'Les offres sont mensuelles et résiliables à tout moment.' },
 ] as const;
+
+// Offres et tarifs (page /offres et aperçu sur l'accueil). Montants en euros, utilisés aussi par le CRM.
+export type Pack = {
+  slug: string;
+  name: string;
+  pitch: string;
+  audience?: string[];
+  features: string[];
+  /** Paiement unique au prix normal (affiché barré pendant l'offre de lancement). */
+  setup: number;
+  setupLabel: string;
+  /** Offre de lancement : paiement unique (montant repris dans le CRM). */
+  launch: number;
+  launchLabel: string;
+  /** Ou abonnement, pour qui ne peut pas payer en une fois. */
+  monthly: number;
+  monthlyLabel: string;
+  featured?: boolean;
+};
+
+export const packs: Pack[] = [
+  {
+    slug: 'business-starter',
+    name: 'Business Starter',
+    pitch: 'Une présence en ligne professionnelle, prête à recevoir vos clients.',
+    audience: ['Artisans', 'Consultants', 'Coaches', 'Petites entreprises'],
+    features: ['Site web professionnel', 'Formulaire de contact', 'Prise de rendez-vous', 'Google Maps', 'Optimisation mobile', 'Hébergement', 'SSL', 'Intégration CRM'],
+    setup: 990, setupLabel: '990 €',
+    launch: 490, launchLabel: '490 €',
+    monthly: 49, monthlyLabel: '49 €',
+  },
+  {
+    slug: 'acquisition-pro',
+    name: 'Acquisition Pro',
+    pitch: 'Pour les entreprises qui veulent générer des leads.',
+    features: ['Site web premium', 'Système de prise de RDV', 'CRM', 'Pipeline commercial', 'E-mails automatiques', 'Dashboard commercial', 'Synchronisation calendrier'],
+    setup: 1990, setupLabel: '1 990 €',
+    launch: 990, launchLabel: '990 €',
+    monthly: 99, monthlyLabel: '99 €',
+  },
+  {
+    slug: 'scale',
+    name: 'Scale',
+    pitch: 'Toute la machine commerciale : chaque lead qualifié, relancé et suivi jusqu’à la signature.',
+    features: ['Site premium', 'CRM complet', 'Pipeline commercial', 'Qualification de leads', 'Automatisation des e-mails', 'Relances automatiques', 'Reporting dirigeant', 'Tableau de bord', 'Gestion des commerciaux'],
+    setup: 3490, setupLabel: '3 490 €',
+    launch: 1790, launchLabel: '1 790 €',
+    monthly: 199, monthlyLabel: '199 €',
+    featured: true,
+  },
+  {
+    slug: 'entreprise',
+    name: 'Entreprise',
+    pitch: 'Pour les PME qui veulent un outil taillé sur mesure.',
+    features: ['CRM sur mesure', 'Multi-utilisateurs', 'Gestion clients', 'Gestion des devis', 'Signature électronique', 'Facturation', 'Reporting avancé', 'Formation', 'Support prioritaire'],
+    setup: 5000, setupLabel: '5 000 à 15 000 €',
+    launch: 2500, launchLabel: '2 500 à 7 500 €',
+    monthly: 299, monthlyLabel: '299 à 499 €',
+  },
+];
+
+/** Libellé d'une offre dans le formulaire de RDV et dans le CRM. */
+export const packLabel = (p: Pack) => `Pack ${p.name} (${p.launchLabel} une fois ou ${p.monthlyLabel}/mois)`;
+
+// Offre en abonnement, bientôt disponible : le CRM Blackstart prêt à l'emploi, sans développement spécifique.
+export const saas = {
+  includes: ['CRM', 'Agenda', 'Pipeline', 'E-mails', 'Prise de RDV'],
+  plans: [
+    { name: 'Solo', price: '49 €' },
+    { name: 'Pro', price: '99 €' },
+    { name: 'Business', price: '199 €' },
+  ],
+};
+
+// Démos de CRM métier (page /demos) : fichiers autonomes servis depuis public/demos/.
+export const demos = [
+  {
+    slug: 'immobilier',
+    tag: 'Immobilier',
+    title: 'Agences immobilières',
+    why: 'Honoraires élevés à chaque vente, mandats qui expirent, acquéreurs oubliés dans un tableur.',
+    features: ['Rapprochement automatique biens ↔ acquéreurs, avec score', 'Alerte fin de mandat à J-30 et prix à revoir', 'Annonces et comptes rendus de visite rédigés en un clic'],
+    kpi: 'visites par mandat avant offre',
+    alt: 'Aperçu du CRM immobilier : pipeline des mandats',
+  },
+  {
+    slug: 'renovation',
+    tag: 'Rénovation énergétique',
+    title: 'Rénovation énergétique',
+    why: 'Marché porté par les aides de l’État, où l’artisan qui répond le premier remporte le chantier.',
+    features: ['Simulateur d’aides et reste à charge, devant le client', 'Relances de devis automatiques à J+5 et J+12', 'Planning des équipes et marge par chantier'],
+    kpi: 'taux d’acceptation des devis',
+    alt: 'Aperçu du CRM rénovation : chantiers et aides',
+  },
+  {
+    slug: 'courtage',
+    tag: 'Courtage',
+    title: 'Courtage assurance & crédit',
+    why: 'Commissions récurrentes chaque année, et un devoir de conseil contrôlé de près.',
+    features: ['Échéancier sur 12 mois avec relance à J-45', 'Ventes croisées détectées dans le portefeuille', 'Conformité devoir de conseil suivie dossier par dossier'],
+    kpi: 'contrats par assuré',
+    alt: 'Aperçu du CRM courtage : portefeuille et échéancier',
+  },
+];
+
+export const demoCommon = [
+  { title: 'Pipeline glisser-déposer', text: 'Totaux par étape, échéances en retard signalées, menu « Déplacer vers » au téléphone.' },
+  { title: 'Tableau de bord', text: 'Le chiffre qui compte dans le métier en premier, tendances sur 12 semaines.' },
+  { title: 'Relances et tâches', text: 'En retard, aujourd’hui, cette semaine : rien ne passe entre les mailles.' },
+  { title: 'Recherche Ctrl+K', text: 'Toute la base au clavier, avec les actions courantes.' },
+  { title: 'Rédaction assistée', text: 'Relances, comptes rendus et messages clients en brouillon modifiable.' },
+  { title: 'Import et export CSV', text: 'Le fichier Excel du client entre dans le CRM le premier jour.' },
+  { title: 'À la marque du client', text: 'Nom, couleur, étapes et équipe modifiables en direct.' },
+  { title: 'Sans installation', text: 'Clair ou sombre, utilisable sur ordinateur et téléphone.' },
+];

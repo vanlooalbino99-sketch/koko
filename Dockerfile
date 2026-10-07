@@ -13,9 +13,9 @@ COPY app ./app
 COPY scripts ./scripts
 COPY server/src ./server/src
 
+# Monter un volume sur /data (docker-compose, Render disk, volume Railway) pour garder les données.
 RUN mkdir -p /data && chown node:node /data
 USER node
-VOLUME ["/data"]
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \

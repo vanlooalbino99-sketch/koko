@@ -16,8 +16,8 @@ export const booking = {
   durationMinutes: 30,
   /** Délai minimum entre maintenant et le rendez-vous, en minutes. */
   noticeMinutes: 180,
-  /** Jusqu'à combien de jours à l'avance on peut réserver. */
-  horizonDays: 45,
+  /** Jusqu'à combien de jours à l'avance on peut réserver (null : sans limite, toutes les années). */
+  horizonDays: null as number | null,
   /** Jours fériés fixes (MM-JJ) et fermetures exceptionnelles (AAAA-MM-JJ). */
   closedEveryYear: ['01-01', '05-01', '05-08', '07-14', '08-15', '11-01', '11-11', '12-25'],
   closedDates: [] as string[],
@@ -78,16 +78,16 @@ export function daySlots(date: string) {
   return out;
 }
 
-/** Premier et dernier jour réservables. */
-export function bookingWindow(now: Date = new Date()) {
+/** Premier et dernier jour réservables (to = null : pas de date limite). */
+export function bookingWindow(now: Date = new Date()): { from: string; to: string | null } {
   const today = zonedNow(now).date;
-  return { from: today, to: addDays(today, booking.horizonDays) };
+  return { from: today, to: booking.horizonDays == null ? null : addDays(today, booking.horizonDays) };
 }
 
 /** Créneaux encore libres d'une journée : ouverts, pas déjà pris, et assez loin dans le futur. */
 export function availableSlots(date: string, taken: Iterable<string> = [], now: Date = new Date()) {
   const { from, to } = bookingWindow(now);
-  if (!isDate(date) || date < from || date > to) return [];
+  if (!isDate(date) || date < from || (to !== null && date > to)) return [];
   const earliest = zonedNow(new Date(now.getTime() + booking.noticeMinutes * 60_000));
   // Un rendez-vous pris à n'importe quelle heure (ex. 10:15, fixé par téléphone) bloque les créneaux qu'il chevauche.
   const busy = [...taken].filter(isTime).map(toMin);

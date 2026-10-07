@@ -1,7 +1,7 @@
 # Blackstart AI — CRM
 
-CRM de prospection : file d'appels, agenda, prospects, pipeline, devis et factures, paiements, tableau de bord,
-rapports avec courbes de tendance, **carte des clients sur une planète 3D**, **formations en motion design**, ambiances
+CRM de prospection : file d'appels, agenda, prospects, **générateur de vrais leads** (base officielle Sirene, un lot neuf à chaque fois), pipeline, devis et factures, paiements, tableau de bord,
+rapports avec courbes de tendance et **suivi de niche** (client idéal), **carte des clients sur une planète 3D**, **formations en motion design**, ambiances
 animées (globe interactif), icônes du menu personnalisables.
 
 Le projet fournit **deux façons de l'utiliser, à partir des mêmes sources** :
@@ -130,14 +130,15 @@ app/                      Le CRM (navigateur), découpé en fichiers
   modules/bs-tendance.js  Courbes de tendance des graphiques en barres
   modules/bs-icones*.js   Icônes du menu (≈ 1 000 icônes, styles, couleurs)
   modules/bs-reglement.js Règlement des devis et factures, QR codes
-  styles/*.css
+  modules/bs-messages.js  Messagerie d'équipe (v5.10) : Messages, Groupes et Visio (WebRTC, signalisation par le serveur)
+  styles/*.css            Styles ; aurore.css (v5.9) : aurore, verre et dégradés tirés de la couleur d'accent
 scripts/build.mjs         Assemble app/ en un seul fichier HTML
 server/src/               Serveur Express
   app.js                  Routes, page de connexion, CRM servi avec sa configuration
   auth.js                 Mots de passe (scrypt), sessions, CSRF, limitation des essais
   db.js                   SQLite (node:sqlite) et migrations
   merge.js                Fusion à trois voies des données
-  routes/                 auth, users, data, ambiance, formation, site (passerelle du site internet)
+  routes/                 auth, users, data, ambiance, formation, site (passerelle du site internet), chat (messagerie, flux temps réel, visio)
 server/test/              Tests de l'API et de la fusion (node --test)
 e2e/                      Tests de bout en bout dans Chromium (serveur à deux sessions, CRM de démonstration)
 demos/                    CRM métier de démonstration (immobilier, rénovation, courtage), un fichier chacun

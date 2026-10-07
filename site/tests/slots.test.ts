@@ -22,11 +22,13 @@ test('jours fermés : week-end, fériés fixes et de Pâques', () => {
   assert.deepEqual(daySlots('2026-10-18'), []);
 });
 
-test('délai de prévenance de 3 h et fenêtre de réservation', () => {
+test('délai de prévenance de 3 h, réservation sans limite d’années', () => {
   const today = availableSlots('2026-10-12', [], NOW);
   assert.equal(today[0], '11:00'); // 8 h + 3 h
   assert.deepEqual(availableSlots('2026-10-09', [], NOW), []); // passé
-  assert.deepEqual(availableSlots('2027-01-15', [], NOW), []); // trop loin
+  assert.equal(availableSlots('2027-01-15', [], NOW).length, 14); // dans 3 mois
+  assert.equal(availableSlots('2041-06-11', [], NOW).length, 14); // dans 15 ans
+  assert.deepEqual(availableSlots('2041-06-10', [], NOW), []); // lundi de Pentecôte 2041
 });
 
 test('un rendez-vous existant bloque les créneaux qu’il chevauche', () => {

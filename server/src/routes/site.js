@@ -30,13 +30,20 @@ export function zoned(timeZone, at = new Date()) {
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
 }
 
+const money = (v) => (Number.isFinite(Number(v)) ? Math.min(Math.max(Math.round(Number(v)), 0), 1_000_000) : 0);
+
 export function validateLead(b) {
   const errors = [];
   const lead = {
     type: b.type,
     requestId: str(b.requestId, 64),
-    nom: str(b.nom, 80),
+    nom: str(b.nom, 120),
+    prenom: str(b.prenom, 60),
+    nomFamille: str(b.nomFamille, 60),
     entreprise: str(b.entreprise, 120),
+    pays: str(b.pays, 60),
+    codePostal: str(b.codePostal, 12),
+    ville: str(b.ville, 80),
     email: str(b.email, 160).toLowerCase(),
     telephone: str(b.telephone, 30),
     message: str(b.message, 2000),
@@ -45,6 +52,10 @@ export function validateLead(b) {
     page: str(b.page, 80),
     date: str(b.date, 10),
     heure: str(b.heure, 5),
+    // Offre choisie sur le site : étiquette de la fiche et montants (mise en place, mensuel).
+    pack: str(b.pack, 40),
+    dealValue: money(b.dealValue),
+    mrrValue: money(b.mrrValue),
   };
   if (lead.type !== 'contact' && lead.type !== 'rdv') errors.push('Type inconnu (contact ou rdv).');
   if (!/^[\w-]{8,64}$/.test(lead.requestId)) errors.push('Identifiant de demande invalide.');
@@ -117,7 +128,19 @@ export function siteRoutes({ db, apiKey, timeZone = 'Europe/Paris', slotMinutes 
       const resume = isRdv
         ? `RDV réservé sur le site : ${quand}${lead.service ? ` (${lead.service})` : ''}`
         : `Message reçu via le site${lead.sujet ? ` (${lead.sujet})` : ''}`;
-      const note = [resume, lead.message && `« ${lead.message} »`].filter(Boolean).join('\n');
+      // Coordonnées postales du formulaire de rendez-vous (pays, code postal, ville).
+      const lieu = [[lead.codePostal, lead.ville].filter(Boolean).join(' '), lead.pays].filter(Boolean).join(', ');
+      const qui = lead.prenom || lead.nomFamille ? `${lead.prenom} ${lead.nomFamille}`.trim() : '';
+      const coords = qui || lieu ? `Coordonnées : ${[qui, lieu].filter(Boolean).join(' · ')}` : '';
+      const note = [resume, coords, lead.message && `« ${lead.message} »`].filter(Boolean).join('\n');
+      const adresse = {
+        ...(lead.ville ? { ville: lead.ville } : {}),
+        ...(lieu ? { adresse: lieu } : {}),
+        ...(lead.codePostal ? { codePostal: lead.codePostal } : {}),
+        ...(lead.pays ? { pays: lead.pays } : {}),
+        ...(lead.prenom ? { prenom: lead.prenom } : {}),
+        ...(lead.nomFamille ? { nomFamille: lead.nomFamille } : {}),
+      };
       const event = { id: newId(), ts, date: now.date, time: now.time, type: isRdv ? 'relance' : 'email', text: note };
       const relance = isRdv ? { prochaineRelance: lead.date, prochaineRelanceHeure: lead.heure } : { prochaineRelance: now.date, prochaineRelanceHeure: null };
 
@@ -138,7 +161,11 @@ export function siteRoutes({ db, apiKey, timeZone = 'Europe/Paris', slotMinutes 
           email: existing.email || lead.email,
           telephone: existing.telephone || lead.telephone,
           contact: existing.contact || lead.nom,
-          tags: Array.from(new Set([...(Array.isArray(existing.tags) ? existing.tags : []), 'Site'])),
+          // Adresse et identité : complétées seulement si la fiche ne les avait pas.
+          ...Object.fromEntries(Object.entries(adresse).filter(([k]) => !existing[k])),
+          tags: Array.from(new Set([...(Array.isArray(existing.tags) ? existing.tags : []), 'Site', ...(lead.pack ? [lead.pack] : [])])),
+          ...(lead.dealValue && !Number(existing.dealValue) ? { dealValue: lead.dealValue } : {}),
+          ...(lead.mrrValue && !Number(existing.mrrValue) ? { mrrValue: lead.mrrValue } : {}),
           events: [event, ...(Array.isArray(existing.events) ? existing.events : [])].slice(0, 200),
           updatedAt: now.date,
         };
@@ -152,12 +179,13 @@ export function siteRoutes({ db, apiKey, timeZone = 'Europe/Paris', slotMinutes 
           telephone: lead.telephone,
           email: lead.email,
           ville: '', adresse: '', siret: '', site: '',
+          ...adresse,
           canal: CANAL,
           statut: isRdv ? 'rdv_pris' : 'a_appeler',
           priorite: 'haute',
-          tags: ['Site'],
+          tags: ['Site', ...(lead.pack ? [lead.pack] : [])],
           notes: note,
-          dealValue: 0, mrrValue: 0, signedAt: null, resilieAt: null,
+          dealValue: lead.dealValue, mrrValue: lead.mrrValue, signedAt: null, resilieAt: null,
           ...relance,
           createdAt: now.date,
           updatedAt: now.date,
@@ -173,7 +201,7 @@ export function siteRoutes({ db, apiKey, timeZone = 'Europe/Paris', slotMinutes 
         due: isRdv ? lead.date : now.date,
         heure: isRdv ? lead.heure : '',
         priorite: 'haute',
-        notes: [lead.telephone, lead.email, note].join('\n'),
+        notes: [lead.telephone, lead.email, note].filter(Boolean).join('\n'),
         done: false,
         createdAt: now.date,
       };

@@ -70,6 +70,26 @@ test('un message de contact crée un prospect à rappeler aujourd’hui, avec un
   assert.equal(data.version, 4);
 });
 
+test('un rendez-vous garde prénom, nom, pays, code postal et ville dans la fiche', async () => {
+  const r = await call('POST', '/api/site/leads', rdv({ date: '2030-04-02', nom: 'Léa Martin', prenom: 'Léa', nomFamille: 'Martin', entreprise: 'Martin Kiné', email: 'lea@martin-kine.fr', telephone: '06 98 76 54 32', pays: 'France', codePostal: '69003', ville: 'Lyon' }));
+  assert.equal(r.status, 201);
+  const p = crm().prospects.find((x) => x.id === r.body.prospectId);
+  assert.equal(p.contact, 'Léa Martin');
+  assert.equal(p.prenom, 'Léa');
+  assert.equal(p.nomFamille, 'Martin');
+  assert.equal(p.ville, 'Lyon');
+  assert.equal(p.codePostal, '69003');
+  assert.equal(p.pays, 'France');
+  assert.equal(p.adresse, '69003 Lyon, France');
+  assert.match(p.notes, /Coordonnées : Léa Martin · 69003 Lyon, France/);
+  // Une fiche déjà connue garde sa ville, mais reçoit le code postal et le pays qui lui manquaient.
+  const again = await call('POST', '/api/site/leads', { type: 'contact', requestId: uuid(), nom: 'Léa Martin', email: 'lea@martin-kine.fr', telephone: '06 98 76 54 32', ville: 'Villeurbanne', codePostal: '69100', pays: 'France', message: 'Petite question.' });
+  assert.equal(again.status, 201);
+  const q = crm().prospects.find((x) => x.id === r.body.prospectId);
+  assert.equal(q.ville, 'Lyon');
+  assert.equal(q.codePostal, '69003');
+});
+
 test('un rendez-vous arrive dans l’agenda (RDV pris à la date et l’heure) et bloque le créneau', async () => {
   const r = await call('POST', '/api/site/leads', rdv());
   assert.equal(r.status, 201);
@@ -127,4 +147,18 @@ test('rendez-vous déplacé par l’équipe dans le CRM : l’ancien créneau se
 test('les données écrites par le site sont versionnées comme celles de l’équipe', async () => {
   const h = db.prepare('SELECT COUNT(*) AS n FROM kv_history WHERE key = ?').get(DATA_KEY).n;
   assert.ok(h >= 4);
+});
+
+test('offre choisie sur le site : étiquette et montants sur la fiche', async () => {
+  const r = await call('POST', '/api/site/leads', rdv({ date: '2030-05-14', email: 'nina@scale.fr', telephone: '06 55 44 33 22', service: 'Pack Scale (3 490 € + 199 €/mois)', pack: 'Pack Scale', dealValue: 3490, mrrValue: 199 }));
+  assert.equal(r.status, 201);
+  const p = crm().prospects.find((x) => x.id === r.body.prospectId);
+  assert.deepEqual(p.tags, ['Site', 'Pack Scale']);
+  assert.equal(p.dealValue, 3490);
+  assert.equal(p.mrrValue, 199);
+  assert.match(p.notes, /Pack Scale/);
+  const bad = await call('POST', '/api/site/leads', rdv({ date: '2030-05-15', email: 'z@z.fr', telephone: '06 00 00 00 01', dealValue: 'x', mrrValue: -5 }));
+  const q = crm().prospects.find((x) => x.id === bad.body.prospectId);
+  assert.equal(q.dealValue, 0);
+  assert.equal(q.mrrValue, 0);
 });

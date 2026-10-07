@@ -50,7 +50,7 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-1">
           <ThemeToggle />
-          <Button asChild className="hidden sm:inline-flex">
+          <Button asChild className="sheen glow-btn hidden sm:inline-flex" data-magnet>
             <Link href="/rendez-vous">
               <CalendarCheck aria-hidden />
               Réserver un audit

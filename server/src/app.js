@@ -12,6 +12,7 @@ import { dataRoutes } from './routes/data.js';
 import { ambianceStore, ambianceApi, ambianceFiles } from './routes/ambiance.js';
 import { formationRoutes } from './routes/formation.js';
 import { siteRoutes } from './routes/site.js';
+import { chatRoutes, chatHub } from './routes/chat.js';
 import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
 
@@ -23,6 +24,7 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
   const app = express();
   const limiter = loginLimiter();
   const store = ambianceStore({ db, dataDir });
+  const hub = chatHub();
   app.disable('x-powered-by');
   if (trustProxy) app.set('trust proxy', trustProxy);
 
@@ -31,6 +33,8 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
     next();
   });
   app.get('/healthz', (_req, res) => res.json({ ok: true, version: VERSION }));
+  // Voix off de la formation (fichiers MP3 nommés par l'empreinte du texte : jamais modifiés, cache long).
+  app.use('/voix', express.static(join(ROOT, 'app', 'voix'), { immutable: true, maxAge: '30d', fallthrough: false, index: false }));
   app.use(attachUser(db));
 
   // API
@@ -42,6 +46,7 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
   app.use('/api/data', requireUser, express.json({ limit: '25mb' }), dataRoutes({ db }));
   app.use('/api/ambiance', requireUser, express.json({ limit: '40mb' }), ambianceApi({ db, store }));
   app.use('/api/formation', requireUser, express.json({ limit: '10kb' }), formationRoutes({ db }));
+  app.use('/api/chat', requireUser, express.json({ limit: '100kb' }), chatRoutes({ db, hub }));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Adresse inconnue.' }));
   app.use('/ambiance', ambianceFiles({ store }));
 
@@ -70,5 +75,5 @@ export function createApp({ dataDir, dev = false, secureCookies = false, trustPr
     res.status(status).json({ error: status === 413 ? 'Envoi trop volumineux.' : status === 400 ? 'Requête illisible.' : 'Erreur du serveur.' });
   });
 
-  return { app, db };
+  return { app, db, hub };
 }

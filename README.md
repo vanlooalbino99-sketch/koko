@@ -25,6 +25,25 @@ de rendez-vous. Les messages et les rendez-vous arrivent dans le CRM comme leads
 
 ---
 
+## CRM métier de démonstration
+
+Le dossier [`demos/`](demos/) contient trois CRM de démonstration prêts à montrer à un prospect, chacun dans un
+seul fichier HTML qui s'ouvre sans installation ni connexion. Les données sont fictives et générées par rapport à
+la date du jour, la marque (nom, couleur) se change dans Réglages, et « Réinitialiser la démo » remet tout à zéro.
+[`demos/index.html`](demos/index.html) les présente côte à côte.
+
+| Fichier | Secteur | Module phare |
+|---|---|---|
+| `demos/immobilier.html` | Agences immobilières | Rapprochement automatique biens ↔ acquéreurs, alertes fin de mandat |
+| `demos/renovation.html` | Rénovation énergétique | Simulateur d'aides et reste à charge, relances de devis J+5 / J+12, planning |
+| `demos/courtage.html` | Courtage assurance et crédit | Échéancier J-45, ventes croisées, conformité devoir de conseil |
+
+Les barèmes d'aides de la démo rénovation sont des valeurs d'exemple, modifiables dans Réglages. `e2e/demos.test.js`
+vérifie chaque démo dans Chromium : vues, pipeline, persistance, affichage à 390 px. Ajouter `?visite=0` à l'adresse
+masque la visite guidée.
+
+---
+
 ## Version autonome
 
 `npm run build` produit `dist/Blackstart_CRM_App.html`, à ouvrir dans n'importe quel navigateur.
@@ -120,7 +139,8 @@ server/src/               Serveur Express
   merge.js                Fusion à trois voies des données
   routes/                 auth, users, data, ambiance, formation, site (passerelle du site internet)
 server/test/              Tests de l'API et de la fusion (node --test)
-e2e/                      Test de bout en bout dans Chromium (deux sessions en parallèle)
+e2e/                      Tests de bout en bout dans Chromium (serveur à deux sessions, CRM de démonstration)
+demos/                    CRM métier de démonstration (immobilier, rénovation, courtage), un fichier chacun
 site/                     Site internet de l'agence (Next.js 15), relié au CRM
 legacy/                   Sources des versions 3 et 4 (historique)
 versions/                 Fichiers HTML livrés

@@ -150,8 +150,12 @@
       Appel.evenement(x);
       majBadge();
       if (x.joined && x.joined !== S.me && x.participants.length === 1 && Appel.conv !== x.conversationId && c) {
-        carte({ titre: nomDe(x.joined) + ' a lancé une visio', sous: titre(c), icone: 'video', bouton: 'Rejoindre', action: function () { Appel.rejoindre(c.id); } });
+        var k = carte({ titre: nomDe(x.joined) + ' a lancé une visio', sous: titre(c), icone: 'video', bouton: 'Rejoindre', sonne: true,
+          action: function () { Appel.rejoindre(c.id); }, ferme: function () { Sonnerie.stop(c.id); } });
+        Sonnerie.start(c.id, nomDe(x.joined) + ' vous appelle en visio', titre(c), k);
       }
+      // Appel terminé, ou rejoint depuis un autre onglet : la sonnerie s'arrête.
+      if (!x.participants.length || x.participants.indexOf(S.me) >= 0) Sonnerie.stop(x.conversationId);
       rendre();
     });
     es.addEventListener('signal', function (e) { Appel.signal(JSON.parse(e.data)); });
@@ -267,22 +271,78 @@
 
   // ------------------------------------------------------------------ cartes de notification
   function carte(o) {
-    if (visible() && !o.force) { if (o.icone !== 'video') return; }
+    if (visible() && !o.force) { if (o.icone !== 'video') return null; }
     ensureCss();
     var wrap = document.getElementById('bsm-cartes');
     if (!wrap) { wrap = document.createElement('div'); wrap.id = 'bsm-cartes'; wrap.setAttribute('role', 'status'); wrap.setAttribute('aria-live', 'polite'); document.body.appendChild(wrap); }
     var el = document.createElement('div');
-    el.className = 'bsm-carte';
+    el.className = 'bsm-carte' + (o.sonne ? ' sonne' : '');
     el.innerHTML = (o.avatar ? avatar(o.avatar, nomDe(o.avatar)) : '<span class="bsm-av bsm-av-grp eq">' + ic(o.icone || 'message-circle', 17) + '</span>') +
       '<div class="bsm-carte-t"><b>' + esc(o.titre) + '</b><span>' + esc(String(o.sous || '').slice(0, 140)) + '</span></div>' +
       '<button type="button" class="btn btn-primary btn-sm">' + esc(o.bouton) + '</button><button type="button" class="bsm-x" aria-label="Fermer">' + ic('x', 14) + '</button>';
-    var fermer = function () { el.classList.add('out'); setTimeout(function () { el.remove(); }, 250); };
+    var fermer = function () { if (el.classList.contains('out')) return; el.classList.add('out'); setTimeout(function () { el.remove(); }, 250); if (o.ferme) o.ferme(); };
     el.querySelector('.btn').onclick = function () { fermer(); o.action(); };
     el.querySelector('.bsm-x').onclick = fermer;
     wrap.appendChild(el);
     while (wrap.children.length > 3) wrap.firstChild.remove();
     setTimeout(fermer, o.icone === 'video' ? 30000 : 7000);
+    return { fermer: fermer };
   }
+
+  // ------------------------------------------------------------------ sonnerie d'appel visio
+  // Deux notes douces répétées (synthétisées, sans fichier son) pendant 30 s au plus, et une notification
+  // du système quand l'onglet est en arrière-plan. Le son a besoin d'un premier clic dans la page (règle des navigateurs).
+  var Sonnerie = (function () {
+    var ctx = null, en = {};
+    function audio() {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!ctx && Ctx) try { ctx = new Ctx(); } catch (e) { ctx = null; }
+      if (ctx && ctx.state === 'suspended') ctx.resume().catch(function () {});
+      return ctx;
+    }
+    ['pointerdown', 'keydown'].forEach(function (t) {
+      window.addEventListener(t, function deb() {
+        audio();
+        if (window.Notification && Notification.permission === 'default' && S.pret) Notification.requestPermission().catch(function () {});
+        window.removeEventListener(t, deb, true);
+      }, true);
+    });
+    function note(a, t, f, d) {
+      var o = a.createOscillator(), g = a.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + 0.05);
+    }
+    function sonner() {
+      var a = audio(); if (!a || a.state !== 'running') return;
+      var t = a.currentTime + 0.02;
+      note(a, t, 880, 0.35); note(a, t + 0.18, 1318.5, 0.5);
+      note(a, t + 0.75, 880, 0.35); note(a, t + 0.93, 1318.5, 0.5);
+    }
+    function stop(cid) {
+      var x = en[cid]; if (!x) return;
+      delete en[cid];
+      clearInterval(x.boucle); clearTimeout(x.fin);
+      try { if (x.notif) x.notif.close(); } catch (e) { /* déjà fermée */ }
+      if (x.carte) x.carte.fermer();
+    }
+    function start(cid, titreN, sous, carte) {
+      stop(cid);
+      var x = en[cid] = { carte: carte };
+      sonner();
+      x.boucle = setInterval(sonner, 3000);
+      x.fin = setTimeout(function () { stop(cid); }, 30000);
+      try {
+        if (window.Notification && Notification.permission === 'granted' && document.hidden) {
+          x.notif = new Notification(titreN, { body: sous + ' · cliquez pour rejoindre', tag: 'bsm-visio-' + cid, requireInteraction: true });
+          x.notif.onclick = function () { window.focus(); stop(cid); Appel.rejoindre(cid); };
+        }
+      } catch (e) { /* notifications indisponibles */ }
+    }
+    return { start: start, stop: stop };
+  })();
 
   // ------------------------------------------------------------------ rendu
   function rendre(enBas) {
@@ -872,6 +932,11 @@
     '.bsm-err{padding:10px 12px;border-radius:10px;background:rgb(244 63 94/.1);border:1px solid rgb(244 63 94/.35);font-size:.88em;font-weight:600}',
     // Cartes d'annonce
     '#bsm-cartes{position:fixed;right:16px;bottom:16px;z-index:120;display:flex;flex-direction:column;gap:10px;width:min(380px,calc(100vw - 32px))}',
+    '.bsm-carte.sonne{border-color:color-mix(in srgb,#22c55e 55%,var(--border))}',
+    '.bsm-carte.sonne .bsm-av{background:linear-gradient(140deg,#22c55e,#15803d);animation:bsmSonne 1.5s ease-out infinite}',
+    '.bsm-carte.sonne .btn-primary{background:#16a34a;border-color:#16a34a}',
+    '@keyframes bsmSonne{0%{box-shadow:0 0 0 0 rgb(34 197 94/.55)}70%{box-shadow:0 0 0 12px rgb(34 197 94/0)}100%{box-shadow:0 0 0 0 rgb(34 197 94/0)}}',
+    '@media (prefers-reduced-motion:reduce){.bsm-carte.sonne .bsm-av{animation:none}}',
     '.bsm-carte{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--border);box-shadow:0 24px 60px -24px rgb(0 0 0/.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);animation:bsmIn .35s cubic-bezier(.2,1.2,.4,1)}',
     '.bsm-carte.out{opacity:0;transform:translateY(8px);transition:all .25s}',
     '.bsm-carte-t{flex:1;min-width:0;display:flex;flex-direction:column;font-size:.86em}',

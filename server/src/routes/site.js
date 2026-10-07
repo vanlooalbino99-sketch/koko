@@ -7,7 +7,6 @@
 // jamais exposée au navigateur). Sans SITE_API_KEY, la passerelle est désactivée.
 import { Router } from 'express';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { tx } from '../db.js';
 import { EMAIL_RE } from '../auth.js';
 import { DATA_KEY, writeKv } from './data.js';
 
@@ -77,8 +76,8 @@ export function siteRoutes({ db, apiKey, timeZone = 'Europe/Paris', slotMinutes 
     next();
   });
 
-  const readData = () => {
-    const row = db.prepare('SELECT value, version FROM kv WHERE key = ?').get(DATA_KEY);
+  const readData = async () => {
+    const row = await db.get('SELECT value, version FROM kv WHERE key = ?', DATA_KEY);
     const value = row ? parse(row.value) : undefined;
     if (row && (value === undefined || value === null || typeof value !== 'object')) {
       const e = new Error('Données du CRM illisibles.');
@@ -90,7 +89,7 @@ export function siteRoutes({ db, apiKey, timeZone = 'Europe/Paris', slotMinutes 
 
   // Créneaux pris : tous les prospects au statut « RDV pris » avec une date et une heure dans la période,
   // qu'ils viennent du site ou d'un appel. Un rendez-vous déplacé ou annulé par l'équipe libère donc son créneau.
-  function takenSlots(from, to, data = readData().data) {
+  function takenSlots(from, to, data) {
     const seen = new Set();
     return (Array.isArray(data.prospects) ? data.prospects : [])
       .filter((p) => p && p.statut === 'rdv_pris' && validDate(p.prochaineRelance) && p.prochaineRelance >= from && p.prochaineRelance <= to && TIME_RE.test(p.prochaineRelanceHeure || ''))
@@ -99,22 +98,22 @@ export function siteRoutes({ db, apiKey, timeZone = 'Europe/Paris', slotMinutes 
       .sort((a, b) => (a.date + a.heure).localeCompare(b.date + b.heure));
   }
 
-  r.get('/creneaux', (req, res) => {
+  r.get('/creneaux', async (req, res) => {
     const { from, to } = req.query;
     if (!validDate(from) || !validDate(to) || from > to) return res.status(400).json({ error: 'Période invalide (from, to : AAAA-MM-JJ).' });
-    res.json({ pris: takenSlots(from, to) });
+    res.json({ pris: takenSlots(from, to, (await readData()).data) });
   });
 
-  r.post('/leads', (req, res) => {
+  r.post('/leads', async (req, res) => {
     const { lead, errors } = validateLead(req.body || {});
     if (errors.length) return res.status(400).json({ error: errors.join(' ') });
 
-    const out = tx(db, () => {
+    const out = await db.tx(async () => {
       // Renvoi de la même demande (double clic, nouvel essai réseau) : rien n'est recréé.
-      const dup = db.prepare('SELECT prospect_id FROM site_requests WHERE id = ?').get(lead.requestId);
+      const dup = await db.get('SELECT prospect_id FROM site_requests WHERE id = ?', lead.requestId);
       if (dup) return { status: 200, body: { prospectId: dup.prospect_id, duplicate: true } };
 
-      const { data, version } = readData();
+      const { data, version } = await readData();
       if (lead.type === 'rdv' && takenSlots(lead.date, lead.date, data).some((s) => Math.abs(minutes(s.heure) - minutes(lead.heure)) < slotMinutes)) {
         return { status: 409, body: { error: 'Ce créneau est déjà réservé.' } };
       }
@@ -206,9 +205,9 @@ export function siteRoutes({ db, apiKey, timeZone = 'Europe/Paris', slotMinutes 
         createdAt: now.date,
       };
 
-      writeKv(db, DATA_KEY, JSON.stringify({ ...data, version: data.version || 4, prospects: next, tasks: [task, ...tasks] }), version + 1, null);
-      db.prepare('INSERT INTO site_requests (id, kind, prospect_id, rdv_date, rdv_time, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(lead.requestId, lead.type, prospect.id, isRdv ? lead.date : null, isRdv ? lead.heure : null, ts);
+      await writeKv(db, DATA_KEY, JSON.stringify({ ...data, version: data.version || 4, prospects: next, tasks: [task, ...tasks] }), version + 1, null);
+      await db.run('INSERT INTO site_requests (id, kind, prospect_id, rdv_date, rdv_time, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        lead.requestId, lead.type, prospect.id, isRdv ? lead.date : null, isRdv ? lead.heure : null, ts);
       return { status: 201, body: { prospectId: prospect.id, taskId: task.id, existing: Boolean(existing) } };
     });
     res.status(out.status).json(out.body);

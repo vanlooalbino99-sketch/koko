@@ -96,12 +96,26 @@ Variables d'environnement (voir [`.env.example`](.env.example)) :
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Crée le premier administrateur au démarrage (déploiement sans écran) | — |
 | `SITE_API_KEY` | Clé partagée avec le site internet (`site/`) pour déposer contacts et rendez-vous dans le CRM | désactivé |
 | `SITE_TIMEZONE` | Fuseau des dates de rappel créées par le site | `Europe/Paris` |
+| `SUPABASE_DB_URL` | Base PostgreSQL de Supabase (adresse « Session pooler ») à la place de SQLite | SQLite |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Mots de passe vérifiés par Supabase Auth (sinon par le serveur) | désactivé |
+| `COPIER_SQLITE` | `1` : au premier démarrage sur Supabase, recopie la base SQLite de `DATA_DIR` (seulement si Supabase n'a aucun compte) | `0` |
 
 ### Déploiement
 
 N'importe quel hébergement qui fait tourner une image Docker **avec un disque persistant** monté sur `/data` :
 un VPS (Docker Compose + Caddy ou Nginx pour le HTTPS), Railway, Fly.io, Render (avec disque)…
 Derrière un proxy HTTPS, mettre `TRUST_PROXY=1` et `COOKIE_SECURE=1`.
+
+### Supabase (base de données et comptes)
+
+Le serveur reste sur Railway ; avec `SUPABASE_DB_URL`, toutes les données passent dans PostgreSQL chez Supabase
+(mêmes tables que SQLite, sécurité au niveau des lignes activée sans règle : seul le serveur y accède).
+Avec `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, chaque membre a un compte Supabase Auth : les anciens comptes
+y sont recopiés à leur première connexion, sans changer de mot de passe. Les images d'ambiance restent dans `DATA_DIR`.
+
+- Copier une base existante : `COPIER_SQLITE=1` au premier démarrage, ou
+  `SUPABASE_DB_URL=… node scripts/copie-vers-supabase.mjs data/blackstart.db` (le fichier SQLite n'est pas modifié).
+- Tests sur PostgreSQL : `BS_TEST_PG=postgres://… npm test` (une base neuve par fichier de tests).
 
 ### Sauvegardes
 

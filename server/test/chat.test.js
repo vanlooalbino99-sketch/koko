@@ -1,20 +1,15 @@
 // Tests de la messagerie : conversations, droits, temps réel (SSE) et relais de la visio.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { createApp } from '../src/app.js';
+import { testApp } from './helpers.js';
 
-let server, base, dir, db, hub;
+let server, base, made;
 before(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'bs-chat-'));
-  const made = createApp({ dataDir: dir });
-  ({ db, hub } = made);
+  made = await testApp();
   await new Promise((res) => { server = made.app.listen(0, res); });
   base = `http://127.0.0.1:${server.address().port}`;
 });
-after(() => { hub.close(); server.close(); db.close(); rmSync(dir, { recursive: true, force: true }); });
+after(async () => { server.close(); await made.cleanup(); });
 
 function client() {
   let cookie = '';

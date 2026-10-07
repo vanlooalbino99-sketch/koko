@@ -4,7 +4,7 @@
 //   relayer la mise en relation (offres, réponses, candidats ICE) et tenir la liste des participants, en mémoire.
 import express, { Router } from 'express';
 import { randomUUID } from 'node:crypto';
-import { tx, getSetting, setSetting } from '../db.js';
+import { getSetting, setSetting } from '../store.js';
 
 export const EQUIPE = 'equipe';
 export const POSTES = ['CEO', 'Directeur commercial', 'Manager', 'Commercial', 'Seller', 'Prospecteur (SDR)', 'Assistant(e)', 'Support client'];
@@ -61,117 +61,125 @@ export function chatHub() {
 export function chatRoutes({ db, hub = chatHub() }) {
   const r = Router();
 
-  const users = () => db.prepare(`SELECT u.id, u.name, u.role, u.poste, u.manager_id AS managerId, p.updated_at AS photo FROM users u LEFT JOIN user_photos p ON p.user_id = u.id
-                                   ORDER BY u.name COLLATE NOCASE`).all();
-  const userName = (id) => db.prepare('SELECT name FROM users WHERE id = ?').get(id)?.name || 'Ancien membre';
-  const conv = (id) => db.prepare('SELECT * FROM chat_conversations WHERE id = ?').get(id);
-  const memberIds = (c) => (c.kind === 'equipe'
-    ? db.prepare('SELECT id FROM users').all().map((x) => x.id)
-    : db.prepare('SELECT user_id FROM chat_members WHERE conversation_id = ?').all(c.id).map((x) => x.user_id));
-  const canSee = (c, userId) => !!c && (c.kind === 'equipe' || !!db.prepare('SELECT 1 FROM chat_members WHERE conversation_id = ? AND user_id = ?').get(c.id, userId));
-  const lastRead = (cid, uid) => db.prepare('SELECT last_read FROM chat_reads WHERE conversation_id = ? AND user_id = ?').get(cid, uid)?.last_read || 0;
-  const fileOf = (id) => id && db.prepare('SELECT id, name, mime, size FROM chat_files WHERE id = ?').get(id);
-  const toMsg = (m) => m && { id: m.id, conversationId: m.conversation_id, userId: m.user_id, author: m.author, kind: m.kind, body: m.body, at: m.created_at, file: fileOf(m.file_id) || null };
+  const users = () => db.all(`SELECT u.id, u.name, u.role, u.poste, u.manager_id AS "managerId", p.updated_at AS photo FROM users u LEFT JOIN user_photos p ON p.user_id = u.id
+                              ORDER BY lower(u.name)`);
+  const allIds = async () => (await db.all('SELECT id FROM users')).map((x) => x.id);
+  const userName = async (id) => (await db.get('SELECT name FROM users WHERE id = ?', id))?.name || 'Ancien membre';
+  const conv = (id) => db.get('SELECT * FROM chat_conversations WHERE id = ?', id);
+  const memberIds = async (c) => (c.kind === 'equipe'
+    ? allIds()
+    : (await db.all('SELECT user_id FROM chat_members WHERE conversation_id = ?', c.id)).map((x) => x.user_id));
+  const canSee = async (c, userId) => !!c && (c.kind === 'equipe' || !!(await db.get('SELECT 1 AS ok FROM chat_members WHERE conversation_id = ? AND user_id = ?', c.id, userId)));
+  const lastRead = async (cid, uid) => (await db.get('SELECT last_read FROM chat_reads WHERE conversation_id = ? AND user_id = ?', cid, uid))?.last_read || 0;
+  const fileOf = (id) => (id ? db.get('SELECT id, name, mime, size FROM chat_files WHERE id = ?', id) : null);
+  const toMsg = async (m) => m && { id: Number(m.id), conversationId: m.conversation_id, userId: m.user_id, author: m.author, kind: m.kind, body: m.body, at: m.created_at, file: (await fileOf(m.file_id)) || null };
   const callOf = (cid) => [...(hub.calls.get(cid)?.people || [])];
+  const readUpTo = (cid, uid, upTo) => db.run(`INSERT INTO chat_reads (conversation_id, user_id, last_read) VALUES (?, ?, ?)
+    ON CONFLICT(conversation_id, user_id) DO UPDATE SET last_read = CASE WHEN excluded.last_read > chat_reads.last_read THEN excluded.last_read ELSE chat_reads.last_read END`, cid, uid, upTo);
 
-  function view(c, userId) {
-    const last = db.prepare('SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY id DESC LIMIT 1').get(c.id);
-    const unread = db.prepare('SELECT COUNT(*) AS n FROM chat_messages WHERE conversation_id = ? AND id > ? AND kind = ? AND (user_id IS NULL OR user_id != ?)')
-      .get(c.id, lastRead(c.id, userId), 'texte', userId).n;
+  async function view(c, userId) {
+    const last = await db.get('SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY id DESC LIMIT 1', c.id);
+    const read = await lastRead(c.id, userId);
+    const unread = (await db.get('SELECT COUNT(*) AS n FROM chat_messages WHERE conversation_id = ? AND id > ? AND kind = ? AND (user_id IS NULL OR user_id != ?)',
+      c.id, read, 'texte', userId)).n;
     return {
       id: c.id, kind: c.kind, name: c.name, createdBy: c.created_by, createdAt: c.created_at,
-      members: c.kind === 'equipe' ? null : memberIds(c),
-      last: toMsg(last), unread, lastRead: lastRead(c.id, userId), call: callOf(c.id),
+      members: c.kind === 'equipe' ? null : await memberIds(c),
+      last: await toMsg(last), unread, lastRead: Number(read), call: callOf(c.id),
     };
   }
   function visible(userId) {
-    return db.prepare(`SELECT c.* FROM chat_conversations c WHERE c.kind = 'equipe'
-                         OR EXISTS (SELECT 1 FROM chat_members m WHERE m.conversation_id = c.id AND m.user_id = ?)`).all(userId);
+    return db.all(`SELECT c.* FROM chat_conversations c WHERE c.kind = 'equipe'
+                     OR EXISTS (SELECT 1 FROM chat_members m WHERE m.conversation_id = c.id AND m.user_id = ?)`, userId);
   }
-  function post(c, user, body, kind = 'texte', fileId = null) {
-    const info = db.prepare('INSERT INTO chat_messages (conversation_id, user_id, author, kind, body, created_at, file_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .run(c.id, user ? user.id : null, user ? user.name : 'Blackstart', kind, body, now(), fileId);
-    const msg = toMsg(db.prepare('SELECT * FROM chat_messages WHERE id = ?').get(Number(info.lastInsertRowid)));
-    if (user) db.prepare(`INSERT INTO chat_reads (conversation_id, user_id, last_read) VALUES (?, ?, ?)
-                          ON CONFLICT(conversation_id, user_id) DO UPDATE SET last_read = MAX(last_read, excluded.last_read)`).run(c.id, user.id, msg.id);
-    hub.send(memberIds(c), 'message', msg);
+  async function post(c, user, body, kind = 'texte', fileId = null) {
+    const { id } = await db.get('INSERT INTO chat_messages (conversation_id, user_id, author, kind, body, created_at, file_id) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id',
+      c.id, user ? user.id : null, user ? user.name : 'Blackstart', kind, body, now(), fileId);
+    const msg = await toMsg(await db.get('SELECT * FROM chat_messages WHERE id = ?', id));
+    if (user) await readUpTo(c.id, user.id, msg.id);
+    hub.send(await memberIds(c), 'message', msg);
     return msg;
   }
-  const announce = (c, ids = memberIds(c)) => ids.forEach((id) => hub.send([id], 'conversation', view(c, id)));
-  const cleanIds = (list) => [...new Set((Array.isArray(list) ? list : []).map(String))]
-    .filter((id) => db.prepare('SELECT 1 FROM users WHERE id = ?').get(id));
+  const announce = async (c, ids) => {
+    for (const id of ids || await memberIds(c)) hub.send([id], 'conversation', await view(c, id));
+  };
+  const cleanIds = async (list) => {
+    const known = new Set(await allIds());
+    return [...new Set((Array.isArray(list) ? list : []).map(String))].filter((id) => known.has(id));
+  };
   const cleanName = (s) => String(s || '').trim().replace(/\s+/g, ' ').slice(0, MAX_NAME);
 
-  function leaveCall(cid, userId) {
+  async function leaveCall(cid, userId) {
     const call = hub.calls.get(cid);
     if (!call || !call.people.has(userId)) return;
     call.people.delete(userId);
-    const c = conv(cid);
-    if (!call.people.size) {
-      hub.calls.delete(cid);
-      if (c) post(c, null, `Visio terminée (${Math.max(1, Math.round((Date.now() - call.started) / 60000))} min)`, 'info');
-    }
-    if (c) hub.send(memberIds(c), 'call', { conversationId: cid, participants: callOf(cid), left: userId });
+    const ended = !call.people.size;
+    if (ended) hub.calls.delete(cid);
+    const c = await conv(cid);
+    if (!c) return;
+    if (ended) await post(c, null, `Visio terminée (${Math.max(1, Math.round((Date.now() - call.started) / 60000))} min)`, 'info');
+    hub.send(await memberIds(c), 'call', { conversationId: cid, participants: callOf(cid), left: userId });
   }
-  const leaveAllCalls = (userId) => [...hub.calls.keys()].forEach((cid) => leaveCall(cid, userId));
+  const leaveAllCalls = async (userId) => { for (const cid of [...hub.calls.keys()]) await leaveCall(cid, userId); };
 
   // ---------------------------------------------------------------- lecture
-  r.get('/', (req, res) => {
+  r.get('/', async (req, res) => {
+    const list = await visible(req.user.id);
     res.json({
       me: req.user.id,
-      users: users(),
+      users: await users(),
       online: hub.online(),
-      conversations: visible(req.user.id).map((c) => view(c, req.user.id)),
-      postes: getSetting(db, 'postes', POSTES),
+      conversations: await Promise.all(list.map((c) => view(c, req.user.id))),
+      postes: await getSetting(db, 'postes', POSTES),
     });
   });
 
   // Postes proposés dans l'organigramme : modifiables par un administrateur.
-  r.put('/postes', (req, res) => {
+  r.put('/postes', async (req, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Réservé aux administrateurs.' });
     const list = [...new Set((Array.isArray(req.body?.postes) ? req.body.postes : []).map((x) => String(x).trim().replace(/\s+/g, ' ').slice(0, 60)).filter(Boolean))].slice(0, 40);
     if (!list.length) return res.status(400).json({ error: 'Gardez au moins un poste.' });
-    setSetting(db, 'postes', list);
-    hub.send(users().map((u) => u.id), 'equipe', { postes: list });
+    await setSetting(db, 'postes', list);
+    hub.send(await allIds(), 'equipe', { postes: list });
     res.json({ postes: list });
   });
 
-  r.get('/conversations/:id/messages', (req, res) => {
-    const c = conv(req.params.id);
-    if (!canSee(c, req.user.id)) return res.status(404).json({ error: 'Conversation introuvable.' });
+  r.get('/conversations/:id/messages', async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
     const before = Number(req.query.before) || Number.MAX_SAFE_INTEGER;
-    const rows = db.prepare('SELECT * FROM chat_messages WHERE conversation_id = ? AND id < ? ORDER BY id DESC LIMIT ?').all(c.id, before, PAGE);
-    res.json({ messages: rows.reverse().map(toMsg), more: rows.length === PAGE });
+    const rows = await db.all('SELECT * FROM chat_messages WHERE conversation_id = ? AND id < ? ORDER BY id DESC LIMIT ?', c.id, before, PAGE);
+    res.json({ messages: await Promise.all(rows.reverse().map(toMsg)), more: rows.length === PAGE });
   });
 
   // ---------------------------------------------------------------- écriture
-  r.post('/conversations/:id/messages', (req, res) => {
-    const c = conv(req.params.id);
-    if (!canSee(c, req.user.id)) return res.status(404).json({ error: 'Conversation introuvable.' });
+  r.post('/conversations/:id/messages', async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
     const body = String(req.body?.body ?? '').replace(/\r\n/g, '\n').trim();
     if (!body) return res.status(400).json({ error: 'Message vide.' });
     if (body.length > MAX_BODY) return res.status(400).json({ error: `Message trop long (${MAX_BODY} caractères au plus).` });
-    res.status(201).json({ message: post(c, req.user, body) });
+    res.status(201).json({ message: await post(c, req.user, body) });
   });
 
   // Pièce jointe : le fichier brut dans le corps, son nom et son type dans l'adresse ; un message l'accompagne.
-  r.post('/conversations/:id/fichiers', express.raw({ type: () => true, limit: MAX_FILE }), (req, res) => {
-    const c = conv(req.params.id);
-    if (!canSee(c, req.user.id)) return res.status(404).json({ error: 'Conversation introuvable.' });
+  r.post('/conversations/:id/fichiers', express.raw({ type: () => true, limit: MAX_FILE }), async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
     const data = Buffer.isBuffer(req.body) ? req.body : null;
     if (!data || !data.length) return res.status(400).json({ error: 'Fichier vide.' });
     const name = String(req.query.nom || 'fichier').replace(/[\u0000-\u001f\\/]/g, '').trim().slice(0, 120) || 'fichier';
     const mime = /^[\w.+-]+\/[\w.+-]+$/.test(String(req.query.type || '')) ? String(req.query.type).toLowerCase() : 'application/octet-stream';
     const body = String(req.query.texte ?? '').replace(/\r\n/g, '\n').trim().slice(0, MAX_BODY);
     const id = randomUUID();
-    db.prepare('INSERT INTO chat_files (id, conversation_id, user_id, name, mime, size, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(id, c.id, req.user.id, name, mime, data.length, data, now());
-    res.status(201).json({ message: post(c, req.user, body, 'texte', id) });
+    await db.run('INSERT INTO chat_files (id, conversation_id, user_id, name, mime, size, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      id, c.id, req.user.id, name, mime, data.length, data, now());
+    res.status(201).json({ message: await post(c, req.user, body, 'texte', id) });
   });
 
-  r.get('/fichiers/:id', (req, res) => {
-    const f = db.prepare('SELECT * FROM chat_files WHERE id = ?').get(req.params.id);
-    if (!f || !canSee(conv(f.conversation_id), req.user.id)) return res.status(404).json({ error: 'Fichier introuvable.' });
+  r.get('/fichiers/:id', async (req, res) => {
+    const f = await db.get('SELECT * FROM chat_files WHERE id = ?', req.params.id);
+    if (!f || !(await canSee(await conv(f.conversation_id), req.user.id))) return res.status(404).json({ error: 'Fichier introuvable.' });
     const inline = INLINE.has(f.mime) && req.query.telecharger === undefined;
     res.set({
       'Content-Type': inline ? f.mime : 'application/octet-stream',
@@ -183,107 +191,111 @@ export function chatRoutes({ db, hub = chatHub() }) {
   });
 
   // « En train d'écrire » : rien en base, juste un signal aux autres membres (le navigateur le renvoie toutes les 2–3 s).
-  r.post('/conversations/:id/ecrit', (req, res) => {
-    const c = conv(req.params.id);
-    if (!canSee(c, req.user.id)) return res.status(404).json({ error: 'Conversation introuvable.' });
-    hub.send(memberIds(c).filter((id) => id !== req.user.id), 'ecrit', { conversationId: c.id, userId: req.user.id });
+  r.post('/conversations/:id/ecrit', async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
+    hub.send((await memberIds(c)).filter((id) => id !== req.user.id), 'ecrit', { conversationId: c.id, userId: req.user.id });
     res.json({ ok: true });
   });
 
-  r.post('/conversations/:id/lu', (req, res) => {
-    const c = conv(req.params.id);
-    if (!canSee(c, req.user.id)) return res.status(404).json({ error: 'Conversation introuvable.' });
-    const max = db.prepare('SELECT MAX(id) AS m FROM chat_messages WHERE conversation_id = ?').get(c.id).m || 0;
+  r.post('/conversations/:id/lu', async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
+    const max = Number((await db.get('SELECT MAX(id) AS m FROM chat_messages WHERE conversation_id = ?', c.id)).m) || 0;
     const upTo = Math.min(Number(req.body?.jusqua) || max, max);
-    db.prepare(`INSERT INTO chat_reads (conversation_id, user_id, last_read) VALUES (?, ?, ?)
-                ON CONFLICT(conversation_id, user_id) DO UPDATE SET last_read = MAX(last_read, excluded.last_read)`).run(c.id, req.user.id, upTo);
-    const v = view(c, req.user.id);
+    await readUpTo(c.id, req.user.id, upTo);
+    const v = await view(c, req.user.id);
     hub.send([req.user.id], 'conversation', v); // les autres onglets de la même personne
     res.json({ conversation: v });
   });
 
   // Nouveau groupe : son nom et ses membres (le créateur en fait toujours partie).
-  r.post('/groupes', (req, res) => {
+  r.post('/groupes', async (req, res) => {
     const name = cleanName(req.body?.name);
     if (!name) return res.status(400).json({ error: 'Donnez un nom au groupe.' });
-    const ids = cleanIds([...(req.body?.members || []), req.user.id]);
-    const c = tx(db, () => {
+    const ids = await cleanIds([...(req.body?.members || []), req.user.id]);
+    const c = await db.tx(async () => {
       const id = randomUUID();
-      db.prepare('INSERT INTO chat_conversations (id, kind, name, created_by, created_at) VALUES (?, ?, ?, ?, ?)').run(id, 'groupe', name, req.user.id, now());
-      ids.forEach((u) => db.prepare('INSERT INTO chat_members (conversation_id, user_id) VALUES (?, ?)').run(id, u));
+      await db.run('INSERT INTO chat_conversations (id, kind, name, created_by, created_at) VALUES (?, ?, ?, ?, ?)', id, 'groupe', name, req.user.id, now());
+      for (const u of ids) await db.run('INSERT INTO chat_members (conversation_id, user_id) VALUES (?, ?)', id, u);
       return conv(id);
     });
-    post(c, null, `${req.user.name} a créé le groupe « ${name} »`, 'info');
-    announce(c);
-    res.status(201).json({ conversation: view(c, req.user.id) });
+    await post(c, null, `${req.user.name} a créé le groupe « ${name} »`, 'info');
+    await announce(c);
+    res.status(201).json({ conversation: await view(c, req.user.id) });
   });
 
   // Message direct : une seule conversation par paire de membres.
-  r.post('/directs', (req, res) => {
+  r.post('/directs', async (req, res) => {
     const other = String(req.body?.userId || '');
-    if (other === req.user.id || !db.prepare('SELECT 1 FROM users WHERE id = ?').get(other)) return res.status(400).json({ error: 'Membre introuvable.' });
+    if (other === req.user.id || !(await db.get('SELECT 1 AS ok FROM users WHERE id = ?', other))) return res.status(400).json({ error: 'Membre introuvable.' });
     const key = [req.user.id, other].sort().join(':');
-    let c = db.prepare('SELECT * FROM chat_conversations WHERE direct_key = ?').get(key);
+    let c = await db.get('SELECT * FROM chat_conversations WHERE direct_key = ?', key);
     if (!c) {
-      c = tx(db, () => {
+      let created = false;
+      c = await db.tx(async () => {
+        const again = await db.get('SELECT * FROM chat_conversations WHERE direct_key = ?', key);
+        if (again) return again;
         const id = randomUUID();
-        db.prepare('INSERT INTO chat_conversations (id, kind, direct_key, created_by, created_at) VALUES (?, ?, ?, ?, ?)').run(id, 'direct', key, req.user.id, now());
-        [req.user.id, other].forEach((u) => db.prepare('INSERT INTO chat_members (conversation_id, user_id) VALUES (?, ?)').run(id, u));
+        await db.run('INSERT INTO chat_conversations (id, kind, direct_key, created_by, created_at) VALUES (?, ?, ?, ?, ?)', id, 'direct', key, req.user.id, now());
+        for (const u of [req.user.id, other]) await db.run('INSERT INTO chat_members (conversation_id, user_id) VALUES (?, ?)', id, u);
+        created = true;
         return conv(id);
       });
-      announce(c);
+      if (created) await announce(c);
     }
-    res.json({ conversation: view(c, req.user.id) });
+    res.json({ conversation: await view(c, req.user.id) });
   });
 
-  // Groupe : renommer, ajouter ou retirer des membres. Retirer quelqu'un d'autre : créateur ou administrateur.
-  r.patch('/groupes/:id', (req, res) => {
-    const c = conv(req.params.id);
-    if (!canSee(c, req.user.id) || c.kind !== 'groupe') return res.status(404).json({ error: 'Groupe introuvable.' });
-    const before = memberIds(c);
+  // Groupe : renommer, ajouter ou retirer des membres. Retirer quelqu'un d'autre : administrateur.
+  r.patch('/groupes/:id', async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id)) || c.kind !== 'groupe') return res.status(404).json({ error: 'Groupe introuvable.' });
+    const before = await memberIds(c);
     const { name, add, remove } = req.body || {};
     const boss = req.user.role === 'admin';
-    const out = cleanIds(remove).filter((id) => id === req.user.id || boss);
+    const out = (await cleanIds(remove)).filter((id) => id === req.user.id || boss);
     if (Array.isArray(remove) && remove.length && !out.length) return res.status(403).json({ error: 'Seul un administrateur peut retirer un membre.' });
+    const toAdd = (await cleanIds(add)).filter((id) => !before.includes(id));
     const notes = [];
-    tx(db, () => {
+    await db.tx(async () => {
       if (name !== undefined) {
         const n = cleanName(name);
         if (!n) throw Object.assign(new Error('Donnez un nom au groupe.'), { status: 400 });
-        if (n !== c.name) { db.prepare('UPDATE chat_conversations SET name = ? WHERE id = ?').run(n, c.id); notes.push(`${req.user.name} a renommé le groupe en « ${n} »`); }
+        if (n !== c.name) { await db.run('UPDATE chat_conversations SET name = ? WHERE id = ?', n, c.id); notes.push(`${req.user.name} a renommé le groupe en « ${n} »`); }
       }
-      cleanIds(add).filter((id) => !before.includes(id)).forEach((id) => {
-        db.prepare('INSERT INTO chat_members (conversation_id, user_id) VALUES (?, ?)').run(c.id, id);
-        notes.push(`${req.user.name} a ajouté ${userName(id)}`);
-      });
-      out.filter((id) => before.includes(id)).forEach((id) => {
-        db.prepare('DELETE FROM chat_members WHERE conversation_id = ? AND user_id = ?').run(c.id, id);
-        notes.push(id === req.user.id ? `${req.user.name} a quitté le groupe` : `${req.user.name} a retiré ${userName(id)}`);
-      });
+      for (const id of toAdd) {
+        await db.run('INSERT INTO chat_members (conversation_id, user_id) VALUES (?, ?)', c.id, id);
+        notes.push(`${req.user.name} a ajouté ${await userName(id)}`);
+      }
+      for (const id of out.filter((x) => before.includes(x))) {
+        await db.run('DELETE FROM chat_members WHERE conversation_id = ? AND user_id = ?', c.id, id);
+        notes.push(id === req.user.id ? `${req.user.name} a quitté le groupe` : `${req.user.name} a retiré ${await userName(id)}`);
+      }
     });
-    const fresh = conv(c.id);
-    notes.forEach((t) => post(fresh, null, t, 'info'));
-    out.forEach((id) => leaveCall(c.id, id));
-    const now_ = memberIds(fresh);
-    announce(fresh, now_);
+    const fresh = await conv(c.id);
+    for (const t of notes) await post(fresh, null, t, 'info');
+    for (const id of out) await leaveCall(c.id, id);
+    const now_ = await memberIds(fresh);
+    await announce(fresh, now_);
     before.filter((id) => !now_.includes(id)).forEach((id) => hub.send([id], 'retire', { conversationId: c.id }));
-    res.json({ conversation: now_.includes(req.user.id) ? view(fresh, req.user.id) : null });
+    res.json({ conversation: now_.includes(req.user.id) ? await view(fresh, req.user.id) : null });
   });
 
   // ---------------------------------------------------------------- visio
-  r.post('/conversations/:id/visio', (req, res) => {
-    const c = conv(req.params.id);
-    if (!canSee(c, req.user.id)) return res.status(404).json({ error: 'Conversation introuvable.' });
+  r.post('/conversations/:id/visio', async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
     const join = req.body?.action !== 'quitter';
-    if (!join) { leaveCall(c.id, req.user.id); return res.json({ participants: callOf(c.id) }); }
+    if (!join) { await leaveCall(c.id, req.user.id); return res.json({ participants: callOf(c.id) }); }
     if (!hub.conns.has(req.user.id)) return res.status(409).json({ error: 'Connexion temps réel absente : rechargez la page.' });
     let call = hub.calls.get(c.id);
     const first = !call;
     if (!call) { call = { started: Date.now(), people: new Set() }; hub.calls.set(c.id, call); }
     const others = callOf(c.id).filter((id) => id !== req.user.id);
     call.people.add(req.user.id);
-    if (first) post(c, req.user, `${req.user.name} a lancé une visio`, 'visio');
-    hub.send(memberIds(c), 'call', { conversationId: c.id, participants: callOf(c.id), joined: req.user.id });
+    if (first) await post(c, req.user, `${req.user.name} a lancé une visio`, 'visio');
+    hub.send(await memberIds(c), 'call', { conversationId: c.id, participants: callOf(c.id), joined: req.user.id });
     res.json({ participants: callOf(c.id), others, iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] });
   });
 
@@ -298,7 +310,8 @@ export function chatRoutes({ db, hub = chatHub() }) {
   });
 
   // ---------------------------------------------------------------- temps réel
-  r.get('/flux', (req, res) => {
+  r.get('/flux', async (req, res) => {
+    const everyone = await allIds();
     res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
@@ -307,14 +320,16 @@ export function chatRoutes({ db, hub = chatHub() }) {
     });
     res.write('retry: 3000\n\n');
     const uid = req.user.id;
-    if (hub.add(uid, res)) hub.send(users().map((u) => u.id), 'presence', { online: hub.online() });
+    if (hub.add(uid, res)) hub.send(everyone, 'presence', { online: hub.online() });
     res.write(`event: pret\ndata: ${JSON.stringify({ online: hub.online() })}\n\n`);
     const beat = setInterval(() => res.write(': ping\n\n'), HEARTBEAT_MS);
     req.on('close', () => {
       clearInterval(beat);
       hub.remove(uid, res, () => {
-        leaveAllCalls(uid);
-        hub.send(users().map((u) => u.id), 'presence', { online: hub.online() });
+        (async () => {
+          await leaveAllCalls(uid);
+          hub.send(await allIds(), 'presence', { online: hub.online() });
+        })().catch((e) => console.error('Messagerie :', e.message));
       });
     });
   });

@@ -24,28 +24,28 @@ export function verifyPassword(password, stored) {
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 const now = () => new Date().toISOString();
 
-export function createSession(db, userId) {
+export async function createSession(db, userId) {
   const token = randomBytes(32).toString('base64url');
   const expires = new Date(Date.now() + SESSION_DAYS * 864e5).toISOString();
-  db.prepare('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)').run(sha(token), userId, now(), expires);
-  db.prepare('UPDATE users SET last_login = ? WHERE id = ?').run(now(), userId);
+  await db.run('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)', sha(token), userId, now(), expires);
+  await db.run('UPDATE users SET last_login = ? WHERE id = ?', now(), userId);
   // Ménage : sessions expirées.
-  db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(now());
+  await db.run('DELETE FROM sessions WHERE expires_at < ?', now());
   return token;
 }
 
-export function destroySession(db, token) {
-  if (token) db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(sha(token));
+export async function destroySession(db, token) {
+  if (token) await db.run('DELETE FROM sessions WHERE token_hash = ?', sha(token));
 }
 
-export function sessionUser(db, token) {
+export async function sessionUser(db, token) {
   if (!token) return null;
-  const row = db.prepare(`SELECT u.id, u.email, u.name, u.role, u.poste, s.expires_at, p.updated_at AS photo FROM sessions s JOIN users u ON u.id = s.user_id
-                          LEFT JOIN user_photos p ON p.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > ?`).get(sha(token), now());
+  const row = await db.get(`SELECT u.id, u.email, u.name, u.role, u.poste, s.expires_at, p.updated_at AS photo FROM sessions s JOIN users u ON u.id = s.user_id
+                            LEFT JOIN user_photos p ON p.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > ?`, sha(token), now());
   if (!row) return null;
   // Session glissante : prolongée quand on s'en sert, si elle a plus de la moitié de son âge.
   if (Date.parse(row.expires_at) - Date.now() < (SESSION_DAYS / 2) * 864e5) {
-    db.prepare('UPDATE sessions SET expires_at = ? WHERE token_hash = ?').run(new Date(Date.now() + SESSION_DAYS * 864e5).toISOString(), sha(token));
+    await db.run('UPDATE sessions SET expires_at = ? WHERE token_hash = ?', new Date(Date.now() + SESSION_DAYS * 864e5).toISOString(), sha(token));
   }
   return { id: row.id, email: row.email, name: row.name, role: row.role, poste: row.poste || null, photo: row.photo || null };
 }
@@ -73,9 +73,9 @@ export function clearSessionCookie(res) {
 
 // ---------------------------------------------------------------- intergiciels
 export function attachUser(db) {
-  return (req, _res, next) => {
+  return async (req, _res, next) => {
     req.sessionToken = parseCookies(req.headers.cookie)[COOKIE] || '';
-    req.user = sessionUser(db, req.sessionToken);
+    req.user = await sessionUser(db, req.sessionToken);
     next();
   };
 }
@@ -126,11 +126,17 @@ export function validateUserInput({ name, email, password, role }, { partial = f
   return errors;
 }
 
-export function createUser(db, { name, email, password, role }) {
+// identity : mots de passe vérifiés ici ou par Supabase Auth (voir identity.js). Sans lui, empreinte locale.
+export async function createUser(db, input, identity) {
+  const creds = identity ? await identity.create(db, input) : { pass: hashPassword(input.password), authId: null };
+  return insertUser(db, input, creds);
+}
+
+export async function insertUser(db, { name, email, role }, { pass, authId }) {
   const id = randomUUID();
-  db.prepare('INSERT INTO users (id, email, name, role, pass, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(id, String(email).trim().toLowerCase(), String(name).trim(), role || 'membre', hashPassword(password), now());
-  return publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(id));
+  await db.run('INSERT INTO users (id, email, name, role, pass, created_at, auth_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    id, String(email).trim().toLowerCase(), String(name).trim(), role || 'membre', pass, now(), authId || null);
+  return publicUser(await db.get('SELECT * FROM users WHERE id = ?', id));
 }
 
 export function publicUser(u) {

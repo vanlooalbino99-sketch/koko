@@ -293,7 +293,7 @@
     var sec = function (titreSec, arr) { return arr.length ? '<div class="bsm-sec">' + titreSec + '</div>' + arr.map(ligne).join('') : ''; };
     var eq = items.filter(function (c) { return c.kind === 'equipe'; }), gr = items.filter(function (c) { return c.kind === 'groupe'; }), di = items.filter(function (c) { return c.kind === 'direct'; });
     var enLigne = S.users.filter(function (u) { return u.id !== S.me && S.online.indexOf(u.id) >= 0; });
-    return '<aside class="bsm-side"><div class="bsm-side-head"><div><h1 class="page-title">' + (grp ? 'Groupes' : 'Messages') + '</h1><p class="page-sub">' + (grp ? gr.length + ' groupe' + (gr.length > 1 ? 's' : '') : enLigne.length ? enLigne.length + ' en ligne' : 'Personne d’autre en ligne') + '</p></div>' +
+    return '<aside class="bsm-side"><div class="bsm-side-head"><div><h1 class="page-title">' + (grp ? 'Groupes' : 'Messages') + '</h1><p class="page-sub">' + (grp ? gr.length + ' groupe' + (gr.length > 1 ? 's' : '') : enLigne.length ? enLigne.length + ' en ligne' : 'Personne en ligne') + '</p></div>' +
       '<div class="bsm-side-act">' + (grp ? '<button type="button" class="btn btn-primary btn-sm" data-act="groupe">' + ic('plus', 14) + 'Nouveau groupe</button>'
         : '<button type="button" class="btn btn-primary btn-sm" data-act="direct">' + ic('plus', 14) + 'Nouveau message</button>') + '</div></div>' +
       '<label class="bsm-search">' + ic('search', 15) + '<input name="bsm-filtre" placeholder="' + (grp ? 'Rechercher un groupe' : 'Rechercher une conversation') + '" value="' + esc(S.filtre) + '" autocomplete="off"></label>' +

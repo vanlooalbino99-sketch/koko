@@ -8,18 +8,18 @@ import { chromium } from 'playwright';
 import { createApp } from '../server/src/app.js';
 
 const LOCAL_CHROMIUM = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-let server, base, dir, db, browser;
+let server, base, dir, db, hub, browser;
 
 before(async () => {
   dir = mkdtempSync(join(tmpdir(), 'bs-e2e-'));
   const made = createApp({ dataDir: dir });
-  db = made.db;
+  ({ db, hub } = made);
   await new Promise((res) => { server = made.app.listen(0, res); });
   base = `http://127.0.0.1:${server.address().port}`;
   const executablePath = process.env.BS_CHROMIUM || (existsSync(LOCAL_CHROMIUM) ? LOCAL_CHROMIUM : undefined);
   browser = await chromium.launch({ executablePath });
 });
-after(async () => { await browser?.close(); server?.close(); db?.close(); rmSync(dir, { recursive: true, force: true }); });
+after(async () => { await browser?.close(); hub?.close(); server?.close(); db?.close(); rmSync(dir, { recursive: true, force: true }); });
 
 async function session() {
   const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } });

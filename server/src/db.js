@@ -68,6 +68,38 @@ const MIGRATIONS = [
      created_at TEXT NOT NULL
    );
    CREATE INDEX site_requests_rdv ON site_requests(rdv_date) WHERE kind = 'rdv';`,
+  // v4 : messagerie interne (conversation « Équipe » pour tous, groupes, messages directs) et lecture par membre.
+  `CREATE TABLE chat_conversations (
+     id TEXT PRIMARY KEY,
+     kind TEXT NOT NULL CHECK (kind IN ('equipe', 'groupe', 'direct')),
+     name TEXT,
+     direct_key TEXT UNIQUE,
+     created_by TEXT,
+     created_at TEXT NOT NULL
+   );
+   CREATE TABLE chat_members (
+     conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     PRIMARY KEY (conversation_id, user_id)
+   );
+   CREATE INDEX chat_members_user ON chat_members(user_id);
+   CREATE TABLE chat_messages (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+     user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+     author TEXT NOT NULL,
+     kind TEXT NOT NULL DEFAULT 'texte' CHECK (kind IN ('texte', 'visio', 'info')),
+     body TEXT NOT NULL,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX chat_messages_conv ON chat_messages(conversation_id, id);
+   CREATE TABLE chat_reads (
+     conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     last_read INTEGER NOT NULL DEFAULT 0,
+     PRIMARY KEY (conversation_id, user_id)
+   );
+   INSERT INTO chat_conversations (id, kind, name, created_at) VALUES ('equipe', 'equipe', 'Équipe', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));`,
 ];
 
 export function openDb(dataDir) {

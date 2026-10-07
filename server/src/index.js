@@ -6,7 +6,7 @@ import { createUser, validateUserInput } from './auth.js';
 const env = process.env;
 const port = Number(env.PORT) || 3000;
 const dataDir = resolve(env.DATA_DIR || 'data');
-const { app, db } = createApp({
+const { app, db, hub } = createApp({
   dataDir,
   dev: env.BS_DEV === '1' || process.argv.includes('--dev'),
   secureCookies: env.COOKIE_SECURE === '1',
@@ -28,6 +28,7 @@ const server = app.listen(port, () => {
   console.log(`Blackstart CRM — http://localhost:${port} (données : ${dataDir})`);
 });
 function stop() {
+  hub.close(); // les flux temps réel de la messagerie gardent sinon le serveur ouvert
   server.close(() => { db.close(); process.exit(0); });
   setTimeout(() => process.exit(0), 5000).unref();
 }

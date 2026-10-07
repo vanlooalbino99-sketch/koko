@@ -324,6 +324,13 @@
     };
     input.click();
   }
+  function ouvrirEquipe() {
+    location.hash = '#/settings';
+    var n = 0, t = setInterval(function () {
+      var tab = [].slice.call(document.querySelectorAll('button,a,[role=tab]')).filter(function (x) { return x.textContent.trim() === 'Équipe & compte'; })[0];
+      if (tab || ++n > 20) { clearInterval(t); if (tab) tab.click(); }
+    }, 50);
+  }
   function majPhoto(v) {
     if (!USER) return;
     USER.photo = v;
@@ -339,13 +346,7 @@
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'bs-moi'; b.title = 'Mon compte';
     b.innerHTML = pastille(USER, '') + '<span class="nm">' + esc(String(USER.name).split(' ')[0]) + '</span>';
-    b.onclick = function () {
-      location.hash = '#/settings';
-      var n = 0, t = setInterval(function () {
-        var tab = [].slice.call(document.querySelectorAll('button,a,[role=tab]')).filter(function (x) { return x.textContent.trim() === 'Équipe & compte'; })[0];
-        if (tab || ++n > 20) { clearInterval(t); if (tab) tab.click(); }
-      }, 50);
-    };
+    b.onclick = ouvrirEquipe;
     bar.appendChild(b);
   }
   if (USER) {
@@ -368,17 +369,25 @@
       return;
     }
     var isAdmin = USER && USER.role === 'admin';
-    var ui = { users: null, history: null, msg: {}, newPass: '', clear: {} };
+    var ui = { users: null, history: null, msg: {}, newPass: '', clear: {}, postes: [] };
     function setMsg(zone, text, kind) { ui.msg[zone] = { text: text, kind: kind || '' }; render(); }
     function msg(zone) { var m = ui.msg[zone]; return m && m.text ? '<div class="bse-msg ' + m.kind + '">' + esc(m.text) + '</div>' : ''; }
-    function loadUsers() { if (!isAdmin) return; api('GET', '/api/users').then(function (b) { ui.users = b.users; render(); }).catch(function (e) { setMsg('team', e.message, 'err'); }); }
+    function loadUsers() {
+      api('GET', '/api/chat').then(function (b) { ui.postes = b.postes || []; var me = (b.users || []).filter(function (u) { return u.id === USER.id; })[0]; if (me) USER.poste = me.poste; render(); }).catch(function () {});
+      if (!isAdmin) return;
+      api('GET', '/api/users').then(function (b) { ui.users = b.users; render(); }).catch(function (e) { setMsg('team', e.message, 'err'); });
+    }
+    function patchUser(id, body, ok) {
+      api('PATCH', '/api/users/' + encodeURIComponent(id), body).then(function () { setMsg('team', ok, 'ok'); loadUsers(); })
+        .catch(function (er) { setMsg('team', er.message, 'err'); loadUsers(); });
+    }
     function loadHistory() { if (!isAdmin) return; api('GET', '/api/data/' + DATA_KEY + '/history').then(function (b) { ui.history = b.history; render(); }).catch(function (e) { setMsg('hist', e.message, 'err'); }); }
 
     function render() {
       if (!el.isConnected) return;
       var s = st(DATA_KEY), d = STATUS[status] || STATUS.ok;
       var me = card('Mon compte', 'Connecté à la version équipe' + (CONF.version ? ' (v' + esc(CONF.version) + ')' : '') + '.',
-        '<div class="bse-me">' + pastille(USER, 'bse-av') + '<div><b>' + esc(USER.name) + '</b><span>' + esc(USER.email) + '</span></div>' + roleBadge(USER.role) +
+        '<div class="bse-me">' + pastille(USER, 'bse-av') + '<div><b>' + esc(USER.name) + '</b><span>' + (USER.poste ? esc(USER.poste) + ' · ' : '') + esc(USER.email) + '</span></div>' + roleBadge(USER.role) +
         '<div class="bse-photo"><button type="button" class="btn btn-secondary btn-sm" data-act="photo">' + (USER.photo ? 'Changer la photo' : 'Ajouter une photo') + '</button>' +
         (USER.photo ? '<button type="button" class="btn btn-ghost btn-sm" data-act="sans-photo">Retirer</button>' : '') + '</div></div>' + msg('photo') +
         '<div class="bse-sep"></div>' +
@@ -395,14 +404,22 @@
       if (isAdmin) {
         var rows = (ui.users || []).map(function (u) {
           var self = u.id === USER.id;
+          var postes = ui.postes.slice(); if (u.poste && postes.indexOf(u.poste) < 0) postes.push(u.poste);
           return '<tr><td><b>' + esc(u.name) + '</b>' + (self ? ' <span class="badge tone-sky">vous</span>' : '') + '<div class="sr-hint">' + esc(u.email) + '</div></td>' +
+            '<td><select class="input select" data-poste="' + esc(u.id) + '"><option value="">— À définir</option>' + postes.map(function (p) { return '<option' + (p === u.poste ? ' selected' : '') + '>' + esc(p) + '</option>'; }).join('') + '</select></td>' +
+            '<td><select class="input select" data-chef="' + esc(u.id) + '"><option value="">— Personne</option>' + (ui.users || []).filter(function (x) { return x.id !== u.id; }).map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === u.managerId ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></td>' +
             '<td><select class="input select" data-role="' + esc(u.id) + '"' + (self ? ' disabled' : '') + '><option value="membre"' + (u.role === 'membre' ? ' selected' : '') + '>Membre</option><option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>Administrateur</option></select></td>' +
             '<td class="sr-hint">' + esc(fmtDate(u.lastLogin)) + '</td>' +
             '<td style="text-align:right;white-space:nowrap">' + (self ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-reset="' + esc(u.id) + '">Nouveau mot de passe</button> <button type="button" class="btn btn-ghost btn-sm" data-del="' + esc(u.id) + '">Retirer</button>') + '</td></tr>';
         }).join('');
         team = card('Équipe', 'Les membres voient et modifient les données du CRM ; les administrateurs gèrent aussi l’équipe, les ambiances, les icônes et les sauvegardes.',
-          (ui.users ? '<div class="table-wrap"><table class="table bse-table"><thead><tr><th>Membre</th><th>Rôle</th><th>Dernière connexion</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="sr-hint">Chargement…</p>') +
-          msg('team') + '<div class="bse-sep"></div>' +
+          (ui.users ? '<div class="table-wrap"><table class="table bse-table"><thead><tr><th>Membre</th><th>Poste</th><th>Responsable</th><th>Rôle</th><th>Dernière connexion</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="sr-hint">Chargement…</p>') +
+          msg('team') + '<div class="bse-actions"><button type="button" class="btn btn-secondary btn-sm" data-act="organigramme">Voir l’organigramme</button></div>' +
+          '<div class="bse-sep"></div>' +
+          '<form data-form="postes"><div class="sr-label" style="margin-bottom:6px">Postes de l’équipe</div><p class="sr-hint" style="margin:0 0 8px">Un poste par ligne, du plus haut au plus bas : cet ordre range aussi l’organigramme.</p>' +
+          '<textarea class="input" name="postes" rows="5" style="width:100%;resize:vertical">' + esc(ui.postes.join('\n')) + '</textarea>' +
+          '<div class="bse-actions"><button type="submit" class="btn btn-secondary btn-md">Enregistrer les postes</button></div>' + msg('postes') + '</form>' +
+          '<div class="bse-sep"></div>' +
           '<form data-form="add"><div class="sr-label" style="margin-bottom:10px">Ajouter un membre</div><div class="bse-grid">' +
           '<label class="field"><span class="field-label">Nom</span><input class="input" name="name" required maxlength="80" placeholder="Prénom Nom"></label>' +
           '<label class="field"><span class="field-label">E-mail</span><input class="input" type="email" name="email" required placeholder="nom@entreprise.fr"></label>' +
@@ -417,13 +434,14 @@
           (ui.history ? (hist ? '<div class="table-wrap"><table class="table bse-table"><thead><tr><th>Version</th><th>Date</th><th>Par</th><th>Taille</th><th></th></tr></thead><tbody>' + hist + '</tbody></table></div>' : '<p class="sr-hint">Aucune sauvegarde pour l’instant.</p>') : '<p class="sr-hint">Chargement…</p>') +
           '<div class="bse-actions"><button type="button" class="btn btn-ghost btn-sm" data-act="hist">Actualiser</button></div>' + msg('hist'), ICON.history);
       } else {
-        team = card('Équipe', '', '<p class="sr-hint">Seul un administrateur ajoute ou retire des membres de l’équipe.</p>', ICON.users);
+        team = card('Équipe', '', '<p class="sr-hint">Seul un administrateur ajoute ou retire des membres de l’équipe et leur attribue un poste.</p>' +
+          '<div class="bse-actions"><button type="button" class="btn btn-secondary btn-sm" data-act="organigramme">Voir l’organigramme</button></div>', ICON.users);
       }
       // La liste peut arriver pendant qu'on tape : la saisie en cours et le curseur sont conservés.
       var keep = {}, act = document.activeElement, focusKey = '';
       Array.prototype.forEach.call(el.querySelectorAll('form[data-form] [name]'), function (i) {
         var k = i.form.getAttribute('data-form') + ':' + i.name;
-        if (!ui.clear[i.form.getAttribute('data-form')]) keep[k] = i.value;
+        if (!ui.clear[i.form.getAttribute('data-form')] && i.value !== i.defaultValue) keep[k] = i.value;
         if (i === act) focusKey = k;
       });
       ui.clear = {};
@@ -456,6 +474,9 @@
         api('POST', '/api/auth/password', { current: data.current, next: data.next })
           .then(function () { ui.clear.pass = true; setMsg('pass', 'Mot de passe changé.', 'ok'); })
           .catch(function (er) { setMsg('pass', er.message, 'err'); });
+      } else if (kind === 'postes') {
+        api('PUT', '/api/chat/postes', { postes: String(data.postes || '').split('\n') }).then(function (b) { ui.postes = b.postes; ui.clear.postes = true; setMsg('postes', 'Postes enregistrés.', 'ok'); })
+          .catch(function (er) { setMsg('postes', er.message, 'err'); });
       } else if (kind === 'add') {
         api('POST', '/api/users', data).then(function (b) {
           ui.newPass = ''; ui.clear.add = true;
@@ -465,6 +486,10 @@
       }
     });
     el.addEventListener('change', function (e) {
+      var pid = e.target.getAttribute && e.target.getAttribute('data-poste');
+      if (pid) { patchUser(pid, { poste: e.target.value }, 'Poste mis à jour.'); return; }
+      var cid = e.target.getAttribute && e.target.getAttribute('data-chef');
+      if (cid) { patchUser(cid, { managerId: e.target.value || null }, 'Responsable mis à jour.'); return; }
       if (e.target.name === 'bse-son') { var SN = window.bsMessages.sonnerie; SN.choisir(e.target.value); SN.ecouter(e.target.value); render(); return; }
       var id = e.target.getAttribute && e.target.getAttribute('data-role'); if (!id) return;
       api('PATCH', '/api/users/' + encodeURIComponent(id), { role: e.target.value })
@@ -505,6 +530,7 @@
         if (act === 'logout') api('POST', '/api/auth/logout').then(function () { location.href = '/connexion'; }).catch(function () { location.href = '/connexion'; });
         else if (act === 'sync') { Object.keys(S).forEach(function (k) { if (st(k).pending != null) schedule(k, 0); }); poll(); setTimeout(render, 800); }
         else if (act === 'hist') loadHistory();
+        else if (act === 'organigramme' && window.bsMessages) window.bsMessages.organigramme();
         else if (act === 'photo') choisirPhoto(function (er) { if (er) setMsg('photo', er.message, 'err'); else { ui.msg.photo = null; render(); } });
         else if (act === 'sans-photo') api('DELETE', '/api/photos/moi').then(function () { majPhoto(null); render(); }).catch(function (er) { setMsg('photo', er.message, 'err'); });
       }
@@ -518,6 +544,7 @@
     monterReglages: monterReglages,
     utilisateur: function () { return USER ? Object.assign({}, USER) : null; },
     photoUrl: photoUrl,
+    ouvrirEquipe: ouvrirEquipe,
     serveur: !!CONF,
     etat: function () { var s = st(DATA_KEY); return { statut: status, version: s.version, enAttente: s.pending != null }; },
   };

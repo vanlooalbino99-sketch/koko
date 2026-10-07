@@ -1,6 +1,6 @@
 {
   "name": "blackstart-crm",
-  "version": "5.15.0",
+  "version": "5.16.0",
   "private": true,
   "description": "Blackstart AI — CRM de prospection : application (un seul fichier HTML) et serveur d'équipe (Node.js + SQLite)",
   "type": "module",

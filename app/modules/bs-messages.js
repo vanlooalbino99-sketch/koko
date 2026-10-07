@@ -19,7 +19,7 @@
   var S = {
     pret: false, err: '', me: null, users: [], online: [], convs: {}, msgs: {}, more: {}, chargement: {},
     actif: null, root: null, mobileListe: true, filtre: '', brouillons: {}, modal: null,
-    mode: 'messages', dernier: {}, ecrit: {}, ecritEnvoi: 0, envois: {}, emojis: false, // rubrique affichée (messages, groupes, visio) et dernière conversation ouverte dans chacune
+    mode: 'messages', dernier: {}, ecrit: {}, ecritEnvoi: 0, envois: {}, emojis: false, postes: [], // rubrique affichée (messages, groupes, visio) et dernière conversation ouverte dans chacune
   };
   var es = null;
 
@@ -31,6 +31,7 @@
     videoOff: '<path d="M10.66 6H14a2 2 0 0 1 2 2v2.5l5.25-3.06a.5.5 0 0 1 .75.43v8.2"/><path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="m2 2 20 20"/>',
     maximize: '<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/>',
     minimize: '<path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="m14 10 7-7"/><path d="m3 21 7-7"/>',
+    organi: '<rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v5M5 17v-3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/>',
     trombone: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
     sourire: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
     doc: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
@@ -61,6 +62,7 @@
     });
   }
   function user(id) { for (var i = 0; i < S.users.length; i++) if (S.users[i].id === id) return S.users[i]; return null; }
+  function posteDe(id) { var u = user(id); return (u && u.poste) || ''; }
   function nomDe(id) { var u = user(id); return u ? u.name : 'Ancien membre'; }
   function initiales(n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(function (x) { return x[0]; }).join('').toUpperCase(); }
   function teinte(id) { var h = 0, s = String(id || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
@@ -149,7 +151,7 @@
   // ------------------------------------------------------------------ données et temps réel
   function charger() {
     return api('GET', '').then(function (b) {
-      S.me = b.me; S.users = b.users; S.online = b.online; S.convs = {};
+      S.me = b.me; S.users = b.users; S.online = b.online; S.convs = {}; S.postes = b.postes || [];
       b.conversations.forEach(function (c) { S.convs[c.id] = c; });
       S.pret = true; S.err = '';
       choisirActif();
@@ -181,6 +183,7 @@
       majBadge(); rendre();
     });
     es.addEventListener('message', function (e) { recu(JSON.parse(e.data)); });
+    es.addEventListener('equipe', function () { charger(); });
     es.addEventListener('profil', function (e) { profil(JSON.parse(e.data)); });
     es.addEventListener('ecrit', function (e) { quelquUnEcrit(JSON.parse(e.data)); });
     es.addEventListener('call', function (e) {
@@ -457,16 +460,17 @@
     var enLigne = S.users.filter(function (u) { return u.id !== S.me && S.online.indexOf(u.id) >= 0; });
     return '<aside class="bsm-side"><div class="bsm-side-head"><div><h1 class="page-title">' + (grp ? 'Groupes' : 'Messages') + '</h1><p class="page-sub">' + (grp ? gr.length + ' groupe' + (gr.length > 1 ? 's' : '') : enLigne.length ? enLigne.length + ' en ligne' : 'Personne en ligne') + '</p></div>' +
       '<div class="bsm-side-act">' + (grp ? '<button type="button" class="btn btn-primary btn-sm" data-act="groupe">' + ic('plus', 14) + 'Nouveau groupe</button>'
-        : '<button type="button" class="btn btn-primary btn-sm" data-act="direct">' + ic('plus', 14) + 'Nouveau message</button>') + '</div></div>' +
+        : '<button type="button" class="btn btn-primary btn-sm" data-act="direct">' + ic('plus', 14) + 'Nouveau message</button>') +
+        '<button type="button" class="icon-btn" data-act="organigramme" title="Organigramme de l’équipe" aria-label="Organigramme de l’équipe">' + ic('organi', 18) + '</button></div></div>' +
       '<label class="bsm-search">' + ic('search', 15) + '<input name="bsm-filtre" placeholder="' + (grp ? 'Rechercher un groupe' : 'Rechercher une conversation') + '" value="' + esc(S.filtre) + '" autocomplete="off"></label>' +
-      (enLigne.length && !grp ? '<div class="bsm-online">' + enLigne.map(function (u) { return '<button type="button" data-dm="' + esc(u.id) + '" title="Écrire à ' + esc(u.name) + '">' + avatar(u.id, u.name) + '<span>' + esc(u.name.split(' ')[0]) + '</span></button>'; }).join('') + '</div>' : '') +
+      (enLigne.length && !grp ? '<div class="bsm-online">' + enLigne.map(function (u) { return '<button type="button" data-dm="' + esc(u.id) + '" title="Écrire à ' + esc(u.name) + (u.poste ? ' (' + esc(u.poste) + ')' : '') + '">' + avatar(u.id, u.name) + '<span>' + esc(u.name.split(' ')[0]) + '</span></button>'; }).join('') + '</div>' : '') +
       '<nav class="bsm-convs">' + sec('Équipe', eq) + sec(grp ? 'Vos groupes' : 'Groupes', gr) + sec('Messages directs', di) +
       (items.length ? '' : '<p class="bsm-rien">' + (q ? 'Aucun résultat.' : grp ? 'Aucun groupe pour l’instant.' : 'Aucune conversation.') + '</p>') + '</nav></aside>';
   }
   function rendreFil(c) {
     var arr = S.msgs[c.id];
     var membres = c.kind === 'equipe' ? S.users.map(function (u) { return u.id; }) : (c.members || []);
-    var sous = c.kind === 'direct' ? (S.online.indexOf(autre(c)) >= 0 ? 'En ligne' : 'Hors ligne') : membres.length + ' membre' + (membres.length > 1 ? 's' : '');
+    var sous = c.kind === 'direct' ? (posteDe(autre(c)) ? posteDe(autre(c)) + ' · ' : '') + (S.online.indexOf(autre(c)) >= 0 ? 'En ligne' : 'Hors ligne') : membres.length + ' membre' + (membres.length > 1 ? 's' : '');
     var live = c.call && c.call.length, dedans = Appel.conv === c.id;
     var head = '<header class="bsm-head"><button type="button" class="icon-btn bsm-back" data-act="retour" aria-label="Retour aux conversations">' + ic('chevronLeft', 20) + '</button>' + convIcon(c) +
       '<div class="bsm-head-t"><b>' + esc(titre(c)) + '</b><span>' + esc(sous) + '</span></div>' +
@@ -491,7 +495,7 @@
         var moi = m.userId === S.me;
         var suite = prev && prev.userId === m.userId && (new Date(m.at) - new Date(prev.at)) < 5 * 60000;
         html.push('<div class="bsm-msg' + (moi ? ' moi' : '') + (suite ? ' suite' : '') + '">' + (moi ? '' : (suite ? '<span class="bsm-av-sp"></span>' : avatar(m.userId, m.author))) +
-          '<div class="bsm-bulle">' + (suite || moi || c.kind === 'direct' ? '' : '<b class="bsm-auteur" style="--h:' + teinte(m.userId) + '">' + esc(m.author) + '</b>') +
+          '<div class="bsm-bulle">' + (suite || moi || c.kind === 'direct' ? '' : '<b class="bsm-auteur" style="--h:' + teinte(m.userId) + '">' + esc(m.author) + (posteDe(m.userId) ? '<small>' + esc(posteDe(m.userId)) + '</small>' : '') + '</b>') +
           piece(m.file) + (m.body ? '<div class="bsm-txt">' + texte(m.body) + '</div>' : '') + '<time>' + heure(m.at) + '</time></div></div>');
         prev = m;
       });
@@ -560,7 +564,7 @@
         '<div class="bsm-modal-foot"><button type="button" class="btn btn-secondary btn-md" data-act="fermer">Annuler</button><button type="submit" class="btn btn-primary btn-md">Créer le groupe</button></div>';
     } else if (m.type === 'direct') {
       corps = '<h2>Nouveau message</h2><p>Choisissez la personne à qui écrire.</p><div class="bsm-pick">' + (autres.length ? autres.map(function (u) {
-        return '<button type="button" class="bsm-pick-i" data-dm="' + esc(u.id) + '">' + avatar(u.id, u.name) + '<span>' + esc(u.name) + '<small>' + (S.online.indexOf(u.id) >= 0 ? 'En ligne' : 'Hors ligne') + '</small></span></button>';
+        return '<button type="button" class="bsm-pick-i" data-dm="' + esc(u.id) + '">' + avatar(u.id, u.name) + '<span>' + esc(u.name) + '<small>' + (u.poste ? esc(u.poste) + ' · ' : '') + (S.online.indexOf(u.id) >= 0 ? 'En ligne' : 'Hors ligne') + '</small></span></button>';
       }).join('') : '<p class="bsm-rien">Invitez d’abord des membres dans Réglages › Équipe &amp; compte.</p>') + '</div>' +
         '<div class="bsm-modal-foot"><button type="button" class="btn btn-secondary btn-md" data-act="fermer">Fermer</button></div>';
     } else if (m.type === 'reglages' && c) {
@@ -573,8 +577,28 @@
         }).join('') + '</div>' +
         '<div class="bsm-lbl">Ajouter des membres</div>' + cases([], c.members || []) +
         '<div class="bsm-modal-foot"><button type="button" class="btn btn-danger btn-md" data-act="quitter-groupe">Quitter le groupe</button><span class="grow"></span><button type="button" class="btn btn-secondary btn-md" data-act="fermer">Annuler</button><button type="submit" class="btn btn-primary btn-md">Enregistrer</button></div>';
+    } else if (m.type === 'organigramme') {
+      var admin = window.BS_SERVER && window.BS_SERVER.user && window.BS_SERVER.user.role === 'admin';
+      corps = '<h2>Organigramme</h2><p>Qui fait quoi dans l’équipe, et qui dépend de qui.' + (admin ? ' Postes et responsables se règlent dans Réglages › Équipe &amp; compte.' : '') + '</p>' +
+        organigramme() + '<div class="bsm-modal-foot">' + (admin ? '<button type="button" class="btn btn-secondary btn-md" data-act="regler-equipe">Modifier</button>' : '') +
+        '<button type="button" class="btn btn-primary btn-md" data-act="fermer">Fermer</button></div>';
     } else return '';
-    return '<div class="overlay bsm-overlay" data-act="fermer-fond"><form class="modal bsm-modal" role="dialog" aria-modal="true">' + (m.err ? '<div class="bsm-err">' + esc(m.err) + '</div>' : '') + corps + '</form></div>';
+    return '<div class="overlay bsm-overlay" data-act="fermer-fond"><form class="modal bsm-modal' + (m.type === 'organigramme' ? ' large' : '') + '" role="dialog" aria-modal="true">' + (m.err ? '<div class="bsm-err">' + esc(m.err) + '</div>' : '') + corps + '</form></div>';
+  }
+  // Arbre : chaque membre sous son responsable ; à poste égal, ordre de la liste des postes puis du nom.
+  function organigramme() {
+    var ids = {}; S.users.forEach(function (u) { ids[u.id] = u; });
+    var rang = function (u) { var i = S.postes.indexOf(u.poste); return i < 0 ? 999 : i; };
+    var tri = function (a, b) { return rang(a) - rang(b) || a.name.localeCompare(b.name, 'fr'); };
+    var enfants = function (id) { return S.users.filter(function (u) { return (u.managerId && ids[u.managerId] ? u.managerId : null) === id; }).sort(tri); };
+    var noeud = function (u, prof) {
+      var k = prof < 12 ? enfants(u.id) : [];
+      return '<li><button type="button" class="bso-carte' + (u.id === S.me ? ' moi' : '') + '"' + (u.id === S.me ? '' : ' data-dm="' + esc(u.id) + '" title="Écrire à ' + esc(u.name) + '"') + '>' +
+        avatar(u.id, u.name) + '<span><b>' + esc(u.name) + (u.id === S.me ? ' <small>vous</small>' : '') + '</b><em>' + esc(u.poste || 'Poste à définir') + '</em></span></button>' +
+        (k.length ? '<ul>' + k.map(function (x) { return noeud(x, prof + 1); }).join('') + '</ul>' : '') + '</li>';
+    };
+    var racines = enfants(null);
+    return '<div class="bso"><ul>' + racines.map(function (u) { return noeud(u, 0); }).join('') + '</ul></div>';
   }
   function taille(t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 160) + 'px'; }
 
@@ -610,6 +634,8 @@
         return;
       }
       var act = b.getAttribute('data-act');
+      if (act === 'organigramme') { S.modal = { type: 'organigramme' }; rendre(); return; }
+      if (act === 'regler-equipe') { S.modal = null; location.hash = '#/settings'; if (window.bsEquipe && window.bsEquipe.ouvrirEquipe) window.bsEquipe.ouvrirEquipe(); return; }
       if (act === 'emojis') { S.emojis = !S.emojis; rendre(); var ti = root.querySelector('.bsm-input'); if (ti) ti.focus(); return; }
       if (act === 'joindre') { root.querySelector('.bsm-fichier').click(); return; }
       if (act === 'retour') { S.mobileListe = true; rendre(); }
@@ -1043,6 +1069,31 @@
     '.bsm-side-act .btn-sm{gap:5px}',
     // Fenêtre (groupe, message direct)
     '.bsm-overlay{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:16px}',
+    '.bsm-modal.large{width:min(1000px,100%)}',
+    '.bsm-auteur small{font-weight:600;opacity:.6;margin-left:6px;font-size:.92em}',
+    // Organigramme : lignes qui relient chaque membre à son responsable.
+    '.bso{overflow:auto;padding:8px 4px 4px}',
+    '.bso ul{display:flex;justify-content:center;gap:0;padding-top:22px;position:relative;margin:0;list-style:none;padding-left:0}',
+    '.bso>ul{padding-top:0}',
+    '.bso li{position:relative;display:flex;flex-direction:column;align-items:center;padding:22px 8px 0}',
+    '.bso>ul>li{padding-top:0}',
+    '.bso li::before,.bso li::after{content:"";position:absolute;top:0;width:50%;height:22px;border-top:2px solid var(--border-2,var(--border))}',
+    '.bso li::before{right:50%}.bso li::after{left:50%;border-left:2px solid var(--border-2,var(--border))}',
+    '.bso li:only-child::before,.bso li:only-child::after{border-top:0}',
+    '.bso li:first-child::before,.bso li:last-child::after{border-top:0}',
+    '.bso li:last-child::before{border-right:2px solid var(--border-2,var(--border));border-radius:0 10px 0 0}',
+    '.bso li:first-child::after{border-radius:10px 0 0 0}',
+    '.bso li:only-child::before{display:none}',
+    '.bso li:only-child::after{border-radius:0}',
+    '.bso>ul>li::before,.bso>ul>li::after{display:none}',
+    '.bso ul ul::before{content:"";position:absolute;top:0;left:50%;height:22px;border-left:2px solid var(--border-2,var(--border))}',
+    '.bso-carte{display:flex;align-items:center;gap:10px;min-width:170px;max-width:220px;padding:10px 12px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);text-align:left;color:var(--text);transition:border-color .15s,transform .15s}',
+    '.bso-carte:hover{border-color:var(--accent);transform:translateY(-1px)}',
+    '.bso-carte.moi{border-color:color-mix(in srgb,var(--accent) 60%,var(--border))}',
+    '.bso-carte span{display:flex;flex-direction:column;min-width:0}',
+    '.bso-carte b{font-size:.88em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.bso-carte b small{font-weight:600;opacity:.6}',
+    '.bso-carte em{font-style:normal;font-size:.76em;color:var(--accent-text,var(--accent));font-weight:650}',
     '.bsm-modal{width:min(480px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:22px;border-radius:var(--radius-lg,16px)!important;display:flex;flex-direction:column;gap:12px}',
     '.bsm-modal h2{margin:0;font-size:1.2em}',
     '.bsm-modal>p{margin:-6px 0 0;color:var(--text-3);font-size:.9em}',
@@ -1127,5 +1178,6 @@
   function auto() { if (serveur()) setTimeout(demarrer, 1200); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
 
-  window.bsMessages = { monter: monter, appel: Appel, sonnerie: Sonnerie, etat: function () { return S; } };
+  window.bsMessages = { monter: monter, appel: Appel, sonnerie: Sonnerie,
+    organigramme: function () { S.modal = { type: 'organigramme' }; if (location.hash !== '#/messages') location.hash = '#/messages'; else rendre(); }, etat: function () { return S; } };
 })();

@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { tx } from '../db.js';
 import { createUser, publicUser, validateUserInput, hashPassword } from '../auth.js';
 
-export function usersRoutes({ db }) {
+export function usersRoutes({ db, hub }) {
   const r = Router();
   const admins = () => db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get().n;
   const byId = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
@@ -22,7 +22,7 @@ export function usersRoutes({ db }) {
   });
 
   r.patch('/:id', (req, res) => {
-    const { name, role, password } = req.body || {};
+    const { name, role, password, poste, managerId } = req.body || {};
     const errors = validateUserInput({ name, role, password }, { partial: true });
     if (errors.length) return res.status(400).json({ error: errors.join(' ') });
     const out = tx(db, () => {
@@ -31,6 +31,14 @@ export function usersRoutes({ db }) {
       if (role && u.role === 'admin' && role !== 'admin' && admins() <= 1) return { status: 400, error: 'Il faut garder au moins un administrateur.' };
       if (name !== undefined) db.prepare('UPDATE users SET name = ? WHERE id = ?').run(String(name).trim(), u.id);
       if (role !== undefined) db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, u.id);
+      if (poste !== undefined) db.prepare('UPDATE users SET poste = ? WHERE id = ?').run(String(poste || '').trim().replace(/\s+/g, ' ').slice(0, 60) || null, u.id);
+      if (managerId !== undefined) {
+        const m = managerId ? byId(String(managerId)) : null;
+        if (managerId && !m) return { status: 400, error: 'Responsable introuvable.' };
+        // Pas de boucle : le responsable choisi ne peut pas être sous cette personne.
+        for (let x = m; x; x = x.manager_id ? byId(x.manager_id) : null) if (x.id === u.id) return { status: 400, error: 'Ce responsable fait déjà partie de son équipe.' };
+        db.prepare('UPDATE users SET manager_id = ? WHERE id = ?').run(m ? m.id : null, u.id);
+      }
       if (password !== undefined) {
         db.prepare('UPDATE users SET pass = ? WHERE id = ?').run(hashPassword(password), u.id);
         // Nouveau mot de passe : ses autres sessions sont fermées.
@@ -39,6 +47,8 @@ export function usersRoutes({ db }) {
       return { user: publicUser(byId(u.id)) };
     });
     if (out.error) return res.status(out.status).json({ error: out.error });
+    // Organigramme et messagerie des autres membres à jour sans recharger.
+    if (hub) hub.send(db.prepare('SELECT id FROM users').all().map((x) => x.id), 'equipe', {});
     res.json(out);
   });
 

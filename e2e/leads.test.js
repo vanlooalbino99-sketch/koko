@@ -148,7 +148,9 @@ test('génère des lots toujours nouveaux, sans doublon, et les ajoute au CRM', 
 });
 
 test('Rapports : suivi de ma niche (client idéal, entonnoir, tableau par secteur)', async () => {
-  const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } });
+  // Le test vérifie les chiffres, pas leur défilement depuis 0 : sans animation, ils s'affichent tout de suite,
+  // même sur une machine de CI chargée où les images d'animation arrivent en retard.
+  const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 }, reducedMotion: 'reduce' });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

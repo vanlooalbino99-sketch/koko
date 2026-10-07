@@ -103,6 +103,15 @@ test('conversation Équipe : message en direct, non lus, lecture', async () => {
   fm.close();
 });
 
+test('« en train d’écrire » : signal aux autres membres seulement', async () => {
+  const fm = await marie.flux();
+  assert.equal((await admin('POST', '/api/chat/conversations/equipe/ecrit', {})).status, 200);
+  const x = await fm.wait('ecrit');
+  assert.deepEqual(x, { conversationId: 'equipe', userId: ids.Albino });
+  assert.equal((await admin('POST', '/api/chat/conversations/inconnue/ecrit', {})).status, 404);
+  fm.close();
+});
+
 test('groupes : création, visibilité, ajout, départ, droits', async () => {
   const fp = await paul.flux();
   const g = await admin('POST', '/api/chat/groupes', { name: 'Commerciaux', members: [ids.Marie] });

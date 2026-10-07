@@ -137,6 +137,14 @@ export function chatRoutes({ db, hub = chatHub() }) {
     res.status(201).json({ message: post(c, req.user, body) });
   });
 
+  // « En train d'écrire » : rien en base, juste un signal aux autres membres (le navigateur le renvoie toutes les 2–3 s).
+  r.post('/conversations/:id/ecrit', (req, res) => {
+    const c = conv(req.params.id);
+    if (!canSee(c, req.user.id)) return res.status(404).json({ error: 'Conversation introuvable.' });
+    hub.send(memberIds(c).filter((id) => id !== req.user.id), 'ecrit', { conversationId: c.id, userId: req.user.id });
+    res.json({ ok: true });
+  });
+
   r.post('/conversations/:id/lu', (req, res) => {
     const c = conv(req.params.id);
     if (!canSee(c, req.user.id)) return res.status(404).json({ error: 'Conversation introuvable.' });

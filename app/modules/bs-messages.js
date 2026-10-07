@@ -19,7 +19,7 @@
   var S = {
     pret: false, err: '', me: null, users: [], online: [], convs: {}, msgs: {}, more: {}, chargement: {},
     actif: null, root: null, mobileListe: true, filtre: '', brouillons: {}, modal: null,
-    mode: 'messages', dernier: {}, // rubrique affichée (messages, groupes, visio) et dernière conversation ouverte dans chacune
+    mode: 'messages', dernier: {}, ecrit: {}, ecritEnvoi: 0, // rubrique affichée (messages, groupes, visio) et dernière conversation ouverte dans chacune
   };
   var es = null;
 
@@ -141,6 +141,7 @@
       majBadge(); rendre();
     });
     es.addEventListener('message', function (e) { recu(JSON.parse(e.data)); });
+    es.addEventListener('ecrit', function (e) { quelquUnEcrit(JSON.parse(e.data)); });
     es.addEventListener('call', function (e) {
       var x = JSON.parse(e.data), c = S.convs[x.conversationId];
       if (c) c.call = x.participants;
@@ -166,6 +167,7 @@
   function recu(m) {
     var c = S.convs[m.conversationId];
     if (!c) { charger(); return; }
+    if (S.ecrit[m.conversationId]) delete S.ecrit[m.conversationId][m.userId];
     var arr = S.msgs[m.conversationId];
     if (arr && !arr.some(function (x) { return x.id === m.id; })) arr.push(m);
     c.last = m;
@@ -177,6 +179,39 @@
       carte({ titre: m.author + (c.kind === 'direct' ? '' : ' · ' + titre(c)), sous: m.body, avatar: m.userId, bouton: 'Ouvrir', action: function () { aller(c.id); } });
     }
     majBadge(); rendre(lu);
+  }
+  // « En train d'écrire » : trois points animés sous les messages, comme sur un téléphone.
+  var ECRIT_MS = 5000;
+  function quelquUnEcrit(x) {
+    if (x.userId === S.me) return;
+    var parConv = S.ecrit[x.conversationId] || (S.ecrit[x.conversationId] = {});
+    clearTimeout(parConv[x.userId]);
+    parConv[x.userId] = setTimeout(function () { delete parConv[x.userId]; majEcrit(); }, ECRIT_MS);
+    majEcrit();
+  }
+  function quiEcrit(cid) { return Object.keys(S.ecrit[cid] || {}); }
+  function bulleEcrit(cid) {
+    var ids = quiEcrit(cid);
+    if (!ids.length) return '';
+    var noms = ids.map(function (id) { return nomDe(id).split(' ')[0]; });
+    var dit = noms.length > 2 ? noms.length + ' personnes écrivent' : noms.join(' et ') + (noms.length > 1 ? ' écrivent' : ' écrit');
+    return '<div class="bsm-msg bsm-ecrit" title="' + esc(dit) + '…">' + avatar(ids[0], nomDe(ids[0])) +
+      '<div class="bsm-bulle" role="status" aria-label="' + esc(dit) + '"><span class="bsm-dots"><i></i><i></i><i></i></span></div></div>';
+  }
+  function majEcrit() {
+    var box = S.root && S.root.querySelector('.bsm-scroll');
+    if (!box || S.mode === 'visio') return;
+    var enBas = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    var old = box.querySelector('.bsm-ecrit');
+    if (old) old.remove();
+    var html = S.actif ? bulleEcrit(S.actif) : '';
+    if (html) box.insertAdjacentHTML('beforeend', html);
+    if (enBas) box.scrollTop = box.scrollHeight;
+  }
+  function jEcris(t) {
+    if (!S.actif || !t.value.trim() || Date.now() - S.ecritEnvoi < 2500) return;
+    S.ecritEnvoi = Date.now();
+    api('POST', '/conversations/' + encodeURIComponent(S.actif) + '/ecrit', {}).catch(function () {});
   }
   function marquerLu(c) {
     if (!c || !c.unread && c.lastRead >= ((c.last && c.last.id) || 0)) return;
@@ -213,7 +248,7 @@
   function envoyer(txt) {
     var c = S.convs[S.actif];
     if (!c || !txt.trim()) return;
-    S.brouillons[c.id] = '';
+    S.brouillons[c.id] = ''; S.ecritEnvoi = 0;
     api('POST', '/conversations/' + encodeURIComponent(c.id) + '/messages', { body: txt }).then(function (b) { recu(b.message); })
       .catch(function (e) { S.brouillons[c.id] = txt; S.err = e.message; rendre(); });
   }
@@ -335,6 +370,7 @@
       });
       corps = html.join('');
     }
+    if (arr) corps += bulleEcrit(c.id);
     var foot = '<form class="bsm-compose" autocomplete="off"><textarea class="bsm-input" rows="1" maxlength="4000" placeholder="Écrire à ' + esc(titre(c)) + '…" aria-label="Message"></textarea>' +
       '<button type="submit" class="bsm-send" aria-label="Envoyer">' + ic('send', 18) + '</button></form><p class="bsm-hint">Entrée pour envoyer · Maj + Entrée pour aller à la ligne</p>';
     return '<section class="bsm-main">' + head + '<div class="bsm-scroll" role="log" aria-live="polite">' + corps + '</div>' + foot + '</section>';
@@ -465,7 +501,7 @@
     });
     root.addEventListener('input', function (ev) {
       var t = ev.target;
-      if (t.classList.contains('bsm-input')) { taille(t); S.brouillons[S.actif] = t.value; }
+      if (t.classList.contains('bsm-input')) { taille(t); S.brouillons[S.actif] = t.value; jEcris(t); }
       if (t.name === 'bsm-filtre') { S.filtre = t.value; rendre(); }
     });
     root.addEventListener('scroll', function (ev) {
@@ -775,6 +811,13 @@
     '[data-scheme=light] .bsm-auteur{color:hsl(var(--h) 65% 38%)}',
     '.bsm-txt{font-size:.93em;line-height:1.45;overflow-wrap:anywhere;white-space:normal}',
     '.bsm-txt a{color:inherit;text-decoration:underline}',
+    '.bsm-ecrit .bsm-bulle{padding:11px 14px;border-radius:18px;background:color-mix(in srgb,var(--accent) 14%,var(--surface-2));border-color:transparent;animation:bsm-ecrit-in .2s ease-out}',
+    '.bsm-dots{display:flex;gap:4px;align-items:center;height:8px}',
+    '.bsm-dots i{width:7px;height:7px;border-radius:50%;background:color-mix(in srgb,var(--accent) 75%,#8a94a6);opacity:.45;animation:bsm-dot 1.2s infinite ease-in-out}',
+    '.bsm-dots i:nth-child(2){animation-delay:.15s}.bsm-dots i:nth-child(3){animation-delay:.3s}',
+    '@keyframes bsm-dot{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}',
+    '@keyframes bsm-ecrit-in{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}',
+    '@media (prefers-reduced-motion:reduce){.bsm-dots i{animation:none;opacity:.7}.bsm-ecrit .bsm-bulle{animation:none}}',
     '.bsm-bulle time{display:block;text-align:right;font-size:.66em;opacity:.65;margin-top:2px}',
     '.bsm-info{align-self:center;display:flex;align-items:center;gap:8px;margin:10px 0;font-size:.78em;color:var(--text-3);padding:5px 12px;border-radius:99px;background:var(--surface-2);border:1px dashed var(--border)}',
     '.bsm-info.visio{color:var(--text);border-style:solid;border-color:rgb(16 185 129/.4);background:rgb(16 185 129/.08)}',

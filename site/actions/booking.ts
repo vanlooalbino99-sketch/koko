@@ -25,7 +25,7 @@ export async function submitBooking(input: unknown, rawRequestId?: string): Prom
   const lieu = `${d.codePostal} ${d.ville}, ${d.pays}`;
   // Offre choisie : étiquette et montants repris sur la fiche du CRM.
   const pack = packs.find((p) => `pack-${p.slug}` === d.service);
-  const offre = pack ? { pack: `Pack ${pack.name}`, dealValue: pack.setup, mrrValue: pack.monthly } : {};
+  const offre = pack ? { pack: `Pack ${pack.name}`, dealValue: pack.launch, mrrValue: pack.monthly } : {};
 
   let crmNote = 'Ajouté au CRM : RDV dans l’agenda et tâche de rappel.';
   try {

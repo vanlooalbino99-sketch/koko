@@ -16,9 +16,9 @@ export const metadata = pageMetadata({
 export default function OffresPage() {
   return (
     <>
-      <PageHero eyebrow="Offres et tarifs" title="Un pack pour chaque étape de votre croissance" intro="Du site qui prend vos rendez-vous au CRM qui pilote toute votre équipe commerciale. Chaque pack démarre par un audit gratuit.">
+      <PageHero eyebrow="Offres et tarifs" title="Un pack pour chaque étape de votre croissance" intro="Offre de lancement : payez votre pack une fois, ou étalez-le en abonnement mensuel sans rien avancer. Chaque pack démarre par un audit gratuit.">
         <ul className="mt-6 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground sm:flex-row sm:gap-6">
-          {['Audit gratuit avant de choisir', 'Mise en place clé en main', 'Intégré à votre CRM'].map((t) => (
+          {['Prix de lancement', 'Paiement unique ou abonnement', 'Audit gratuit avant de choisir'].map((t) => (
             <li key={t} className="flex items-center gap-2"><Check className="size-4 text-success" aria-hidden />{t}</li>
           ))}
         </ul>
@@ -68,7 +68,7 @@ export default function OffresPage() {
             description: p.features.join(', '),
             url: `${site.url}/offres#${p.slug}`,
             priceSpecification: [
-              { '@type': 'PriceSpecification', price: p.setup, priceCurrency: 'EUR', name: 'Mise en place' },
+              { '@type': 'PriceSpecification', price: p.launch, priceCurrency: 'EUR', name: 'Paiement unique (offre de lancement)' },
               { '@type': 'UnitPriceSpecification', price: p.monthly, priceCurrency: 'EUR', unitCode: 'MON', name: 'Abonnement mensuel' },
             ],
           })),

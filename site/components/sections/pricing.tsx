@@ -37,13 +37,17 @@ export function PackCards({ compact = false }: { compact?: boolean }) {
               </ul>
             )}
             <div className="mt-6 border-t pt-5">
-              <p className="flex items-baseline gap-1.5">
-                <span className={cn('num-grad font-semibold tracking-tight', p.setupLabel.length > 10 ? 'text-2xl' : 'text-3xl')}>{p.setupLabel}</span>
+              <p className="text-xs font-semibold tracking-wide text-success uppercase">Offre de lancement</p>
+              <p className="mt-1 flex flex-wrap items-baseline gap-x-2">
+                <span className={cn('num-grad font-semibold tracking-tight', p.launchLabel.length > 10 ? 'text-2xl' : 'text-3xl')}>{p.launchLabel}</span>
+                <s className="text-sm text-muted-foreground"><span className="sr-only">au lieu de </span>{p.setupLabel}</s>
               </p>
-              <p className="text-xs text-muted-foreground">mise en place</p>
-              <p className="mt-2 text-lg font-semibold">
-                + {p.monthlyLabel}<span className="text-sm font-normal text-muted-foreground"> / mois</span>
+              <p className="text-xs text-muted-foreground">en paiement unique</p>
+              <p className="my-3 flex items-center gap-3 text-xs text-muted-foreground uppercase before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">ou</p>
+              <p className="text-lg font-semibold">
+                {p.monthlyLabel}<span className="text-sm font-normal text-muted-foreground"> / mois</span>
               </p>
+              <p className="text-xs text-muted-foreground">en abonnement, sans rien payer au départ</p>
             </div>
             <ul className="mt-5 flex-1 space-y-2.5 text-sm">
               {shown.map((f) => (

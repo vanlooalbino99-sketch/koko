@@ -129,7 +129,7 @@ export default function HomePage() {
 
       {/* Offres */}
       <Section className="pt-0 md:pt-0">
-        <SectionHeading eyebrow="Offres" title="Un pack pour chaque étape de votre croissance" intro="Mise en place clé en main, puis un abonnement mensuel tout compris." />
+        <SectionHeading eyebrow="Offres" title="Un pack pour chaque étape de votre croissance" intro="Prix de lancement : payez une fois, ou choisissez l’abonnement mensuel sans rien avancer." />
         <PackCards compact />
         <p data-reveal className="mt-10 text-center">
           <Link href="/offres" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">

@@ -121,9 +121,13 @@ export type Pack = {
   pitch: string;
   audience?: string[];
   features: string[];
-  /** Mise en place : montant (pour le CRM) et libellé affiché. */
+  /** Paiement unique au prix normal (affiché barré pendant l'offre de lancement). */
   setup: number;
   setupLabel: string;
+  /** Offre de lancement : paiement unique (montant repris dans le CRM). */
+  launch: number;
+  launchLabel: string;
+  /** Ou abonnement, pour qui ne peut pas payer en une fois. */
   monthly: number;
   monthlyLabel: string;
   featured?: boolean;
@@ -137,6 +141,7 @@ export const packs: Pack[] = [
     audience: ['Artisans', 'Consultants', 'Coaches', 'Petites entreprises'],
     features: ['Site web professionnel', 'Formulaire de contact', 'Prise de rendez-vous', 'Google Maps', 'Optimisation mobile', 'Hébergement', 'SSL', 'Intégration CRM'],
     setup: 990, setupLabel: '990 €',
+    launch: 490, launchLabel: '490 €',
     monthly: 49, monthlyLabel: '49 €',
   },
   {
@@ -145,6 +150,7 @@ export const packs: Pack[] = [
     pitch: 'Pour les entreprises qui veulent générer des leads.',
     features: ['Site web premium', 'Système de prise de RDV', 'CRM', 'Pipeline commercial', 'E-mails automatiques', 'Dashboard commercial', 'Synchronisation calendrier'],
     setup: 1990, setupLabel: '1 990 €',
+    launch: 990, launchLabel: '990 €',
     monthly: 99, monthlyLabel: '99 €',
   },
   {
@@ -153,6 +159,7 @@ export const packs: Pack[] = [
     pitch: 'Toute la machine commerciale : chaque lead qualifié, relancé et suivi jusqu’à la signature.',
     features: ['Site premium', 'CRM complet', 'Pipeline commercial', 'Qualification de leads', 'Automatisation des e-mails', 'Relances automatiques', 'Reporting dirigeant', 'Tableau de bord', 'Gestion des commerciaux'],
     setup: 3490, setupLabel: '3 490 €',
+    launch: 1790, launchLabel: '1 790 €',
     monthly: 199, monthlyLabel: '199 €',
     featured: true,
   },
@@ -162,12 +169,13 @@ export const packs: Pack[] = [
     pitch: 'Pour les PME qui veulent un outil taillé sur mesure.',
     features: ['CRM sur mesure', 'Multi-utilisateurs', 'Gestion clients', 'Gestion des devis', 'Signature électronique', 'Facturation', 'Reporting avancé', 'Formation', 'Support prioritaire'],
     setup: 5000, setupLabel: '5 000 à 15 000 €',
+    launch: 2500, launchLabel: '2 500 à 7 500 €',
     monthly: 299, monthlyLabel: '299 à 499 €',
   },
 ];
 
 /** Libellé d'une offre dans le formulaire de RDV et dans le CRM. */
-export const packLabel = (p: Pack) => `Pack ${p.name} (${p.setupLabel} + ${p.monthlyLabel}/mois)`;
+export const packLabel = (p: Pack) => `Pack ${p.name} (${p.launchLabel} une fois ou ${p.monthlyLabel}/mois)`;
 
 // Offre en abonnement, bientôt disponible : le CRM Blackstart prêt à l'emploi, sans développement spécifique.
 export const saas = {

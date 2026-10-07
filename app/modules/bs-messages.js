@@ -19,7 +19,7 @@
   var S = {
     pret: false, err: '', me: null, users: [], online: [], convs: {}, msgs: {}, more: {}, chargement: {},
     actif: null, root: null, mobileListe: true, filtre: '', brouillons: {}, modal: null,
-    mode: 'messages', dernier: {}, ecrit: {}, ecritEnvoi: 0, // rubrique affichée (messages, groupes, visio) et dernière conversation ouverte dans chacune
+    mode: 'messages', dernier: {}, ecrit: {}, ecritEnvoi: 0, envois: {}, emojis: false, // rubrique affichée (messages, groupes, visio) et dernière conversation ouverte dans chacune
   };
   var es = null;
 
@@ -31,7 +31,19 @@
     videoOff: '<path d="M10.66 6H14a2 2 0 0 1 2 2v2.5l5.25-3.06a.5.5 0 0 1 .75.43v8.2"/><path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="m2 2 20 20"/>',
     maximize: '<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/>',
     minimize: '<path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="m14 10 7-7"/><path d="m3 21 7-7"/>',
+    trombone: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+    sourire: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+    doc: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
+    telecharger: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
   };
+  // Sélecteur d'émojis : une sélection courante, par thème.
+  var EMOJIS = [
+    ['Smileys', '😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😍 🥰 😘 😋 😎 🤩 🥳 🤗 🤔 🤨 😐 😶 🙄 😏 😬 😌 😴 🤤 😷 🤒 🤯 😳 🥺 😢 😭 😤 😡 🤬 😱 😨 😰 🙃 🤫 🤭 🫡'],
+    ['Gestes', '👍 👎 👌 ✌️ 🤞 🤝 🙏 👏 🙌 💪 👋 🤙 👉 👈 👆 👇 ✋ 🫶 ✍️ 👀'],
+    ['Cœurs', '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 💯 💥 ✨ ⭐ 🌟 🔥 💫'],
+    ['Travail', '✅ ☑️ ❌ ⚠️ ❗ ❓ 📌 📎 📝 📄 📊 📈 📉 💼 📅 📆 ⏰ ⏳ 📞 ☎️ 📱 💻 🖥️ 📧 📩 💡 🔔 🔑 🔒 🏆 🎯 🚀 💰 💶 💳 🧾 🏠 🏢 🔧 🛠️'],
+    ['Fête', '🎉 🎊 🎁 🥂 🍾 🍕 ☕ 🍰 🌞 🌈 ⚡ 🌍'],
+  ];
   function ic(name, size) {
     var lib = EXTRA[name] || (window.bsIcones && window.bsIcones.svg(name));
     var hs = window.__bsHs ? window.__bsHs() : null;
@@ -81,6 +93,33 @@
   function texte(body) {
     // Texte échappé, liens http(s) cliquables, retours à la ligne gardés.
     return esc(body).replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)'"]/g, function (u) { return '<a href="' + u + '" target="_blank" rel="noopener noreferrer">' + u + '</a>'; }).replace(/\n/g, '<br>');
+  }
+  function resume(m) { return m.body || (m.file ? '📎 ' + m.file.name : ''); }
+  function taillef(n) { return n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' Mo' : Math.max(1, Math.round(n / 1024)) + ' Ko'; }
+  function piece(f) {
+    if (!f) return '';
+    var url = API + '/fichiers/' + encodeURIComponent(f.id);
+    if (/^image\/(jpeg|png|gif|webp)$/.test(f.mime)) return '<a class="bsm-img" href="' + url + '" target="_blank" rel="noopener"><img src="' + url + '" alt="' + esc(f.name) + '" loading="lazy"></a>';
+    var ext = (f.name.split('.').pop() || '').slice(0, 4).toUpperCase();
+    return '<a class="bsm-doc" href="' + url + (f.mime === 'application/pdf' ? '' : '?telecharger') + '" target="_blank" rel="noopener"' + (f.mime === 'application/pdf' ? '' : ' download="' + esc(f.name) + '"') + '>' +
+      '<span class="bsm-doc-ic">' + ic('doc', 18) + '<i>' + esc(ext) + '</i></span><span class="bsm-doc-t"><b>' + esc(f.name) + '</b><small>' + taillef(f.size) + '</small></span>' + ic('telecharger', 16) + '</a>';
+  }
+  var MAX_FICHIER = 10 * 1024 * 1024;
+  function envoyerFichiers(files) {
+    var c = S.convs[S.actif];
+    if (!c) return;
+    [].slice.call(files || []).forEach(function (f) {
+      if (f.size > MAX_FICHIER) { carte({ titre: 'Fichier trop lourd', sous: f.name + ' dépasse 10 Mo.', icone: 'info', bouton: 'OK', action: function () {}, force: true }); return; }
+      var nom = f.name || ('image-' + new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-') + '.png');
+      var liste_ = S.envois[c.id] || (S.envois[c.id] = []);
+      liste_.push(nom); rendre(true);
+      var fin = function () { liste_.splice(liste_.indexOf(nom), 1); };
+      fetch(API + '/conversations/' + encodeURIComponent(c.id) + '/fichiers?nom=' + encodeURIComponent(nom) + '&type=' + encodeURIComponent(f.type || 'application/octet-stream'), {
+        method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart', 'Content-Type': 'application/octet-stream' }, body: f,
+      }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { if (!r.ok) throw new Error(b.error || 'Envoi impossible.'); return b; }); })
+        .then(function (b) { fin(); recu(b.message); })
+        .catch(function (e) { fin(); rendre(); carte({ titre: 'Envoi impossible', sous: nom + ' : ' + e.message, icone: 'info', bouton: 'OK', action: function () {}, force: true }); });
+    });
   }
   function liste() {
     var arr = Object.keys(S.convs).map(function (k) { return S.convs[k]; });
@@ -182,7 +221,7 @@
     else if (lu) marquerLu(c);
     else if (m.kind === 'texte') {
       c.unread = (c.unread || 0) + 1;
-      carte({ titre: m.author + (c.kind === 'direct' ? '' : ' · ' + titre(c)), sous: m.body, avatar: m.userId, bouton: 'Ouvrir', action: function () { aller(c.id); } });
+      carte({ titre: m.author + (c.kind === 'direct' ? '' : ' · ' + titre(c)), sous: resume(m), avatar: m.userId, bouton: 'Ouvrir', action: function () { aller(c.id); } });
     }
     majBadge(); rendre(lu);
   }
@@ -256,7 +295,7 @@
   function envoyer(txt) {
     var c = S.convs[S.actif];
     if (!c || !txt.trim()) return;
-    S.brouillons[c.id] = ''; S.ecritEnvoi = 0;
+    S.brouillons[c.id] = ''; S.ecritEnvoi = 0; S.emojis = false;
     api('POST', '/conversations/' + encodeURIComponent(c.id) + '/messages', { body: txt }).then(function (b) { recu(b.message); })
       .catch(function (e) { S.brouillons[c.id] = txt; S.err = e.message; rendre(); });
   }
@@ -407,7 +446,7 @@
     var items = liste().filter(function (c) { return modeDe(c) === S.mode && (!q || titre(c).toLowerCase().indexOf(q) >= 0); });
     var grp = S.mode === 'groupes';
     var ligne = function (c) {
-      var l = c.last, apercu = l ? (l.kind === 'texte' ? (l.userId === S.me ? 'Vous : ' : (c.kind === 'direct' ? '' : l.author.split(' ')[0] + ' : ')) + l.body : l.body) : (c.kind === 'direct' ? 'Démarrez la conversation' : 'Aucun message');
+      var l = c.last, apercu = l ? (l.kind === 'texte' ? (l.userId === S.me ? 'Vous : ' : (c.kind === 'direct' ? '' : l.author.split(' ')[0] + ' : ')) + resume(l) : l.body) : (c.kind === 'direct' ? 'Démarrez la conversation' : 'Aucun message');
       var live = c.call && c.call.length;
       return '<button type="button" class="bsm-conv' + (c.id === S.actif ? ' on' : '') + (c.unread ? ' nl' : '') + '" data-conv="' + esc(c.id) + '">' + convIcon(c) +
         '<span class="bsm-conv-t"><span class="bsm-conv-l1"><b>' + esc(titre(c)) + '</b><time>' + esc(quand(l && l.at)) + '</time></span>' +
@@ -453,14 +492,22 @@
         var suite = prev && prev.userId === m.userId && (new Date(m.at) - new Date(prev.at)) < 5 * 60000;
         html.push('<div class="bsm-msg' + (moi ? ' moi' : '') + (suite ? ' suite' : '') + '">' + (moi ? '' : (suite ? '<span class="bsm-av-sp"></span>' : avatar(m.userId, m.author))) +
           '<div class="bsm-bulle">' + (suite || moi || c.kind === 'direct' ? '' : '<b class="bsm-auteur" style="--h:' + teinte(m.userId) + '">' + esc(m.author) + '</b>') +
-          '<div class="bsm-txt">' + texte(m.body) + '</div><time>' + heure(m.at) + '</time></div></div>');
+          piece(m.file) + (m.body ? '<div class="bsm-txt">' + texte(m.body) + '</div>' : '') + '<time>' + heure(m.at) + '</time></div></div>');
         prev = m;
       });
       corps = html.join('');
     }
     if (arr) corps += bulleEcrit(c.id);
-    var foot = '<form class="bsm-compose" autocomplete="off"><textarea class="bsm-input" rows="1" maxlength="4000" placeholder="Écrire à ' + esc(titre(c)) + '…" aria-label="Message"></textarea>' +
-      '<button type="submit" class="bsm-send" aria-label="Envoyer">' + ic('send', 18) + '</button></form><p class="bsm-hint">Entrée pour envoyer · Maj + Entrée pour aller à la ligne</p>';
+    var envois = (S.envois[c.id] || []).map(function (n) { return '<div class="bsm-envoi"><span class="bsm-spin"></span>Envoi de « ' + esc(n) + ' »…</div>'; }).join('');
+    var foot = envois + '<form class="bsm-compose" autocomplete="off">' +
+      '<button type="button" class="bsm-outil' + (S.emojis ? ' on' : '') + '" data-act="emojis" title="Émojis" aria-label="Émojis" aria-expanded="' + !!S.emojis + '">' + ic('sourire', 19) + '</button>' +
+      '<button type="button" class="bsm-outil" data-act="joindre" title="Joindre un fichier (10 Mo au plus)" aria-label="Joindre un fichier">' + ic('trombone', 19) + '</button>' +
+      '<input type="file" class="bsm-fichier" multiple hidden>' +
+      (S.emojis ? '<div class="bsm-emojis" role="dialog" aria-label="Émojis">' + EMOJIS.map(function (g) {
+        return '<div class="bsm-emo-t">' + g[0] + '</div><div class="bsm-emo-g">' + g[1].split(' ').map(function (e) { return '<button type="button" data-emoji="' + e + '">' + e + '</button>'; }).join('') + '</div>';
+      }).join('') + '</div>' : '') +
+      '<textarea class="bsm-input" rows="1" maxlength="4000" placeholder="Écrire à ' + esc(titre(c)) + '…" aria-label="Message"></textarea>' +
+      '<button type="submit" class="bsm-send" aria-label="Envoyer">' + ic('send', 18) + '</button></form><p class="bsm-hint">Entrée pour envoyer · Maj + Entrée pour aller à la ligne · glissez un fichier ou collez une image pour l’envoyer</p>';
     return '<section class="bsm-main">' + head + '<div class="bsm-scroll" role="log" aria-live="polite">' + corps + '</div>' + foot + '</section>';
   }
   function rendreAucun() {
@@ -541,7 +588,14 @@
       var b = t.closest('button');
       if (!b || !root.contains(b)) return;
       var id;
-      if ((id = b.getAttribute('data-conv'))) { S.mobileListe = false; ouvrir(id); return; }
+      if ((id = b.getAttribute('data-emoji'))) {
+        var ta = root.querySelector('.bsm-input'), v = ta.value, a = ta.selectionStart == null ? v.length : ta.selectionStart, z = ta.selectionEnd == null ? v.length : ta.selectionEnd;
+        ta.value = v.slice(0, a) + id + v.slice(z);
+        ta.focus(); ta.setSelectionRange(a + id.length, a + id.length);
+        S.brouillons[S.actif] = ta.value; taille(ta);
+        return;
+      }
+      if ((id = b.getAttribute('data-conv'))) { S.mobileListe = false; S.emojis = false; ouvrir(id); return; }
       if ((id = b.getAttribute('data-dm'))) {
         S.modal = null;
         api('POST', '/directs', { userId: id }).then(function (r) { S.convs[r.conversation.id] = r.conversation; aller(r.conversation.id); })
@@ -556,6 +610,8 @@
         return;
       }
       var act = b.getAttribute('data-act');
+      if (act === 'emojis') { S.emojis = !S.emojis; rendre(); var ti = root.querySelector('.bsm-input'); if (ti) ti.focus(); return; }
+      if (act === 'joindre') { root.querySelector('.bsm-fichier').click(); return; }
       if (act === 'retour') { S.mobileListe = true; rendre(); }
       else if (act === 'groupe') { S.modal = { type: 'groupe', sel: [] }; rendre(); }
       else if (act === 'direct') { S.modal = { type: 'direct' }; rendre(); }
@@ -586,6 +642,33 @@
         var ta = ev.target, v = ta.value; ta.value = ''; taille(ta); envoyer(v);
       }
       if (ev.key === 'Escape' && S.modal) { S.modal = null; rendre(); }
+      else if (ev.key === 'Escape' && S.emojis) { S.emojis = false; rendre(); }
+    });
+    root.addEventListener('change', function (ev) {
+      if (ev.target.classList && ev.target.classList.contains('bsm-fichier')) { envoyerFichiers(ev.target.files); ev.target.value = ''; }
+    });
+    root.addEventListener('paste', function (ev) {
+      if (!ev.target.classList || !ev.target.classList.contains('bsm-input')) return;
+      var files = [].slice.call((ev.clipboardData && ev.clipboardData.files) || []);
+      if (files.length) { ev.preventDefault(); envoyerFichiers(files); }
+    });
+    root.addEventListener('dragover', function (ev) {
+      var zone = ev.target.closest && ev.target.closest('.bsm-main');
+      if (zone && ev.dataTransfer && [].indexOf.call(ev.dataTransfer.types || [], 'Files') >= 0) { ev.preventDefault(); zone.classList.add('depot'); }
+    });
+    root.addEventListener('dragleave', function (ev) {
+      var zone = ev.target.closest && ev.target.closest('.bsm-main');
+      if (zone && !zone.contains(ev.relatedTarget)) zone.classList.remove('depot');
+    });
+    root.addEventListener('drop', function (ev) {
+      var zone = ev.target.closest && ev.target.closest('.bsm-main');
+      if (!zone || !ev.dataTransfer || !ev.dataTransfer.files.length) return;
+      ev.preventDefault(); zone.classList.remove('depot');
+      envoyerFichiers(ev.dataTransfer.files);
+    });
+    // Le sélecteur d'émojis se ferme quand on clique ailleurs.
+    document.addEventListener('pointerdown', function (ev) {
+      if (S.emojis && !(ev.target.closest && ev.target.closest('.bsm-emojis,[data-act="emojis"]'))) { S.emojis = false; rendre(); }
     });
     root.addEventListener('input', function (ev) {
       var t = ev.target;
@@ -912,6 +995,26 @@
     '.bsm-info.visio{color:var(--text);border-style:solid;border-color:rgb(16 185 129/.4);background:rgb(16 185 129/.08)}',
     '.bsm-info.visio svg{color:#10b981}',
     '.bsm-more{display:flex;justify-content:center;padding-bottom:8px}',
+    '.bsm-compose{position:relative;z-index:5}',
+    '.bsm-outil{flex:none;width:34px;height:38px;display:grid;place-items:center;border-radius:10px;color:var(--text-3,var(--text-2));transition:color .15s,background .15s}',
+    '.bsm-outil:hover,.bsm-outil.on{color:var(--accent);background:var(--accent-soft,rgb(99 102 241/.12))}',
+    '.bsm-emojis{position:absolute;left:0;bottom:calc(100% + 8px);z-index:20;width:min(340px,calc(100vw - 48px));max-height:300px;overflow:auto;padding:10px;border-radius:16px;background:var(--surface);-webkit-backdrop-filter:blur(24px) saturate(1.3);backdrop-filter:blur(24px) saturate(1.3);border:1px solid var(--border);box-shadow:0 24px 60px -20px rgb(0 0 0/.6);animation:bsm-ecrit-in .15s ease-out}',
+    '.bsm-emo-t{font-size:.7em;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3,var(--text-2));margin:6px 4px 4px}',
+    '.bsm-emo-g{display:grid;grid-template-columns:repeat(8,1fr)}',
+    '.bsm-emo-g button{font-size:22px;line-height:1;padding:6px 0;border-radius:8px;transition:background .1s,transform .1s}',
+    '.bsm-emo-g button:hover{background:var(--surface-2);transform:scale(1.15)}',
+    '.bsm-img{display:block;margin:2px 0 4px;border-radius:12px;overflow:hidden;max-width:min(280px,60vw)}',
+    '.bsm-img img{display:block;width:100%;max-height:260px;object-fit:cover}',
+    '.bsm-doc{display:flex;align-items:center;gap:10px;margin:2px 0 4px;padding:8px 10px;border-radius:12px;background:rgb(127 127 127/.12);color:inherit;text-decoration:none;min-width:200px;max-width:300px}',
+    '.bsm-doc:hover{background:rgb(127 127 127/.2)}',
+    '.bsm-doc-ic{position:relative;flex:none;display:grid;place-items:center;width:36px;height:40px}',
+    '.bsm-doc-ic i{position:absolute;bottom:3px;font-style:normal;font-size:8px;font-weight:800;letter-spacing:.02em}',
+    '.bsm-doc-t{flex:1;min-width:0;display:flex;flex-direction:column}',
+    '.bsm-doc-t b{font-size:.86em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.bsm-doc-t small{font-size:.72em;opacity:.7}',
+    '.bsm-envoi{display:flex;align-items:center;gap:8px;margin:6px 16px 0;font-size:.8em;color:var(--text-2)}',
+    '.bsm-envoi .bsm-spin{width:14px;height:14px;border-width:2px}',
+    '.bsm-main.depot{outline:2px dashed var(--accent);outline-offset:-8px;border-radius:16px}',
     '.bsm-compose{display:flex;align-items:flex-end;gap:8px;margin:8px 16px 0;padding:6px 6px 6px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--border);transition:border-color .2s,box-shadow .2s}',
     '.bsm-compose:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),0 0 26px -10px var(--accent)}',
     '.bsm-input{flex:1;resize:none;border:0;background:none;outline:none;color:var(--text);font:inherit;font-size:.95em;line-height:1.45;padding:7px 0;max-height:160px}',

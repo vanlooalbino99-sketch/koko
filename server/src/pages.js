@@ -28,7 +28,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
   @property --ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
   :root {
     --bg: #070b16; --text: #eef3fc; --text-2: #a6b4cc; --text-3: #6f7d96; --bad: #fb7185;
-    --a1: #387cd5; --a2: #8b5cf6; --a3: #22d3ee;
+    --accent: #387cd5; --a1: #387cd5; --a2: #8b5cf6; --a3: #22d3ee;
     --hair: rgb(255 255 255 / .09); --glass: rgb(14 22 40 / .62);
     --grad: linear-gradient(118deg, var(--a1), #6a6be8 60%, var(--a2));
     --display: "Sora", Inter, system-ui, sans-serif;
@@ -54,13 +54,13 @@ export function loginPage({ needsSetup, retour = '/' }) {
   .wrap { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 40px; width: min(1180px, 100%); margin: 0 auto; padding: 32px 16px; }
   @media (min-width: 980px) { .wrap { grid-template-columns: minmax(0, 1.1fr) minmax(0, 440px); gap: 64px; padding: 48px 40px; } }
 
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -.02em; font-size: 19px; }
-  .brand .logo { width: 34px; height: 34px; flex-shrink: 0; filter: drop-shadow(0 8px 20px rgb(79 140 219 / .35)); }
-  .brand b { font-weight: 600; color: #4f8cdb; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .14em; font-size: 13px; }
+  .brand i { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-style: normal; letter-spacing: 0; font-size: 18px; background: linear-gradient(135deg, var(--accent), #2868bc); box-shadow: 0 8px 20px -8px var(--accent); }
+  .brand span { color: #73a3e1; }
   @keyframes spin { to { --ang: 360deg; } }
 
   /* Colonne vitrine */
-  .pitch h2 { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 4.6vw, 58px); line-height: 1.04; letter-spacing: -.045em; margin: 34px 0 18px; }
+  .pitch h2 { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 4.6vw, 58px); line-height: 1.04; letter-spacing: -.045em; word-spacing: .08em; margin: 34px 0 18px; }
   .pitch h2 em { font-style: normal; background: linear-gradient(100deg, var(--a3), var(--a1) 45%, var(--a2) 90%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .pitch p { color: var(--text-2); font-size: 16.5px; line-height: 1.6; max-width: 34em; margin: 0; }
   .feats { display: flex; flex-wrap: wrap; gap: 10px; margin: 26px 0 0; padding: 0; list-style: none; }
@@ -71,7 +71,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
   .panel { position: absolute; left: 0; top: 0; width: min(440px, 92%); border-radius: 20px; padding: 18px 18px 14px; background: var(--glass); border: 1px solid var(--hair); backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3); box-shadow: 0 40px 80px -40px rgb(0 0 0 / .9); transform: rotateX(8deg) rotateY(-10deg) rotateZ(1deg); transform-origin: left center; animation: float 9s ease-in-out infinite alternate; }
   .panel-top { display: flex; justify-content: space-between; align-items: baseline; }
   .panel-top span { font-size: 12px; color: var(--text-3); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-  .panel-top strong { font-family: var(--display); font-size: 26px; letter-spacing: -.03em; }
+  .panel-top strong { font-family: var(--display); font-size: 26px; letter-spacing: -.03em; background: linear-gradient(100deg, var(--a3), var(--a1) 60%, var(--a2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .panel svg { display: block; width: 100%; height: 120px; margin-top: 8px; overflow: visible; }
   .line { fill: none; stroke: url(#lg); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 2.4s .3s cubic-bezier(.65, 0, .35, 1) forwards; filter: drop-shadow(0 6px 10px rgb(56 124 213 / .55)); }
   .area { fill: url(#la); opacity: 0; animation: fade 1.2s 1.6s ease forwards; }
@@ -79,8 +79,8 @@ export function loginPage({ needsSetup, retour = '/' }) {
   .chip { position: absolute; display: flex; align-items: center; gap: 10px; padding: 10px 14px 10px 10px; border-radius: 14px; background: rgb(16 24 44 / .78); border: 1px solid var(--hair); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 24px 50px -24px rgb(0 0 0 / .9); font-size: 13px; font-weight: 600; white-space: nowrap; opacity: 0; animation: pop .7s var(--d, 1s) cubic-bezier(.2, 1.4, .4, 1) forwards, float 7s var(--d, 1s) ease-in-out infinite alternate; }
   .chip small { display: block; color: var(--text-3); font-weight: 500; font-size: 11.5px; }
   .chip .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: linear-gradient(140deg, rgb(var(--t) / .4), rgb(var(--t) / .12)); box-shadow: inset 0 0 0 1px rgb(var(--t) / .45); color: #fff; }
-  .chip.c1 { --t: 16 185 129; --d: 1.2s; right: 2%; top: 10px; }
-  .chip.c2 { --t: 139 92 246; --d: 1.7s; right: 12%; bottom: 0; }
+  .chip.c1 { --t: 16 185 129; --d: 1.2s; right: 0; top: 96px; }
+  .chip.c2 { --t: 139 92 246; --d: 1.7s; left: 32%; bottom: 22px; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @keyframes fade { to { opacity: 1; } }
   @keyframes pop { from { opacity: 0; transform: translateY(14px) scale(.9); } to { opacity: 1; transform: none; } }
@@ -95,7 +95,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
   main::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; background: conic-gradient(from var(--ang), transparent 0 60%, var(--a3) 72%, var(--a1) 82%, var(--a2) 92%, transparent), linear-gradient(var(--hair), var(--hair)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; animation: spin 7s linear infinite; }
   .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-2); }
   .kicker i { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 4px rgb(52 211 153 / .18), 0 0 12px #34d399; }
-  h1 { font-family: var(--display); font-size: 27px; font-weight: 700; letter-spacing: -.035em; line-height: 1.15; margin: 14px 0 8px; }
+  h1 { font-family: var(--display); font-size: 27px; font-weight: 700; letter-spacing: -.035em; word-spacing: .08em; line-height: 1.15; margin: 14px 0 8px; }
   p.sub { margin: 0 0 24px; color: var(--text-2); font-size: 14.5px; line-height: 1.55; }
   form { display: grid; gap: 16px; }
   label { display: grid; gap: 7px; font-size: 13px; font-weight: 600; color: var(--text-2); }
@@ -111,6 +111,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
   button:focus-visible { outline: 2px solid var(--a3); outline-offset: 3px; }
   button:disabled { opacity: .6; cursor: default; }
   .err { min-height: 20px; color: var(--bad); font-size: 13.5px; font-weight: 600; }
+  .err:empty { min-height: 0; margin-block: -8px; }
   .foot { margin-top: 18px; color: var(--text-3); font-size: 12.5px; text-align: center; line-height: 1.5; }
   .legal { text-align: center; color: var(--text-3); font-size: 12px; }
 
@@ -128,7 +129,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
 <div class="veil"></div>
 <div class="wrap">
   <section class="pitch" aria-hidden="true">
-    <div class="brand"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#e8edf6"/><path d="M11 8h6.5a5 5 0 0 1 2.9 9.1A5.2 5.2 0 0 1 18 24h-7z" fill="#070b14"/><circle cx="23.5" cy="8.5" r="2.5" fill="#4f8cdb"/></svg><span>Blackstart <b>AI</b></span></div>
+    <div class="brand"><i>B</i>BLACKSTART <span>AI</span></div>
     <h2>Votre prospection,<br><em>en pleine lumière.</em></h2>
     <p>Appels, rendez-vous, devis et relances au même endroit, partagés en direct avec toute l’équipe.</p>
     <ul class="feats">
@@ -139,7 +140,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
     </ul>
     <div class="scene">
       <div class="panel">
-        <div class="panel-top"><span>Activité de l’équipe</span></div>
+        <div class="panel-top"><span>Activité de l’équipe</span><strong>+38 %</strong></div>
         <svg viewBox="0 0 400 120" preserveAspectRatio="none">
           <defs>
             <linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".5" stop-color="#387cd5"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
@@ -155,7 +156,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
     </div>
   </section>
   <div class="side">
-    <div class="brand"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#e8edf6"/><path d="M11 8h6.5a5 5 0 0 1 2.9 9.1A5.2 5.2 0 0 1 18 24h-7z" fill="#070b14"/><circle cx="23.5" cy="8.5" r="2.5" fill="#4f8cdb"/></svg><span>Blackstart <b>AI</b></span></div>
+    <div class="brand"><i>B</i>BLACKSTART <span>AI</span></div>
     <main>
       <div class="kicker"><i></i>${needsSetup ? 'Installation' : 'Espace équipe'}</div>
       <h1>${esc(title)}</h1>

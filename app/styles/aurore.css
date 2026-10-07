@@ -100,12 +100,13 @@ html:not(.bs-amb-fond) .topbar {
 /* ---------------------------------------------------------------------
    3. Typographie : titres en Sora, dégradés discrets
    --------------------------------------------------------------------- */
-.page-title, .hero-hello, .kpi-value, .hs-v, .ring-value, .modal-title, .splash-brand {
+.page-title, .hero-hello, .kpi-value, .hs-v, .ring-value, .modal-title {
   font-family: var(--display);
 }
 .page-title { font-size: 1.72em; font-weight: 700; letter-spacing: -0.035em; }
 .hero-hello { font-size: 1.85em; font-weight: 700; letter-spacing: -0.035em; }
 .page-title, .hero-hello {
+  word-spacing: .08em;
   background: linear-gradient(100deg, var(--text) 30%, color-mix(in srgb, var(--text) 45%, var(--aur-3)) 70%, color-mix(in srgb, var(--text) 40%, var(--aur-2)));
   -webkit-background-clip: text;
   background-clip: text;
@@ -118,15 +119,9 @@ html:not(.bs-amb-fond) .topbar {
 .nav-group-label { letter-spacing: .16em; font-size: .64em; opacity: .85; }
 
 /* ---------------------------------------------------------------------
-   4. Marque : le logo du site (logo.css) reste tel quel ; seul l'écran
-   de démarrage prend le dégradé.
+   4. Marque : les logos (logo.css, écran de démarrage, connexion) ne
+   sont jamais modifiés par ce thème.
    --------------------------------------------------------------------- */
-.splash-brand span {
-  background: var(--aur-grad-3);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
 @keyframes aurSpin { to { --aur-ang: 360deg; } }
 
 /* ---------------------------------------------------------------------
@@ -148,6 +143,12 @@ html:not(.bs-amb-fond) .topbar {
   width: 3px;
   background: linear-gradient(180deg, var(--aur-3), var(--aur-1), var(--aur-2));
   box-shadow: 0 0 14px 1px color-mix(in srgb, var(--aur-1) 90%, transparent);
+}
+/* La zone de défilement de la barre latérale coupe ce qui dépasse à gauche :
+   le liseré est donc posé à l'intérieur de l'entrée. */
+:root:not([data-nav="horizontal"]) .sidebar .nav-item.active::before {
+  left: 0; top: 9px; bottom: 9px; border-radius: 0 3px 3px 0;
+  box-shadow: 4px 0 14px -2px color-mix(in srgb, var(--aur-1) 90%, transparent);
 }
 .nav-count { background: color-mix(in srgb, var(--text) 9%, transparent); }
 .nav-count.hot { background: linear-gradient(135deg, #fb7185, #e11d48); box-shadow: 0 4px 12px -4px rgb(225 29 72 / .9); }
@@ -217,7 +218,10 @@ html:not(.bs-amb-fond) .topbar {
   background-color: color-mix(in srgb, var(--bg) 38%, transparent);
   border-color: var(--aur-hair);
   border-radius: 14px;
+  display: flex;
+  flex-direction: column;
 }
+.hs > [role="progressbar"] { margin-top: auto; }
 
 /* ---------------------------------------------------------------------
    8. Tuiles de chiffres et icônes
@@ -243,6 +247,9 @@ html:not(.bs-amb-fond) .topbar {
 .chart svg path[fill="var(--accent)"] { fill: url(#aurBar); }
 .ring-arc[stroke="var(--accent)"] { stroke: url(#aurRing); }
 .ring-arc { filter: drop-shadow(0 0 9px color-mix(in srgb, var(--aur-1) 70%, transparent)); }
+.ring svg { overflow: visible; }
+.ring-arc[stroke="var(--warn)"] { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--warn) 55%, transparent)); }
+.ring-arc[stroke="var(--good)"] { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--good) 55%, transparent)); }
 
 /* Chaque tuile reprend la couleur de son icône dans un halo d'angle. */
 .kpi { --kt: var(--accent-rgb); }
@@ -302,7 +309,7 @@ html:not(.bs-amb-fond) .topbar {
 /* ---------------------------------------------------------------------
    11. Listes, tableaux, champs
    --------------------------------------------------------------------- */
-.table th { background: var(--aur-glass-2); letter-spacing: .04em; text-transform: uppercase; font-size: .7em; }
+.table th { background: var(--aur-glass-2); letter-spacing: .06em; text-transform: uppercase; font-size: 11px; color: var(--text-2); }
 .table tbody tr.clickable:hover, .list-item.clickable:hover, .queue-item:hover {
   background-image: linear-gradient(90deg, color-mix(in srgb, var(--aur-1) 14%, transparent), color-mix(in srgb, var(--aur-2) 6%, transparent) 55%, transparent);
 }
@@ -335,3 +342,33 @@ html:not(.bs-amb-fond) .topbar {
 @media (prefers-reduced-motion: reduce) {
   .hero::before, .session-cta { animation: none !important; }
 }
+
+/* ---------------------------------------------------------------------
+   Finitions (revue design)
+   --------------------------------------------------------------------- */
+/* Le fond est déjà flou : pas de flou recalculé à chaque image sous les
+   cartes, le défilement reste fluide sur les portables. Le verre est gardé
+   pour les barres, les fenêtres et le bandeau d'accueil. */
+html:not(.bs-amb-fond) :is(.card, .kpi, .kb-col) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background-color: var(--aur-glass-2);
+}
+@media (min-width: 1024px) {
+  /* Un seul bouton principal par écran : « Créer » passe en secondaire. */
+  .topbar .btn-primary {
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+    background-image: none;
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px var(--aur-hair);
+  }
+  .topbar .btn-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--aur-1) 18%, transparent); background-image: none; }
+  /* La dernière colonne du pipeline s'efface au lieu d'être coupée net. */
+  .kanban {
+    padding-right: 56px;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent);
+  }
+  .bsc-search { min-width: 290px; }
+}
+.bsl-zone .input { text-overflow: ellipsis; }

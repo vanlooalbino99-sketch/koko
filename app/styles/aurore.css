@@ -372,3 +372,11 @@ html:not(.bs-amb-fond) :is(.card, .kpi, .kb-col) {
   .bsc-search { min-width: 290px; }
 }
 .bsl-zone .input { text-overflow: ellipsis; }
+
+/* Avec une image d'ambiance, les titres gardent une ombre pour rester lisibles sur la photo :
+   un texte en dégradé (remplissage transparent) laisserait voir cette ombre et paraîtrait flou. */
+html.bs-amb-fond :is(.page-title, .hero-hello, .kpi-value) {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--text);
+}

@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { tx } from '../db.js';
 import { requireAdmin } from '../auth.js';
-import { merge3, deepEqual } from '../merge.js';
+import { merge3, deepEqual, keepDeleted } from '../merge.js';
 
 const KEY_RE = /^[a-zA-Z0-9._-]{1,64}$/;
 const HISTORY_KEEP = 100;
@@ -50,22 +50,24 @@ export function dataRoutes({ db }) {
       const cur = get(key), curVersion = cur ? cur.version : 0;
       const mine = parse(value);
       if (cur && (cur.value === value || (mine !== undefined && deepEqual(mine, parse(cur.value))))) return { version: curVersion, merged: false };
-      if (!cur || base === curVersion) {
-        write(key, value, curVersion + 1, req.user.id);
-        return { version: curVersion + 1, merged: false };
+      const theirs = cur ? parse(cur.value) : undefined;
+      // Ce qui serait enregistré : la valeur envoyée, ou sa fusion si quelqu'un a enregistré entre-temps.
+      let next = value, merged = false;
+      if (cur && base !== curVersion && mine !== undefined && theirs !== undefined) {
+        const baseRow = base > 0 ? db.prepare('SELECT value FROM kv_history WHERE key = ? AND version = ?').get(key, base) : null;
+        next = merge3(baseRow ? parse(baseRow.value) : undefined, mine, theirs);
+        merged = true;
+      } else if (mine !== undefined) next = mine;
+      // Les suppressions sont réservées aux administrateurs : ce qu'un membre a retiré est remis à sa place.
+      let refused = 0;
+      if (req.user.role !== 'admin' && theirs !== undefined && typeof next !== 'string') {
+        const kept = keepDeleted(theirs, next);
+        if (kept.restored) { next = kept.value; refused = kept.restored; merged = true; }
       }
-      // Quelqu'un a enregistré entre-temps : fusion à partir de la version de départ du navigateur.
-      const theirs = parse(cur.value);
-      if (mine === undefined || theirs === undefined) {
-        write(key, value, curVersion + 1, req.user.id); // pas du JSON : le dernier enregistrement l'emporte
-        return { version: curVersion + 1, merged: false };
-      }
-      const baseRow = base > 0 ? db.prepare('SELECT value FROM kv_history WHERE key = ? AND version = ?').get(key, base) : null;
-      const merged = merge3(baseRow ? parse(baseRow.value) : undefined, mine, theirs);
-      if (deepEqual(merged, theirs)) return { version: curVersion, merged: true, value: cur.value };
-      const text = JSON.stringify(merged);
+      if (merged && deepEqual(next, theirs)) return { version: curVersion, merged: true, value: cur.value, ...(refused && { refused }) };
+      const text = !merged ? value : JSON.stringify(next);
       write(key, text, curVersion + 1, req.user.id);
-      return { version: curVersion + 1, merged: true, value: text };
+      return merged ? { version: curVersion + 1, merged: true, value: text, ...(refused && { refused }) } : { version: curVersion + 1, merged: false };
     });
     res.json(out);
   });

@@ -129,6 +129,30 @@ test('sauvegardes : historique et restauration (administrateur)', async () => {
   assert.equal(JSON.parse(r.body.value).prospects.length, 1);
 });
 
+test('suppressions réservées aux administrateurs : un membre ne peut rien effacer', async () => {
+  const v = { prospects: [{ id: 'p1', entreprise: 'Alpha', events: [{ id: 'e1', t: 'appel' }, { id: 'e2', t: 'mail' }] }, { id: 'p2', entreprise: 'Beta' }], devis: [{ id: 'd1' }], settings: { goal: 50 } };
+  let r = await admin('PUT', '/api/data/blackstart-data-v1', { value: JSON.stringify(v), baseVersion: 4 });
+  assert.equal(r.body.version, 5);
+  // Marie retire un prospect, un événement et toute la liste des devis, et modifie un nom : seule la modification passe.
+  const m = { prospects: [{ id: 'p1', entreprise: 'Alpha SA', events: [{ id: 'e2', t: 'mail' }] }], settings: { goal: 60 } };
+  r = await marie('PUT', '/api/data/blackstart-data-v1', { value: JSON.stringify(m), baseVersion: 5 });
+  assert.equal(r.body.refused, 3);
+  const got = JSON.parse(r.body.value);
+  assert.deepEqual(got.prospects.map((p) => p.id), ['p1', 'p2']);
+  assert.deepEqual(got.prospects[0].events.map((e) => e.id), ['e1', 'e2']);
+  assert.equal(got.prospects[0].entreprise, 'Alpha SA');
+  assert.deepEqual(got.devis, [{ id: 'd1' }]);
+  assert.equal(got.settings.goal, 60);
+  // Ajouter reste permis ; l'administrateur, lui, peut supprimer.
+  r = await marie('PUT', '/api/data/blackstart-data-v1', { value: JSON.stringify({ ...got, prospects: [...got.prospects, { id: 'p3' }] }), baseVersion: r.body.version });
+  assert.equal(r.body.refused, undefined);
+  const cur = JSON.parse((await admin('GET', '/api/data/blackstart-data-v1')).body.value);
+  assert.equal(cur.prospects.length, 3);
+  r = await admin('PUT', '/api/data/blackstart-data-v1', { value: JSON.stringify({ ...cur, prospects: cur.prospects.slice(1) }), baseVersion: r.body.version });
+  assert.equal(r.body.merged, false);
+  assert.equal(JSON.parse((await admin('GET', '/api/data/blackstart-data-v1')).body.value).prospects.length, 2);
+});
+
 test('ambiances : envoi, liste, image, suppression, page de connexion', async () => {
   assert.equal((await anon('GET', '/ambiance/connexion')).status, 404);
   const bad = await admin('POST', '/api/ambiance/images', { nom: 'x', image: 'data:image/png;base64,AAAA', mini: PNG });

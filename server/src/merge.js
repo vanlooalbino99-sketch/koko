@@ -66,3 +66,33 @@ function mergeList(base, mine, theirs) {
   });
   return out;
 }
+
+// Pour les membres non administrateurs : rien ne disparaît. Tout élément (à identifiant) présent avant mais absent
+// de la nouvelle version, ainsi que toute rubrique retirée, est remis à sa place. Renvoie le nombre de remises.
+export function keepDeleted(prev, next) {
+  let n = 0;
+  const walk = (p, x) => {
+    if (isIdList(p)) {
+      if (!Array.isArray(x)) return { v: p, n: p.length };
+      const ids = new Set(x.filter(isObj).map((y) => y.id));
+      const out = x.map((y) => {
+        const old = isObj(y) ? p.find((o) => o.id === y.id) : undefined;
+        return old ? walk(old, y).v : y;
+      });
+      p.forEach((o, i) => { if (!ids.has(o.id)) { out.splice(Math.min(i, out.length), 0, o); n++; } });
+      return { v: out };
+    }
+    if (isObj(p)) {
+      if (!isObj(x)) return { v: x };
+      const out = { ...x };
+      for (const k of Object.keys(p)) {
+        if (!(k in x)) { if (isIdList(p[k]) && p[k].length) { out[k] = p[k]; n += p[k].length; } continue; }
+        out[k] = walk(p[k], x[k]).v;
+      }
+      return { v: out };
+    }
+    return { v: x };
+  };
+  const top = walk(prev, next);
+  return { value: top.v, restored: n + (top.n || 0) };
+}

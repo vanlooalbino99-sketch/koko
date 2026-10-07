@@ -124,6 +124,7 @@
       }
       writeCache(key);
       if (s.pending != null) schedule(key, 0); else setStatus('ok');
+      if (b.refused) flash('Seul un administrateur peut supprimer : ' + (b.refused > 1 ? b.refused + ' éléments ont été remis.' : 'l’élément a été remis.'));
     }).catch(function (e) {
       s.pushing = false;
       if (e.status === 401) return;
@@ -348,6 +349,19 @@
     b.innerHTML = pastille(USER, '') + '<span class="nm">' + esc(String(USER.name).split(' ')[0]) + '</span>';
     b.onclick = ouvrirEquipe;
     bar.appendChild(b);
+  }
+  // Membres non administrateurs : les boutons de suppression ne font rien (le serveur remet de toute façon
+  // ce qu'un membre retire).
+  var EFFACER = /^(supprimer|tout effacer)/i;
+  if (USER && USER.role !== 'admin') {
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('button,a,[role=menuitem],[role=button]');
+      if (!b) return;
+      var label = (b.getAttribute('aria-label') || b.getAttribute('title') || b.textContent || '').trim();
+      if (!EFFACER.test(label) && !(label === 'Effacer' && !b.classList.contains('search-clear'))) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      flash('Suppression réservée aux administrateurs de l’équipe.');
+    }, true);
   }
   if (USER) {
     var moiT = 0;

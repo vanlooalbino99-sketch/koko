@@ -242,9 +242,9 @@ export function chatRoutes({ db, hub = chatHub() }) {
     if (!canSee(c, req.user.id) || c.kind !== 'groupe') return res.status(404).json({ error: 'Groupe introuvable.' });
     const before = memberIds(c);
     const { name, add, remove } = req.body || {};
-    const boss = req.user.role === 'admin' || c.created_by === req.user.id;
+    const boss = req.user.role === 'admin';
     const out = cleanIds(remove).filter((id) => id === req.user.id || boss);
-    if (Array.isArray(remove) && remove.length && !out.length) return res.status(403).json({ error: 'Seul le créateur du groupe ou un administrateur peut retirer un membre.' });
+    if (Array.isArray(remove) && remove.length && !out.length) return res.status(403).json({ error: 'Seul un administrateur peut retirer un membre.' });
     const notes = [];
     tx(db, () => {
       if (name !== undefined) {

@@ -568,7 +568,7 @@
       }).join('') : '<p class="bsm-rien">Invitez d’abord des membres dans Réglages › Équipe &amp; compte.</p>') + '</div>' +
         '<div class="bsm-modal-foot"><button type="button" class="btn btn-secondary btn-md" data-act="fermer">Fermer</button></div>';
     } else if (m.type === 'reglages' && c) {
-      var peutRetirer = c.createdBy === S.me || (window.BS_SERVER && window.BS_SERVER.user && window.BS_SERVER.user.role === 'admin');
+      var peutRetirer = window.BS_SERVER && window.BS_SERVER.user && window.BS_SERVER.user.role === 'admin';
       corps = '<h2>Réglages du groupe</h2>' +
         '<label class="bsm-lbl">Nom du groupe<input class="input" name="nom" maxlength="60" value="' + esc(c.name) + '" autofocus></label>' +
         '<div class="bsm-lbl">Membres</div><div class="bsm-pick">' + (c.members || []).map(function (id) {

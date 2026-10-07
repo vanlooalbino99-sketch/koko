@@ -30,6 +30,10 @@
     { id: 'devis', label: 'Devis & factures', def: 'fileText' },
     { id: 'clients', label: 'Clients', def: 'briefcase' },
     { id: 'payments', label: 'Paiements', def: 'wallet' },
+    { group: 'Équipe' },
+    { id: 'messages', label: 'Messages', def: 'message-circle' },
+    { id: 'groupes', label: 'Groupes', def: 'users' },
+    { id: 'visio', label: 'Visio', def: 'video' },
     { group: 'Analyse' },
     { id: 'dashboard', label: 'Tableau de bord', def: 'dashboard' },
     { id: 'reports', label: 'Rapports', def: 'lineChart' },
@@ -113,7 +117,7 @@
   // Nuancier proposé pour les icônes (le sélecteur de couleur permet n'importe quelle autre teinte).
   var NUANCIER = ['#ffffff', '#cbd5e1', '#94a3b8', '#60a5fa', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e', '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9'];
   // Couleur propre à chaque rubrique en style « Multicolore ».
-  var TEINTES = { today: '#3b82f6', agenda: '#8b5cf6', prospects: '#06b6d4', leads: '#14b8a6', pipeline: '#6366f1', tasks: '#10b981', devis: '#f59e0b', clients: '#f97316', payments: '#22c55e', dashboard: '#0ea5e9', reports: '#f43f5e', carte: '#22d3ee', formations: '#eab308', tools: '#94a3b8', settings: '#a1a1aa' };
+  var TEINTES = { today: '#3b82f6', agenda: '#8b5cf6', prospects: '#06b6d4', leads: '#14b8a6', pipeline: '#6366f1', tasks: '#10b981', devis: '#f59e0b', clients: '#f97316', payments: '#22c55e', messages: '#38bdf8', groupes: '#a78bfa', visio: '#fb7185', dashboard: '#0ea5e9', reports: '#f43f5e', carte: '#22d3ee', formations: '#eab308', tools: '#94a3b8', settings: '#a1a1aa' };
   // Packs : un jeu complet d'icônes cohérentes, appliqué en un clic (l'ordre suit celui du menu).
   var ORDRE = ['today', 'agenda', 'prospects', 'pipeline', 'tasks', 'devis', 'clients', 'payments', 'dashboard', 'reports', 'formations', 'tools', 'settings'];
   var PACKS = [

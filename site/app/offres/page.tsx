@@ -27,6 +27,8 @@ export default function OffresPage() {
       <Section className="pt-14 md:pt-20">
         <PackCards />
         <p data-reveal className="mt-10 text-center text-sm text-muted-foreground">
+          Envie de voir le CRM avant de choisir ? <Link href="/demos" className="font-medium text-primary hover:underline">Essayez nos démos métier</Link>.
+          <br />
           Vous hésitez entre deux packs ? <Link href="/rendez-vous" className="font-medium text-primary hover:underline">Réservez l’audit gratuit</Link> : nous vous conseillons celui qui sert vraiment votre activité.
         </p>
       </Section>

@@ -135,6 +135,10 @@ export default function HomePage() {
           <Link href="/offres" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">
             Comparer toutes les offres <ArrowRight className="size-4" aria-hidden />
           </Link>
+          <span className="mx-3 text-muted-foreground" aria-hidden>·</span>
+          <Link href="/demos" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">
+            Essayer une démo de CRM <ArrowRight className="size-4" aria-hidden />
+          </Link>
         </p>
       </Section>
 

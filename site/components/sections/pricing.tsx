@@ -38,7 +38,7 @@ export function PackCards({ compact = false }: { compact?: boolean }) {
             )}
             <div className="mt-6 border-t pt-5">
               <p className="flex items-baseline gap-1.5">
-                <span className="num-grad text-3xl font-semibold tracking-tight">{p.setupLabel}</span>
+                <span className={cn('num-grad font-semibold tracking-tight', p.setupLabel.length > 10 ? 'text-2xl' : 'text-3xl')}>{p.setupLabel}</span>
               </p>
               <p className="text-xs text-muted-foreground">mise en place</p>
               <p className="mt-2 text-lg font-semibold">

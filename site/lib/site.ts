@@ -21,6 +21,7 @@ export const nav = [
   { href: '/', label: 'Accueil' },
   { href: '/services', label: 'Services' },
   { href: '/offres', label: 'Offres' },
+  { href: '/demos', label: 'Démos' },
   { href: '/a-propos', label: 'À propos' },
   { href: '/contact', label: 'Contact' },
 ] as const;
@@ -160,7 +161,7 @@ export const packs: Pack[] = [
     name: 'Entreprise',
     pitch: 'Pour les PME qui veulent un outil taillé sur mesure.',
     features: ['CRM sur mesure', 'Multi-utilisateurs', 'Gestion clients', 'Gestion des devis', 'Signature électronique', 'Facturation', 'Reporting avancé', 'Formation', 'Support prioritaire'],
-    setup: 5000, setupLabel: '5 000 € à 15 000 €',
+    setup: 5000, setupLabel: '5 000 à 15 000 €',
     monthly: 299, monthlyLabel: '299 à 499 €',
   },
 ];
@@ -177,3 +178,45 @@ export const saas = {
     { name: 'Business', price: '199 €' },
   ],
 };
+
+// Démos de CRM métier (page /demos) : fichiers autonomes servis depuis public/demos/.
+export const demos = [
+  {
+    slug: 'immobilier',
+    tag: 'Immobilier',
+    title: 'Agences immobilières',
+    why: 'Honoraires élevés à chaque vente, mandats qui expirent, acquéreurs oubliés dans un tableur.',
+    features: ['Rapprochement automatique biens ↔ acquéreurs, avec score', 'Alerte fin de mandat à J-30 et prix à revoir', 'Annonces et comptes rendus de visite rédigés en un clic'],
+    kpi: 'visites par mandat avant offre',
+    alt: 'Aperçu du CRM immobilier : pipeline des mandats',
+  },
+  {
+    slug: 'renovation',
+    tag: 'Rénovation énergétique',
+    title: 'Rénovation énergétique',
+    why: 'Marché porté par les aides de l’État, où l’artisan qui répond le premier remporte le chantier.',
+    features: ['Simulateur d’aides et reste à charge, devant le client', 'Relances de devis automatiques à J+5 et J+12', 'Planning des équipes et marge par chantier'],
+    kpi: 'taux d’acceptation des devis',
+    alt: 'Aperçu du CRM rénovation : chantiers et aides',
+  },
+  {
+    slug: 'courtage',
+    tag: 'Courtage',
+    title: 'Courtage assurance & crédit',
+    why: 'Commissions récurrentes chaque année, et un devoir de conseil contrôlé de près.',
+    features: ['Échéancier sur 12 mois avec relance à J-45', 'Ventes croisées détectées dans le portefeuille', 'Conformité devoir de conseil suivie dossier par dossier'],
+    kpi: 'contrats par assuré',
+    alt: 'Aperçu du CRM courtage : portefeuille et échéancier',
+  },
+];
+
+export const demoCommon = [
+  { title: 'Pipeline glisser-déposer', text: 'Totaux par étape, échéances en retard signalées, menu « Déplacer vers » au téléphone.' },
+  { title: 'Tableau de bord', text: 'Le chiffre qui compte dans le métier en premier, tendances sur 12 semaines.' },
+  { title: 'Relances et tâches', text: 'En retard, aujourd’hui, cette semaine : rien ne passe entre les mailles.' },
+  { title: 'Recherche Ctrl+K', text: 'Toute la base au clavier, avec les actions courantes.' },
+  { title: 'Rédaction assistée', text: 'Relances, comptes rendus et messages clients en brouillon modifiable.' },
+  { title: 'Import et export CSV', text: 'Le fichier Excel du client entre dans le CRM le premier jour.' },
+  { title: 'À la marque du client', text: 'Nom, couleur, étapes et équipe modifiables en direct.' },
+  { title: 'Sans installation', text: 'Clair ou sombre, utilisable sur ordinateur et téléphone.' },
+];

@@ -220,6 +220,15 @@
     '.bse-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--c)}',
     '.bse-code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;padding:2px 6px;border-radius:6px;background:rgb(var(--text-rgb)/.07)}',
     '.bse-sep{height:1px;background:var(--border);margin:16px 0}',
+    // Photo de profil : dans Mon compte et en haut à droite.
+    '.bse-av.ph,.bs-moi .ph{background:var(--ph) center/cover no-repeat;color:transparent}',
+    '.bse-me .bse-av{width:64px;height:64px;border-radius:50%;font-size:22px}',
+    '.bse-photo{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}',
+    '.bs-moi{flex:none;display:inline-flex;align-items:center;gap:8px;padding:3px 10px 3px 3px;margin-left:6px;border-radius:999px;border:1px solid var(--border);background:rgb(var(--text-rgb,148 163 184)/.04);color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}',
+    '.bs-moi:hover{background:rgb(var(--text-rgb,148 163 184)/.09);border-color:var(--border-2,var(--border))}',
+    '.bs-moi .ph,.bs-moi .ini{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background-color:rgb(var(--accent-rgb));flex:none}',
+    '.bs-moi .ph{background-color:transparent}',
+    '@media (max-width:760px){.bs-moi{padding:2px;border:0;background:none}.bs-moi .nm{display:none}}',
   ].join('\n');
   function ensureCss() {
     if (document.getElementById('bs-serveur-css')) return;
@@ -277,6 +286,66 @@
     for (var i = 0; i < a.length; i++) out += abc[a[i] % abc.length];
     return out;
   }
+  // ---------------------------------------------------------------- photo de profil
+  function photoUrl(id, v) { return '/api/photos/' + encodeURIComponent(id) + '?v=' + encodeURIComponent(v); }
+  function pastille(u, cls) {
+    return u.photo ? '<span class="' + cls + ' ph" style="--ph:url(&quot;' + esc(photoUrl(u.id, u.photo)) + '&quot;)" role="img" aria-label="' + esc(u.name) + '"></span>'
+      : '<span class="' + cls + ' ini">' + esc(initials(u.name)) + '</span>';
+  }
+  // Recadrée au carré et réduite à 320 px dans le navigateur : le serveur ne garde qu'une petite image.
+  function reduire(file) {
+    return new Promise(function (ok, ko) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var s = Math.min(img.naturalWidth, img.naturalHeight), c = document.createElement('canvas');
+        c.width = c.height = 320;
+        c.getContext('2d').drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, 320, 320);
+        URL.revokeObjectURL(url);
+        ok(c.toDataURL('image/jpeg', 0.86));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); ko(new Error('Cette image ne peut pas être lue : essayez une photo JPEG ou PNG.')); };
+      img.src = url;
+    });
+  }
+  function choisirPhoto(done) {
+    var input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = function () {
+      var f = input.files && input.files[0]; if (!f) return;
+      reduire(f).then(function (data) { return api('PUT', '/api/photos/moi', { image: data }); })
+        .then(function (b) { majPhoto(b.photo); done(); }).catch(done);
+    };
+    input.click();
+  }
+  function majPhoto(v) {
+    if (!USER) return;
+    USER.photo = v;
+    var b = document.querySelector('.bs-moi'); if (b) b.remove();
+    placerMoi();
+    window.dispatchEvent(new CustomEvent('bs:profil', { detail: { userId: USER.id, photo: v } }));
+  }
+  // Pastille du compte en haut à droite : photo et prénom, ouvre Réglages › Équipe & compte.
+  function placerMoi() {
+    var bar = document.querySelector('.topbar');
+    if (!USER || !bar || bar.querySelector('.bs-moi')) return;
+    ensureCss();
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'bs-moi'; b.title = 'Mon compte';
+    b.innerHTML = pastille(USER, '') + '<span class="nm">' + esc(String(USER.name).split(' ')[0]) + '</span>';
+    b.onclick = function () {
+      location.hash = '#/settings';
+      var n = 0, t = setInterval(function () {
+        var tab = [].slice.call(document.querySelectorAll('button,a,[role=tab]')).filter(function (x) { return x.textContent.trim() === 'Équipe & compte'; })[0];
+        if (tab || ++n > 20) { clearInterval(t); if (tab) tab.click(); }
+      }, 50);
+    };
+    bar.appendChild(b);
+  }
+  if (USER) {
+    var moiT = 0;
+    new MutationObserver(function () { if (!moiT) moiT = requestAnimationFrame(function () { moiT = 0; placerMoi(); }); })
+      .observe(document.documentElement, { childList: true, subtree: true });
+  }
   function roleBadge(r) { return r === 'admin' ? '<span class="badge tone-accent">Administrateur</span>' : '<span class="badge tone-slate">Membre</span>'; }
 
   function monterReglages(el) {
@@ -302,7 +371,9 @@
       if (!el.isConnected) return;
       var s = st(DATA_KEY), d = STATUS[status] || STATUS.ok;
       var me = card('Mon compte', 'Connecté à la version équipe' + (CONF.version ? ' (v' + esc(CONF.version) + ')' : '') + '.',
-        '<div class="bse-me"><span class="bse-av">' + esc(initials(USER.name)) + '</span><div><b>' + esc(USER.name) + '</b><span>' + esc(USER.email) + '</span></div>' + roleBadge(USER.role) + '</div>' +
+        '<div class="bse-me">' + pastille(USER, 'bse-av') + '<div><b>' + esc(USER.name) + '</b><span>' + esc(USER.email) + '</span></div>' + roleBadge(USER.role) +
+        '<div class="bse-photo"><button type="button" class="btn btn-secondary btn-sm" data-act="photo">' + (USER.photo ? 'Changer la photo' : 'Ajouter une photo') + '</button>' +
+        (USER.photo ? '<button type="button" class="btn btn-ghost btn-sm" data-act="sans-photo">Retirer</button>' : '') + '</div></div>' + msg('photo') +
         '<div class="bse-sep"></div>' +
         '<form data-form="pass"><div class="bse-grid">' +
         '<label class="field"><span class="field-label">Mot de passe actuel</span><input class="input" type="password" name="current" autocomplete="current-password" required></label>' +
@@ -408,6 +479,8 @@
         if (act === 'logout') api('POST', '/api/auth/logout').then(function () { location.href = '/connexion'; }).catch(function () { location.href = '/connexion'; });
         else if (act === 'sync') { Object.keys(S).forEach(function (k) { if (st(k).pending != null) schedule(k, 0); }); poll(); setTimeout(render, 800); }
         else if (act === 'hist') loadHistory();
+        else if (act === 'photo') choisirPhoto(function (er) { if (er) setMsg('photo', er.message, 'err'); else { ui.msg.photo = null; render(); } });
+        else if (act === 'sans-photo') api('DELETE', '/api/photos/moi').then(function () { majPhoto(null); render(); }).catch(function (er) { setMsg('photo', er.message, 'err'); });
       }
     });
     var l = function () { if (!el.isConnected) { listeners.splice(listeners.indexOf(l), 1); return; } if (!el.contains(document.activeElement)) render(); };
@@ -418,6 +491,7 @@
   window.bsEquipe = {
     monterReglages: monterReglages,
     utilisateur: function () { return USER ? Object.assign({}, USER) : null; },
+    photoUrl: photoUrl,
     serveur: !!CONF,
     etat: function () { var s = st(DATA_KEY); return { statut: status, version: s.version, enAttente: s.pending != null }; },
   };

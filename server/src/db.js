@@ -100,6 +100,13 @@ const MIGRATIONS = [
      PRIMARY KEY (conversation_id, user_id)
    );
    INSERT INTO chat_conversations (id, kind, name, created_at) VALUES ('equipe', 'equipe', 'Équipe', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));`,
+  // v5 : photo de profil de chaque membre.
+  `CREATE TABLE user_photos (
+     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+     mime TEXT NOT NULL,
+     data BLOB NOT NULL,
+     updated_at TEXT NOT NULL
+   );`,
 ];
 
 export function openDb(dataDir) {

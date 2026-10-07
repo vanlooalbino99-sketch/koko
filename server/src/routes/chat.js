@@ -57,7 +57,8 @@ export function chatHub() {
 export function chatRoutes({ db, hub = chatHub() }) {
   const r = Router();
 
-  const users = () => db.prepare('SELECT id, name, role FROM users ORDER BY name COLLATE NOCASE').all();
+  const users = () => db.prepare(`SELECT u.id, u.name, u.role, p.updated_at AS photo FROM users u LEFT JOIN user_photos p ON p.user_id = u.id
+                                   ORDER BY u.name COLLATE NOCASE`).all();
   const userName = (id) => db.prepare('SELECT name FROM users WHERE id = ?').get(id)?.name || 'Ancien membre';
   const conv = (id) => db.prepare('SELECT * FROM chat_conversations WHERE id = ?').get(id);
   const memberIds = (c) => (c.kind === 'equipe'

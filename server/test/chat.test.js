@@ -103,6 +103,23 @@ test('conversation Équipe : message en direct, non lus, lecture', async () => {
   fm.close();
 });
 
+test('photo de profil : envoi, lecture, annonce, retrait', async () => {
+  const fm = await marie.flux();
+  const jpeg = 'data:image/jpeg;base64,' + Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]).toString('base64');
+  assert.equal((await admin('PUT', '/api/photos/moi', { image: 'data:text/html;base64,PGI+' })).status, 400);
+  assert.equal((await admin('PUT', '/api/photos/moi', { image: 'data:image/png;base64,' + Buffer.from('pas une image').toString('base64') })).status, 400);
+  const up = await admin('PUT', '/api/photos/moi', { image: jpeg });
+  assert.equal(up.status, 200);
+  assert.equal((await fm.wait('profil')).userId, ids.Albino);
+  assert.equal((await marie('GET', '/api/chat')).body.users.find((u) => u.id === ids.Albino).photo, up.body.photo);
+  assert.equal((await marie('GET', '/api/auth/me')).body.user.photo, null);
+  const img = await fetch(`${base}/api/photos/${ids.Albino}`, { headers: { Cookie: '' } });
+  assert.equal(img.status, 401, 'réservé aux membres connectés');
+  assert.equal((await admin('DELETE', '/api/photos/moi')).status, 200);
+  assert.equal((await admin('GET', '/api/chat')).body.users.find((u) => u.id === ids.Albino).photo, null);
+  fm.close();
+});
+
 test('« en train d’écrire » : signal aux autres membres seulement', async () => {
   const fm = await marie.flux();
   assert.equal((await admin('POST', '/api/chat/conversations/equipe/ecrit', {})).status, 200);

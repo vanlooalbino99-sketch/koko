@@ -53,8 +53,9 @@
   function initiales(n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(function (x) { return x[0]; }).join('').toUpperCase(); }
   function teinte(id) { var h = 0, s = String(id || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
   function avatar(id, nom, cls) {
-    var on = S.online.indexOf(id) >= 0;
-    return '<span class="bsm-av ' + (cls || '') + '" style="--h:' + teinte(id) + '">' + esc(initiales(nom)) + (id ? '<i class="bsm-pres' + (on ? ' on' : '') + '" title="' + (on ? 'En ligne' : 'Hors ligne') + '"></i>' : '') + '</span>';
+    var on = S.online.indexOf(id) >= 0, u = id && user(id);
+    var photo = u && u.photo ? ';--ph:url(&quot;/api/photos/' + encodeURIComponent(id) + '?v=' + encodeURIComponent(u.photo) + '&quot;)' : '';
+    return '<span class="bsm-av ' + (photo ? 'ph ' : '') + (cls || '') + '" style="--h:' + teinte(id) + photo + '">' + (photo ? '' : esc(initiales(nom))) + (id ? '<i class="bsm-pres' + (on ? ' on' : '') + '" title="' + (on ? 'En ligne' : 'Hors ligne') + '"></i>' : '') + '</span>';
   }
   function autre(c) { return (c.members || []).filter(function (x) { return x !== S.me; })[0]; }
   function titre(c) { return c.kind === 'equipe' ? 'Équipe' : c.kind === 'direct' ? nomDe(autre(c)) : c.name; }
@@ -141,6 +142,7 @@
       majBadge(); rendre();
     });
     es.addEventListener('message', function (e) { recu(JSON.parse(e.data)); });
+    es.addEventListener('profil', function (e) { profil(JSON.parse(e.data)); });
     es.addEventListener('ecrit', function (e) { quelquUnEcrit(JSON.parse(e.data)); });
     es.addEventListener('call', function (e) {
       var x = JSON.parse(e.data), c = S.convs[x.conversationId];
@@ -213,6 +215,8 @@
     S.ecritEnvoi = Date.now();
     api('POST', '/conversations/' + encodeURIComponent(S.actif) + '/ecrit', {}).catch(function () {});
   }
+  function profil(x) { var u = user(x.userId); if (u && u.photo !== x.photo) { u.photo = x.photo; rendre(); } }
+  window.addEventListener('bs:profil', function (e) { profil(e.detail); });
   function marquerLu(c) {
     if (!c || !c.unread && c.lastRead >= ((c.last && c.last.id) || 0)) return;
     c.unread = 0;
@@ -800,6 +804,7 @@
     '.bsm-jour span{font-size:.72em;font-weight:650;letter-spacing:.04em;color:var(--text-3);padding:4px 12px;border-radius:99px;background:var(--surface-2);border:1px solid var(--border);text-transform:capitalize}',
     '.bsm-msg{display:flex;align-items:flex-end;gap:9px;max-width:min(680px,86%);margin-top:8px}',
     '.bsm-msg.suite{margin-top:0}',
+    '.bsm-av.ph{background:var(--ph) center/cover no-repeat;border-radius:50%!important}',
     '.bsm-msg .bsm-av{width:30px;height:30px;border-radius:10px;font-size:.66em}',
     '.bsm-av-sp{width:30px;flex:none}',
     '.bsm-msg.moi{align-self:flex-end;flex-direction:row-reverse}',

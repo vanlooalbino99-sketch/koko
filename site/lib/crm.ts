@@ -22,6 +22,10 @@ export type CrmLead = {
   date?: string;
   heure?: string;
   page?: string;
+  /** Offre choisie sur le site : étiquette de la fiche, mise en place et mensuel en euros. */
+  pack?: string;
+  dealValue?: number;
+  mrrValue?: number;
 };
 
 export class CrmError extends Error {

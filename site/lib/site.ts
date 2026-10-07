@@ -20,6 +20,7 @@ export const site = {
 export const nav = [
   { href: '/', label: 'Accueil' },
   { href: '/services', label: 'Services' },
+  { href: '/offres', label: 'Offres' },
   { href: '/a-propos', label: 'À propos' },
   { href: '/contact', label: 'Contact' },
 ] as const;
@@ -111,3 +112,68 @@ export const faq = [
   { q: 'Combien de temps pour démarrer ?', a: 'Environ deux semaines entre l’audit et la mise en service, formation comprise.' },
   { q: 'Y a-t-il un engagement ?', a: 'Les offres sont mensuelles et résiliables à tout moment.' },
 ] as const;
+
+// Offres et tarifs (page /offres et aperçu sur l'accueil). Montants en euros, utilisés aussi par le CRM.
+export type Pack = {
+  slug: string;
+  name: string;
+  pitch: string;
+  audience?: string[];
+  features: string[];
+  /** Mise en place : montant (pour le CRM) et libellé affiché. */
+  setup: number;
+  setupLabel: string;
+  monthly: number;
+  monthlyLabel: string;
+  featured?: boolean;
+};
+
+export const packs: Pack[] = [
+  {
+    slug: 'business-starter',
+    name: 'Business Starter',
+    pitch: 'Une présence en ligne professionnelle, prête à recevoir vos clients.',
+    audience: ['Artisans', 'Consultants', 'Coaches', 'Petites entreprises'],
+    features: ['Site web professionnel', 'Formulaire de contact', 'Prise de rendez-vous', 'Google Maps', 'Optimisation mobile', 'Hébergement', 'SSL', 'Intégration CRM'],
+    setup: 990, setupLabel: '990 €',
+    monthly: 49, monthlyLabel: '49 €',
+  },
+  {
+    slug: 'acquisition-pro',
+    name: 'Acquisition Pro',
+    pitch: 'Pour les entreprises qui veulent générer des leads.',
+    features: ['Site web premium', 'Système de prise de RDV', 'CRM', 'Pipeline commercial', 'E-mails automatiques', 'Dashboard commercial', 'Synchronisation calendrier'],
+    setup: 1990, setupLabel: '1 990 €',
+    monthly: 99, monthlyLabel: '99 €',
+  },
+  {
+    slug: 'scale',
+    name: 'Scale',
+    pitch: 'Toute la machine commerciale : chaque lead qualifié, relancé et suivi jusqu’à la signature.',
+    features: ['Site premium', 'CRM complet', 'Pipeline commercial', 'Qualification de leads', 'Automatisation des e-mails', 'Relances automatiques', 'Reporting dirigeant', 'Tableau de bord', 'Gestion des commerciaux'],
+    setup: 3490, setupLabel: '3 490 €',
+    monthly: 199, monthlyLabel: '199 €',
+    featured: true,
+  },
+  {
+    slug: 'entreprise',
+    name: 'Entreprise',
+    pitch: 'Pour les PME qui veulent un outil taillé sur mesure.',
+    features: ['CRM sur mesure', 'Multi-utilisateurs', 'Gestion clients', 'Gestion des devis', 'Signature électronique', 'Facturation', 'Reporting avancé', 'Formation', 'Support prioritaire'],
+    setup: 5000, setupLabel: '5 000 € à 15 000 €',
+    monthly: 299, monthlyLabel: '299 à 499 €',
+  },
+];
+
+/** Libellé d'une offre dans le formulaire de RDV et dans le CRM. */
+export const packLabel = (p: Pack) => `Pack ${p.name} (${p.setupLabel} + ${p.monthlyLabel}/mois)`;
+
+// Offre en abonnement, bientôt disponible : le CRM Blackstart prêt à l'emploi, sans développement spécifique.
+export const saas = {
+  includes: ['CRM', 'Agenda', 'Pipeline', 'E-mails', 'Prise de RDV'],
+  plans: [
+    { name: 'Solo', price: '49 €' },
+    { name: 'Pro', price: '99 €' },
+    { name: 'Business', price: '199 €' },
+  ],
+};

@@ -148,3 +148,17 @@ test('les données écrites par le site sont versionnées comme celles de l’é
   const h = db.prepare('SELECT COUNT(*) AS n FROM kv_history WHERE key = ?').get(DATA_KEY).n;
   assert.ok(h >= 4);
 });
+
+test('offre choisie sur le site : étiquette et montants sur la fiche', async () => {
+  const r = await call('POST', '/api/site/leads', rdv({ date: '2030-05-14', email: 'nina@scale.fr', telephone: '06 55 44 33 22', service: 'Pack Scale (3 490 € + 199 €/mois)', pack: 'Pack Scale', dealValue: 3490, mrrValue: 199 }));
+  assert.equal(r.status, 201);
+  const p = crm().prospects.find((x) => x.id === r.body.prospectId);
+  assert.deepEqual(p.tags, ['Site', 'Pack Scale']);
+  assert.equal(p.dealValue, 3490);
+  assert.equal(p.mrrValue, 199);
+  assert.match(p.notes, /Pack Scale/);
+  const bad = await call('POST', '/api/site/leads', rdv({ date: '2030-05-15', email: 'z@z.fr', telephone: '06 00 00 00 01', dealValue: 'x', mrrValue: -5 }));
+  const q = crm().prospects.find((x) => x.id === bad.body.prospectId);
+  assert.equal(q.dealValue, 0);
+  assert.equal(q.mrrValue, 0);
+});

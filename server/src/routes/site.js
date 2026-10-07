@@ -30,6 +30,8 @@ export function zoned(timeZone, at = new Date()) {
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
 }
 
+const money = (v) => (Number.isFinite(Number(v)) ? Math.min(Math.max(Math.round(Number(v)), 0), 1_000_000) : 0);
+
 export function validateLead(b) {
   const errors = [];
   const lead = {
@@ -50,6 +52,10 @@ export function validateLead(b) {
     page: str(b.page, 80),
     date: str(b.date, 10),
     heure: str(b.heure, 5),
+    // Offre choisie sur le site : étiquette de la fiche et montants (mise en place, mensuel).
+    pack: str(b.pack, 40),
+    dealValue: money(b.dealValue),
+    mrrValue: money(b.mrrValue),
   };
   if (lead.type !== 'contact' && lead.type !== 'rdv') errors.push('Type inconnu (contact ou rdv).');
   if (!/^[\w-]{8,64}$/.test(lead.requestId)) errors.push('Identifiant de demande invalide.');
@@ -157,7 +163,9 @@ export function siteRoutes({ db, apiKey, timeZone = 'Europe/Paris', slotMinutes 
           contact: existing.contact || lead.nom,
           // Adresse et identité : complétées seulement si la fiche ne les avait pas.
           ...Object.fromEntries(Object.entries(adresse).filter(([k]) => !existing[k])),
-          tags: Array.from(new Set([...(Array.isArray(existing.tags) ? existing.tags : []), 'Site'])),
+          tags: Array.from(new Set([...(Array.isArray(existing.tags) ? existing.tags : []), 'Site', ...(lead.pack ? [lead.pack] : [])])),
+          ...(lead.dealValue && !Number(existing.dealValue) ? { dealValue: lead.dealValue } : {}),
+          ...(lead.mrrValue && !Number(existing.mrrValue) ? { mrrValue: lead.mrrValue } : {}),
           events: [event, ...(Array.isArray(existing.events) ? existing.events : [])].slice(0, 200),
           updatedAt: now.date,
         };
@@ -175,9 +183,9 @@ export function siteRoutes({ db, apiKey, timeZone = 'Europe/Paris', slotMinutes 
           canal: CANAL,
           statut: isRdv ? 'rdv_pris' : 'a_appeler',
           priorite: 'haute',
-          tags: ['Site'],
+          tags: ['Site', ...(lead.pack ? [lead.pack] : [])],
           notes: note,
-          dealValue: 0, mrrValue: 0, signedAt: null, resilieAt: null,
+          dealValue: lead.dealValue, mrrValue: lead.mrrValue, signedAt: null, resilieAt: null,
           ...relance,
           createdAt: now.date,
           updatedAt: now.date,

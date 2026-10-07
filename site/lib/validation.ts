@@ -1,6 +1,7 @@
 // Schémas des formulaires, partagés par le navigateur (messages en direct) et le serveur (contrôle final).
 import { z } from 'zod';
 import { isDate, isTime } from './slots.ts';
+import { packLabel, packs } from './site.ts';
 
 const phoneDigits = (s: string) => s.replace(/\D/g, '').length;
 
@@ -61,12 +62,13 @@ export const contactSchema = z.object({
 });
 
 export const SERVICE_OPTIONS = [
+  ...packs.map((p) => ({ value: `pack-${p.slug}`, label: packLabel(p) })),
   { value: 'assistant-telephonique', label: 'Assistant téléphonique IA' },
   { value: 'prise-de-rendez-vous', label: 'Prise de rendez-vous automatique' },
   { value: 'relances-automatisees', label: 'Relances et suivi client' },
   { value: 'audit-et-strategie', label: 'Audit et accompagnement' },
   { value: 'autre', label: 'Je ne sais pas encore' },
-] as const;
+];
 
 export const SUJETS = [
   { value: 'information', label: 'Demande d’information' },

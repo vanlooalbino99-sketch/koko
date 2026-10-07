@@ -6,7 +6,7 @@ import { agencyNotification, agencyRecipients, bookingConfirmation, emailConfigu
 import { bookingIcs } from '@/lib/ics';
 import { rateLimited } from '@/lib/rate-limit';
 import { formatSlot, isSlotAvailable } from '@/lib/slots';
-import { site } from '@/lib/site';
+import { packs, site } from '@/lib/site';
 import { safeRequestId, type ActionResult } from './result';
 
 const TAKEN = 'Ce créneau vient d’être réservé. Choisissez-en un autre.';
@@ -23,6 +23,9 @@ export async function submitBooking(input: unknown, rawRequestId?: string): Prom
   const service = labelOf(SERVICE_OPTIONS, d.service);
   const nomComplet = `${d.prenom} ${d.nom}`;
   const lieu = `${d.codePostal} ${d.ville}, ${d.pays}`;
+  // Offre choisie : étiquette et montants repris sur la fiche du CRM.
+  const pack = packs.find((p) => `pack-${p.slug}` === d.service);
+  const offre = pack ? { pack: `Pack ${pack.name}`, dealValue: pack.setup, mrrValue: pack.monthly } : {};
 
   let crmNote = 'Ajouté au CRM : RDV dans l’agenda et tâche de rappel.';
   try {
@@ -30,7 +33,7 @@ export async function submitBooking(input: unknown, rawRequestId?: string): Prom
     if (!isSlotAvailable(d.date, d.heure, taken)) return { ok: false, error: TAKEN, fieldErrors: { heure: TAKEN } };
     const r = await pushLead({
       type: 'rdv', requestId, nom: nomComplet, prenom: d.prenom, nomFamille: d.nom, entreprise: d.entreprise, email: d.email, telephone: d.telephone,
-      pays: d.pays, codePostal: d.codePostal, ville: d.ville, service, message: d.message, date: d.date, heure: d.heure, page: '/rendez-vous',
+      pays: d.pays, codePostal: d.codePostal, ville: d.ville, service, message: d.message, date: d.date, heure: d.heure, page: '/rendez-vous', ...offre,
     });
     if (r.skipped) crmNote = 'CRM non configuré : RDV à saisir à la main.';
   } catch (e) {

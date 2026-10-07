@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Section, SectionHeading } from '@/components/sections/section';
 import { ServiceIcon } from '@/components/sections/service-icon';
 import { Cta } from '@/components/sections/cta';
+import { PackCards } from '@/components/sections/pricing';
 import { Faq, faqJsonLd } from '@/components/sections/faq';
 import { JsonLd } from '@/lib/seo';
 import { CountUp } from '@/components/motion/count-up';
@@ -124,6 +125,17 @@ export default function HomePage() {
             </Card>
           ))}
         </div>
+      </Section>
+
+      {/* Offres */}
+      <Section className="pt-0 md:pt-0">
+        <SectionHeading eyebrow="Offres" title="Un pack pour chaque étape de votre croissance" intro="Mise en place clé en main, puis un abonnement mensuel tout compris." />
+        <PackCards compact />
+        <p data-reveal className="mt-10 text-center">
+          <Link href="/offres" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">
+            Comparer toutes les offres <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        </p>
       </Section>
 
       {/* Méthode */}

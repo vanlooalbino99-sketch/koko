@@ -115,12 +115,6 @@ export function loginPage({ needsSetup, retour = '/' }) {
   .foot { margin-top: 18px; color: var(--text-3); font-size: 12.5px; text-align: center; line-height: 1.5; }
   .legal { text-align: center; color: var(--text-3); font-size: 12px; }
 
-  /* Logo en verre 3D (Premium 3D Glass) : il remplace le ciel et le tableau animé quand WebGL 2 est là. */
-  #verre { position: absolute; left: -70px; top: -30px; width: calc(100% + 140px); height: 420px; opacity: 0; transition: opacity 1.4s ease; pointer-events: none;
-    -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent); mask-image: radial-gradient(closest-side, #000 55%, transparent); }
-  body.verre #verre { opacity: 1; }
-  body.verre .panel, body.verre .chip { display: none; }
-
   @media (prefers-reduced-motion: reduce) {
     .bg, .sky i, main::before, .panel, .chip { animation: none !important; }
     .chip, .area, .dot { opacity: 1; }
@@ -145,7 +139,6 @@ export function loginPage({ needsSetup, retour = '/' }) {
       <li style="--c:#34d399"><i></i>Rapports</li>
     </ul>
     <div class="scene">
-      <canvas id="verre"></canvas>
       <div class="panel">
         <div class="panel-top"><span>Activité de l’équipe</span><strong>+38 %</strong></div>
         <svg viewBox="0 0 400 120" preserveAspectRatio="none">
@@ -183,15 +176,6 @@ export function loginPage({ needsSetup, retour = '/' }) {
   var retour = ${JSON.stringify(retour).replace(/</g, '\\u003c')};
   var img = new Image();
   img.onload = function () { var bg = document.getElementById('bg'); bg.style.backgroundImage = 'url("/ambiance/connexion")'; document.body.classList.add('photo'); };
-  // Sans image d'ambiance d'équipe : le logo Blackstart en verre s'éclate et se recompose à côté du texte (grands écrans).
-  img.onerror = function () {
-    if (!window.matchMedia('(min-width: 980px)').matches) return;
-    import('/verre/verre.js').then(function (m) {
-      if (!m.glassAvailable()) return;
-      m.startGlass({ root: document.body, canvas: document.getElementById('verre'), shape: m.glassMark, palette: m.glassPalette,
-        autoplay: 26, lateral: 0, scale: 0.78, fit: 'canvas', onReady: function () { document.body.classList.add('verre'); } });
-    }).catch(function () {});
-  };
   img.src = '/ambiance/connexion';
   var f = document.getElementById('f'), err = document.getElementById('err');
   f.addEventListener('submit', function (e) {

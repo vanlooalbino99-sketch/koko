@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react';
 import { CalendarCheck, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from './logo';
-import { ThemeToggle } from './theme-toggle';
 import { nav } from '@/lib/site';
 import { cn } from '@/lib/utils';
 
@@ -49,7 +48,6 @@ export function Header() {
           </ul>
         </nav>
         <div className="flex items-center gap-1">
-          <ThemeToggle />
           <Button asChild className="sheen glow-btn hidden sm:inline-flex" data-magnet>
             <Link href="/rendez-vous">
               <CalendarCheck aria-hidden />

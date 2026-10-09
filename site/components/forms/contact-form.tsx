@@ -10,9 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { a11y, Consent, Field, Honeypot, selectClass } from './field';
 import { contactSchema, SUJETS, type ContactData, type ContactInput } from '@/lib/validation';
 import { submitContact } from '@/actions/contact';
-import { newRequestId } from '@/lib/utils';
+import { cn, newRequestId } from '@/lib/utils';
 
-export function ContactForm() {
+/** `bare` : sans fond ni bordure, pour une carte qui fournit déjà les siens (accueil en verre). */
+export function ContactForm({ bare = false }: { bare?: boolean }) {
   const [requestId, setRequestId] = useState(() => newRequestId());
   const [done, setDone] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -37,7 +38,7 @@ export function ContactForm() {
 
   if (done) {
     return (
-      <div role="status" className="flex flex-col items-center rounded-xl border bg-card p-10 text-center">
+      <div role="status" className={cn('flex flex-col items-center text-center', bare ? 'py-10' : 'rounded-xl border bg-card p-10')}>
         <CheckCircle2 className="size-12 text-success" aria-hidden />
         <h2 className="mt-4 text-2xl font-semibold">Message envoyé</h2>
         <p className="mt-2 max-w-sm text-muted-foreground">Merci ! Nous vous rappelons sous 24 h ouvrées. Un e-mail de confirmation vient de vous être envoyé.</p>
@@ -47,7 +48,7 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="relative grid gap-5 rounded-xl border bg-card p-6 sm:p-8" aria-label="Formulaire de contact">
+    <form onSubmit={onSubmit} noValidate className={cn('relative grid gap-5', !bare && 'rounded-xl border bg-card p-6 sm:p-8')} aria-label="Formulaire de contact">
       <div className="grid gap-5 sm:grid-cols-2">
         <Field id="nom" label="Nom et prénom" error={errors.nom?.message}>
           <Input {...a11y('nom', errors.nom?.message)} autoComplete="name" {...register('nom')} />

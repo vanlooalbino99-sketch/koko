@@ -216,6 +216,24 @@ export const demos = [
     kpi: 'contrats par assuré',
     alt: 'Aperçu du CRM courtage : portefeuille et échéancier',
   },
+  {
+    slug: 'consultant',
+    tag: 'Conseil',
+    title: 'Consultants et cabinets de conseil',
+    why: 'Des missions à fort TJM, où une proposition sans relance et une fin de mission non anticipée coûtent des semaines de CA.',
+    features: ['Missions au TJM × jours, du diagnostic à la signature', 'Taux d’occupation de l’équipe sur les semaines à venir', 'Relance des propositions à J+7 et alerte fin de mission à 30 jours'],
+    kpi: 'taux d’occupation',
+    alt: 'Aperçu du CRM consultant : pipeline des missions',
+  },
+  {
+    slug: 'formation',
+    tag: 'Formation',
+    title: 'Organismes de formation',
+    why: 'Des sessions à remplir avant la date, des financements OPCO et CPF à suivre, et un audit Qualiopi qui ne pardonne pas l’oubli.',
+    features: ['Remplissage des sessions avec alerte à 15 jours du démarrage', 'Financement OPCO, CPF ou entreprise et reste à charge', 'Suivi Qualiopi par stagiaire : convention, émargement, évaluation'],
+    kpi: 'taux de remplissage des sessions',
+    alt: 'Aperçu du CRM formation : sessions et inscriptions',
+  },
 ];
 
 export const demoCommon = [

@@ -1,30 +1,30 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHero, Section, SectionHeading } from '@/components/sections/section';
 import { Cta } from '@/components/sections/cta';
+import { DemoPreview } from '@/components/sections/demo-preview';
 import { pageMetadata } from '@/lib/seo';
 import { demoCommon, demos } from '@/lib/site';
 
 export const metadata = pageMetadata({
   title: 'Démos de CRM métier',
-  description: 'Trois CRM de démonstration à essayer en ligne : agences immobilières, rénovation énergétique, courtage en assurance et crédit.',
+  description: 'Cinq CRM de démonstration à essayer en ligne : immobilier, rénovation énergétique, courtage, conseil et organismes de formation.',
   path: '/demos',
 });
 
 export default function DemosPage() {
   return (
     <>
-      <PageHero eyebrow="Démos" title="Le CRM qui parle la langue de votre métier" intro="Trois démonstrations prêtes à l’emploi. Ouvrez-en une, mettez votre nom et votre couleur dans Réglages, et découvrez votre futur outil en direct." />
+      <PageHero eyebrow="Démos" title="Le CRM qui parle la langue de votre métier" intro="Cinq démonstrations prêtes à l’emploi, avec un aperçu animé de chacune. Ouvrez-en une, mettez votre nom et votre couleur dans Réglages, et découvrez votre futur outil en direct." />
 
       <Section className="pt-14 md:pt-20">
         <div className="grid gap-6 lg:grid-cols-3">
           {demos.map((d, i) => (
             <article key={d.slug} id={d.slug} data-reveal data-spot style={{ '--d': i } as React.CSSProperties} className="lift flex scroll-mt-24 flex-col overflow-hidden rounded-2xl border bg-card">
               <a href={`/demos/${d.slug}.html`} className="group relative block aspect-[16/10] overflow-hidden border-b bg-muted" tabIndex={-1} aria-hidden>
-                <Image src={`/demos/captures/${d.slug}.jpg`} alt="" fill sizes="(min-width: 1024px) 33vw, 100vw" loading="eager" className="object-cover object-top transition-transform duration-700 group-hover:scale-105" />
+                <DemoPreview slug={d.slug} className="absolute inset-0 size-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
                 <Badge className="absolute top-3 left-3 shadow">{d.tag}</Badge>
               </a>
               <div className="flex flex-1 flex-col p-6">
@@ -49,7 +49,7 @@ export default function DemosPage() {
       </Section>
 
       <Section className="border-y bg-muted/40">
-        <SectionHeading eyebrow="Dans chacun des trois" title="Tout ce qu’un CRM métier doit faire, dès le premier jour" />
+        <SectionHeading eyebrow="Dans chacun des cinq" title="Tout ce qu’un CRM métier doit faire, dès le premier jour" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {demoCommon.map((f, i) => (
             <div key={f.title} data-reveal data-spot style={{ '--d': i % 4 } as React.CSSProperties} className="rounded-xl border bg-card p-5">

@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, BarChart3, CalendarCheck, Check, MessageSquareText, Phone, PhoneCall, Quote } from 'lucide-react';
 import { Section, SectionHeading } from '@/components/sections/section';
@@ -6,6 +5,7 @@ import { PackCards } from '@/components/sections/pricing';
 import { Faq, faqJsonLd } from '@/components/sections/faq';
 import { ContactForm } from '@/components/forms/contact-form';
 import { GlassStage } from '@/components/glass/glass-stage';
+import { DemoPreview } from '@/components/sections/demo-preview';
 import { JsonLd } from '@/lib/seo';
 import { demos, sectors, services, site, steps, testimonials } from '@/lib/site';
 
@@ -110,12 +110,12 @@ function After() {
 
       {/* Démos */}
       <Section className="pt-0 md:pt-0">
-        <SectionHeading eyebrow="Démos" title="Le CRM qui parle la langue de votre métier" intro="Trois démonstrations à ouvrir tout de suite, avec des données fictives." />
+        <SectionHeading eyebrow="Démos" title="Le CRM qui parle la langue de votre métier" intro="Cinq démonstrations à ouvrir tout de suite, avec des données fictives. Dans chaque aperçu, un curseur vous fait la visite." />
         <div className="grid gap-5 md:grid-cols-3">
           {demos.map((d, i) => (
             <a key={d.slug} href={`/demos/${d.slug}.html`} target="_blank" rel="noopener" data-reveal data-spot style={{ '--d': i } as React.CSSProperties} className="glass-panel lift group flex flex-col overflow-hidden rounded-3xl">
               <span className="relative block aspect-[16/10] overflow-hidden">
-                <Image src={`/demos/captures/${d.slug}.jpg`} alt={d.alt} fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover object-top opacity-90 transition-transform duration-700 group-hover:scale-105" />
+                <DemoPreview slug={d.slug} className="absolute inset-0 size-full object-cover object-top opacity-90 transition-transform duration-700 group-hover:scale-105" />
               </span>
               <span className="flex flex-1 flex-col gap-2 p-6">
                 <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">{d.tag}</span>

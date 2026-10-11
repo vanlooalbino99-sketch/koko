@@ -688,6 +688,10 @@
   function orgAppliquer(root) {
     var vue = root.querySelector('[data-org-vue]'), arbre = vue && vue.querySelector('[data-org-arbre]');
     if (!arbre) return;
+    // Petit écran : liste en retrait (lisible au doigt) au lieu de l'arbre réduit.
+    var liste = vue.clientWidth < 640;
+    vue.classList.toggle('liste', liste);
+    if (liste) { arbre.style.transform = ''; return; }
     if (orgV.auto) {
       var w = arbre.scrollWidth, h = arbre.scrollHeight, W = vue.clientWidth - 24, H = vue.clientHeight - 64;
       orgV.z = Math.max(0.35, Math.min(1, W / w, H / h));
@@ -711,7 +715,7 @@
     var glisse = null;
     root.addEventListener('pointerdown', function (e) {
       var vue = e.target.closest('[data-org-vue]');
-      if (!vue || e.target.closest('.bso-zoom') || e.button !== 0) return;
+      if (!vue || vue.classList.contains('liste') || e.target.closest('.bso-zoom') || e.button !== 0) return;
       glisse = { x: e.clientX, y: e.clientY, ox: orgV.x, oy: orgV.y, bouge: false, id: e.pointerId, vue: vue };
     });
     root.addEventListener('pointermove', function (e) {
@@ -1258,6 +1262,18 @@
     '.bso ul.pile>li::before{display:none}',
     '.bso ul.pile>li::after{left:50%;width:0;height:12px;border:0;border-left:2px solid var(--bso-ligne);border-radius:0}',
     '.bso ul.pile>li:first-child::after{display:none}',
+    // Petit écran : liste en retrait, reliée par un trait à gauche.
+    '.bso-vue.liste{overflow:auto;cursor:auto;touch-action:auto;user-select:auto}',
+    '.bso-vue.liste .bso-zoom,.bso-vue.liste .bso-aide{display:none}',
+    '.bso-vue.liste .bso{position:static;transform:none!important;width:auto;padding:12px 12px 16px}',
+    '.bso-vue.liste .bso ul{display:block;margin:0 0 0 19px;padding:0 0 0 18px;border-left:2px solid var(--bso-ligne)}',
+    '.bso-vue.liste .bso>ul{margin:0;padding:0;border:0}',
+    '.bso-vue.liste .bso li{display:block;padding:10px 0 0}',
+    '.bso-vue.liste .bso>ul>li{padding:0}',
+    '.bso-vue.liste .bso li::before,.bso-vue.liste .bso li::after,.bso-vue.liste .bso ul ul::before{display:none!important}',
+    '.bso-vue.liste .bso-carte,.bso-vue.liste .bso-carte.tete{width:100%}',
+    '.bso-vue.liste .bso ul .bso-carte::before{content:"";position:absolute;left:-20px;top:50%;width:18px;border-top:2px solid var(--bso-ligne)}',
+    '@media (max-width:1023px){.bsm-modal.org{height:100%;max-height:100%;padding:16px}}',
     '.bso-carte{position:relative;display:flex;align-items:center;gap:11px;width:214px;padding:11px 12px;border-radius:16px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--border);text-align:left;color:var(--text);cursor:pointer;box-shadow:0 10px 24px -14px rgb(0 0 0/.55);transition:border-color .15s,transform .15s,box-shadow .15s}',
     '.bso-carte[data-dm]:hover{border-color:rgb(var(--accent-rgb)/.75);transform:translateY(-2px);box-shadow:0 16px 30px -14px rgb(var(--accent-rgb)/.55)}',
     '.bso-carte.moi{border-color:color-mix(in srgb,var(--accent) 60%,var(--border));cursor:default}',

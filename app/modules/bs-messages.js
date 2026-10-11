@@ -432,7 +432,11 @@
     if (champ && S.actif) S.brouillons[S.actif] = champ.value;
     var filtreFocus = document.activeElement && document.activeElement.name === 'bsm-filtre';
 
-    if (S.mode === 'visio') { root.innerHTML = rendreSalle() + (S.modal ? rendreModal() : ''); return; }
+    if (S.mode === 'visio') {
+      root.innerHTML = rendreSalle() + (S.modal ? rendreModal() : '');
+      if (S.modal && S.modal.type === 'organigramme') { orgBrancher(root); orgAppliquer(root); }
+      return;
+    }
     var c = S.convs[S.actif];
     root.innerHTML = '<div class="bsm-shell card' + (S.mobileListe ? ' liste' : ' fil') + '">' + rendreListe() + (c ? rendreFil(c) : rendreAucun()) + '</div>' + (S.modal ? rendreModal() : '');
 
@@ -443,6 +447,7 @@
     if (filtreFocus) { var f = root.querySelector('[name=bsm-filtre]'); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
     var mi = root.querySelector('.bsm-modal input[autofocus]'); if (mi && !root.__modalFocus) { mi.focus(); root.__modalFocus = true; }
     if (!S.modal) root.__modalFocus = false;
+    if (S.modal && S.modal.type === 'organigramme') { orgBrancher(root); orgAppliquer(root); }
   }
   function rendreListe() {
     var q = S.filtre.toLowerCase();
@@ -579,26 +584,111 @@
         '<div class="bsm-modal-foot"><button type="button" class="btn btn-danger btn-md" data-act="quitter-groupe">Quitter le groupe</button><span class="grow"></span><button type="button" class="btn btn-secondary btn-md" data-act="fermer">Annuler</button><button type="submit" class="btn btn-primary btn-md">Enregistrer</button></div>';
     } else if (m.type === 'organigramme') {
       var admin = window.BS_SERVER && window.BS_SERVER.user && window.BS_SERVER.user.role === 'admin';
-      corps = '<h2>Organigramme</h2><p>Qui fait quoi dans l’équipe, et qui dépend de qui.' + (admin ? ' Postes et responsables se règlent dans Réglages › Équipe &amp; compte.' : '') + '</p>' +
-        organigramme() + '<div class="bsm-modal-foot">' + (admin ? '<button type="button" class="btn btn-secondary btn-md" data-act="regler-equipe">Modifier</button>' : '') +
+      var nbEnLigne = S.users.filter(function (u) { return S.online.indexOf(u.id) >= 0; }).length;
+      corps = '<div class="bso-tete"><div><h2>Organigramme</h2><p>Qui fait quoi dans l’équipe, et qui dépend de qui.' + (admin ? ' Postes et responsables se règlent dans Réglages › Équipe &amp; compte.' : '') + '</p></div>' +
+        '<div class="bso-stats"><span><b>' + S.users.length + '</b> membre' + (S.users.length > 1 ? 's' : '') + '</span><span><b>' + orgNiveaux() + '</b> niveau' + (orgNiveaux() > 1 ? 'x' : '') + '</span><span class="on"><i></i><b>' + nbEnLigne + '</b> en ligne</span></div></div>' +
+        '<div class="bso-vue" data-org-vue>' + organigramme() +
+        '<div class="bso-zoom" role="group" aria-label="Zoom de l’organigramme"><button type="button" data-org="moins" aria-label="Dézoomer" title="Dézoomer">−</button>' +
+        '<button type="button" data-org="ajuster" class="txt" title="Voir toute l’équipe">Tout voir</button><button type="button" data-org="plus" aria-label="Zoomer" title="Zoomer">+</button></div>' +
+        '<div class="bso-aide">Glissez pour vous déplacer · Ctrl + molette pour zoomer · cliquez sur un membre pour lui écrire</div></div>' +
+        '<div class="bsm-modal-foot">' + (admin ? '<button type="button" class="btn btn-secondary btn-md" data-act="regler-equipe">Modifier</button>' : '') +
         '<button type="button" class="btn btn-primary btn-md" data-act="fermer">Fermer</button></div>';
     } else return '';
-    return '<div class="overlay bsm-overlay" data-act="fermer-fond"><form class="modal bsm-modal' + (m.type === 'organigramme' ? ' large' : '') + '" role="dialog" aria-modal="true">' + (m.err ? '<div class="bsm-err">' + esc(m.err) + '</div>' : '') + corps + '</form></div>';
+    return '<div class="overlay bsm-overlay" data-act="fermer-fond"><form class="modal bsm-modal' + (m.type === 'organigramme' ? ' large org' : '') + '" role="dialog" aria-modal="true">' + (m.err ? '<div class="bsm-err">' + esc(m.err) + '</div>' : '') + corps + '</form></div>';
   }
   // Arbre : chaque membre sous son responsable ; à poste égal, ordre de la liste des postes puis du nom.
-  function organigramme() {
+  // Quand toute l'équipe d'un responsable est sans équipe propre, elle s'empile en colonne sous lui :
+  // l'arbre reste étroit et toute l'équipe tient à l'écran.
+  function orgArbre() {
     var ids = {}; S.users.forEach(function (u) { ids[u.id] = u; });
     var rang = function (u) { var i = S.postes.indexOf(u.poste); return i < 0 ? 999 : i; };
     var tri = function (a, b) { return rang(a) - rang(b) || a.name.localeCompare(b.name, 'fr'); };
-    var enfants = function (id) { return S.users.filter(function (u) { return (u.managerId && ids[u.managerId] ? u.managerId : null) === id; }).sort(tri); };
-    var noeud = function (u, prof) {
-      var k = prof < 12 ? enfants(u.id) : [];
-      return '<li><button type="button" class="bso-carte' + (u.id === S.me ? ' moi' : '') + '"' + (u.id === S.me ? '' : ' data-dm="' + esc(u.id) + '" title="Écrire à ' + esc(u.name) + '"') + '>' +
-        avatar(u.id, u.name) + '<span><b>' + esc(u.name) + (u.id === S.me ? ' <small>vous</small>' : '') + '</b><em>' + esc(u.poste || 'Poste à définir') + '</em></span></button>' +
-        (k.length ? '<ul>' + k.map(function (x) { return noeud(x, prof + 1); }).join('') + '</ul>' : '') + '</li>';
+    return {
+      racines: function () { return this.enfants(null); },
+      enfants: function (id) { return S.users.filter(function (u) { return (u.managerId && ids[u.managerId] ? u.managerId : null) === id; }).sort(tri); },
     };
-    var racines = enfants(null);
-    return '<div class="bso"><ul>' + racines.map(function (u) { return noeud(u, 0); }).join('') + '</ul></div>';
+  }
+  function orgNiveaux() {
+    var t = orgArbre();
+    var prof = function (u, n) { var k = n < 12 ? t.enfants(u.id) : []; return k.length ? 1 + Math.max.apply(null, k.map(function (x) { return prof(x, n + 1); })) : 1; };
+    var r = t.racines();
+    return r.length ? Math.max.apply(null, r.map(function (u) { return prof(u, 0); })) : 0;
+  }
+  function organigramme() {
+    var t = orgArbre();
+    var total = function (u, n) { var k = n < 12 ? t.enfants(u.id) : []; return k.reduce(function (s, x) { return s + 1 + total(x, n + 1); }, 0); };
+    var carteOrg = function (u, prof, nb) {
+      return '<button type="button" class="bso-carte' + (u.id === S.me ? ' moi' : '') + (prof === 0 ? ' tete' : '') + '"' + (u.id === S.me ? '' : ' data-dm="' + esc(u.id) + '" title="Écrire à ' + esc(u.name) + '"') + '>' +
+        avatar(u.id, u.name) + '<span class="bso-t"><b>' + esc(u.name) + (u.id === S.me ? ' <small>vous</small>' : '') + '</b><em>' + esc(u.poste || 'Poste à définir') + '</em>' +
+        (nb ? '<span class="bso-nb">' + nb + ' personne' + (nb > 1 ? 's' : '') + '</span>' : '') + '</span></button>';
+    };
+    var noeud = function (u, prof) {
+      var k = prof < 12 ? t.enfants(u.id) : [];
+      var pile = k.length >= 2 && k.every(function (x) { return !t.enfants(x.id).length; });
+      return '<li>' + carteOrg(u, prof, total(u, prof)) +
+        (k.length ? '<ul' + (pile ? ' class="pile"' : '') + '>' + k.map(function (x) { return noeud(x, prof + 1); }).join('') + '</ul>' : '') + '</li>';
+    };
+    return '<div class="bso" data-org-arbre><ul>' + t.racines().map(function (u) { return noeud(u, 0); }).join('') + '</ul></div>';
+  }
+  // Vue de l'organigramme : ajustée à la fenêtre à l'ouverture, zoom (boutons, Ctrl + molette) et déplacement à la souris ou au doigt.
+  var orgV = { z: 1, x: 0, y: 0, auto: true };
+  function orgAppliquer(root) {
+    var vue = root.querySelector('[data-org-vue]'), arbre = vue && vue.querySelector('[data-org-arbre]');
+    if (!arbre) return;
+    if (orgV.auto) {
+      var w = arbre.scrollWidth, h = arbre.scrollHeight, W = vue.clientWidth - 24, H = vue.clientHeight - 64;
+      orgV.z = Math.max(0.35, Math.min(1, W / w, H / h));
+      orgV.x = (vue.clientWidth - w * orgV.z) / 2;
+      orgV.y = Math.max(14, (vue.clientHeight - 40 - h * orgV.z) / 2);
+    }
+    arbre.style.transform = 'translate(' + orgV.x + 'px,' + orgV.y + 'px) scale(' + orgV.z + ')';
+    var aj = vue.querySelector('[data-org="ajuster"]'); if (aj) aj.classList.toggle('actif', orgV.auto);
+  }
+  function orgZoom(root, f, cx, cy) {
+    var vue = root.querySelector('[data-org-vue]'); if (!vue) return;
+    var r = vue.getBoundingClientRect();
+    if (cx == null) { cx = r.width / 2; cy = r.height / 2; }
+    var z = Math.max(0.3, Math.min(1.8, orgV.z * f));
+    orgV.x = cx - (cx - orgV.x) * (z / orgV.z); orgV.y = cy - (cy - orgV.y) * (z / orgV.z);
+    orgV.z = z; orgV.auto = false; orgAppliquer(root);
+  }
+  function orgBrancher(root) {
+    if (root.__bsoVue) return;
+    root.__bsoVue = true;
+    var glisse = null;
+    root.addEventListener('pointerdown', function (e) {
+      var vue = e.target.closest('[data-org-vue]');
+      if (!vue || e.target.closest('.bso-zoom') || e.button !== 0) return;
+      glisse = { x: e.clientX, y: e.clientY, ox: orgV.x, oy: orgV.y, bouge: false, id: e.pointerId, vue: vue };
+    });
+    root.addEventListener('pointermove', function (e) {
+      if (!glisse || e.pointerId !== glisse.id) return;
+      var dx = e.clientX - glisse.x, dy = e.clientY - glisse.y;
+      if (!glisse.bouge && Math.abs(dx) + Math.abs(dy) < 5) return;
+      if (!glisse.bouge) { glisse.bouge = true; glisse.vue.classList.add('glisse'); try { glisse.vue.setPointerCapture(e.pointerId); } catch (x) { /* déjà relâché */ } }
+      orgV.x = glisse.ox + dx; orgV.y = glisse.oy + dy; orgV.auto = false; orgAppliquer(root);
+    });
+    var fin = function (e) {
+      if (!glisse || (e && e.pointerId !== glisse.id)) return;
+      var g = glisse; glisse = null; g.vue.classList.remove('glisse');
+      // Après un déplacement, le clic qui suit n'ouvre pas de conversation.
+      if (g.bouge) window.addEventListener('click', function stop(ev) { ev.stopPropagation(); ev.preventDefault(); window.removeEventListener('click', stop, true); }, true);
+    };
+    root.addEventListener('pointerup', fin); root.addEventListener('pointercancel', fin);
+    root.addEventListener('wheel', function (e) {
+      var vue = e.target.closest('[data-org-vue]');
+      if (!vue || !(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      var r = vue.getBoundingClientRect();
+      orgZoom(root, e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - r.left, e.clientY - r.top);
+    }, { passive: false });
+    root.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-org]'); if (!b) return;
+      e.preventDefault();
+      var a = b.getAttribute('data-org');
+      if (a === 'ajuster') { orgV.auto = true; orgAppliquer(root); } else orgZoom(root, a === 'plus' ? 1.2 : 1 / 1.2);
+    });
+    window.addEventListener('resize', function () { if (orgV.auto && root.querySelector('[data-org-vue]')) orgAppliquer(root); });
   }
   function taille(t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 160) + 'px'; }
 
@@ -634,7 +724,7 @@
         return;
       }
       var act = b.getAttribute('data-act');
-      if (act === 'organigramme') { S.modal = { type: 'organigramme' }; rendre(); return; }
+      if (act === 'organigramme') { orgV.auto = true; S.modal = { type: 'organigramme' }; rendre(); return; }
       if (act === 'regler-equipe') { S.modal = null; location.hash = '#/settings'; if (window.bsEquipe && window.bsEquipe.ouvrirEquipe) window.bsEquipe.ouvrirEquipe(); return; }
       if (act === 'emojis') { S.emojis = !S.emojis; rendre(); var ti = root.querySelector('.bsm-input'); if (ti) ti.focus(); return; }
       if (act === 'joindre') { root.querySelector('.bsm-fichier').click(); return; }
@@ -1071,29 +1161,61 @@
     '.bsm-overlay{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:16px}',
     '.bsm-modal.large{width:min(1000px,100%)}',
     '.bsm-auteur small{font-weight:600;opacity:.6;margin-left:6px;font-size:.92em}',
-    // Organigramme : lignes qui relient chaque membre à son responsable.
-    '.bso{overflow:auto;padding:8px 4px 4px}',
-    '.bso ul{display:flex;justify-content:center;gap:0;padding-top:22px;position:relative;margin:0;list-style:none;padding-left:0}',
+    // Organigramme : lignes qui relient chaque membre à son responsable, vue zoomable qui montre toute l'équipe.
+    '.bsm-modal.org{width:min(1320px,100%);height:min(860px,calc(100dvh - 32px));overflow:hidden}',
+    '.bso-tete{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 20px;flex-wrap:wrap}',
+    '.bso-tete h2{margin:0;font-size:1.25em}',
+    '.bso-tete p{margin:4px 0 0;color:var(--text-3);font-size:.9em}',
+    '.bso-stats{display:flex;gap:6px;flex-wrap:wrap}',
+    '.bso-stats span{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);font-size:.8em;color:var(--text-2)}',
+    '.bso-stats b{color:var(--text);font-weight:750}',
+    '.bso-stats .on i{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgb(34 197 94/.2)}',
+    '.bso-vue{position:relative;flex:1;min-height:300px;overflow:hidden;border-radius:16px;border:1px solid var(--border);cursor:grab;touch-action:none;user-select:none;' +
+      'background:radial-gradient(120% 80% at 50% 0%,rgb(var(--accent-rgb,56 124 213)/.10),transparent 60%),radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--text) 9%,transparent) 1px,transparent 1.5px) 0 0/22px 22px,var(--surface-2)}',
+    '.bso-vue.glisse{cursor:grabbing}',
+    '.bso-vue.glisse .bso-carte{pointer-events:none}',
+    '.bso{position:absolute;left:0;top:0;transform-origin:0 0;width:max-content;transition:transform .35s cubic-bezier(.2,.8,.2,1)}',
+    '.bso-vue.glisse .bso{transition:none}',
+    '.bso-zoom{position:absolute;right:12px;bottom:12px;display:flex;gap:2px;padding:3px;border-radius:12px;border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 80%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}',
+    '.bso-zoom button{min-width:32px;height:30px;padding:0 8px;border:0;border-radius:9px;background:none;color:var(--text);font:inherit;font-size:17px;font-weight:600;cursor:pointer}',
+    '.bso-zoom button.txt{font-size:12.5px}',
+    '.bso-zoom button:hover{background:rgb(var(--text-rgb,148 163 184)/.1)}',
+    '.bso-zoom button.actif{color:var(--accent-text,rgb(var(--accent-rgb)))}',
+    '.bso-aide{position:absolute;left:14px;bottom:14px;font-size:.74em;color:var(--text-3);pointer-events:none}',
+    '@media (max-width:760px){.bso-aide{display:none}}',
+    '.bso ul{display:flex;justify-content:center;padding-top:26px;position:relative;margin:0;list-style:none;padding-left:0}',
     '.bso>ul{padding-top:0}',
-    '.bso li{position:relative;display:flex;flex-direction:column;align-items:center;padding:22px 8px 0}',
+    '.bso li{position:relative;display:flex;flex-direction:column;align-items:center;padding:26px 9px 0}',
     '.bso>ul>li{padding-top:0}',
-    '.bso li::before,.bso li::after{content:"";position:absolute;top:0;width:50%;height:22px;border-top:2px solid var(--border-2,var(--border))}',
-    '.bso li::before{right:50%}.bso li::after{left:50%;border-left:2px solid var(--border-2,var(--border))}',
+    '.bso li::before,.bso li::after{content:"";position:absolute;top:0;width:50%;height:26px;border-top:2px solid var(--bso-ligne)}',
+    '.bso{--bso-ligne:color-mix(in srgb,rgb(var(--accent-rgb,56 124 213)) 45%,var(--border))}',
+    '.bso li::before{right:50%}.bso li::after{left:50%;border-left:2px solid var(--bso-ligne)}',
     '.bso li:only-child::before,.bso li:only-child::after{border-top:0}',
     '.bso li:first-child::before,.bso li:last-child::after{border-top:0}',
-    '.bso li:last-child::before{border-right:2px solid var(--border-2,var(--border));border-radius:0 10px 0 0}',
-    '.bso li:first-child::after{border-radius:10px 0 0 0}',
+    '.bso li:last-child::before{border-right:2px solid var(--bso-ligne);border-radius:0 12px 0 0}',
+    '.bso li:first-child::after{border-radius:12px 0 0 0}',
     '.bso li:only-child::before{display:none}',
     '.bso li:only-child::after{border-radius:0}',
     '.bso>ul>li::before,.bso>ul>li::after{display:none}',
-    '.bso ul ul::before{content:"";position:absolute;top:0;left:50%;height:22px;border-left:2px solid var(--border-2,var(--border))}',
-    '.bso-carte{display:flex;align-items:center;gap:10px;min-width:170px;max-width:220px;padding:10px 12px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);text-align:left;color:var(--text);transition:border-color .15s,transform .15s}',
-    '.bso-carte:hover{border-color:var(--accent);transform:translateY(-1px)}',
-    '.bso-carte.moi{border-color:color-mix(in srgb,var(--accent) 60%,var(--border))}',
-    '.bso-carte span{display:flex;flex-direction:column;min-width:0}',
-    '.bso-carte b{font-size:.88em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-    '.bso-carte b small{font-weight:600;opacity:.6}',
-    '.bso-carte em{font-style:normal;font-size:.76em;color:var(--accent-text,var(--accent));font-weight:650}',
+    '.bso ul ul::before{content:"";position:absolute;top:0;left:50%;height:26px;border-left:2px solid var(--bso-ligne)}',
+    // Équipe sans sous-équipe : en colonne, reliée par un trait vertical.
+    '.bso ul.pile{flex-direction:column;align-items:center;gap:0}',
+    '.bso ul.pile>li{padding:12px 0 0}',
+    '.bso ul.pile>li:first-child{padding-top:0}',
+    '.bso ul.pile>li::before{display:none}',
+    '.bso ul.pile>li::after{left:50%;width:0;height:12px;border:0;border-left:2px solid var(--bso-ligne);border-radius:0}',
+    '.bso ul.pile>li:first-child::after{display:none}',
+    '.bso-carte{position:relative;display:flex;align-items:center;gap:11px;width:214px;padding:11px 12px;border-radius:16px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--border);text-align:left;color:var(--text);cursor:pointer;box-shadow:0 10px 24px -14px rgb(0 0 0/.55);transition:border-color .15s,transform .15s,box-shadow .15s}',
+    '.bso-carte[data-dm]:hover{border-color:rgb(var(--accent-rgb)/.75);transform:translateY(-2px);box-shadow:0 16px 30px -14px rgb(var(--accent-rgb)/.55)}',
+    '.bso-carte.moi{border-color:color-mix(in srgb,var(--accent) 60%,var(--border));cursor:default}',
+    '.bso-carte.tete{width:236px;padding:13px 14px;background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(120deg,var(--aur-3,#22d3ee),rgb(var(--accent-rgb)),var(--aur-2,#8b5cf6)) border-box;border:1.5px solid transparent;box-shadow:0 18px 40px -16px rgb(var(--accent-rgb)/.7)}',
+    '.bso-carte.tete .bsm-av{width:46px;height:46px;border-radius:14px}',
+    '.bso-carte .bsm-av{width:40px;height:40px}',
+    '.bso-t{display:flex;flex-direction:column;align-items:flex-start;min-width:0;gap:1px}',
+    '.bso-t b{max-width:100%;font-size:.9em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.bso-t b small{font-weight:600;opacity:.6}',
+    '.bso-t em{max-width:100%;font-style:normal;font-size:.76em;color:var(--accent-text,var(--accent));font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.bso-nb{margin-top:4px;padding:1px 7px;border-radius:999px;font-size:.68em;font-weight:700;color:var(--text-2);background:rgb(var(--text-rgb,148 163 184)/.1)}',
     '.bsm-modal{width:min(480px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:22px;border-radius:var(--radius-lg,16px)!important;display:flex;flex-direction:column;gap:12px}',
     '.bsm-modal h2{margin:0;font-size:1.2em}',
     '.bsm-modal>p{margin:-6px 0 0;color:var(--text-3);font-size:.9em}',
@@ -1179,5 +1301,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
 
   window.bsMessages = { monter: monter, appel: Appel, sonnerie: Sonnerie,
-    organigramme: function () { S.modal = { type: 'organigramme' }; if (location.hash !== '#/messages') location.hash = '#/messages'; else rendre(); }, etat: function () { return S; } };
+    organigramme: function () { orgV.auto = true; S.modal = { type: 'organigramme' }; if (location.hash !== '#/messages') location.hash = '#/messages'; else rendre(); }, etat: function () { return S; } };
 })();

@@ -312,6 +312,10 @@
   }
 
   // ------------------------------------------------------------------ cartes de notification
+  // Bannière façon iPhone (iOS) : descend du haut de l'écran, verre dépoli, photo de l'expéditeur avec la petite
+  // icône de l'app, « maintenant » à droite, deux lignes de texte. Un clic ouvre, un glissé vers le haut la ferme,
+  // les plus anciennes s'empilent derrière. Une visio qui sonne affiche les boutons rouge et vert d'un appel.
+  var APP_IC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M7.2 4.5h5.6c2.6 0 4.2 1.3 4.2 3.4 0 1.4-.8 2.5-2 2.9 1.6.4 2.6 1.6 2.6 3.2 0 2.4-1.8 3.9-4.7 3.9H7.2zm3 5.5h2.1c1.1 0 1.7-.5 1.7-1.4s-.6-1.4-1.7-1.4h-2.1zm0 5.2h2.5c1.2 0 1.9-.5 1.9-1.5s-.7-1.5-1.9-1.5h-2.5z"/></svg>';
   function carte(o) {
     if (visible() && !o.force) { if (o.icone !== 'video') return null; }
     ensureCss();
@@ -319,16 +323,65 @@
     if (!wrap) { wrap = document.createElement('div'); wrap.id = 'bsm-cartes'; wrap.setAttribute('role', 'status'); wrap.setAttribute('aria-live', 'polite'); document.body.appendChild(wrap); }
     var el = document.createElement('div');
     el.className = 'bsm-carte' + (o.sonne ? ' sonne' : '');
-    el.innerHTML = (o.avatar ? avatar(o.avatar, nomDe(o.avatar)) : '<span class="bsm-av bsm-av-grp eq">' + ic(o.icone || 'message-circle', 17) + '</span>') +
-      '<div class="bsm-carte-t"><b>' + esc(o.titre) + '</b><span>' + esc(String(o.sous || '').slice(0, 140)) + '</span></div>' +
-      '<button type="button" class="btn btn-primary btn-sm">' + esc(o.bouton) + '</button><button type="button" class="bsm-x" aria-label="Fermer">' + ic('x', 14) + '</button>';
-    var fermer = function () { if (el.classList.contains('out')) return; el.classList.add('out'); setTimeout(function () { el.remove(); }, 250); if (o.ferme) o.ferme(); };
-    el.querySelector('.btn').onclick = function () { fermer(); o.action(); };
-    el.querySelector('.bsm-x').onclick = fermer;
-    wrap.appendChild(el);
-    while (wrap.children.length > 3) wrap.firstChild.remove();
-    setTimeout(fermer, o.icone === 'video' ? 30000 : 7000);
+    el.setAttribute('role', 'button'); el.tabIndex = 0;
+    var titreTxt = String(o.titre || ''), groupe = '';
+    var sep = titreTxt.indexOf(' · '); if (sep > 0) { groupe = titreTxt.slice(sep + 3); titreTxt = titreTxt.slice(0, sep); }
+    var icone = o.avatar ? '<span class="bsm-ios-ic pers">' + avatar(o.avatar, nomDe(o.avatar)) + '<i class="app">' + APP_IC + '</i></span>'
+      : '<span class="bsm-ios-ic app' + (o.sonne ? ' vert' : '') + '">' + (o.sonne ? ic('video', 20) : APP_IC) + '</span>';
+    el.innerHTML = icone +
+      '<div class="bsm-ios-t"><div class="l1"><b>' + esc(titreTxt) + '</b><time>maintenant</time></div>' +
+      (groupe ? '<div class="l2">' + esc(groupe) + '</div>' : '') +
+      '<div class="l3">' + esc(String(o.sous || '').slice(0, 180)) + '</div></div>' +
+      (o.sonne ? '<div class="bsm-ios-appel"><button type="button" class="non" aria-label="Refuser">' + ic('x', 20) + '</button>' +
+        '<button type="button" class="oui" aria-label="' + esc(o.bouton || 'Rejoindre') + '">' + ic('video', 20) + '</button></div>' : '');
+    el.setAttribute('aria-label', titreTxt + (groupe ? ', ' + groupe : '') + ' : ' + (o.sous || ''));
+    var minuteur = null, reste = o.icone === 'video' ? 30000 : 6000, depart = 0;
+    var fermer = function (haut) {
+      if (el.classList.contains('out')) return;
+      clearTimeout(minuteur);
+      el.style.transform = ''; el.classList.add('out'); if (haut) el.classList.add('haut');
+      setTimeout(function () { el.remove(); empiler(wrap); }, 320);
+      if (o.ferme) o.ferme();
+    };
+    var lancer = function () { depart = Date.now(); minuteur = setTimeout(fermer, reste); };
+    el.addEventListener('mouseenter', function () { clearTimeout(minuteur); reste = Math.max(1500, reste - (Date.now() - depart)); });
+    el.addEventListener('mouseleave', lancer);
+    var ouvrir = function () { fermer(true); o.action(); };
+    el.addEventListener('click', function (e) {
+      if (el.__glisse) { el.__glisse = false; return; }
+      if (e.target.closest('.non')) { fermer(true); return; }
+      ouvrir();
+    });
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ouvrir(); } else if (e.key === 'Escape') fermer(true); });
+    // Glisser vers le haut pour fermer, comme sur iPhone.
+    var g = null;
+    el.addEventListener('pointerdown', function (e) { if (e.button === 0 && !e.target.closest('button')) g = { y: e.clientY, id: e.pointerId, dy: 0 }; });
+    el.addEventListener('pointermove', function (e) {
+      if (!g || e.pointerId !== g.id) return;
+      g.dy = e.clientY - g.y;
+      if (Math.abs(g.dy) < 4) return;
+      try { el.setPointerCapture(e.pointerId); } catch (x) { /* relâché */ }
+      el.classList.add('tire');
+      el.style.transform = 'translateY(' + (g.dy < 0 ? g.dy : Math.sqrt(g.dy) * 3) + 'px)';
+    });
+    var lacher = function (e) {
+      if (!g || e.pointerId !== g.id) return;
+      var dy = g.dy; g = null; el.classList.remove('tire');
+      if (Math.abs(dy) >= 4) el.__glisse = true;
+      if (dy < -24) fermer(true); else el.style.transform = '';
+    };
+    el.addEventListener('pointerup', lacher); el.addEventListener('pointercancel', lacher);
+    wrap.insertBefore(el, wrap.firstChild);
+    while (wrap.children.length > 4) wrap.lastChild.remove();
+    empiler(wrap);
+    lancer();
     return { fermer: fermer };
+  }
+  // La plus récente devant ; les autres dépassent juste en dessous, plus petites (pile de notifications iOS).
+  function empiler(wrap) {
+    [].slice.call(wrap.children).filter(function (x) { return !x.classList.contains('out'); }).forEach(function (x, i) {
+      x.style.setProperty('--rang', i); x.classList.toggle('derriere', i > 0); x.style.zIndex = 10 - i;
+    });
   }
 
   // ------------------------------------------------------------------ sonnerie d'appel visio
@@ -1231,19 +1284,48 @@
     '.bsm-modal-foot .grow{flex:1}',
     '.bsm-err{padding:10px 12px;border-radius:10px;background:rgb(244 63 94/.1);border:1px solid rgb(244 63 94/.35);font-size:.88em;font-weight:600}',
     // Cartes d'annonce
-    '#bsm-cartes{position:fixed;right:16px;bottom:16px;z-index:120;display:flex;flex-direction:column;gap:10px;width:min(380px,calc(100vw - 32px))}',
-    '.bsm-carte.sonne{border-color:color-mix(in srgb,#22c55e 55%,var(--border))}',
-    '.bsm-carte.sonne .bsm-av{background:linear-gradient(140deg,#22c55e,#15803d);animation:bsmSonne 1.5s ease-out infinite}',
-    '.bsm-carte.sonne .btn-primary{background:#16a34a;border-color:#16a34a}',
-    '@keyframes bsmSonne{0%{box-shadow:0 0 0 0 rgb(34 197 94/.55)}70%{box-shadow:0 0 0 12px rgb(34 197 94/0)}100%{box-shadow:0 0 0 0 rgb(34 197 94/0)}}',
-    '@media (prefers-reduced-motion:reduce){.bsm-carte.sonne .bsm-av{animation:none}}',
-    '.bsm-carte{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--border);box-shadow:0 24px 60px -24px rgb(0 0 0/.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);animation:bsmIn .35s cubic-bezier(.2,1.2,.4,1)}',
-    '.bsm-carte.out{opacity:0;transform:translateY(8px);transition:all .25s}',
-    '.bsm-carte-t{flex:1;min-width:0;display:flex;flex-direction:column;font-size:.86em}',
-    '.bsm-carte-t span{color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-    '.bsm-x{color:var(--text-3);padding:4px}',
+    // Bannières façon iPhone (iOS), en haut au centre.
+    '#bsm-cartes{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;z-index:160;width:min(410px,calc(100vw - 16px));height:0;transform:translateX(-50%);pointer-events:none}',
+    '.bsm-carte{--rang:0;position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:11px;min-height:66px;padding:11px 14px 11px 11px;border-radius:24px;pointer-events:auto;cursor:pointer;user-select:none;touch-action:none;' +
+      'font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#fff;' +
+      'background:rgb(30 30 32/.62);-webkit-backdrop-filter:blur(30px) saturate(190%);backdrop-filter:blur(30px) saturate(190%);' +
+      'box-shadow:0 10px 40px rgb(0 0 0/.32),inset 0 0 0 .5px rgb(255 255 255/.14);' +
+      'transform:translateY(calc(var(--rang) * 11px)) scale(calc(1 - var(--rang) * .06));transform-origin:50% 100%;' +
+      'transition:transform .45s cubic-bezier(.32,1.3,.5,1),opacity .3s,filter .3s;animation:bsmIos .62s cubic-bezier(.3,1.35,.45,1)}',
+    '[data-scheme=light] .bsm-carte{color:#000;background:rgb(246 246 248/.72);box-shadow:0 10px 40px rgb(0 0 0/.16),inset 0 0 0 .5px rgb(0 0 0/.06)}',
+    '.bsm-carte.derriere{pointer-events:none;background:rgb(72 72 78/.5);box-shadow:0 6px 20px rgb(0 0 0/.25),inset 0 0 0 .5px rgb(255 255 255/.12)}',
+    '[data-scheme=light] .bsm-carte.derriere{background:rgb(255 255 255/.55)}',
+    '.bsm-carte.derriere>*{opacity:0;transition:opacity .2s}',
+    '.bsm-carte:nth-child(n+4){opacity:0}',
+    '.bsm-carte.tire{transition:none}',
+    '.bsm-carte.out{opacity:0;transform:translateY(-14px) scale(.96);transition:transform .32s cubic-bezier(.4,0,.6,1),opacity .28s}',
+    '.bsm-carte.out.haut{transform:translateY(-120%)}',
+    '.bsm-carte:focus-visible{outline:2px solid rgb(10 132 255);outline-offset:2px}',
+    '@keyframes bsmIos{from{opacity:.4;transform:translateY(-130%) scale(.98)}}',
+    '.bsm-ios-ic{position:relative;flex:none;width:40px;height:40px;display:grid;place-items:center}',
+    '.bsm-ios-ic.pers .bsm-av{width:40px;height:40px;border-radius:50%;font-size:14px}',
+    '.bsm-ios-ic.pers .bsm-pres{display:none}',
+    '.bsm-ios-ic.app,.bsm-ios-ic .app{border-radius:10px;background:linear-gradient(150deg,#4f8cdb,#2a4fd6 55%,#7c5cff);color:#fff;box-shadow:inset 0 0 0 .5px rgb(255 255 255/.25)}',
+    '.bsm-ios-ic.app svg{width:26px;height:26px}',
+    '.bsm-ios-ic.app.vert{background:linear-gradient(160deg,#5fe07a,#28c840 60%,#1fa337)}',
+    '.bsm-ios-ic .app{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;border-radius:5px;display:grid;place-items:center;box-shadow:0 0 0 1.5px rgb(30 30 32/.9)}',
+    '[data-scheme=light] .bsm-ios-ic .app{box-shadow:0 0 0 1.5px rgb(246 246 248)}',
+    '.bsm-ios-ic .app svg{width:12px;height:12px}',
+    '.bsm-ios-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;font-size:15px;line-height:1.27;letter-spacing:-.012em}',
+    '.bsm-ios-t .l1{display:flex;align-items:baseline;gap:8px}',
+    '.bsm-ios-t .l1 b{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.bsm-ios-t time{flex:none;font-size:13px;letter-spacing:0;color:rgb(235 235 245/.55)}',
+    '[data-scheme=light] .bsm-ios-t time{color:rgb(60 60 67/.6)}',
+    '.bsm-ios-t .l2{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.bsm-ios-t .l3{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:break-word}',
+    '.bsm-ios-appel{display:flex;gap:10px;flex:none}',
+    '.bsm-ios-appel button{width:40px;height:40px;border-radius:50%;border:0;display:grid;place-items:center;color:#fff;cursor:pointer}',
+    '.bsm-ios-appel .non{background:#ff3b30}.bsm-ios-appel .oui{background:#34c759}',
+    '.bsm-ios-appel button:active{filter:brightness(.85)}',
+    '.bsm-carte.sonne .bsm-ios-ic{animation:bsmSonne 1.5s ease-out infinite;border-radius:10px}',
+    '@keyframes bsmSonne{0%{box-shadow:0 0 0 0 rgb(52 199 89/.55)}70%{box-shadow:0 0 0 12px rgb(52 199 89/0)}100%{box-shadow:0 0 0 0 rgb(52 199 89/0)}}',
+    '@media (prefers-reduced-motion:reduce){.bsm-carte.sonne .bsm-ios-ic{animation:none}}',
     '@keyframes bsmIn{from{opacity:0;transform:translateY(14px) scale(.96)}}',
-    '@media (max-width:1023px){#bsm-cartes{bottom:calc(76px + env(safe-area-inset-bottom))}}',
     // Visio
     '.bsm-call{position:fixed;inset:12px;z-index:110;display:flex;flex-direction:column;border-radius:24px;overflow:hidden;color:#fff;background:radial-gradient(80% 60% at 20% 0%,color-mix(in srgb,var(--aur-1,#387cd5) 30%,transparent),transparent 70%),radial-gradient(70% 60% at 100% 100%,color-mix(in srgb,var(--aur-2,#8b5cf6) 26%,transparent),transparent 70%),#05080f;box-shadow:0 40px 120px -30px rgb(0 0 0/.9),0 0 0 1px rgb(255 255 255/.08);animation:bsmIn .35s cubic-bezier(.2,1.1,.4,1)}',
     '.bsm-call-top{display:flex;align-items:center;gap:10px;padding:14px 16px;font-size:.92em}',

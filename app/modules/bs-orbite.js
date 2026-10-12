@@ -15,7 +15,7 @@
   if (window.bsOrbite || !window.BS_SERVER) return;
 
   // ?v= : le moteur est mis en cache 7 jours, on change l'adresse quand il change.
-  var MOTEUR = '/verre/verre.js?v=6';
+  var MOTEUR = '/verre/verre.js?v=7';
   var FORMES = [
     ['spark', 'Étincelle'], ['prism', 'Prisme'], ['bloom', 'Fleur'], ['star-soft', 'Étoile'],
     ['growth', 'Croissance'], ['squircle', 'Galet'], ['logo', 'Logo Blackstart'],
@@ -105,7 +105,7 @@
       try {
         // root : la boîte du fond, pour que le moteur ne touche à rien d'autre dans le CRM.
         arret = m.startGlass({
-          root: boite, canvas: cv, shape: shape, palette: m.glassPalette, autoplay: 30, fit: 'canvas',
+          root: boite, canvas: cv, shape: shape, palette: m.sitePalette || m.glassPalette, autoplay: 30, fit: 'canvas',
           lateral: p.lateral, scale: p.scale, lift: p.lift, pixelRatio: q.pixelRatio, fps: q.fps,
           onReady: function () { if (id === lance) { marquer(true); surveiller(id); } },
         });

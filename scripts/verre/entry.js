@@ -19,6 +19,8 @@ export const glassShapes = {
 
 // Bleu du CRM, violet et cyan de l'aurore.
 export const glassPalette = ['#387cd5', '#6a6be8', '#8b5cf6', '#22d3ee', '#2563c9'];
+// Palette du site (site/components/glass/shape.ts) : le fond animé du CRM reprend exactement ses couleurs.
+export const sitePalette = ['#4f8cdb', '#7c5cff', '#b45cf0', '#3aa7ff', '#2a4fd6'];
 
 /** Vrai si la scène 3D peut tourner ici (WebGL 2, animations autorisées). */
 export function glassAvailable() {

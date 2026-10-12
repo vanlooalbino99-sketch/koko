@@ -696,7 +696,7 @@
   var vieFond = null, vieZen = null;
   function vieFondSync() {
     if (!vieFond) return;
-    // Fond animé « Orbites » actif : l'image de fond est cachée, ses lumières aussi.
+    // Fond animé en verre 3D actif : l'image de fond est cachée, ses lumières aussi.
     var c = state.config, want = active() && !!c.fond && !!c.mouvement && !zen && !(window.bsOrbite && window.bsOrbite.voulu());
     if (want) vieFond.image(imageOf(current || pick()));
     vieFond.run(want);
@@ -1247,8 +1247,10 @@
       el.innerHTML =
         card('Vos images d’ambiance', where + ' Elles s’affichent en fond, sur la bannière d’« Aujourd’hui » et à l’ouverture du CRM.', lock + drop + msg + grid) +
         (ro ? '' : card('Galerie d’ambiances', scenes().length + ' créations originales, dessinées dans votre navigateur en haute définition : intelligence artificielle, espace, paysages, abstrait. L’aperçu montre l’image exacte qui sera ajoutée ; « Autre version » en propose une nouvelle.', galerie())) +
-        card('Où les afficher', '', (window.bsOrbite ? '<label class="toggle-row"><span class="toggle-text"><span class="toggle-label">Fond animé « Orbites »</span><span class="toggle-hint">Anneaux lumineux et étoiles derrière toutes les pages, sur cet appareil. Activé, il passe devant l’image de fond ; vos images restent sur la bannière et à l’ouverture.</span></span><button type="button" role="switch" aria-checked="' + window.bsOrbite.voulu() + '" class="toggle' + (window.bsOrbite.voulu() ? ' on' : '') + '" data-orbite><span></span></button></label>' : '') +
-          toggle('fond', 'Fond de l’application', 'Image plein écran derrière toutes les pages, blocs en verre dépoli' + (window.bsOrbite && window.bsOrbite.voulu() ? ' (quand le fond animé « Orbites » est désactivé).' : '.'), ro) +
+        card('Où les afficher', '', (window.bsOrbite ? '<label class="toggle-row"><span class="toggle-text"><span class="toggle-label">Fond animé en verre 3D</span><span class="toggle-hint">L’animation de l’accueil du site, derrière toutes les pages, sur cet appareil : une forme en verre bleu qui s’éclate et se recompose au milieu d’anneaux de lumière. Activé, il passe devant l’image de fond ; vos images restent sur la bannière et à l’ouverture.</span></span><button type="button" role="switch" aria-checked="' + window.bsOrbite.voulu() + '" class="toggle' + (window.bsOrbite.voulu() ? ' on' : '') + '" data-orbite><span></span></button></label>' +
+            (window.bsOrbite.voulu() && window.bsOrbite.formes ? '<div class="setting-row"><div class="sr-text"><div class="sr-label">Forme en verre</div><div class="sr-hint">Celle qui tourne dans le fond animé.</div></div><select class="input select" data-orbite-forme aria-label="Forme en verre">' +
+              window.bsOrbite.formes().map(function (f) { return '<option value="' + f.id + '"' + (f.id === window.bsOrbite.forme() ? ' selected' : '') + '>' + esc(f.nom) + '</option>'; }).join('') + '</select></div>' : '') : '') +
+          toggle('fond', 'Fond de l’application', 'Image plein écran derrière toutes les pages, blocs en verre dépoli' + (window.bsOrbite && window.bsOrbite.voulu() ? ' (quand le fond animé en verre 3D est désactivé).' : '.'), ro) +
           toggle('banniere', 'Bannière « Aujourd’hui »', 'L’image apparaît dans le bandeau d’accueil, avec un bouton « Immersion ».', ro) +
           toggle('demarrage', 'Écran d’ouverture', 'L’image accueille le chargement du CRM.', ro) +
           (SERVER ? toggle('connexion', 'Page de connexion', 'Fond de la page de connexion (visible sans compte : n’y mettez pas d’image confidentielle).', ro)
@@ -1315,7 +1317,9 @@
       if (veil && key === 'flou') { veil.style.backdropFilter = 'blur(' + v + 'px)'; veil.style.webkitBackdropFilter = 'blur(' + v + 'px)'; }
     });
     el.addEventListener('change', function (e) {
-      var t = e.target; if (!t.hasAttribute || !t.hasAttribute('data-range')) return;
+      var t = e.target;
+      if (t.hasAttribute && t.hasAttribute('data-orbite-forme')) { window.bsOrbite.choisirForme(t.value); return; }
+      if (!t.hasAttribute || !t.hasAttribute('data-range')) return;
       var p = {}; p[t.getAttribute('data-range')] = Number(t.value); setConfig(p);
     });
     var onPaste = function (e) {

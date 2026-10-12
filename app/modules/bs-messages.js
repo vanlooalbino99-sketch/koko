@@ -119,7 +119,7 @@
       fetch(API + '/conversations/' + encodeURIComponent(c.id) + '/fichiers?nom=' + encodeURIComponent(nom) + '&type=' + encodeURIComponent(f.type || 'application/octet-stream'), {
         method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart', 'Content-Type': 'application/octet-stream' }, body: f,
       }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { if (!r.ok) throw new Error(b.error || 'Envoi impossible.'); return b; }); })
-        .then(function (b) { fin(); recu(b.message); })
+        .then(function (b) { fin(); recu(b.message); envoye(c, b.message); })
         .catch(function (e) { fin(); rendre(); carte({ titre: 'Envoi impossible', sous: nom + ' : ' + e.message, icone: 'info', bouton: 'OK', action: function () {}, force: true }); });
     });
   }
@@ -303,8 +303,16 @@
     var c = S.convs[S.actif];
     if (!c || !txt.trim()) return;
     S.brouillons[c.id] = ''; S.ecritEnvoi = 0; S.emojis = false;
-    api('POST', '/conversations/' + encodeURIComponent(c.id) + '/messages', { body: txt }).then(function (b) { recu(b.message); })
+    api('POST', '/conversations/' + encodeURIComponent(c.id) + '/messages', { body: txt }).then(function (b) { recu(b.message); envoye(c, b.message); })
       .catch(function (e) { S.brouillons[c.id] = txt; S.err = e.message; rendre(); });
+  }
+  // Bannière iPhone aussi à l'envoi : « Message envoyé », destinataire, texte, petit son « swoosh ».
+  function envoye(c, m) {
+    if (!m) return;
+    var dest = c.kind === 'direct' ? autre(c) : null;
+    carte({ titre: 'Message envoyé · À ' + titre(c), sous: resume(m), avatar: dest, envoye: true, duree: 3500, force: true,
+      bouton: 'Ouvrir', action: function () { aller(c.id); } });
+    Sonnerie.envoi();
   }
   function aller(id) {
     var c = S.convs[id];
@@ -320,6 +328,7 @@
   // icône de l'app, « maintenant » à droite, deux lignes de texte. Un clic ouvre, un glissé vers le haut la ferme,
   // les plus anciennes s'empilent derrière. Une visio qui sonne affiche les boutons rouge et vert d'un appel.
   var APP_IC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M7.2 4.5h5.6c2.6 0 4.2 1.3 4.2 3.4 0 1.4-.8 2.5-2 2.9 1.6.4 2.6 1.6 2.6 3.2 0 2.4-1.8 3.9-4.7 3.9H7.2zm3 5.5h2.1c1.1 0 1.7-.5 1.7-1.4s-.6-1.4-1.7-1.4h-2.1zm0 5.2h2.5c1.2 0 1.9-.5 1.9-1.5s-.7-1.5-1.9-1.5h-2.5z"/></svg>';
+  var OK_IC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M6 12.5l4 4 8-9"/></svg>';
   var enAttente = [];
   document.addEventListener('visibilitychange', function () {
     if (document.hidden || !enAttente.length) return;
@@ -327,26 +336,27 @@
   });
   function carte(o) {
     if (visible() && !o.force) { if (o.icone !== 'video') return null; }
-    if (document.hidden && !o.sonne) { enAttente.push(o); return { fermer: function () {} }; }
+    if (document.hidden && !o.sonne) { if (!o.envoye) enAttente.push(o); return { fermer: function () {} }; }
     ensureCss();
     if (o.son) Sonnerie.message();
     var wrap = document.getElementById('bsm-cartes');
     if (!wrap) { wrap = document.createElement('div'); wrap.id = 'bsm-cartes'; wrap.setAttribute('role', 'status'); wrap.setAttribute('aria-live', 'polite'); document.body.appendChild(wrap); }
     var el = document.createElement('div');
-    el.className = 'bsm-carte' + (o.sonne ? ' sonne' : '');
+    el.className = 'bsm-carte' + (o.sonne ? ' sonne' : '') + (o.envoye ? ' envoye' : '');
     el.setAttribute('role', 'button'); el.tabIndex = 0;
     var titreTxt = String(o.titre || ''), groupe = '';
     var sep = titreTxt.indexOf(' · '); if (sep > 0) { groupe = titreTxt.slice(sep + 3); titreTxt = titreTxt.slice(0, sep); }
-    var icone = o.avatar ? '<span class="bsm-ios-ic pers">' + avatar(o.avatar, nomDe(o.avatar)) + '<i class="app">' + APP_IC + '</i></span>'
-      : '<span class="bsm-ios-ic app' + (o.sonne ? ' vert' : '') + '">' + (o.sonne ? ic('video', 20) : APP_IC) + '</span>';
+    var badge = o.envoye ? '<i class="app ok">' + OK_IC + '</i>' : '<i class="app">' + APP_IC + '</i>';
+    var icone = o.avatar ? '<span class="bsm-ios-ic pers">' + avatar(o.avatar, nomDe(o.avatar)) + badge + '</span>'
+      : '<span class="bsm-ios-ic app' + (o.sonne ? ' vert' : '') + '">' + (o.sonne ? ic('video', 20) : APP_IC) + (o.envoye ? badge : '') + '</span>';
     el.innerHTML = icone +
-      '<div class="bsm-ios-t"><div class="l1"><b>' + esc(titreTxt) + '</b><time>maintenant</time></div>' +
+      '<div class="bsm-ios-t"><div class="l1"><b>' + esc(titreTxt) + '</b><time>' + (o.envoye ? 'Distribué' : 'maintenant') + '</time></div>' +
       (groupe ? '<div class="l2">' + esc(groupe) + '</div>' : '') +
       '<div class="l3">' + esc(String(o.sous || '').slice(0, 180)) + '</div></div>' +
       (o.sonne ? '<div class="bsm-ios-appel"><button type="button" class="non" aria-label="Refuser">' + ic('x', 20) + '</button>' +
         '<button type="button" class="oui" aria-label="' + esc(o.bouton || 'Rejoindre') + '">' + ic('video', 20) + '</button></div>' : '');
     el.setAttribute('aria-label', titreTxt + (groupe ? ', ' + groupe : '') + ' : ' + (o.sous || ''));
-    var minuteur = null, reste = o.icone === 'video' ? 30000 : 6000, depart = 0;
+    var minuteur = null, reste = o.duree || (o.icone === 'video' ? 30000 : 6000), depart = 0;
     var fermer = function (haut) {
       if (el.classList.contains('out')) return;
       clearTimeout(minuteur);
@@ -474,6 +484,15 @@
       var t = a.currentTime + 0.02;
       [[1318.5, 0], [1046.5, 0.13], [1567.98, 0.26]].forEach(function (n) { note(a, t + n[1], n[0], 0.32, 'sine', 0.55); note(a, t + n[1], n[0] * 2, 0.12, 'sine', 0.12); });
     }
+    // Son d'envoi : un « swoosh » court qui monte, comme l'envoi d'un iMessage ; même réglage de volume.
+    var dernierEnvoi = 0;
+    function envoi() {
+      if (choix() === 'silence' || Date.now() - dernierEnvoi < 600) return;
+      var a = audio(); if (!a || a.state !== 'running') return;
+      dernierEnvoi = Date.now();
+      var t = a.currentTime + 0.01;
+      note(a, t, 520, 0.22, 'sine', 0.45, 1560); note(a, t + 0.02, 1040, 0.16, 'sine', 0.12, 2600);
+    }
     function systeme(titreN, corps, tag, action) {
       try {
         if (!window.Notification || Notification.permission !== 'granted') return;
@@ -482,7 +501,7 @@
       } catch (e) { /* notifications indisponibles */ }
     }
     return {
-      start: start, stop: stop, message: message, systeme: systeme,
+      start: start, stop: stop, message: message, envoi: envoi, systeme: systeme,
       sons: function () { return Object.keys(SONS).map(function (k) { return { id: k, nom: SONS[k].nom }; }); },
       choix: choix, volume: volume,
       choisir: function (id) { if (SONS[id]) ecrire('bsm-sonnerie', id); },
@@ -1354,6 +1373,11 @@
     '.bsm-ios-ic.app.vert{background:linear-gradient(160deg,#5fe07a,#28c840 60%,#1fa337)}',
     '.bsm-ios-ic .app{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;border-radius:5px;display:grid;place-items:center;box-shadow:0 0 0 1.5px rgb(30 30 32/.9)}',
     '[data-scheme=light] .bsm-ios-ic .app{box-shadow:0 0 0 1.5px rgb(246 246 248)}',
+    '.bsm-ios-ic .app.ok{background:linear-gradient(160deg,#4aa3ff,#0a84ff)}',
+    '.bsm-ios-ic .app.ok svg{width:12px;height:12px}',
+    '.bsm-ios-ic.app .app.ok{right:-4px;bottom:-4px}',
+    '.bsm-carte.envoye .l1 time{color:#0a84ff;font-weight:600}',
+    '[data-scheme=light] .bsm-carte.envoye .l1 time{color:#0a6fe0}',
     '.bsm-ios-ic .app svg{width:12px;height:12px}',
     '.bsm-ios-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;font-size:15px;line-height:1.27;letter-spacing:-.012em}',
     '.bsm-ios-t .l1{display:flex;align-items:baseline;gap:8px}',

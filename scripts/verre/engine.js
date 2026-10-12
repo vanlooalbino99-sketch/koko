@@ -6,7 +6,9 @@ import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 // s'éclate puis se recompose en boucle pendant que la caméra fait le tour. `lateral`, `lift` et `scale`
 // placent l'objet à côté du texte (unités du monde 3D, `lateral` > 0 pousse l'objet vers la gauche).
 export function startGlass({ root, canvas, shape, palette, contactCard = null, fragments = 4, onReady,
-    autoplay = 0, lateral = null, lift = 0, scale = 1, fit = 'window' }) {
+    autoplay = 0, lateral = null, lift = 0, scale = 1, fit = 'window', pixelRatio = 1.5, fps: fixedFps = 0 }) {
+// pixelRatio : plafond de densité de pixels ; fps : cadence fixe (0 = 60 quand ça bouge, 30 au repos).
+// Le fond animé du CRM (app/modules/bs-orbite.js) baisse les deux pour rester léger derrière les pages.
 // fit: 'canvas' : la scène prend la taille du <canvas> (posé dans la page) au lieu de toute la fenêtre.
 const viewSize = () => fit === 'canvas'
     ? { width: Math.max(1, canvas.clientWidth), height: Math.max(1, canvas.clientHeight) }
@@ -865,7 +867,7 @@ function onWindowResize() {
     camera.aspect = sizes.width / sizes.height;
     camera.updateProjectionMatrix();
     renderer.setSize(sizes.width, sizes.height, fit !== 'canvas');
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatio));
     if (shaderUniforms) renderer.getDrawingBufferSize(shaderUniforms.uResolution.value);
 }
 
@@ -938,7 +940,7 @@ function animate(now = performance.now()) {
     animationRequest = requestAnimationFrame(animate);
     const unsettled = Math.abs(THREE.MathUtils.clamp(window.scrollY / stageMaxScroll(), 0, 1) - currentScroll) > 0.0001
         || Math.abs(targetContact - currentContact) > 0.0001;
-    const fps = unsettled || now - lastInputAt < 1500 ? 60 : 30;
+    const fps = fixedFps || (unsettled || now - lastInputAt < 1500 ? 60 : 30);
     if (lastFrameAt && now - lastFrameAt < 1000 / fps - 1) return;
     lastFrameAt = now;
     const deltaTime = Math.min(clock.getDelta(), 0.1);
@@ -1177,7 +1179,7 @@ function init() {
         powerPreference: "high-performance"
     });
     renderer.setSize(sizes.width, sizes.height, fit !== 'canvas');
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatio));
 
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;

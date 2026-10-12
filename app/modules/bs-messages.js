@@ -224,7 +224,11 @@
     else if (lu) marquerLu(c);
     else if (m.kind === 'texte') {
       c.unread = (c.unread || 0) + 1;
-      carte({ titre: m.author + (c.kind === 'direct' ? '' : ' · ' + titre(c)), sous: resume(m), avatar: m.userId, bouton: 'Ouvrir', action: function () { aller(c.id); } });
+      // Comme sur iPhone : bannière dès que le message arrive ailleurs que dans la conversation ouverte,
+      // même dans Messages ; onglet en arrière-plan : notification du système, bannière au retour.
+      var tN = m.author + (c.kind === 'direct' ? '' : ' · ' + titre(c));
+      carte({ titre: tN, sous: resume(m), avatar: m.userId, bouton: 'Ouvrir', force: true, son: true, action: function () { aller(c.id); } });
+      if (document.hidden) Sonnerie.systeme(tN, resume(m), 'bsm-msg-' + c.id, function () { aller(c.id); });
     }
     majBadge(); rendre(lu);
   }
@@ -316,9 +320,16 @@
   // icône de l'app, « maintenant » à droite, deux lignes de texte. Un clic ouvre, un glissé vers le haut la ferme,
   // les plus anciennes s'empilent derrière. Une visio qui sonne affiche les boutons rouge et vert d'un appel.
   var APP_IC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M7.2 4.5h5.6c2.6 0 4.2 1.3 4.2 3.4 0 1.4-.8 2.5-2 2.9 1.6.4 2.6 1.6 2.6 3.2 0 2.4-1.8 3.9-4.7 3.9H7.2zm3 5.5h2.1c1.1 0 1.7-.5 1.7-1.4s-.6-1.4-1.7-1.4h-2.1zm0 5.2h2.5c1.2 0 1.9-.5 1.9-1.5s-.7-1.5-1.9-1.5h-2.5z"/></svg>';
+  var enAttente = [];
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden || !enAttente.length) return;
+    var l = enAttente.splice(0); l.slice(-3).forEach(function (o, i) { setTimeout(function () { carte(o); }, i * 350); });
+  });
   function carte(o) {
     if (visible() && !o.force) { if (o.icone !== 'video') return null; }
+    if (document.hidden && !o.sonne) { enAttente.push(o); return { fermer: function () {} }; }
     ensureCss();
+    if (o.son) Sonnerie.message();
     var wrap = document.getElementById('bsm-cartes');
     if (!wrap) { wrap = document.createElement('div'); wrap.id = 'bsm-cartes'; wrap.setAttribute('role', 'status'); wrap.setAttribute('aria-live', 'polite'); document.body.appendChild(wrap); }
     var el = document.createElement('div');
@@ -453,8 +464,25 @@
         }
       } catch (e) { /* notifications indisponibles */ }
     }
+    // Son de message (trois notes cristallines, dans l'esprit du « tri-tone » de l'iPhone), au volume choisi ;
+    // aucun si la sonnerie est réglée sur « Aucun son ». Pas plus d'un toutes les 1,5 s.
+    var dernierDing = 0;
+    function message() {
+      if (choix() === 'silence' || Date.now() - dernierDing < 1500) return;
+      var a = audio(); if (!a || a.state !== 'running') return;
+      dernierDing = Date.now();
+      var t = a.currentTime + 0.02;
+      [[1318.5, 0], [1046.5, 0.13], [1567.98, 0.26]].forEach(function (n) { note(a, t + n[1], n[0], 0.32, 'sine', 0.55); note(a, t + n[1], n[0] * 2, 0.12, 'sine', 0.12); });
+    }
+    function systeme(titreN, corps, tag, action) {
+      try {
+        if (!window.Notification || Notification.permission !== 'granted') return;
+        var n = new Notification(titreN, { body: corps, tag: tag });
+        n.onclick = function () { window.focus(); n.close(); action(); };
+      } catch (e) { /* notifications indisponibles */ }
+    }
     return {
-      start: start, stop: stop,
+      start: start, stop: stop, message: message, systeme: systeme,
       sons: function () { return Object.keys(SONS).map(function (k) { return { id: k, nom: SONS[k].nom }; }); },
       choix: choix, volume: volume,
       choisir: function (id) { if (SONS[id]) ecrire('bsm-sonnerie', id); },

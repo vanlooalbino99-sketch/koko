@@ -228,7 +228,7 @@
     '.bse-son input{accent-color:rgb(var(--accent-rgb))}',
     '.bse-vol{display:flex;gap:6px}',
     // Photo de profil : dans Mon compte et en haut à droite.
-    '.bse-av.ph,.bs-moi .ph{background:var(--ph) center/cover no-repeat;color:transparent}',
+    '.bse-av.ph,.bs-moi .ph,.bs-moi-tete .ph{background:var(--ph) center/cover no-repeat;color:transparent}',
     '.bse-me .bse-av{width:64px;height:64px;border-radius:50%;font-size:22px}',
     '.bse-photo{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}',
     '.bs-moi{flex:none;display:inline-flex;align-items:center;gap:8px;padding:3px 10px 3px 3px;margin-left:6px;border-radius:999px;border:1px solid var(--border);background:rgb(var(--text-rgb,148 163 184)/.04);color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}',
@@ -246,7 +246,7 @@
     '@keyframes bsMoiOut{to{opacity:0;transform:translateY(-4px) scale(.97)}}',
     '.bs-moi-tete{display:flex;align-items:center;gap:12px;padding:12px 10px 12px}',
     '.bs-moi-tete .ph,.bs-moi-tete .ini{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:800;color:#fff;background-color:rgb(var(--accent-rgb));flex:none;box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px rgb(var(--accent-rgb)/.55)}',
-    '.bs-moi-tete .ph{background-color:transparent}',
+
     '.bs-moi-tete div{min-width:0;display:flex;flex-direction:column;gap:1px}',
     '.bs-moi-tete b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.bs-moi-tete small{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',

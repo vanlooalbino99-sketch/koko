@@ -183,16 +183,16 @@ export function loginPage({ needsSetup, retour = '/' }) {
   var retour = ${JSON.stringify(retour).replace(/</g, '\\u003c')};
   var img = new Image();
   img.onload = function () { var bg = document.getElementById('bg'); bg.style.backgroundImage = 'url("/ambiance/connexion")'; document.body.classList.add('photo'); };
-  // Sans image d'ambiance d'équipe : le logo Blackstart en verre s'éclate et se recompose à côté du texte (grands écrans).
-  img.onerror = function () {
+  img.src = '/ambiance/connexion';
+  // Le logo Blackstart en verre s'éclate et se recompose à côté du texte (grands écrans), avec ou sans image d'ambiance.
+  (function () {
     if (!window.matchMedia('(min-width: 980px)').matches) return;
     import('/verre/verre.js').then(function (m) {
       if (!m.glassAvailable()) return;
       m.startGlass({ root: document.body, canvas: document.getElementById('verre'), shape: m.glassMark, palette: m.glassPalette,
         autoplay: 26, lateral: 0, scale: 0.78, fit: 'canvas', onReady: function () { document.body.classList.add('verre'); } });
     }).catch(function () {});
-  };
-  img.src = '/ambiance/connexion';
+  })();
   var f = document.getElementById('f'), err = document.getElementById('err');
   f.addEventListener('submit', function (e) {
     e.preventDefault();

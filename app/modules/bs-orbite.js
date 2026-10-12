@@ -38,6 +38,7 @@
     'html.bs-orbite #bs-amb{display:none!important}',
     'html.bs-orbite body::before,html.bs-orbite #root::after{display:none}',
     'html.bs-orbite #root::before{opacity:.35}',
+    'html.bs-orbite .bs-amb-zen-btn{display:none!important}',
     // Le menu et la barre du haut laissent passer la scène, en verre dépoli.
     '@media (min-width:1024px){html.bs-orbite .sidebar{background:linear-gradient(180deg,rgb(var(--bg-rgb)/.55),rgb(var(--bg-rgb)/.72))!important;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4)}}',
     'html.bs-orbite .topbar{background:linear-gradient(180deg,rgb(var(--bg-rgb)/.62),rgb(var(--bg-rgb)/.38))}',
@@ -83,7 +84,13 @@
     if (arret) { try { arret(); } catch (e) { /* déjà arrêté */ } }
     arret = null;
     if (boite) { boite.remove(); boite = null; }
-    H.classList.remove('bs-orbite');
+    marquer(false);
+  }
+  // html.bs-orbite : le fond 3D est à l'écran. Ambiance retire alors l'image de la bannière (rien que l'animation).
+  function marquer(on) {
+    if (H.classList.contains('bs-orbite') === on) return;
+    H.classList.toggle('bs-orbite', on);
+    window.dispatchEvent(new Event('bs:orbite'));
   }
   function demarrer() {
     var id = ++lance;
@@ -100,7 +107,7 @@
         arret = m.startGlass({
           root: boite, canvas: cv, shape: shape, palette: m.glassPalette, autoplay: 30, fit: 'canvas',
           lateral: p.lateral, scale: p.scale, lift: p.lift, pixelRatio: q.pixelRatio, fps: q.fps,
-          onReady: function () { if (id === lance) { H.classList.add('bs-orbite'); surveiller(id); } },
+          onReady: function () { if (id === lance) { marquer(true); surveiller(id); } },
         });
       } catch (e) {
         console.warn('Fond en verre 3D indisponible :', e && e.message);

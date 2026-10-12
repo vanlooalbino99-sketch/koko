@@ -4,7 +4,7 @@
  *
  * - Couche à part, derrière tout le CRM (#bs-orbite-fond, pointer-events: none) : rien d'autre ne change.
  * - Lecture automatique, sans défilement : la chorégraphie du site boucle toute seule à 60 images/s.
- * - Forme au choix dans Réglages › Ambiance (sans le logo par défaut), choix enregistré sur cet appareil.
+ * - Forme au choix dans Réglages › Ambiance (sans le logo par défaut, ou anneaux seuls), choix enregistré sur cet appareil.
  * - Thème clair : la même scène, en négatif (fond clair, verre bleu).
  * - Léger : densité de pixels plafonnée, en pause quand l'onglet est caché ; si l'appareil peine, la scène passe à
  *   30 images/s puis laisse la place au fond habituel. Sans WebGL 2 ou avec « Réduire les animations » : fond habituel.
@@ -15,10 +15,10 @@
   if (window.bsOrbite || !window.BS_SERVER) return;
 
   // ?v= : le moteur est mis en cache 7 jours, on change l'adresse quand il change.
-  var MOTEUR = '/verre/verre.js?v=7';
+  var MOTEUR = '/verre/verre.js?v=8';
   var FORMES = [
     ['spark', 'Étincelle'], ['prism', 'Prisme'], ['bloom', 'Fleur'], ['star-soft', 'Étoile'],
-    ['growth', 'Croissance'], ['squircle', 'Galet'], ['logo', 'Logo Blackstart'],
+    ['growth', 'Croissance'], ['squircle', 'Galet'], ['logo', 'Logo Blackstart'], ['anneaux', 'Anneaux seuls, sans forme'],
   ];
   var DEFAUT = 'spark';
   var PREF = 'bs-orbite', PREF_FORME = 'bs-orbite-forme';
@@ -29,7 +29,7 @@
     '#bs-orbite-fond{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity 1.6s ease;background:#000;contain:strict}',
     '#bs-orbite-fond canvas{position:absolute;inset:0;width:100%;height:100%;display:block}',
     // Voile : les textes restent lisibles à gauche et en haut, la forme brille à droite.
-    '#bs-orbite-fond::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(0 0 0/.5),rgb(0 0 0/.22) 42%,rgb(0 0 0/0) 68%),linear-gradient(180deg,rgb(0 0 0/.35),rgb(0 0 0/0) 22%)}',
+    '#bs-orbite-fond::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(0 0 0/.3),rgb(0 0 0/.1) 42%,rgb(0 0 0/0) 68%),linear-gradient(180deg,rgb(0 0 0/.25),rgb(0 0 0/0) 22%)}',
     'html[data-scheme="light"] #bs-orbite-fond{background:#fff}',
     'html[data-scheme="light"] #bs-orbite-fond canvas{filter:invert(1) hue-rotate(180deg) saturate(1.15)}',
     'html[data-scheme="light"] #bs-orbite-fond::after{background:linear-gradient(90deg,rgb(255 255 255/.55),rgb(255 255 255/.25) 42%,rgb(255 255 255/0) 68%),linear-gradient(180deg,rgb(255 255 255/.4),rgb(255 255 255/0) 22%)}',
@@ -97,7 +97,7 @@
     charger().then(function (m) {
       if (id !== lance || arret || !voulu() || abandon || mouvementReduit()) return;
       if (!m.glassAvailable() || (!forcer() && logiciel())) { abandon = true; return; }
-      var f = forme(), shape = f === 'logo' ? m.glassMark : (m.glassShapes && m.glassShapes[f]) || m.glassMark;
+      var f = forme(), shape = f === 'logo' || f === 'anneaux' ? m.glassMark : (m.glassShapes && m.glassShapes[f]) || m.glassMark;
       boite = document.createElement('div'); boite.id = 'bs-orbite-fond'; boite.setAttribute('aria-hidden', 'true');
       var cv = document.createElement('canvas'); boite.appendChild(cv);
       document.body.insertBefore(boite, document.body.firstChild);
@@ -106,7 +106,7 @@
         // root : la boîte du fond, pour que le moteur ne touche à rien d'autre dans le CRM.
         arret = m.startGlass({
           root: boite, canvas: cv, shape: shape, palette: m.sitePalette || m.glassPalette, autoplay: 30, fit: 'canvas',
-          lateral: p.lateral, scale: p.scale, lift: p.lift, pixelRatio: q.pixelRatio, fps: q.fps,
+          lateral: p.lateral, scale: p.scale, lift: p.lift, pixelRatio: q.pixelRatio, fps: q.fps, object: f !== 'anneaux',
           onReady: function () { if (id === lance) { marquer(true); surveiller(id); } },
         });
       } catch (e) {

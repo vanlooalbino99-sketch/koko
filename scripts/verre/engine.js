@@ -6,7 +6,8 @@ import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 // s'éclate puis se recompose en boucle pendant que la caméra fait le tour. `lateral`, `lift` et `scale`
 // placent l'objet à côté du texte (unités du monde 3D, `lateral` > 0 pousse l'objet vers la gauche).
 export function startGlass({ root, canvas, shape, palette, contactCard = null, fragments = 4, onReady,
-    autoplay = 0, lateral = null, lift = 0, scale = 1, fit = 'window', pixelRatio = 1.5, fps: fixedFps = 0 }) {
+    autoplay = 0, lateral = null, lift = 0, scale = 1, fit = 'window', pixelRatio = 1.5, fps: fixedFps = 0, object = true }) {
+// object: false : seulement le fond (anneaux de lumière et étincelles), sans la forme en verre.
 // pixelRatio : plafond de densité de pixels ; fps : cadence fixe (0 = 60 quand ça bouge, 30 au repos).
 // Le fond animé du CRM (app/modules/bs-orbite.js) baisse les deux pour rester léger derrière les pages.
 // fit: 'canvas' : la scène prend la taille du <canvas> (posé dans la page) au lieu de toute la fenêtre.
@@ -512,6 +513,7 @@ function createGlassLogo() {
     createGlassEnvironment();
     modelPivot = new THREE.Group();
     modelPivot.position.y = -0.3;
+    modelPivot.visible = object;
     scene.add(modelPivot);
 
     const glass = createGlassMaterial();

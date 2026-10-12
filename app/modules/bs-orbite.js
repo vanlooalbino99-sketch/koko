@@ -7,7 +7,8 @@
  * - Léger : rendu à résolution réduite, 30 images/s au plus, en pause quand l'onglet est caché ; si l'appareil peine,
  *   la résolution baisse puis l'image se fige. « Réduire les animations » : une image fixe.
  * - Thème clair : mêmes orbites, encre colorée sur fond clair.
- * - Laisse la place aux images d'ambiance (Réglages › Ambiance) quand elles sont en fond.
+ * - Passe devant les images d'ambiance en fond de l'application (elles restent sur la bannière, à l'ouverture et à
+ *   la connexion). Réglages › Ambiance › « Fond animé Orbites » le désactive sur cet appareil.
  */
 (function () {
   'use strict';
@@ -82,6 +83,7 @@
     '#bs-orbite-fond{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;pointer-events:none;opacity:0;transition:opacity 1.2s ease;display:block}',
     'html.bs-orbite #bs-orbite-fond{opacity:1}',
     'html.bs-orbite body{background:transparent}',
+    'html.bs-orbite #bs-amb{display:none!important}',
     'html.bs-orbite body::before,html.bs-orbite #root::after{display:none}',
     'html.bs-orbite #root::before{opacity:.35}',
     // Le menu et la barre du haut laissent passer les orbites, en verre dépoli.
@@ -96,7 +98,8 @@
 
   function clair() { return H.getAttribute('data-scheme') === 'light'; }
   function mouvementReduit() { return reduit.matches || H.getAttribute('data-motion') === 'reduced'; }
-  function ambianceEnFond() { return H.classList.contains('bs-amb-fond'); }
+  var PREF = 'bs-orbite';
+  function voulu() { try { return localStorage.getItem(PREF) !== 'off'; } catch (e) { return true; } }
 
   // Couleurs de l'accent (Réglages) : la variable CSS est résolue par le navigateur sur un élément témoin.
   function lireCouleurs() {
@@ -176,7 +179,7 @@
   function arreter() { cancelAnimationFrame(raf); raf = 0; }
   function maj() {
     if (!gl) return;
-    var on = !ambianceEnFond();
+    var on = voulu();
     H.classList.toggle('bs-orbite', on);
     if (!on || document.hidden) { arreter(); return; }
     if (mouvementReduit() || fige) { arreter(); dessiner(performance.now()); return; }
@@ -195,6 +198,16 @@
     new MutationObserver(function () { couleurs = null; maj(); }).observe(H, { attributes: true, attributeFilter: ['class', 'data-scheme', 'data-motion', 'style', 'data-accent'] });
     maj();
   }
-  window.bsOrbite = { etat: function () { return { actif: H.classList.contains('bs-orbite'), anime: !!raf, echelle: scale, fige: fige }; } };
+  window.bsOrbite = {
+    etat: function () { return { actif: H.classList.contains('bs-orbite'), anime: !!raf, echelle: scale, fige: fige }; },
+    voulu: voulu,
+    // Choix enregistré sur cet appareil (Réglages › Ambiance).
+    regler: function (on) {
+      try { if (on) localStorage.removeItem(PREF); else localStorage.setItem(PREF, 'off'); } catch (e) { /* stockage bloqué */ }
+      if (on) fige = false;
+      maj();
+      window.dispatchEvent(new Event('bs:orbite'));
+    },
+  };
   if (document.body) demarrer(); else document.addEventListener('DOMContentLoaded', demarrer);
 })();

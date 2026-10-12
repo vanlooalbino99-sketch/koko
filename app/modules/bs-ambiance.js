@@ -696,10 +696,12 @@
   var vieFond = null, vieZen = null;
   function vieFondSync() {
     if (!vieFond) return;
-    var c = state.config, want = active() && !!c.fond && !!c.mouvement && !zen;
+    // Fond animé « Orbites » actif : l'image de fond est cachée, ses lumières aussi.
+    var c = state.config, want = active() && !!c.fond && !!c.mouvement && !zen && !(window.bsOrbite && window.bsOrbite.voulu());
     if (want) vieFond.image(imageOf(current || pick()));
     vieFond.run(want);
   }
+  window.addEventListener('bs:orbite', vieFondSync);
   function parallax(e) {
     if (!zen || reducedMotion()) return;
     var par = zen.querySelector('.z-par');
@@ -1245,7 +1247,8 @@
       el.innerHTML =
         card('Vos images d’ambiance', where + ' Elles s’affichent en fond, sur la bannière d’« Aujourd’hui » et à l’ouverture du CRM.', lock + drop + msg + grid) +
         (ro ? '' : card('Galerie d’ambiances', scenes().length + ' créations originales, dessinées dans votre navigateur en haute définition : intelligence artificielle, espace, paysages, abstrait. L’aperçu montre l’image exacte qui sera ajoutée ; « Autre version » en propose une nouvelle.', galerie())) +
-        card('Où les afficher', '', toggle('fond', 'Fond de l’application', 'Image plein écran derrière toutes les pages, blocs en verre dépoli.', ro) +
+        card('Où les afficher', '', (window.bsOrbite ? '<label class="toggle-row"><span class="toggle-text"><span class="toggle-label">Fond animé « Orbites »</span><span class="toggle-hint">Anneaux lumineux et étoiles derrière toutes les pages, sur cet appareil. Activé, il passe devant l’image de fond ; vos images restent sur la bannière et à l’ouverture.</span></span><button type="button" role="switch" aria-checked="' + window.bsOrbite.voulu() + '" class="toggle' + (window.bsOrbite.voulu() ? ' on' : '') + '" data-orbite><span></span></button></label>' : '') +
+          toggle('fond', 'Fond de l’application', 'Image plein écran derrière toutes les pages, blocs en verre dépoli' + (window.bsOrbite && window.bsOrbite.voulu() ? ' (quand le fond animé « Orbites » est désactivé).' : '.'), ro) +
           toggle('banniere', 'Bannière « Aujourd’hui »', 'L’image apparaît dans le bandeau d’accueil, avec un bouton « Immersion ».', ro) +
           toggle('demarrage', 'Écran d’ouverture', 'L’image accueille le chargement du CRM.', ro) +
           (SERVER ? toggle('connexion', 'Page de connexion', 'Fond de la page de connexion (visible sans compte : n’y mettez pas d’image confidentielle).', ro)
@@ -1272,7 +1275,8 @@
     }
     function setMsgBusy(m) { ui.msg = m; var box = el.querySelector('.bsa-msg'); if (box) box.textContent = m; else render(); }
     el.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-act],[data-tog],[data-mode],[data-perso],[data-gcat]'); if (!t || t.disabled) return;
+      var t = e.target.closest('[data-act],[data-tog],[data-mode],[data-perso],[data-gcat],[data-orbite]'); if (!t || t.disabled) return;
+      if (t.hasAttribute('data-orbite')) { window.bsOrbite.regler(!window.bsOrbite.voulu()); render(); return; }
       if (t.hasAttribute('data-gcat')) { ui.gcat = t.getAttribute('data-gcat'); render(); queueThumbs(); return; }
       if (t.hasAttribute('data-tog')) { var k = t.getAttribute('data-tog'), p = {}; p[k] = !state.config[k]; setConfig(p); return; }
       if (t.hasAttribute('data-perso')) { setPerso({ off: !perso.off }); return; }

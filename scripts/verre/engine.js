@@ -7,14 +7,11 @@ import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 // placent l'objet à côté du texte (unités du monde 3D, `lateral` > 0 pousse l'objet vers la gauche).
 export function startGlass({ root, canvas, shape, palette, contactCard = null, fragments = 4, onReady,
     autoplay = 0, lateral = null, lift = 0, scale = 1, fit = 'window', pixelRatio = 1.5, fps: fixedFps = 0, object = true,
-    supersample = 1, rings = null }) {
+    supersample = 1 }) {
 // supersample : rendu à plus que la densité de l'écran (1.5 = 50 % de pixels en plus par côté), pour un verre plus net
 // sur les écrans standard ; toujours plafonné par pixelRatio.
 const ratio = () => Math.min(window.devicePixelRatio * supersample, pixelRatio);
 // object: false : seulement le fond (anneaux de lumière et étincelles), sans la forme en verre.
-// rings : anneaux du fond { count, gap, gain, speed, cover } ; sans l'option, le fond du site est inchangé.
-//   count : nombre d'anneaux (3 sur le site), gap : écart entre deux anneaux (0.145), gain : éclat, speed : mouvement propre (lumière qui tourne, ondes),
-//   cover : 0 à 1, les anneaux remplissent tout l'écran (moins de vignette, plus d'ombre sous le texte du site).
 // pixelRatio : plafond de densité de pixels ; fps : cadence fixe (0 = 60 quand ça bouge, 30 au repos).
 // Le fond animé du CRM (app/modules/bs-orbite.js) baisse les deux pour rester léger derrière les pages.
 // fit: 'canvas' : la scène prend la taille du <canvas> (posé dans la page) au lieu de toute la fenêtre.
@@ -774,19 +771,6 @@ function updateLogoPieces(scroll) {
 
 
 function createBackgroundShader() {
-    // Constantes des anneaux (sans l'option : exactement le fond du site).
-    const num = (v, d) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? d : Number(v);
-    const o = rings || {};
-    const R = { count: num(o.count, 3), gap: num(o.gap, 0.145), gain: num(o.gain, 1), speed: num(o.speed, 0), cover: num(o.cover, 0) };
-    const f = (x) => Number(x).toFixed(4);
-    const ringDefs = `
-        #define RING_COUNT ${Math.max(1, Math.min(12, Math.round(R.count)))}
-        const float RING_GAP = ${f(R.gap)};
-        const float RING_GAIN = ${f(R.gain)};
-        const float RING_SPEED = ${f(R.speed)};
-        const float RING_COVER = ${f(Math.max(0, Math.min(1, R.cover)))};
-        ${rings ? '#define RING_CULL' : ''}
-    `;
     const vertexShader = `
         varying vec2 vUv;
         void main() {
@@ -795,7 +779,7 @@ function createBackgroundShader() {
         }
     `;
 
-    const fragmentShader = ringDefs + `
+    const fragmentShader = `
         varying vec2 vUv;
         uniform float uTime;
         uniform vec2 uResolution;
@@ -830,38 +814,28 @@ function createBackgroundShader() {
             color += primary * halo * 0.13;
             color += secondary * exp(-dot(lowerUv, lowerUv) * 2.0) * 0.04;
 
-            // RING_SPEED > 0 : les anneaux bougent d'eux-mêmes (rotation lente, ondes, lumière qui fait le tour).
-            float spin = time * RING_SPEED * 1.6;
-            vec2 p = rotate2d(-0.24 + s * 0.65 + spin) * (uv - vec2(0.06, -0.08));
+            vec2 p = rotate2d(-0.24 + s * 0.65) * (uv - vec2(0.06, -0.08));
             p += uMouse * 0.018;
-            p.x += 0.15 * sin(p.y * 2.8 + s * 4.8 + time * (0.3 + RING_SPEED * 6.0));
-            p.y += 0.09 * cos(p.x * 3.1 - s * 3.8 - time * (0.2 + RING_SPEED * 5.0));
+            p.x += 0.15 * sin(p.y * 2.8 + s * 4.8 + time * 0.3);
+            p.y += 0.09 * cos(p.x * 3.1 - s * 3.8 - time * 0.2);
 
-            // Broad sculptural folds, spaced apart, with thin polished edges (three on the site).
-            // RING_COVER : premier anneau plus près du centre et arcs jamais tout à fait éteints, pour couvrir l'écran.
-            float ringStart = 0.34 - 0.14 * RING_COVER;
-            for (int i = 0; i < RING_COUNT; i++) {
+            // Three broad sculptural folds, spaced apart, with thin polished edges.
+            for (int i = 0; i < 3; i++) {
                 float k = float(i);
-                float dir = mod(k, 2.0) * 2.0 - 1.0;
                 vec2 q = p + vec2(0.0, 0.012 * sin(time + k));
                 float radius = length(q * vec2(0.90, 1.22));
-#ifdef RING_CULL
-                // Anneau trop loin de ce pixel (contour ±0.10, halo visible jusqu'à ±0.16) : rien à dessiner.
-                if (abs(radius - (ringStart + k * RING_GAP)) > 0.27 + 0.03 * max(0.0, RING_GAIN - 3.0)) continue;
-#endif
                 float angle = atan(q.y, q.x);
-                float contour = ringStart + k * RING_GAP
-                    + 0.075 * sin(angle * 2.0 + s * 5.0 + k * 0.28 + time * RING_SPEED * 9.0 * dir)
-                    + 0.022 * cos(angle * 3.0 - time * (1.0 + RING_SPEED * 6.0));
+                float contour = 0.34 + k * 0.145
+                    + 0.075 * sin(angle * 2.0 + s * 5.0 + k * 0.28)
+                    + 0.022 * cos(angle * 3.0 - time);
                 float d = radius - contour;
-                float arc = smoothstep(-0.65, 0.65, sin(angle + k * 0.55 + s * 3.5 + time * RING_SPEED * 12.0 * dir));
-                arc = mix(0.22 * RING_COVER, 1.0, arc);
-                vec3 tint = mix(primary, secondary, fract(k * 0.38));
+                float arc = smoothstep(-0.65, 0.65, sin(angle + k * 0.55 + s * 3.5));
+                vec3 tint = mix(primary, secondary, k * 0.38);
                 float body = exp(-pow(d * 25.0, 2.0));
                 float shoulder = exp(-pow((d + 0.018) * 13.0, 2.0));
-                color += tint * (body * 0.10 + shoulder * 0.025) * arc * RING_GAIN;
+                color += tint * (body * 0.10 + shoulder * 0.025) * arc;
                 color += mix(tint, vec3(0.72, 0.82, 0.94), 0.20)
-                    * fineLine(d, 0.0008) * arc * (0.16 + uVelocity * 0.06) * RING_GAIN;
+                    * fineLine(d, 0.0008) * arc * (0.16 + uVelocity * 0.06);
             }
 
             // A barely visible peripheral lattice: no scanning beam or dotted overlay.
@@ -872,9 +846,9 @@ function createBackgroundShader() {
             color += primary * grid * periphery * 0.025;
 
             float vignette = 1.0 - smoothstep(0.36, 1.20, length(uv * vec2(0.8, 1.0)));
-            color *= mix(mix(0.25, 1.0, vignette), 1.0, RING_COVER * 0.8);
+            color *= mix(0.25, 1.0, vignette);
             float textShade = (1.0 - smoothstep(-0.5, 0.1, uv.y)) * (1.0 - smoothstep(-0.25, 0.3, uv.x));
-            color *= 1.0 - textShade * 0.38 * (1.0 - RING_COVER);
+            color *= 1.0 - textShade * 0.38;
             gl_FragColor = vec4(color, 1.0);
         }
     `;

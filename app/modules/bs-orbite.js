@@ -15,14 +15,12 @@
   if (window.bsOrbite || !window.BS_SERVER) return;
 
   // ?v= : le moteur est mis en cache 7 jours, on change l'adresse quand il change.
-  var MOTEUR = '/verre/verre.js?v=11';
+  var MOTEUR = '/verre/verre.js?v=9';
   var FORMES = [
     ['spark', 'Étincelle'], ['prism', 'Prisme'], ['bloom', 'Fleur'], ['star-soft', 'Étoile'],
     ['growth', 'Croissance'], ['squircle', 'Galet'], ['logo', 'Logo Blackstart'], ['anneaux', 'Anneaux seuls, sans forme'],
   ];
   var DEFAUT = 'spark';
-  // Anneaux de lumière : plus nombreux que sur le site, plus lumineux, qui couvrent tout l'écran et bougent d'eux-mêmes.
-  var ANNEAUX = { count: 8, gap: 0.12, gain: 2.3, speed: 1, cover: 1 };
   var PREF = 'bs-orbite', PREF_FORME = 'bs-orbite-forme';
   // Niveaux de qualité : on descend d'un cran si l'appareil peine.
   // Premier niveau : rendu plus fin que l'écran (supersample) pour un verre net, jusqu'à 2 pixels par point.
@@ -35,18 +33,11 @@
     '#bs-orbite-fond{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity 1.6s ease;background:#000;contain:strict}',
     '#bs-orbite-fond canvas{position:absolute;inset:0;width:100%;height:100%;display:block}',
     // Voile : les textes restent lisibles à gauche et en haut, la forme brille à droite.
-    '#bs-orbite-fond::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(0 0 0/.16),rgb(0 0 0/.04) 42%,rgb(0 0 0/0) 68%),linear-gradient(180deg,rgb(0 0 0/.14),rgb(0 0 0/0) 18%)}',
+    '#bs-orbite-fond::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(0 0 0/.3),rgb(0 0 0/.1) 42%,rgb(0 0 0/0) 68%),linear-gradient(180deg,rgb(0 0 0/.25),rgb(0 0 0/0) 22%)}',
     'html[data-scheme="light"] #bs-orbite-fond{background:#fff}',
     'html[data-scheme="light"] #bs-orbite-fond canvas{filter:invert(1) hue-rotate(180deg) saturate(1.15)}',
-    'html[data-scheme="light"] #bs-orbite-fond::after{background:linear-gradient(90deg,rgb(255 255 255/.34),rgb(255 255 255/.12) 42%,rgb(255 255 255/0) 68%),linear-gradient(180deg,rgb(255 255 255/.24),rgb(255 255 255/0) 18%)}',
+    'html[data-scheme="light"] #bs-orbite-fond::after{background:linear-gradient(90deg,rgb(255 255 255/.55),rgb(255 255 255/.25) 42%,rgb(255 255 255/0) 68%),linear-gradient(180deg,rgb(255 255 255/.4),rgb(255 255 255/0) 22%)}',
     'html.bs-orbite #bs-orbite-fond{opacity:1}',
-    // Écran de démarrage : les anneaux passent devant le CRM qui se charge, l'écran devient transparent par-dessus.
-    'html.bs-orbite:has(#splash:not(.hide)) #bs-orbite-fond{z-index:199;transition:none}',
-    // :has(#splash) aussi ici : sans :has(), les deux règles tombent ensemble et l'écran reste comme avant.
-    'html.bs-orbite:has(#splash) body #splash{background:radial-gradient(60% 50% at 50% 45%,rgb(var(--bg-rgb)/.55),rgb(var(--bg-rgb)/0) 70%)!important}',
-    // Le CRM apparaît en fondu par-dessus les anneaux quand l'écran de démarrage s'en va.
-    'html.bs-orbite #root{transition:opacity .45s ease}',
-    'html.bs-orbite:has(#splash:not(.hide)) #root{opacity:0;transition:none}',
     'html.bs-orbite body{background:transparent}',
     'html.bs-orbite #bs-amb{display:none!important}',
     'html.bs-orbite body::before,html.bs-orbite #root::after{display:none}',
@@ -63,8 +54,8 @@
   function sel(l) { return l.split(',').map(function (x) { return G + x.trim(); }).join(','); }
   var FLOU = '-webkit-backdrop-filter:blur(var(--bso-f)) saturate(1.35);backdrop-filter:blur(var(--bso-f)) saturate(1.35)';
   var THEME = [
-    'html.bs-orbite{--bso-v:.4;--bso-f:5px;--bso-epais:.72}',
-    'html.bs-orbite[data-scheme="light"]{--bso-v:.52;--bso-epais:.8}',
+    'html.bs-orbite{--bso-v:.46;--bso-f:7px;--bso-epais:.74}',
+    'html.bs-orbite[data-scheme="light"]{--bso-v:.58;--bso-epais:.82}',
     // Grandes surfaces : verre clair, reflet discret en haut.
     sel('.card,.kpi,.kb-col,.week-wrap,.month,.script-step,.call-top,.call-foot,.paper-wrap') +
       '{background:linear-gradient(180deg,rgb(255 255 255/.05),rgb(255 255 255/0) 38%),rgb(var(--surface-rgb)/var(--bso-v))!important;' + FLOU + '}',
@@ -80,23 +71,7 @@
     sel('.modal,.drawer,.palette') + '{background:linear-gradient(180deg,rgb(255 255 255/.06),rgb(255 255 255/0) 30%),rgb(var(--surface-rgb)/var(--bso-epais))!important;-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}',
     sel('.menu') + '{background:color-mix(in srgb,var(--surface-2) 78%,transparent)!important;-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}',
     sel('.overlay') + '{background:rgb(3 7 15/.28)!important;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}',
-    sel('.call-screen') + '{background:rgb(var(--bg-rgb)/.42)!important;-webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2)}',
-    sel('.kb-col.drop') + '{background:linear-gradient(180deg,rgb(255 255 255/.05),rgb(255 255 255/0) 38%),rgb(var(--accent-rgb)/.18)!important}',
-    sel('.outcome:not(.on),.tl-note,.value-box,.bsn-ideal,.bsl-msg:not(.bad),.bsl-contact,.bsm-room') + '{background-color:color-mix(in srgb,var(--surface-2) 55%,transparent)!important}',
-    // Visio : la fenêtre d'appel en verre sombre, les anneaux passent derrière.
-    sel('.bsm-call') + '{background:radial-gradient(80% 60% at 20% 0%,color-mix(in srgb,var(--aur-1,#387cd5) 24%,transparent),transparent 70%),radial-gradient(70% 60% at 100% 100%,color-mix(in srgb,var(--aur-2,#8b5cf6) 20%,transparent),transparent 70%),rgb(5 8 15/.6)!important;-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3)}',
-    // Lecteur de formation en plein écran : bandes noires comme avant (la vidéo reste sur fond sombre).
-    sel('.bsf-player:fullscreen') + '{background:#05080f!important;-webkit-backdrop-filter:none;backdrop-filter:none}',
-    // Mode présentation et mode immersion (thème sombre) : les anneaux restent derrière, plein écran compris.
-    'html.bs-orbite[data-bs-pres]:not([data-scheme="light"]) #bs-orbite-fond{z-index:449}',
-    'html.bs-orbite:not([data-scheme="light"]) body #bs-pres{background:transparent!important}',
-    'html.bs-orbite:not([data-scheme="light"]) body #bs-pres::backdrop{background:transparent!important}',
-    'html.bs-orbite:not([data-scheme="light"]) body #bs-pres .p-aurora,html.bs-orbite:not([data-scheme="light"]) body #bs-pres .p-bg{display:none!important}',
-    'html.bs-orbite:not([data-scheme="light"]) body #bs-pres .p-shade{background:radial-gradient(120% 90% at 50% 40%,rgb(5 7 13/.12),rgb(5 7 13/.6))!important}',
-    'html.bs-orbite:not([data-scheme="light"]):has(#bs-amb-zen.on) #bs-orbite-fond{z-index:399}',
-    'html.bs-orbite:not([data-scheme="light"]) body #bs-amb-zen{background:transparent!important}',
-    'html.bs-orbite:not([data-scheme="light"]) body #bs-amb-zen::backdrop{background:transparent!important}',
-    'html.bs-orbite:not([data-scheme="light"]) body #bs-amb-zen .z-par{display:none!important}',
+    sel('.call-screen') + '{background:rgb(var(--bg-rgb)/.35)!important}',
     // Petits éléments : champs, puces, boutons secondaires, onglets, en verre aussi.
     sel('.input,.checkbox') + '{background-color:rgb(var(--bg-rgb)/.4)!important}',
     'html.bs-orbite[data-scheme="light"] body .input{background-color:rgb(255 255 255/.62)!important}',
@@ -173,7 +148,6 @@
         arret = m.startGlass({
           root: boite, canvas: cv, shape: shape, palette: m.sitePalette || m.glassPalette, autoplay: 30, fit: 'canvas',
           lateral: p.lateral, scale: p.scale, lift: p.lift, pixelRatio: q.pixelRatio, supersample: q.supersample, fps: q.fps, object: f !== 'anneaux',
-          rings: ANNEAUX,
           onReady: function () { if (id === lance) { marquer(true); surveiller(id); } },
         });
       } catch (e) {
@@ -189,14 +163,14 @@
     if (!arret) demarrer();
   }
 
-  // Appareil qui peine (images plus longues que 28 ms la moitié du temps, sur 150 images ou 4 s) : un cran de
+  // Appareil qui peine (images plus longues que 40 ms la moitié du temps, sur 150 images ou 4 s) : un cran de
   // qualité en moins, puis le fond habituel.
   function surveiller(id) {
     var n = 0, lentes = 0, prec = 0, duree = 0;
     function image(now) {
       if (id !== lance || !arret) return;
       if (document.hidden) { prec = 0; requestAnimationFrame(image); return; }
-      if (prec) { n++; duree += now - prec; if (now - prec > 28) lentes++; }
+      if (prec) { n++; duree += now - prec; if (now - prec > 40) lentes++; }
       prec = now;
       if (n < 150 && duree < 4000) { requestAnimationFrame(image); return; }
       if (forcer() || lentes < n / 2) return;

@@ -25,6 +25,14 @@ de rendez-vous. Les messages et les rendez-vous arrivent dans le CRM comme leads
 
 ---
 
+## Jeu d'aventure 3D
+
+Le dossier [`jeux/`](jeux/) contient **Koko et la Grande Lanterne**, un jeu d'aventure en 3D dans un seul fichier HTML
+(personnages ronds à antennes, village de nuit, cinq éclats d'étoile à retrouver). Détails et commandes dans
+[`jeux/README.md`](jeux/README.md).
+
+---
+
 ## Version autonome
 
 `npm run build` produit `dist/Blackstart_CRM_App.html`, à ouvrir dans n'importe quel navigateur.

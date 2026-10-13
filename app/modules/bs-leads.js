@@ -16,7 +16,14 @@
 
   var API = 'https://recherche-entreprises.api.gouv.fr';
   var GEO = 'https://geo.api.gouv.fr';
-  var OVERPASS = 'https://overpass-api.de/api/interpreter';
+  // Serveurs OpenStreetMap (Overpass) : le principal est souvent saturé, on passe au suivant s'il ne répond pas.
+  var OVERPASS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+  ];
+  var osmPremier = 0;
   var PREFS_KEY = 'bs-leads-prefs', SEEN_KEY = 'bs-leads-vus', CUR_KEY = 'bs-leads-recherches';
   var LOT = 12, PER_PAGE = 25, MAX_PAGE = 400, CANAL = 'Générateur de leads';
 
@@ -340,16 +347,25 @@
     return inter / Math.min(ta.length, tb.length) * (inter >= 2 || Math.min(ta.length, tb.length) === 1 ? 1 : 0.6);
   }
   function cleanUrl(u) { u = String(u || '').trim(); if (!u) return ''; if (!/^https?:\/\//i.test(u)) u = 'https://' + u; return /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : ''; }
-  function enrichir(leads) {
-    var pts = leads.filter(function (l) { return l.lat != null && !l.osmDone; });
-    if (!pts.length) return Promise.resolve(false);
-    var q = '[out:json][timeout:20];(' + pts.map(function (l) {
-      return 'nwr(around:150,' + l.lat.toFixed(6) + ',' + l.lon.toFixed(6) + ')["name"][~"^(phone|contact:phone|website|contact:website|email|contact:email)$"~"."];';
+  // Une requête par petit groupe de leads, essayée sur chaque serveur jusqu'à ce que l'un réponde.
+  function overpass(q) {
+    var n = OVERPASS.length, k = 0, depart = osmPremier;
+    function essai() {
+      var i = (depart + k) % n;
+      return getJson(OVERPASS[i], { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: 'data=' + encodeURIComponent(q) }, 15000)
+        .then(function (data) { osmPremier = i; return data; })
+        .catch(function (e) { if (++k >= n) throw e; return sleep(250).then(essai); });
+    }
+    return essai();
+  }
+  function enrichirGroupe(pts) {
+    var q = '[out:json][timeout:15];(' + pts.map(function (l) {
+      return 'nwr(around:150,' + l.lat.toFixed(6) + ',' + l.lon.toFixed(6) + ')["name"][~"^(phone|contact:phone|contact:mobile|website|contact:website|email|contact:email)$"~"."];';
     }).join('') + ');out tags center;';
-    return getJson(OVERPASS, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: 'data=' + encodeURIComponent(q) }, 25000).then(function (data) {
+    return overpass(q).then(function (data) {
       var els = (data && data.elements) || [];
       pts.forEach(function (l) {
-        l.osmDone = true;
+        l.osmDone = true; l.osmKo = false;
         var best = null, bestScore = 0;
         els.forEach(function (el) {
           var t = el.tags || {}, c = el.center || el;
@@ -363,9 +379,16 @@
         l.site = cleanUrl(best.website || best['contact:website']);
         l.email = String(best.email || best['contact:email'] || '').split(';')[0].trim();
       });
-      return true;
-    }).catch(function () { pts.forEach(function (l) { l.osmDone = true; l.osmKo = true; }); return true; });
+    }).catch(function () { pts.forEach(function (l) { l.osmDone = true; l.osmKo = true; }); });
   }
+  function enrichir(leads) {
+    var pts = leads.filter(function (l) { return l.lat != null && (!l.osmDone || l.osmKo); });
+    if (!pts.length) return Promise.resolve(false);
+    var groupes = [];
+    for (var i = 0; i < pts.length; i += 5) groupes.push(pts.slice(i, i + 5));
+    return Promise.all(groupes.map(function (g, i) { return sleep(i * 300).then(function () { return enrichirGroupe(g); }); })).then(function () { return true; });
+  }
+
 
   // ------------------------------------------------------------------ page
   var state = { leads: [], stats: null, prefs: null, statut: {}, busy: false, err: '', osmBusy: false };
@@ -402,7 +425,8 @@
       } else if (l.lat != null && !l.osmDone) {
         contact = '<div class="bsl-contact bsl-wait"><span class="bsl-spin"></span>Recherche du téléphone et du site sur OpenStreetMap…</div>';
       } else {
-        contact = '<div class="bsl-contact bsl-none">' + ic('info', 14) + '<span>' + (l.osmKo ? 'OpenStreetMap ne répond pas : téléphone et site à chercher.' : 'Téléphone, site et email non publiés dans les sources ouvertes.') + '</span></div>';
+        contact = '<div class="bsl-contact bsl-none">' + ic('info', 14) + '<span>' + (l.osmKo ? 'Les serveurs OpenStreetMap sont saturés pour l’instant.' : 'Téléphone, site et email non publiés dans les sources ouvertes.') + '</span>' +
+          (l.osmKo ? '<button type="button" class="btn btn-secondary btn-sm" data-act="osm"' + (state.osmBusy ? ' disabled' : '') + '>Réessayer</button>' : '') + '</div>';
       }
       return '<article class="card bsl-card' + (st === 'ajoute' ? ' added' : '') + (st === 'ecarte' ? ' gone' : '') + '" data-i="' + i + '" style="--i:' + i + '">' +
         '<div class="bsl-top"><span class="bsl-av" style="--h:' + hue(titre) + '">' + esc(initials(titre)) + '</span><div class="bsl-tt"><h3>' + esc(titre) + '</h3>' +
@@ -488,6 +512,13 @@
       var act = b.getAttribute('data-act');
       if (act === 'gen') lancer();
       else if (act === 'all') { restants().forEach(function (x) { var r2 = addToCrm(x); x.crmId = r2.id; state.statut[x.siren] = 'ajoute'; }); render(); }
+      else if (act === 'osm') {
+        if (state.osmBusy) return;
+        state.osmBusy = true;
+        state.leads.forEach(function (x) { if (x.osmKo) x.osmDone = false; });
+        render();
+        enrichir(state.leads).then(function () { state.osmBusy = false; if (root.isConnected) render(); });
+      }
       else if (act === 'reset') { reinitialiser(prefs); state.stats = null; lancer(); }
     });
     root.addEventListener('change', function (ev) {

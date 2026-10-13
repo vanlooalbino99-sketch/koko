@@ -61,7 +61,9 @@ test('génère des lots toujours nouveaux, sans doublon, et les ajoute au CRM', 
   await page.route('https://geo.api.gouv.fr/**', (route) => route.fulfill({ headers: cors, body: JSON.stringify([
     { nom: 'Lyon', code: '69123', codesPostaux: ['69001', '69002', '69003'], codeDepartement: '69', centre: { type: 'Point', coordinates: [4.835, 45.758] } },
   ]) }));
-  await page.route('https://overpass-api.de/**', (route) => route.fulfill({ headers: cors, body: JSON.stringify({ elements: [
+  // Le serveur principal d'OpenStreetMap est saturé (504) : le générateur doit passer au suivant.
+  await page.route('https://overpass-api.de/**', (route) => route.fulfill({ status: 504, headers: cors, body: 'Gateway Timeout' }));
+  await page.route('https://overpass.private.coffee/**', (route) => route.fulfill({ headers: cors, body: JSON.stringify({ elements: [
     { type: 'node', lat: 45.7601, lon: 4.8501, tags: { name: 'Plomberie Express', phone: '+33 4 78 00 00 01', website: 'plomberie-express.fr' } },
     { type: 'node', lat: 45.7602, lon: 4.8502, tags: { name: 'Boulangerie Voisine', phone: '+33 4 78 99 99 99' } },
   ] }) }));

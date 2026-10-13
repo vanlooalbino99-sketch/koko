@@ -17,6 +17,7 @@ import { chatRoutes, chatHub } from './routes/chat.js';
 import { photosRoutes } from './routes/photos.js';
 import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
+import { osmRoutes } from './osm.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
@@ -52,6 +53,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/api/users', requireAdmin, express.json({ limit: '100kb' }), usersRoutes({ db, identity, hub }));
   app.use('/api/data', requireUser, express.json({ limit: '25mb' }), dataRoutes({ db }));
   app.use('/api/ambiance', requireUser, express.json({ limit: '40mb' }), ambianceApi({ db, store }));
+  app.use('/api/osm', requireUser, express.json({ limit: '40kb' }), osmRoutes());
   app.use('/api/formation', requireUser, express.json({ limit: '10kb' }), formationRoutes({ db }));
   app.use('/api/chat', requireUser, express.json({ limit: '100kb' }), chatRoutes({ db, hub }));
   app.use('/api/photos', requireUser, express.json({ limit: '700kb' }), photosRoutes({ db, hub }));

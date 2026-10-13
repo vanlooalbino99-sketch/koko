@@ -348,7 +348,15 @@
   }
   function cleanUrl(u) { u = String(u || '').trim(); if (!u) return ''; if (!/^https?:\/\//i.test(u)) u = 'https://' + u; return /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : ''; }
   // Une requête par petit groupe de leads, essayée sur chaque serveur jusqu'à ce que l'un réponde.
+  // Version équipe : le serveur du CRM interroge OpenStreetMap (plus fiable que le navigateur), sinon le navigateur essaie lui-même.
   function overpass(q) {
+    if (window.BS_SERVER) {
+      return getJson('/api/osm', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'blackstart' }, body: JSON.stringify({ q: q }) }, 90000)
+        .catch(function () { return overpassNavigateur(q); });
+    }
+    return overpassNavigateur(q);
+  }
+  function overpassNavigateur(q) {
     var n = OVERPASS.length, k = 0, depart = osmPremier;
     function essai() {
       var i = (depart + k) % n;

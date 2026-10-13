@@ -38,3 +38,20 @@ Bonus : 60 graines d'or cachées dans la vallée. Les Ombrelins se chassent en l
 
 La qualité graphique (Basse, Moyenne, Haute) se règle dans la pause ; le jeu la baisse tout seul
 si l'ordinateur ou le téléphone peine.
+
+# Nitro Canyon
+
+Jeu de course 3D dans un seul fichier : [`nitro-canyon.html`](nitro-canyon.html) (double-clic pour jouer, connexion internet au premier chargement).
+Désert à l'heure dorée, 6 pilotes, 2 tours sur un circuit de 3,2 km : autoroute bordée de lignes à haute tension,
+canyon de roche rouge, piste de terre. Trois voitures (Kitsune S15, Stallion 67, Taiga R) et six peintures au garage.
+
+| Clavier | Manette | Tactile | Action |
+|---|---|---|---|
+| ZQSD, WASD ou flèches | gâchettes + stick | Gaz, Frein, ◀ ▶ | Conduire |
+| Espace | B | Drift | Frein à main (les dérapages remplissent la nitro) |
+| Maj | A | Nitro | Nitro |
+| C | Y | — | Caméra |
+| R / Échap | — / Start | II | Revenir sur la route / pause |
+
+Les sources découpées en morceaux et la méthode pour l'améliorer sont dans le skill
+[`.claude/skills/jeu-course-3d`](../.claude/skills/jeu-course-3d/SKILL.md).

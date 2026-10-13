@@ -80,6 +80,8 @@
     // Les anneaux et bords dessinés avec la couleur du fond deviennent invisibles sur le verre.
     sel('.tl-icon') + '{box-shadow:none!important}',
     sel('.bs-moi-menu,.bsm-emojis') + '{background:color-mix(in srgb,var(--surface) 72%,transparent)!important;-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}',
+    sel('.table-wrap') + '{background-color:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}',
+    sel('.settings-nav') + '{background:rgb(var(--surface-rgb)/var(--bso-v))!important;' + FLOU + '}',
     sel('.bso-vue,.bsn-edit') + '{background-color:color-mix(in srgb,var(--surface-2) 45%,transparent)!important}',
   ].join('\n');
 

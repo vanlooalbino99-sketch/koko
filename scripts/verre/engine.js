@@ -775,7 +775,9 @@ function updateLogoPieces(scroll) {
 
 function createBackgroundShader() {
     // Constantes des anneaux (sans l'option : exactement le fond du site).
-    const R = Object.assign({ count: 3, gap: 0.145, gain: 1, speed: 0, cover: 0 }, rings || {});
+    const num = (v, d) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? d : Number(v);
+    const o = rings || {};
+    const R = { count: num(o.count, 3), gap: num(o.gap, 0.145), gain: num(o.gain, 1), speed: num(o.speed, 0), cover: num(o.cover, 0) };
     const f = (x) => Number(x).toFixed(4);
     const ringDefs = `
         #define RING_COUNT ${Math.max(1, Math.min(12, Math.round(R.count)))}
@@ -783,6 +785,7 @@ function createBackgroundShader() {
         const float RING_GAIN = ${f(R.gain)};
         const float RING_SPEED = ${f(R.speed)};
         const float RING_COVER = ${f(Math.max(0, Math.min(1, R.cover)))};
+        ${rings ? '#define RING_CULL' : ''}
     `;
     const vertexShader = `
         varying vec2 vUv;
@@ -842,6 +845,10 @@ function createBackgroundShader() {
                 float dir = mod(k, 2.0) * 2.0 - 1.0;
                 vec2 q = p + vec2(0.0, 0.012 * sin(time + k));
                 float radius = length(q * vec2(0.90, 1.22));
+#ifdef RING_CULL
+                // Anneau trop loin de ce pixel (contour ±0.10, halo visible jusqu'à ±0.16) : rien à dessiner.
+                if (abs(radius - (ringStart + k * RING_GAP)) > 0.27 + 0.03 * max(0.0, RING_GAIN - 3.0)) continue;
+#endif
                 float angle = atan(q.y, q.x);
                 float contour = ringStart + k * RING_GAP
                     + 0.075 * sin(angle * 2.0 + s * 5.0 + k * 0.28 + time * RING_SPEED * 9.0 * dir)

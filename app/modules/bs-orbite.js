@@ -15,7 +15,7 @@
   if (window.bsOrbite || !window.BS_SERVER) return;
 
   // ?v= : le moteur est mis en cache 7 jours, on change l'adresse quand il change.
-  var MOTEUR = '/verre/verre.js?v=10';
+  var MOTEUR = '/verre/verre.js?v=11';
   var FORMES = [
     ['spark', 'Étincelle'], ['prism', 'Prisme'], ['bloom', 'Fleur'], ['star-soft', 'Étoile'],
     ['growth', 'Croissance'], ['squircle', 'Galet'], ['logo', 'Logo Blackstart'], ['anneaux', 'Anneaux seuls, sans forme'],
@@ -42,7 +42,11 @@
     'html.bs-orbite #bs-orbite-fond{opacity:1}',
     // Écran de démarrage : les anneaux passent devant le CRM qui se charge, l'écran devient transparent par-dessus.
     'html.bs-orbite:has(#splash:not(.hide)) #bs-orbite-fond{z-index:199;transition:none}',
-    'html.bs-orbite body #splash{background:radial-gradient(60% 50% at 50% 45%,rgb(var(--bg-rgb)/.55),rgb(var(--bg-rgb)/0) 70%)!important}',
+    // :has(#splash) aussi ici : sans :has(), les deux règles tombent ensemble et l'écran reste comme avant.
+    'html.bs-orbite:has(#splash) body #splash{background:radial-gradient(60% 50% at 50% 45%,rgb(var(--bg-rgb)/.55),rgb(var(--bg-rgb)/0) 70%)!important}',
+    // Le CRM apparaît en fondu par-dessus les anneaux quand l'écran de démarrage s'en va.
+    'html.bs-orbite #root{transition:opacity .45s ease}',
+    'html.bs-orbite:has(#splash:not(.hide)) #root{opacity:0;transition:none}',
     'html.bs-orbite body{background:transparent}',
     'html.bs-orbite #bs-amb{display:none!important}',
     'html.bs-orbite body::before,html.bs-orbite #root::after{display:none}',
@@ -76,7 +80,23 @@
     sel('.modal,.drawer,.palette') + '{background:linear-gradient(180deg,rgb(255 255 255/.06),rgb(255 255 255/0) 30%),rgb(var(--surface-rgb)/var(--bso-epais))!important;-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}',
     sel('.menu') + '{background:color-mix(in srgb,var(--surface-2) 78%,transparent)!important;-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}',
     sel('.overlay') + '{background:rgb(3 7 15/.28)!important;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}',
-    sel('.call-screen') + '{background:rgb(var(--bg-rgb)/.35)!important}',
+    sel('.call-screen') + '{background:rgb(var(--bg-rgb)/.42)!important;-webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2)}',
+    sel('.kb-col.drop') + '{background:linear-gradient(180deg,rgb(255 255 255/.05),rgb(255 255 255/0) 38%),rgb(var(--accent-rgb)/.18)!important}',
+    sel('.outcome:not(.on),.tl-note,.value-box,.bsn-ideal,.bsl-msg:not(.bad),.bsl-contact,.bsm-room') + '{background-color:color-mix(in srgb,var(--surface-2) 55%,transparent)!important}',
+    // Visio : la fenêtre d'appel en verre sombre, les anneaux passent derrière.
+    sel('.bsm-call') + '{background:radial-gradient(80% 60% at 20% 0%,color-mix(in srgb,var(--aur-1,#387cd5) 24%,transparent),transparent 70%),radial-gradient(70% 60% at 100% 100%,color-mix(in srgb,var(--aur-2,#8b5cf6) 20%,transparent),transparent 70%),rgb(5 8 15/.6)!important;-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3)}',
+    // Lecteur de formation en plein écran : bandes noires comme avant (la vidéo reste sur fond sombre).
+    sel('.bsf-player:fullscreen') + '{background:#05080f!important;-webkit-backdrop-filter:none;backdrop-filter:none}',
+    // Mode présentation et mode immersion (thème sombre) : les anneaux restent derrière, plein écran compris.
+    'html.bs-orbite[data-bs-pres]:not([data-scheme="light"]) #bs-orbite-fond{z-index:449}',
+    'html.bs-orbite:not([data-scheme="light"]) body #bs-pres{background:transparent!important}',
+    'html.bs-orbite:not([data-scheme="light"]) body #bs-pres::backdrop{background:transparent!important}',
+    'html.bs-orbite:not([data-scheme="light"]) body #bs-pres .p-aurora,html.bs-orbite:not([data-scheme="light"]) body #bs-pres .p-bg{display:none!important}',
+    'html.bs-orbite:not([data-scheme="light"]) body #bs-pres .p-shade{background:radial-gradient(120% 90% at 50% 40%,rgb(5 7 13/.12),rgb(5 7 13/.6))!important}',
+    'html.bs-orbite:not([data-scheme="light"]):has(#bs-amb-zen.on) #bs-orbite-fond{z-index:399}',
+    'html.bs-orbite:not([data-scheme="light"]) body #bs-amb-zen{background:transparent!important}',
+    'html.bs-orbite:not([data-scheme="light"]) body #bs-amb-zen::backdrop{background:transparent!important}',
+    'html.bs-orbite:not([data-scheme="light"]) body #bs-amb-zen .z-par{display:none!important}',
     // Petits éléments : champs, puces, boutons secondaires, onglets, en verre aussi.
     sel('.input,.checkbox') + '{background-color:rgb(var(--bg-rgb)/.4)!important}',
     'html.bs-orbite[data-scheme="light"] body .input{background-color:rgb(255 255 255/.62)!important}',
@@ -169,14 +189,14 @@
     if (!arret) demarrer();
   }
 
-  // Appareil qui peine (images plus longues que 40 ms la moitié du temps, sur 150 images ou 4 s) : un cran de
+  // Appareil qui peine (images plus longues que 28 ms la moitié du temps, sur 150 images ou 4 s) : un cran de
   // qualité en moins, puis le fond habituel.
   function surveiller(id) {
     var n = 0, lentes = 0, prec = 0, duree = 0;
     function image(now) {
       if (id !== lance || !arret) return;
       if (document.hidden) { prec = 0; requestAnimationFrame(image); return; }
-      if (prec) { n++; duree += now - prec; if (now - prec > 40) lentes++; }
+      if (prec) { n++; duree += now - prec; if (now - prec > 28) lentes++; }
       prec = now;
       if (n < 150 && duree < 4000) { requestAnimationFrame(image); return; }
       if (forcer() || lentes < n / 2) return;

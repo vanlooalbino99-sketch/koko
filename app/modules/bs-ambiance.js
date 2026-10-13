@@ -288,7 +288,7 @@
     '.bs-amb-veil{position:absolute;inset:0;background:linear-gradient(90deg,rgb(var(--bg-rgb)/min(1,calc(var(--bs-amb-voile) + .2))) 0,rgb(var(--bg-rgb)/var(--bs-amb-voile)) 300px,rgb(var(--bg-rgb)/max(0,calc(var(--bs-amb-voile) - .12))) 100%),radial-gradient(130% 100% at 60% 0,transparent 45%,rgb(var(--bg-rgb)/.45) 100%)}',
     // Verre dépoli : les blocs laissent deviner l'image sans gêner la lecture.
     'html.bs-amb-fond .sidebar{background:rgb(var(--bg-rgb)/.62)!important;-webkit-backdrop-filter:blur(18px) saturate(1.15);backdrop-filter:blur(18px) saturate(1.15)}',
-    'html.bs-amb-fond .card,html.bs-amb-fond .hero,html.bs-amb-fond .kpi,html.bs-amb-fond .table-wrap,html.bs-amb-fond .kanban-col,html.bs-amb-fond .settings-nav{background-color:rgb(var(--surface-rgb)/.84)!important;-webkit-backdrop-filter:blur(14px) saturate(1.1);backdrop-filter:blur(14px) saturate(1.1)}',
+    'html.bs-amb-fond .card,html.bs-amb-fond .hero,html.bs-amb-fond .kpi,html.bs-amb-fond .table-wrap,html.bs-amb-fond .kb-col,html.bs-amb-fond .settings-nav{background-color:rgb(var(--surface-rgb)/.84)!important;-webkit-backdrop-filter:blur(14px) saturate(1.1);backdrop-filter:blur(14px) saturate(1.1)}',
     'html.bs-amb-fond .topbar{-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}',
     'html.bs-amb-fond .page-head-text{text-shadow:0 1px 14px rgb(var(--bg-rgb)/.95),0 0 3px rgb(var(--bg-rgb)/.8)}',
     'html.bs-amb-fond .page-sub,html.bs-amb-fond .eyebrow{color:var(--text-2)}',

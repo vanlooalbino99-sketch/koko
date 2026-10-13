@@ -6,7 +6,11 @@ import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 // s'éclate puis se recompose en boucle pendant que la caméra fait le tour. `lateral`, `lift` et `scale`
 // placent l'objet à côté du texte (unités du monde 3D, `lateral` > 0 pousse l'objet vers la gauche).
 export function startGlass({ root, canvas, shape, palette, contactCard = null, fragments = 4, onReady,
-    autoplay = 0, lateral = null, lift = 0, scale = 1, fit = 'window', pixelRatio = 1.5, fps: fixedFps = 0, object = true }) {
+    autoplay = 0, lateral = null, lift = 0, scale = 1, fit = 'window', pixelRatio = 1.5, fps: fixedFps = 0, object = true,
+    supersample = 1 }) {
+// supersample : rendu à plus que la densité de l'écran (1.5 = 50 % de pixels en plus par côté), pour un verre plus net
+// sur les écrans standard ; toujours plafonné par pixelRatio.
+const ratio = () => Math.min(window.devicePixelRatio * supersample, pixelRatio);
 // object: false : seulement le fond (anneaux de lumière et étincelles), sans la forme en verre.
 // pixelRatio : plafond de densité de pixels ; fps : cadence fixe (0 = 60 quand ça bouge, 30 au repos).
 // Le fond animé du CRM (app/modules/bs-orbite.js) baisse les deux pour rester léger derrière les pages.
@@ -869,7 +873,7 @@ function onWindowResize() {
     camera.aspect = sizes.width / sizes.height;
     camera.updateProjectionMatrix();
     renderer.setSize(sizes.width, sizes.height, fit !== 'canvas');
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatio));
+    renderer.setPixelRatio(ratio());
     if (shaderUniforms) renderer.getDrawingBufferSize(shaderUniforms.uResolution.value);
 }
 
@@ -1181,7 +1185,7 @@ function init() {
         powerPreference: "high-performance"
     });
     renderer.setSize(sizes.width, sizes.height, fit !== 'canvas');
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatio));
+    renderer.setPixelRatio(ratio());
 
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;

@@ -15,7 +15,7 @@
   if (window.bsOrbite || !window.BS_SERVER) return;
 
   // ?v= : le moteur est mis en cache 7 jours, on change l'adresse quand il change.
-  var MOTEUR = '/verre/verre.js?v=8';
+  var MOTEUR = '/verre/verre.js?v=9';
   var FORMES = [
     ['spark', 'Étincelle'], ['prism', 'Prisme'], ['bloom', 'Fleur'], ['star-soft', 'Étoile'],
     ['growth', 'Croissance'], ['squircle', 'Galet'], ['logo', 'Logo Blackstart'], ['anneaux', 'Anneaux seuls, sans forme'],
@@ -23,7 +23,11 @@
   var DEFAUT = 'spark';
   var PREF = 'bs-orbite', PREF_FORME = 'bs-orbite-forme';
   // Niveaux de qualité : on descend d'un cran si l'appareil peine.
-  var NIVEAUX = [{ pixelRatio: 1.25, fps: 60 }, { pixelRatio: 0.85, fps: 60 }, { pixelRatio: 0.7, fps: 30 }];
+  // Premier niveau : rendu plus fin que l'écran (supersample) pour un verre net, jusqu'à 2 pixels par point.
+  var NIVEAUX = [
+    { pixelRatio: 2, supersample: 1.5, fps: 60 }, { pixelRatio: 1.5, supersample: 1, fps: 60 },
+    { pixelRatio: 1, supersample: 1, fps: 60 }, { pixelRatio: 0.75, supersample: 1, fps: 30 },
+  ];
 
   var CSS = [
     '#bs-orbite-fond{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity 1.6s ease;background:#000;contain:strict}',
@@ -39,9 +43,44 @@
     'html.bs-orbite body::before,html.bs-orbite #root::after{display:none}',
     'html.bs-orbite #root::before{opacity:.35}',
     'html.bs-orbite .bs-amb-zen-btn{display:none!important}',
-    // Le menu et la barre du haut laissent passer la scène, en verre dépoli.
-    '@media (min-width:1024px){html.bs-orbite .sidebar{background:linear-gradient(180deg,rgb(var(--bg-rgb)/.55),rgb(var(--bg-rgb)/.72))!important;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4)}}',
-    'html.bs-orbite .topbar{background:linear-gradient(180deg,rgb(var(--bg-rgb)/.62),rgb(var(--bg-rgb)/.38))}',
+  ].join('\n');
+
+  // Thème « verre 3D » : tant que la scène est à l'écran, tout le CRM devient du verre net qui la laisse voir
+  // (cartes, menu, barre du haut, colonnes du pipeline, tableaux, agenda, fenêtres, menus). Flou léger pour garder
+  // l'animation nette ; les éléments collants (en-têtes) et les fenêtres gardent un peu plus de matière pour la
+  // lisibilité. « html.bs-orbite body » passe devant les règles d'ambiance (html.bs-amb-fond …).
+  // --bso-v : verre clair des grandes surfaces ; --bso-f : flou. --surface-2 n'a pas de version rgb : color-mix.
+  var G = 'html.bs-orbite body ';
+  function sel(l) { return l.split(',').map(function (x) { return G + x.trim(); }).join(','); }
+  var FLOU = '-webkit-backdrop-filter:blur(var(--bso-f)) saturate(1.35);backdrop-filter:blur(var(--bso-f)) saturate(1.35)';
+  var THEME = [
+    'html.bs-orbite{--bso-v:.46;--bso-f:7px;--bso-epais:.74}',
+    'html.bs-orbite[data-scheme="light"]{--bso-v:.58;--bso-epais:.82}',
+    // Grandes surfaces : verre clair, reflet discret en haut.
+    sel('.card,.kpi,.kb-col,.week-wrap,.month,.script-step,.call-top,.call-foot,.paper-wrap') +
+      '{background:linear-gradient(180deg,rgb(255 255 255/.05),rgb(255 255 255/0) 38%),rgb(var(--surface-rgb)/var(--bso-v))!important;' + FLOU + '}',
+    sel('.hero') + '{background:radial-gradient(90% 120% at var(--mx,96%) 0%,rgb(var(--accent-rgb)/.26) 0%,transparent 58%),rgb(var(--surface-rgb)/var(--bso-v))!important;' + FLOU + '}',
+    sel('.kb-card') + '{background:rgb(var(--bg-rgb)/.42)!important}',
+    'html.bs-orbite[data-scheme="light"] body .kb-card{background:rgb(255 255 255/.6)!important}',
+    // Navigation : menu de gauche, barre du haut, barre du bas (téléphone).
+    '@media (min-width:1024px){' + sel('.sidebar') + '{background:linear-gradient(180deg,rgb(var(--bg-rgb)/.34),rgb(var(--bg-rgb)/.5))!important;-webkit-backdrop-filter:blur(12px) saturate(1.4);backdrop-filter:blur(12px) saturate(1.4)}}',
+    sel('.topbar') + '{background:linear-gradient(180deg,rgb(var(--bg-rgb)/.5),rgb(var(--bg-rgb)/.22))!important;-webkit-backdrop-filter:blur(12px) saturate(1.5);backdrop-filter:blur(12px) saturate(1.5)}',
+    sel('.bottom-nav') + '{background:rgb(var(--bg-rgb)/.58)!important;-webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5)}',
+    // Ce qui passe au-dessus du contenu qui défile, et les fenêtres : un peu plus de matière.
+    sel('.table th,.wk-dayhead,.wk-hour,.wk-corner,.bulk-bar,.modal-foot') + '{background:rgb(var(--surface-rgb)/var(--bso-epais))!important;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}',
+    sel('.modal,.drawer,.palette') + '{background:linear-gradient(180deg,rgb(255 255 255/.06),rgb(255 255 255/0) 30%),rgb(var(--surface-rgb)/var(--bso-epais))!important;-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}',
+    sel('.menu') + '{background:color-mix(in srgb,var(--surface-2) 78%,transparent)!important;-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}',
+    sel('.overlay') + '{background:rgb(3 7 15/.28)!important;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}',
+    sel('.call-screen') + '{background:rgb(var(--bg-rgb)/.35)!important}',
+    // Petits éléments : champs, puces, boutons secondaires, onglets, en verre aussi.
+    sel('.input,.checkbox') + '{background-color:rgb(var(--bg-rgb)/.4)!important}',
+    'html.bs-orbite[data-scheme="light"] body .input{background-color:rgb(255 255 255/.62)!important}',
+    sel('.search-input,.topbar-search,.chip,.bsm-search,.bsm-compose') + '{background:rgb(var(--surface-rgb)/.5)!important}',
+    sel('.pill,.segmented,.btn-secondary,.icon-btn-secondary,.p-action,.quick-dates button,.empty-icon,.kpi-icon,.mm-item') + '{background:color-mix(in srgb,var(--surface-2) 58%,transparent)!important}',
+    // Les anneaux et bords dessinés avec la couleur du fond deviennent invisibles sur le verre.
+    sel('.tl-icon') + '{box-shadow:none!important}',
+    sel('.bs-moi-menu,.bsm-emojis') + '{background:color-mix(in srgb,var(--surface) 72%,transparent)!important;-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}',
+    sel('.bso-vue,.bsn-edit') + '{background-color:color-mix(in srgb,var(--surface-2) 45%,transparent)!important}',
   ].join('\n');
 
   var H = document.documentElement;
@@ -106,7 +145,7 @@
         // root : la boîte du fond, pour que le moteur ne touche à rien d'autre dans le CRM.
         arret = m.startGlass({
           root: boite, canvas: cv, shape: shape, palette: m.sitePalette || m.glassPalette, autoplay: 30, fit: 'canvas',
-          lateral: p.lateral, scale: p.scale, lift: p.lift, pixelRatio: q.pixelRatio, fps: q.fps, object: f !== 'anneaux',
+          lateral: p.lateral, scale: p.scale, lift: p.lift, pixelRatio: q.pixelRatio, supersample: q.supersample, fps: q.fps, object: f !== 'anneaux',
           onReady: function () { if (id === lance) { marquer(true); surveiller(id); } },
         });
       } catch (e) {
@@ -140,7 +179,7 @@
   }
 
   function brancher() {
-    var st = document.createElement('style'); st.id = 'bs-orbite-css'; st.textContent = CSS; document.head.appendChild(st);
+    var st = document.createElement('style'); st.id = 'bs-orbite-css'; st.textContent = CSS + '\n' + THEME; document.head.appendChild(st);
     if (reduit.addEventListener) reduit.addEventListener('change', maj);
     // Cadrage grand écran / téléphone : on recadre quand on passe de l'un à l'autre.
     var large = window.innerWidth >= 1024;

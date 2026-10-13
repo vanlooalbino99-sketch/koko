@@ -2,6 +2,7 @@
 //   SUPABASE_DB_URL            base PostgreSQL de Supabase (sinon SQLite dans DATA_DIR)
 //   SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY   mots de passe vérifiés par Supabase Auth
 //   COPIER_SQLITE=1            au premier démarrage sur Supabase, y recopie la base SQLite
+//   GOOGLE_MAPS_KEY            facultatif : « Carte clients » en mode réaliste avec l'imagerie Google Maps (Map Tiles API)
 import { resolve, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { createApp } from './app.js';
@@ -21,6 +22,7 @@ const { app, db, hub, identity } = await createApp({
   trustProxy: env.TRUST_PROXY ? (/^\d+$/.test(env.TRUST_PROXY) ? Number(env.TRUST_PROXY) : env.TRUST_PROXY) : false,
   siteApiKey: env.SITE_API_KEY || null,
   siteTimeZone: env.SITE_TIMEZONE || 'Europe/Paris',
+  googleMapsKey: env.GOOGLE_MAPS_KEY || null,
 });
 // Passage à Supabase : COPIER_SQLITE=1 recopie la base SQLite de DATA_DIR dans Supabase, une seule fois
 // (seulement si Supabase n'a encore aucun compte). Le fichier SQLite reste intact, en secours.

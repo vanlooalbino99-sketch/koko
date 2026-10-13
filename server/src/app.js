@@ -23,7 +23,7 @@ const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).ver
 
 // Base : PostgreSQL (Supabase) si databaseUrl est donné, sinon SQLite dans dataDir.
 // Mots de passe : Supabase Auth si supabase = { url, serviceKey } est donné, sinon vérifiés par le serveur.
-export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone } = {}) {
+export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null } = {}) {
   const db = await openStore({ dataDir, databaseUrl });
   const identity = supabase ? supabaseIdentity(supabase) : localIdentity();
   const app = express();
@@ -70,7 +70,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.get('/', (req, res) => {
     if (!req.user) return res.redirect('/connexion');
     const page = html || assemble();
-    const conf = JSON.stringify({ user: req.user, version: VERSION }).replace(/</g, '\\u003c');
+    const conf = JSON.stringify({ user: req.user, version: VERSION, ...(googleMapsKey ? { carte: { google: googleMapsKey } } : {}) }).replace(/</g, '\\u003c');
     res.set('Cache-Control', 'no-store').type('html')
       .send(page.replace('<head>', `<head>\n<script id="bs-serveur-conf">window.BS_SERVER=${conf};</script>`));
   });

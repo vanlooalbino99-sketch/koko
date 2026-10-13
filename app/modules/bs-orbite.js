@@ -15,12 +15,14 @@
   if (window.bsOrbite || !window.BS_SERVER) return;
 
   // ?v= : le moteur est mis en cache 7 jours, on change l'adresse quand il change.
-  var MOTEUR = '/verre/verre.js?v=9';
+  var MOTEUR = '/verre/verre.js?v=10';
   var FORMES = [
     ['spark', 'Étincelle'], ['prism', 'Prisme'], ['bloom', 'Fleur'], ['star-soft', 'Étoile'],
     ['growth', 'Croissance'], ['squircle', 'Galet'], ['logo', 'Logo Blackstart'], ['anneaux', 'Anneaux seuls, sans forme'],
   ];
   var DEFAUT = 'spark';
+  // Anneaux de lumière : plus nombreux que sur le site, plus lumineux, qui couvrent tout l'écran et bougent d'eux-mêmes.
+  var ANNEAUX = { count: 8, gap: 0.12, gain: 2.3, speed: 1, cover: 1 };
   var PREF = 'bs-orbite', PREF_FORME = 'bs-orbite-forme';
   // Niveaux de qualité : on descend d'un cran si l'appareil peine.
   // Premier niveau : rendu plus fin que l'écran (supersample) pour un verre net, jusqu'à 2 pixels par point.
@@ -33,11 +35,14 @@
     '#bs-orbite-fond{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity 1.6s ease;background:#000;contain:strict}',
     '#bs-orbite-fond canvas{position:absolute;inset:0;width:100%;height:100%;display:block}',
     // Voile : les textes restent lisibles à gauche et en haut, la forme brille à droite.
-    '#bs-orbite-fond::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(0 0 0/.3),rgb(0 0 0/.1) 42%,rgb(0 0 0/0) 68%),linear-gradient(180deg,rgb(0 0 0/.25),rgb(0 0 0/0) 22%)}',
+    '#bs-orbite-fond::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(0 0 0/.16),rgb(0 0 0/.04) 42%,rgb(0 0 0/0) 68%),linear-gradient(180deg,rgb(0 0 0/.14),rgb(0 0 0/0) 18%)}',
     'html[data-scheme="light"] #bs-orbite-fond{background:#fff}',
     'html[data-scheme="light"] #bs-orbite-fond canvas{filter:invert(1) hue-rotate(180deg) saturate(1.15)}',
-    'html[data-scheme="light"] #bs-orbite-fond::after{background:linear-gradient(90deg,rgb(255 255 255/.55),rgb(255 255 255/.25) 42%,rgb(255 255 255/0) 68%),linear-gradient(180deg,rgb(255 255 255/.4),rgb(255 255 255/0) 22%)}',
+    'html[data-scheme="light"] #bs-orbite-fond::after{background:linear-gradient(90deg,rgb(255 255 255/.34),rgb(255 255 255/.12) 42%,rgb(255 255 255/0) 68%),linear-gradient(180deg,rgb(255 255 255/.24),rgb(255 255 255/0) 18%)}',
     'html.bs-orbite #bs-orbite-fond{opacity:1}',
+    // Écran de démarrage : les anneaux passent devant le CRM qui se charge, l'écran devient transparent par-dessus.
+    'html.bs-orbite:has(#splash:not(.hide)) #bs-orbite-fond{z-index:199;transition:none}',
+    'html.bs-orbite body #splash{background:radial-gradient(60% 50% at 50% 45%,rgb(var(--bg-rgb)/.55),rgb(var(--bg-rgb)/0) 70%)!important}',
     'html.bs-orbite body{background:transparent}',
     'html.bs-orbite #bs-amb{display:none!important}',
     'html.bs-orbite body::before,html.bs-orbite #root::after{display:none}',
@@ -54,8 +59,8 @@
   function sel(l) { return l.split(',').map(function (x) { return G + x.trim(); }).join(','); }
   var FLOU = '-webkit-backdrop-filter:blur(var(--bso-f)) saturate(1.35);backdrop-filter:blur(var(--bso-f)) saturate(1.35)';
   var THEME = [
-    'html.bs-orbite{--bso-v:.46;--bso-f:7px;--bso-epais:.74}',
-    'html.bs-orbite[data-scheme="light"]{--bso-v:.58;--bso-epais:.82}',
+    'html.bs-orbite{--bso-v:.4;--bso-f:5px;--bso-epais:.72}',
+    'html.bs-orbite[data-scheme="light"]{--bso-v:.52;--bso-epais:.8}',
     // Grandes surfaces : verre clair, reflet discret en haut.
     sel('.card,.kpi,.kb-col,.week-wrap,.month,.script-step,.call-top,.call-foot,.paper-wrap') +
       '{background:linear-gradient(180deg,rgb(255 255 255/.05),rgb(255 255 255/0) 38%),rgb(var(--surface-rgb)/var(--bso-v))!important;' + FLOU + '}',
@@ -148,6 +153,7 @@
         arret = m.startGlass({
           root: boite, canvas: cv, shape: shape, palette: m.sitePalette || m.glassPalette, autoplay: 30, fit: 'canvas',
           lateral: p.lateral, scale: p.scale, lift: p.lift, pixelRatio: q.pixelRatio, supersample: q.supersample, fps: q.fps, object: f !== 'anneaux',
+          rings: ANNEAUX,
           onReady: function () { if (id === lance) { marquer(true); surveiller(id); } },
         });
       } catch (e) {

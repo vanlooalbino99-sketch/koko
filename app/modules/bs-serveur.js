@@ -218,6 +218,16 @@
     '.bse-msg.ok{color:var(--good,#34d399)}',
     '.bse-table td,.bse-table th{vertical-align:middle}',
     '.bse-table .select{min-width:130px}',
+    '.bse-acces-row>td{background:var(--surface-2,rgba(127,127,127,.06))}',
+    '.bse-acces-p{display:flex;flex-direction:column;gap:10px;padding:6px 2px;position:sticky;left:0;white-space:normal}',
+    '.bse-acces-modes{display:flex;flex-wrap:wrap;gap:8px 20px}',
+    '.bse-acces-modes label,.bse-acces label{display:flex;align-items:center;gap:8px;cursor:pointer}',
+    '.bse-acces{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px 18px}',
+    '.bse-acces-g{display:flex;flex-direction:column;gap:6px}',
+    '.bse-acces-g>b{font-size:12px;text-transform:uppercase;letter-spacing:.04em;opacity:.7}',
+    '.bse-acces.off{opacity:.5}',
+    '.bse-acces small{font-size:10.5px;opacity:.6;margin-left:2px}',
+    '.bse-acces-w{color:var(--danger,#dc2626);font-size:13px}',
     '.bse-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--c)}',
     '.bse-code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;padding:2px 6px;border-radius:6px;background:rgb(var(--text-rgb)/.07)}',
     '.bse-sep{height:1px;background:var(--border);margin:16px 0}',
@@ -227,6 +237,13 @@
     '.bse-son label{flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;font-weight:600;min-height:32px}',
     '.bse-son input{accent-color:rgb(var(--accent-rgb))}',
     '.bse-vol{display:flex;gap:6px}',
+    '.bse-perso{margin-top:18px;padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}',
+    '.bse-perso-h{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}',
+    '.bse-perso-h small,.bse-perso-t small{color:var(--text-3,#8a8f98);font-size:12.5px}',
+    '.bse-perso-l{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 8px 8px 12px;border-radius:12px;border:1px solid var(--border)}',
+    '.bse-perso-t{flex:1;min-width:150px;display:flex;flex-direction:column;gap:1px;font-size:13.5px}',
+    '.bse-perso-t small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}',
+    '.bse-mp3{cursor:pointer}',
     // Photo de profil : dans Mon compte et en haut à droite.
     '.bse-av.ph,.bs-moi .ph,.bs-moi-tete .ph{background:var(--ph) center/cover no-repeat;color:transparent}',
     '.bse-me .bse-av{width:64px;height:64px;border-radius:50%;font-size:22px}',
@@ -417,7 +434,7 @@
       '<em>' + esc(USER.poste || (USER.role === 'admin' ? 'Administrateur' : 'Membre')) + '</em></div></div>' +
       '<div class="bs-moi-sep"></div>' +
       '<button type="button" role="menuitem" data-moi="compte">' + moiIc('compte') + 'Mon compte</button>' +
-      '<button type="button" role="menuitem" data-moi="organi">' + moiIc('organi') + 'Organigramme</button>' +
+      (!window.bsAcces || window.bsAcces.peut('messages') ? '<button type="button" role="menuitem" data-moi="organi">' + moiIc('organi') + 'Organigramme</button>' : '') +
       '<button type="button" role="menuitem" data-moi="reglages">' + moiIc('reglages') + 'Réglages</button>' +
       '<div class="bs-moi-sep"></div>' +
       '<button type="button" role="menuitem" class="sortie" data-moi="sortie">' + moiIc('sortie') + 'Se déconnecter</button>';
@@ -484,6 +501,31 @@
     }
     function loadHistory() { if (!isAdmin) return; api('GET', '/api/data/' + DATA_KEY + '/history').then(function (b) { ui.history = b.history; render(); }).catch(function (e) { setMsg('hist', e.message, 'err'); }); }
 
+    var A = window.bsAcces;
+    function accesLabel(u) {
+      if (u.role === 'admin') return '<span class="badge tone-sky">Tout (admin)</span>';
+      var n = Array.isArray(u.acces) ? u.acces.length : -1;
+      return '<button type="button" class="btn btn-ghost btn-sm" data-acces="' + esc(u.id) + '">' + (n < 0 ? 'Tout le CRM' : n + ' rubrique' + (n > 1 ? 's' : '') + ' sur ' + A.cles.length) + ' ▾</button>';
+    }
+    function panneauAcces(u) {
+      var b = ui.accesBrouillon, tout = b.mode === 'tout';
+      return '<tr class="bse-acces-row"><td colspan="7"><div class="bse-acces-p"><b>Accès de ' + esc(u.name) + '</b>' +
+        '<div class="bse-acces-modes"><label><input type="radio" name="bse-acces-mode" value="tout"' + (tout ? ' checked' : '') + '> Tout le CRM (y compris les prochaines rubriques)</label>' +
+        '<label><input type="radio" name="bse-acces-mode" value="choix"' + (tout ? '' : ' checked') + '> Seulement les rubriques cochées</label></div>' +
+        '<div class="bse-acces' + (tout ? ' off' : '') + '">' + A.rubriques.map(function (g) {
+          return '<div class="bse-acces-g"><b>' + esc(g.groupe) + '</b>' + g.items.map(function (r) {
+            return '<label><input type="checkbox" data-acces-cle="' + esc(r.id) + '"' + (tout || b.liste.indexOf(r.id) >= 0 ? ' checked' : '') + (tout ? ' disabled' : '') + '> ' + esc(r.label) + '</label>';
+          }).join('') + '</div>';
+        }).join('') + '<div class="bse-acces-g"><b>Toujours ouvert</b><label><input type="checkbox" checked disabled> Mon compte, mot de passe, apparence, notifications, sons</label></div></div>' +
+        (!tout && !b.liste.length ? '<div class="bse-acces-w">Ce membre ne verra que Réglages.</div>' : '') +
+        '<div class="bse-actions">' + (tout ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-acces-tout>Tout cocher</button><button type="button" class="btn btn-ghost btn-sm" data-acces-rien>Tout décocher</button>') +
+        '<span style="flex:1"></span><button type="button" class="btn btn-ghost btn-sm" data-acces-annuler>Annuler</button>' +
+        '<button type="button" class="btn btn-primary btn-sm" data-acces-save="' + esc(u.id) + '">Enregistrer l’accès</button></div>' +
+        '<p class="sr-hint" style="margin:0">Les rubriques décochées disparaissent de son menu, de la recherche et des raccourcis, sur ordinateur et téléphone, tout de suite. ' +
+        'Messages, groupes, visio, formations et générateur de leads sont aussi refusés par le serveur. Les fiches (prospects, devis, factures, tâches) restent un seul dossier partagé : ' +
+        'ne mettez pas dans le CRM une information qu’un membre ne doit jamais voir.</p></div></td></tr>';
+    }
+
     function render() {
       if (!el.isConnected) return;
       var s = st(DATA_KEY), d = STATUS[status] || STATUS.ok;
@@ -510,11 +552,13 @@
             '<td><select class="input select" data-poste="' + esc(u.id) + '"><option value="">— À définir</option>' + postes.map(function (p) { return '<option' + (p === u.poste ? ' selected' : '') + '>' + esc(p) + '</option>'; }).join('') + '</select></td>' +
             '<td><select class="input select" data-chef="' + esc(u.id) + '"><option value="">— Personne</option>' + (ui.users || []).filter(function (x) { return x.id !== u.id; }).map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === u.managerId ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></td>' +
             '<td><select class="input select" data-role="' + esc(u.id) + '"' + (self ? ' disabled' : '') + '><option value="membre"' + (u.role === 'membre' ? ' selected' : '') + '>Membre</option><option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>Administrateur</option></select></td>' +
+            '<td>' + (A ? accesLabel(u) : '') + '</td>' +
             '<td class="sr-hint">' + esc(fmtDate(u.lastLogin)) + '</td>' +
-            '<td style="text-align:right;white-space:nowrap">' + (self ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-reset="' + esc(u.id) + '">Nouveau mot de passe</button> <button type="button" class="btn btn-ghost btn-sm" data-del="' + esc(u.id) + '">Retirer</button>') + '</td></tr>';
+            '<td style="text-align:right;white-space:nowrap">' + (self ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-reset="' + esc(u.id) + '">Nouveau mot de passe</button> <button type="button" class="btn btn-ghost btn-sm" data-del="' + esc(u.id) + '">Retirer</button>') + '</td></tr>' +
+            (A && ui.accesOuvert === u.id && u.role !== 'admin' ? panneauAcces(u) : '');
         }).join('');
-        team = card('Équipe', 'Les membres voient et modifient les données du CRM ; les administrateurs gèrent aussi l’équipe, les ambiances, les icônes et les sauvegardes.',
-          (ui.users ? '<div class="table-wrap"><table class="table bse-table"><thead><tr><th>Membre</th><th>Poste</th><th>Responsable</th><th>Rôle</th><th>Dernière connexion</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="sr-hint">Chargement…</p>') +
+        team = card('Équipe', 'Les membres voient et modifient les données du CRM dans les rubriques que vous leur ouvrez (colonne Accès) ; les administrateurs ont accès à tout et gèrent aussi l’équipe, les ambiances, les icônes et les sauvegardes.',
+          (ui.users ? '<div class="table-wrap"><table class="table bse-table"><thead><tr><th>Membre</th><th>Poste</th><th>Responsable</th><th>Rôle</th><th>Accès</th><th>Dernière connexion</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="sr-hint">Chargement…</p>') +
           msg('team') + '<div class="bse-actions"><button type="button" class="btn btn-secondary btn-sm" data-act="organigramme">Voir l’organigramme</button></div>' +
           '<div class="bse-sep"></div>' +
           '<form data-form="postes"><div class="sr-label" style="margin-bottom:6px">Postes de l’équipe</div><p class="sr-hint" style="margin:0 0 8px">Un poste par ligne, du plus haut au plus bas : cet ordre range aussi l’organigramme.</p>' +
@@ -535,8 +579,8 @@
           (ui.history ? (hist ? '<div class="table-wrap"><table class="table bse-table"><thead><tr><th>Version</th><th>Date</th><th>Par</th><th>Taille</th><th></th></tr></thead><tbody>' + hist + '</tbody></table></div>' : '<p class="sr-hint">Aucune sauvegarde pour l’instant.</p>') : '<p class="sr-hint">Chargement…</p>') +
           '<div class="bse-actions"><button type="button" class="btn btn-ghost btn-sm" data-act="hist">Actualiser</button></div>' + msg('hist'), ICON.history);
       } else {
-        team = card('Équipe', '', '<p class="sr-hint">Seul un administrateur ajoute ou retire des membres de l’équipe et leur attribue un poste.</p>' +
-          '<div class="bse-actions"><button type="button" class="btn btn-secondary btn-sm" data-act="organigramme">Voir l’organigramme</button></div>', ICON.users);
+        team = card('Équipe', '', '<p class="sr-hint">Seul un administrateur ajoute ou retire des membres de l’équipe, leur attribue un poste et choisit les rubriques ouvertes à chacun.</p>' +
+          (!A || A.peut('messages') ? '<div class="bse-actions"><button type="button" class="btn btn-secondary btn-sm" data-act="organigramme">Voir l’organigramme</button></div>' : ''), ICON.users);
       }
       // La liste peut arriver pendant qu'on tape : la saisie en cours et le curseur sont conservés.
       var keep = {}, act = document.activeElement, focusKey = '';
@@ -548,7 +592,14 @@
       ui.clear = {};
       var son = '', SN = window.bsMessages && window.bsMessages.sonnerie;
       if (SN) {
-        son = card('Sonnerie des visios', 'Le son joué quand un membre de l’équipe lance une visio. Réglage propre à cet appareil.',
+        var perso = SN.perso ? '<div class="bse-perso"><div class="bse-perso-h"><b>Vos propres sons</b><small>Choisissez un MP3 sur votre ordinateur. Vos sons vous suivent sur tous vos appareils (3 Mo au plus).</small></div>' +
+          SN.perso().map(function (x) {
+            return '<div class="bse-perso-l"><div class="bse-perso-t"><b>' + esc(x.nom) + '</b><small>' + (x.fichier ? '🎵 ' + esc(x.fichier) : 'Son du CRM') + '</small></div>' +
+              '<button type="button" class="btn btn-ghost btn-sm" data-perso-ecoute="' + x.id + '" aria-label="Écouter le son ' + esc(x.nom) + '">▶ Écouter</button>' +
+              '<label class="btn btn-secondary btn-sm bse-mp3">' + (x.fichier ? 'Changer' : 'Choisir un MP3') + '<input type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg" data-perso-fichier="' + x.id + '" hidden></label>' +
+              (x.fichier ? '<button type="button" class="btn btn-ghost btn-sm" data-perso-retirer="' + x.id + '">Retirer</button>' : '') + '</div>';
+          }).join('') + msg('sons') + '</div>' : '';
+        son = card('Sons du CRM', 'Les sons des visios et des messages. La sonnerie et le volume ci-dessous sont propres à cet appareil.',
           '<div class="bse-sons">' + SN.sons().map(function (x) {
             var on = x.id === SN.choix();
             return '<div class="bse-son' + (on ? ' on' : '') + '"><label><input type="radio" name="bse-son" value="' + esc(x.id) + '"' + (on ? ' checked' : '') + '><span>' + esc(x.nom) + '</span></label>' +
@@ -556,9 +607,12 @@
           }).join('') + '</div>' +
           '<div class="setting-row" style="margin-top:12px"><div class="sr-text"><div class="sr-label">Volume</div></div><div class="bse-vol">' +
           [['faible', 'Faible'], ['normal', 'Normal'], ['fort', 'Fort']].map(function (v) { return '<button type="button" class="btn btn-sm ' + (SN.volume() === v[0] ? 'btn-primary' : 'btn-secondary') + '" data-vol="' + v[0] + '">' + v[1] + '</button>'; }).join('') +
-          '</div></div>', ICON.bell);
+          '</div></div>' + perso, ICON.bell);
       }
       el.innerHTML = me + son + sync + team;
+      // Le panneau d'accès reste dans la partie visible du tableau (qui défile en largeur).
+      var pa = el.querySelector('.bse-acces-p'), tw = pa && pa.closest('.table-wrap');
+      if (pa && tw) pa.style.maxWidth = Math.max(260, tw.clientWidth - 28) + 'px';
       Array.prototype.forEach.call(el.querySelectorAll('form[data-form] [name]'), function (i) {
         var k = i.form.getAttribute('data-form') + ':' + i.name;
         if (k in keep) i.value = keep[k];
@@ -587,17 +641,57 @@
       }
     });
     el.addEventListener('change', function (e) {
+      if (e.target.name === 'bse-acces-mode' && ui.accesBrouillon) { ui.accesBrouillon.mode = e.target.value; render(); return; }
+      var ak = e.target.getAttribute && e.target.getAttribute('data-acces-cle');
+      if (ak && ui.accesBrouillon) {
+        var l = ui.accesBrouillon.liste.filter(function (k) { return k !== ak; });
+        if (e.target.checked) l.push(ak);
+        ui.accesBrouillon.liste = A.cles.filter(function (k) { return l.indexOf(k) >= 0; });
+        render(); return;
+      }
       var pid = e.target.getAttribute && e.target.getAttribute('data-poste');
       if (pid) { patchUser(pid, { poste: e.target.value }, 'Poste mis à jour.'); return; }
       var cid = e.target.getAttribute && e.target.getAttribute('data-chef');
       if (cid) { patchUser(cid, { managerId: e.target.value || null }, 'Responsable mis à jour.'); return; }
       if (e.target.name === 'bse-son') { var SN = window.bsMessages.sonnerie; SN.choisir(e.target.value); SN.ecouter(e.target.value); render(); return; }
+      var pf = e.target.getAttribute && e.target.getAttribute('data-perso-fichier');
+      if (pf) {
+        var fichier = e.target.files && e.target.files[0], SNp = window.bsMessages.sonnerie;
+        if (!fichier) return;
+        setMsg('sons', 'Envoi de « ' + fichier.name + ' »…', '');
+        SNp.televerser(pf, fichier).then(function () { setMsg('sons', 'Son enregistré : « ' + fichier.name + ' ».', 'ok'); SNp.ecouterPerso(pf); })
+          .catch(function (er) { setMsg('sons', er.message, 'err'); });
+        return;
+      }
       var id = e.target.getAttribute && e.target.getAttribute('data-role'); if (!id) return;
       api('PATCH', '/api/users/' + encodeURIComponent(id), { role: e.target.value })
         .then(function () { setMsg('team', 'Rôle mis à jour.', 'ok'); loadUsers(); })
         .catch(function (er) { setMsg('team', er.message, 'err'); loadUsers(); });
     });
     el.addEventListener('click', function (e) {
+      var ab = e.target.closest('[data-acces],[data-acces-tout],[data-acces-rien],[data-acces-annuler],[data-acces-save]');
+      if (ab && A) {
+        if (ab.hasAttribute('data-acces')) {
+          var aid = ab.getAttribute('data-acces'), au = (ui.users || []).filter(function (x) { return x.id === aid; })[0];
+          ui.accesOuvert = ui.accesOuvert === aid || !au ? null : aid;
+          if (au) ui.accesBrouillon = { mode: Array.isArray(au.acces) ? 'choix' : 'tout', liste: (Array.isArray(au.acces) ? au.acces : A.cles).slice() };
+        } else if (ab.hasAttribute('data-acces-tout')) ui.accesBrouillon.liste = A.cles.slice();
+        else if (ab.hasAttribute('data-acces-rien')) ui.accesBrouillon.liste = [];
+        else if (ab.hasAttribute('data-acces-annuler')) ui.accesOuvert = null;
+        else {
+          var sid = ab.getAttribute('data-acces-save'), su = (ui.users || []).filter(function (x) { return x.id === sid; })[0], br = ui.accesBrouillon;
+          ui.accesOuvert = null;
+          patchUser(sid, { acces: br.mode === 'tout' ? null : br.liste }, 'Accès de ' + (su ? su.name : 'ce membre') + ' mis à jour : il s’applique tout de suite sur ses écrans.');
+        }
+        render(); return;
+      }
+      var ps = e.target.closest('[data-perso-ecoute],[data-perso-retirer]');
+      if (ps) {
+        var SNx = window.bsMessages.sonnerie;
+        if (ps.hasAttribute('data-perso-ecoute')) SNx.ecouterPerso(ps.getAttribute('data-perso-ecoute'));
+        else SNx.retirer(ps.getAttribute('data-perso-retirer')).then(function () { setMsg('sons', 'Son du CRM rétabli.', 'ok'); }).catch(function (er) { setMsg('sons', er.message, 'err'); });
+        return;
+      }
       var sb = e.target.closest('[data-ecoute],[data-vol]');
       if (sb) {
         var SN = window.bsMessages.sonnerie;

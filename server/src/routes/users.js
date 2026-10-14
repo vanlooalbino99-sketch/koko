@@ -1,6 +1,7 @@
 // /api/users (administrateurs) : membres de l'équipe.
 import { Router } from 'express';
 import { createUser, publicUser, validateUserInput } from '../auth.js';
+import { lireAcces, validerAcces } from '../acces.js';
 
 export function usersRoutes({ db, identity, hub }) {
   const r = Router();
@@ -21,8 +22,10 @@ export function usersRoutes({ db, identity, hub }) {
   });
 
   r.patch('/:id', async (req, res) => {
-    const { name, role, password, poste, managerId } = req.body || {};
+    const { name, role, password, poste, managerId, acces } = req.body || {};
     const errors = validateUserInput({ name, role, password }, { partial: true });
+    const choix = acces === undefined ? null : validerAcces(acces);
+    if (choix && choix.error) errors.push(choix.error);
     if (errors.length) return res.status(400).json({ error: errors.join(' ') });
     const out = await db.tx(async () => {
       const u = await byId(req.params.id);
@@ -30,6 +33,7 @@ export function usersRoutes({ db, identity, hub }) {
       if (role && u.role === 'admin' && role !== 'admin' && (await admins()) <= 1) return { status: 400, error: 'Il faut garder au moins un administrateur.' };
       if (name !== undefined) await db.run('UPDATE users SET name = ? WHERE id = ?', String(name).trim(), u.id);
       if (role !== undefined) await db.run('UPDATE users SET role = ? WHERE id = ?', role, u.id);
+      if (choix) await db.run('UPDATE users SET acces = ? WHERE id = ?', choix.liste ? JSON.stringify(choix.liste) : null, u.id);
       if (poste !== undefined) await db.run('UPDATE users SET poste = ? WHERE id = ?', String(poste || '').trim().replace(/\s+/g, ' ').slice(0, 60) || null, u.id);
       if (managerId !== undefined) {
         const m = managerId ? await byId(String(managerId)) : null;
@@ -49,7 +53,10 @@ export function usersRoutes({ db, identity, hub }) {
     }
     // Organigramme et messagerie des autres membres à jour sans recharger.
     if (hub) hub.send((await db.all('SELECT id FROM users')).map((x) => x.id), 'equipe', {});
-    res.json({ user: publicUser(await byId(out.user.id)) });
+    const apres = await byId(out.user.id);
+    // Ses écrans appliquent tout de suite ses nouveaux accès (menu, pages).
+    if (hub && (choix || role !== undefined)) hub.send([apres.id], 'acces', { role: apres.role, acces: apres.role === 'admin' ? null : lireAcces(apres.acces) });
+    res.json({ user: publicUser(apres) });
   });
 
   r.delete('/:id', async (req, res) => {

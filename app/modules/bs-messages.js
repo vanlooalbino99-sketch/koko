@@ -36,6 +36,10 @@
     sourire: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
     doc: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
     telecharger: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+    chevG: '<path d="m15 18-6-6 6-6"/>',
+    chevD: '<path d="m9 18 6-6-6-6"/>',
+    lecture: '<polygon points="7 4 20 12 7 20 7 4" fill="currentColor"/>',
+    note: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
   };
   // Sélecteur d'émojis : une sélection courante, par thème.
   var EMOJIS = [
@@ -98,14 +102,105 @@
   }
   function resume(m) { return m.body || (m.file ? '📎 ' + m.file.name : ''); }
   function taillef(n) { return n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' Mo' : Math.max(1, Math.round(n / 1024)) + ' Ko'; }
+  function genre(mime) {
+    mime = String(mime || '');
+    return /^image\/(jpeg|png|gif|webp)$/.test(mime) ? 'image' : /^video\//.test(mime) ? 'video' : /^audio\//.test(mime) ? 'audio' : mime === 'application/pdf' ? 'pdf' : 'autre';
+  }
+  // Pièce jointe dans le fil : un clic l'ouvre en grand dans la visionneuse (data-voir).
   function piece(f) {
     if (!f) return '';
-    var url = API + '/fichiers/' + encodeURIComponent(f.id);
-    if (/^image\/(jpeg|png|gif|webp)$/.test(f.mime)) return '<a class="bsm-img" href="' + url + '" target="_blank" rel="noopener"><img src="' + url + '" alt="' + esc(f.name) + '" loading="lazy"></a>';
+    var url = API + '/fichiers/' + encodeURIComponent(f.id), g = genre(f.mime), voir = ' data-voir="' + esc(f.id) + '"';
+    if (g === 'image') return '<a class="bsm-img" href="' + url + '"' + voir + ' aria-label="Voir l’image ' + esc(f.name) + ' en grand"><img src="' + url + '" alt="' + esc(f.name) + '" loading="lazy"></a>';
+    if (g === 'video') return '<a class="bsm-img bsm-vid" href="' + url + '"' + voir + ' aria-label="Lire la vidéo ' + esc(f.name) + '"><video src="' + url + '#t=0.1" preload="metadata" muted playsinline></video><span class="bsm-play">' + ic('lecture', 22) + '</span></a>';
     var ext = (f.name.split('.').pop() || '').slice(0, 4).toUpperCase();
-    return '<a class="bsm-doc" href="' + url + (f.mime === 'application/pdf' ? '' : '?telecharger') + '" target="_blank" rel="noopener"' + (f.mime === 'application/pdf' ? '' : ' download="' + esc(f.name) + '"') + '>' +
-      '<span class="bsm-doc-ic">' + ic('doc', 18) + '<i>' + esc(ext) + '</i></span><span class="bsm-doc-t"><b>' + esc(f.name) + '</b><small>' + taillef(f.size) + '</small></span>' + ic('telecharger', 16) + '</a>';
+    return '<a class="bsm-doc" href="' + url + (g === 'pdf' || g === 'audio' ? '' : '?telecharger') + '"' + voir + '>' +
+      '<span class="bsm-doc-ic">' + ic(g === 'audio' ? 'note' : 'doc', 18) + '<i>' + esc(ext) + '</i></span><span class="bsm-doc-t"><b>' + esc(f.name) + '</b><small>' + taillef(f.size) + '</small></span>' + ic(g === 'autre' ? 'telecharger' : 'maximize', 16) + '</a>';
   }
+
+  // ------------------------------------------------------------------ visionneuse des pièces jointes
+  // Photo (clic pour zoomer), vidéo, son et PDF s'ouvrent en grand ; les autres fichiers se téléchargent d'ici.
+  // Flèches, boutons ou balayage pour passer aux autres pièces jointes de la conversation ; Échap ou le fond pour fermer.
+  var Vue = (function () {
+    var el = null, liste = [], i = 0, avant = null, x0 = null;
+    function pieces() {
+      return ((S.actif && S.msgs[S.actif]) || []).filter(function (m) { return m.file; }).map(function (m) { return { f: m.file, auteur: m.author, at: m.at }; });
+    }
+    function contenu(f) {
+      var url = API + '/fichiers/' + encodeURIComponent(f.id), g = genre(f.mime);
+      if (g === 'image') return '<img class="bsv-img" src="' + url + '" alt="' + esc(f.name) + '" data-vue="zoom">';
+      if (g === 'video') return '<video class="bsv-media" src="' + url + '" controls autoplay playsinline></video>';
+      if (g === 'audio') return '<div class="bsv-carte">' + ic('note', 54) + '<b>' + esc(f.name) + '</b><audio src="' + url + '" controls autoplay></audio></div>';
+      if (g === 'pdf') return '<iframe class="bsv-pdf" src="' + url + '" title="' + esc(f.name) + '"></iframe>';
+      return '<div class="bsv-carte">' + ic('doc', 54) + '<b>' + esc(f.name) + '</b><small>' + taillef(f.size) + '</small><p>Pas d’aperçu pour ce type de fichier.</p>' +
+        '<a class="btn btn-primary btn-md" href="' + url + '?telecharger" download="' + esc(f.name) + '">' + ic('telecharger', 16) + 'Télécharger</a></div>';
+    }
+    function arreter() { if (el) [].forEach.call(el.querySelectorAll('video,audio'), function (m) { try { m.pause(); } catch (e) {} }); }
+    function rendu() {
+      var p = liste[i], f = p.f, url = API + '/fichiers/' + encodeURIComponent(f.id);
+      arreter();
+      el.classList.remove('zoom');
+      el.innerHTML = '<div class="bsv-haut"><div class="bsv-titre"><b>' + esc(f.name) + '</b><small>' + esc([p.auteur, jour(p.at) + ' ' + heure(p.at), taillef(f.size)].filter(Boolean).join(' · ')) +
+        (liste.length > 1 ? ' · ' + (i + 1) + ' / ' + liste.length : '') + '</small></div>' +
+        '<a class="bsv-btn" href="' + url + '?telecharger" download="' + esc(f.name) + '" title="Télécharger" aria-label="Télécharger">' + ic('telecharger', 20) + '</a>' +
+        '<button type="button" class="bsv-btn" data-vue="fermer" title="Fermer (Échap)" aria-label="Fermer">' + ic('x', 22) + '</button></div>' +
+        '<div class="bsv-scene" data-vue="fond">' + contenu(f) + '</div>' +
+        (liste.length > 1 ? '<button type="button" class="bsv-nav prec" data-vue="prec" aria-label="Pièce jointe précédente"' + (i ? '' : ' disabled') + '>' + ic('chevG', 28) + '</button>' +
+          '<button type="button" class="bsv-nav suiv" data-vue="suiv" aria-label="Pièce jointe suivante"' + (i < liste.length - 1 ? '' : ' disabled') + '>' + ic('chevD', 28) + '</button>' : '');
+      el.querySelector('[data-vue="fermer"]').focus();
+    }
+    function aller(d) { var j = i + d; if (j < 0 || j >= liste.length) return; i = j; rendu(); }
+    function fermer() {
+      if (!el || el.hidden) return;
+      arreter(); el.innerHTML = ''; el.hidden = true;
+      document.documentElement.classList.remove('bsv-ouverte');
+      if (avant && avant.focus) try { avant.focus(); } catch (e) {}
+    }
+    function creer() {
+      el = document.createElement('div');
+      el.className = 'bsv'; el.hidden = true;
+      el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Pièce jointe');
+      document.body.appendChild(el);
+      el.addEventListener('click', function (ev) {
+        var t = ev.target.closest('[data-vue]'), a = t && t.getAttribute('data-vue');
+        if (a === 'fermer' || (a === 'fond' && ev.target === t)) fermer();
+        else if (a === 'prec') aller(-1);
+        else if (a === 'suiv') aller(1);
+        else if (a === 'zoom') el.classList.toggle('zoom');
+      });
+      document.addEventListener('keydown', function (ev) {
+        if (!el || el.hidden) return;
+        if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); fermer(); }
+        else if (ev.key === 'ArrowLeft' && !/^(VIDEO|AUDIO)$/.test(ev.target.tagName)) aller(-1);
+        else if (ev.key === 'ArrowRight' && !/^(VIDEO|AUDIO)$/.test(ev.target.tagName)) aller(1);
+        else if (ev.key === 'Tab') {
+          var f = [].filter.call(el.querySelectorAll('a[href],button:not([disabled]),video,audio,iframe'), function (n) { return n.offsetParent !== null; });
+          if (!f.length) return;
+          if (ev.shiftKey && document.activeElement === f[0]) { ev.preventDefault(); f[f.length - 1].focus(); }
+          else if (!ev.shiftKey && document.activeElement === f[f.length - 1]) { ev.preventDefault(); f[0].focus(); }
+          else if (!el.contains(document.activeElement)) { ev.preventDefault(); f[0].focus(); }
+        }
+      }, true);
+      el.addEventListener('touchstart', function (ev) { x0 = ev.touches.length === 1 && !el.classList.contains('zoom') ? ev.touches[0].clientX : null; }, { passive: true });
+      el.addEventListener('touchend', function (ev) {
+        if (x0 == null) return;
+        var dx = ev.changedTouches[0].clientX - x0; x0 = null;
+        if (Math.abs(dx) > 60) aller(dx < 0 ? 1 : -1);
+      }, { passive: true });
+    }
+    function ouvrir(id) {
+      liste = pieces();
+      i = -1;
+      liste.forEach(function (p, k) { if (p.f.id === id) i = k; });
+      if (i < 0) return false;
+      avant = document.activeElement;
+      if (!el) creer();
+      el.hidden = false;
+      document.documentElement.classList.add('bsv-ouverte');
+      rendu();
+      return true;
+    }
+    return { ouvrir: ouvrir, fermer: fermer, ouverte: function () { return !!el && !el.hidden; } };
+  })();
   var MAX_FICHIER = 10 * 1024 * 1024;
   function envoyerFichiers(files) {
     var c = S.convs[S.actif];
@@ -162,6 +257,11 @@
   function demarrer() {
     if (!serveur() || es) return;
     charger();
+    Sonnerie.charger();
+    window.addEventListener('bs:acces-change', function () {
+      if (Appel.conv && window.bsAcces && !window.bsAcces.peut('visio')) Appel.quitter();
+      charger();
+    });
     es = new EventSource(API + '/flux');
     var premier = true;
     es.addEventListener('pret', function (e) {
@@ -201,6 +301,10 @@
       rendre();
     });
     es.addEventListener('signal', function (e) { Appel.signal(JSON.parse(e.data)); });
+    // Accès changés par un administrateur : menu et pages appliqués par bs-acces.js.
+    es.addEventListener('acces', function (e) {
+      try { window.dispatchEvent(new CustomEvent('bs:acces', { detail: JSON.parse(e.data) })); } catch (er) { /* ignoré */ }
+    });
     es.onerror = function () { /* EventSource se reconnecte seul */ };
   }
   // Conversation affichée en arrivant dans une rubrique : la dernière ouverte, sinon la plus récente.
@@ -454,18 +558,90 @@
       var a = audio(); if (!a || a.state !== 'running') return;
       SONS[id || choix()].jouer(a, a.currentTime + 0.02);
     }
+
+    // Sons personnels : un fichier son (MP3…) choisi par le membre sur son ordinateur, gardé sur le serveur
+    // pour son compte (/api/sons), qui remplace le son du CRM pour la visio entrante, le message reçu ou envoyé.
+    var PERSO = { visio: 'Visio entrante', recu: 'Message reçu', envoye: 'Message envoyé' };
+    var perso = {};
+    function entetes() { return { credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart' } }; }
+    function chargerPerso() {
+      if (!serveur()) return Promise.resolve();
+      return fetch('/api/sons', entetes()).then(function (r) { return r.ok ? r.json() : { sons: [] }; }).then(function (b) {
+        var neuf = {};
+        return Promise.all((b.sons || []).map(function (x) {
+          var deja = perso[x.sorte];
+          if (deja && deja.maj === x.maj) { neuf[x.sorte] = deja; return null; }
+          return fetch('/api/sons/' + x.sorte + '?v=' + encodeURIComponent(x.maj), entetes())
+            .then(function (r) { return r.ok ? r.arrayBuffer() : null; })
+            .then(function (ab) { if (ab) neuf[x.sorte] = { nom: x.nom, maj: x.maj, octets: ab }; });
+        })).then(function () { perso = neuf; });
+      }).catch(function () { /* hors ligne : sons du CRM */ });
+    }
+    function decoder(a, octets) {
+      return new Promise(function (ok, ko) {
+        try {
+          var p = a.decodeAudioData(octets.slice(0), ok, ko);
+          if (p && p.then) p.then(ok, ko);
+        } catch (e) { ko(e); }
+      });
+    }
+    function tampon(k) {
+      var p = perso[k], a = audio();
+      if (!p || !a) return Promise.resolve(null);
+      if (!p.dec) p.dec = decoder(a, p.octets).then(function (b) { p.buf = b; return b; }, function () { return null; });
+      return p.dec;
+    }
+    // Joue le son personnel k (s'il existe) ; renvoie de quoi l'arrêter, ou null s'il n'y en a pas.
+    function jouerPerso(k, o) {
+      var a = audio();
+      if (!perso[k] || !a || a.state !== 'running') return null;
+      var h = { src: null, fini: false, stop: function () { h.fini = true; if (h.src) try { h.src.stop(); } catch (e) { /* déjà arrêté */ } } };
+      tampon(k).then(function (b) {
+        if (!b || h.fini) return;
+        var src = a.createBufferSource(), g = a.createGain();
+        src.buffer = b; src.loop = !!(o && o.boucle);
+        g.gain.value = 0.9 * VOL[volume()];
+        src.connect(g); g.connect(a.destination);
+        src.start();
+        if (o && o.max) src.stop(a.currentTime + o.max);
+        h.src = src;
+      });
+      return h;
+    }
+    function televerser(k, file) {
+      if (!PERSO[k]) return Promise.reject(new Error('Son inconnu.'));
+      if (!file) return Promise.reject(new Error('Aucun fichier choisi.'));
+      if (file.size > 3 * 1024 * 1024) return Promise.reject(new Error('Fichier trop lourd : 3 Mo au plus (un son de quelques secondes suffit).'));
+      var type = file.type || (/\.mp3$/i.test(file.name) ? 'audio/mpeg' : /\.m4a$/i.test(file.name) ? 'audio/mp4' : /\.wav$/i.test(file.name) ? 'audio/wav' : /\.ogg$/i.test(file.name) ? 'audio/ogg' : '');
+      if (!/^audio\//.test(type)) return Promise.reject(new Error('Choisissez un fichier son (MP3, M4A, WAV ou OGG).'));
+      var a = audio();
+      return file.arrayBuffer().then(function (ab) {
+        // Vérifié avant l'envoi : le navigateur doit savoir le lire.
+        return (a ? decoder(a, ab) : Promise.resolve(null)).then(function () { return ab; }, function () { throw new Error('Ce fichier ne se lit pas comme un son. Essayez un MP3.'); });
+      }).then(function (ab) {
+        return fetch('/api/sons/' + k + '?nom=' + encodeURIComponent(file.name || 'son'), {
+          method: 'PUT', credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart', 'Content-Type': type }, body: ab,
+        });
+      }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { if (!r.ok) throw new Error(b.error || 'Envoi impossible.'); return b; }); })
+        .then(chargerPerso);
+    }
+    function retirer(k) {
+      return fetch('/api/sons/' + k, { method: 'DELETE', credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart' } })
+        .then(function (r) { if (!r.ok) throw new Error('Suppression impossible.'); delete perso[k]; });
+    }
     function stop(cid) {
       var x = en[cid]; if (!x) return;
       delete en[cid];
       clearInterval(x.boucle); clearTimeout(x.fin);
+      if (x.perso) x.perso.stop();
       try { if (x.notif) x.notif.close(); } catch (e) { /* déjà fermée */ }
       if (x.carte) x.carte.fermer();
     }
     function start(cid, titreN, sous, carte) {
       stop(cid);
       var x = en[cid] = { carte: carte };
-      sonner();
-      x.boucle = setInterval(sonner, 3000);
+      x.perso = jouerPerso('visio', { boucle: true, max: 30 });
+      if (!x.perso) { sonner(); x.boucle = setInterval(sonner, 3000); }
       x.fin = setTimeout(function () { stop(cid); }, 30000);
       try {
         if (window.Notification && Notification.permission === 'granted' && document.hidden) {
@@ -477,8 +653,10 @@
     // Son de message (trois notes cristallines, dans l'esprit du « tri-tone » de l'iPhone), au volume choisi ;
     // aucun si la sonnerie est réglée sur « Aucun son ». Pas plus d'un toutes les 1,5 s.
     var dernierDing = 0;
-    function message() {
-      if (choix() === 'silence' || Date.now() - dernierDing < 1500) return;
+    function message(test) {
+      if (!test && Date.now() - dernierDing < 1500) return;
+      if (!test && jouerPerso('recu', { max: 8 })) { dernierDing = Date.now(); return; }
+      if (choix() === 'silence' && !test) return;
       var a = audio(); if (!a || a.state !== 'running') return;
       dernierDing = Date.now();
       var t = a.currentTime + 0.02;
@@ -486,8 +664,10 @@
     }
     // Son d'envoi : un « swoosh » court qui monte, comme l'envoi d'un iMessage ; même réglage de volume.
     var dernierEnvoi = 0;
-    function envoi() {
-      if (choix() === 'silence' || Date.now() - dernierEnvoi < 600) return;
+    function envoi(test) {
+      if (!test && Date.now() - dernierEnvoi < 600) return;
+      if (!test && jouerPerso('envoye', { max: 6 })) { dernierEnvoi = Date.now(); return; }
+      if (choix() === 'silence' && !test) return;
       var a = audio(); if (!a || a.state !== 'running') return;
       dernierEnvoi = Date.now();
       var t = a.currentTime + 0.01;
@@ -507,6 +687,18 @@
       choisir: function (id) { if (SONS[id]) ecrire('bsm-sonnerie', id); },
       regler: function (v) { if (VOL[v]) ecrire('bsm-sonnerie-volume', v); },
       ecouter: function (id) { audio(); setTimeout(function () { sonner(id); }, 30); },
+      // Sons personnels (Réglages) : liste, envoi d'un fichier, retrait, écoute (le sien ou celui du CRM).
+      perso: function () { return Object.keys(PERSO).map(function (k) { return { id: k, nom: PERSO[k], fichier: perso[k] ? perso[k].nom : '' }; }); },
+      charger: chargerPerso, televerser: televerser, retirer: retirer,
+      ecouterPerso: function (k) {
+        audio();
+        setTimeout(function () {
+          if (perso[k]) jouerPerso(k, { max: 8 });
+          else if (k === 'visio') sonner();
+          else if (k === 'recu') message(true);
+          else envoi(true);
+        }, 30);
+      },
     };
   })();
 
@@ -802,6 +994,8 @@
     root.__bsm = true;
     root.addEventListener('click', function (ev) {
       var t = ev.target;
+      var voir = t.closest('[data-voir]');
+      if (voir && root.contains(voir) && !ev.ctrlKey && !ev.metaKey && !ev.shiftKey && Vue.ouvrir(voir.getAttribute('data-voir'))) { ev.preventDefault(); return; }
       if (t.closest('[data-act="fermer-fond"]') && !t.closest('.bsm-modal')) { S.modal = null; rendre(); return; }
       var b = t.closest('button');
       if (!b || !root.contains(b)) return;
@@ -1223,7 +1417,38 @@
     '.bsm-emo-g{display:grid;grid-template-columns:repeat(8,1fr)}',
     '.bsm-emo-g button{font-size:22px;line-height:1;padding:6px 0;border-radius:8px;transition:background .1s,transform .1s}',
     '.bsm-emo-g button:hover{background:var(--surface-2);transform:scale(1.15)}',
-    '.bsm-img{display:block;margin:2px 0 4px;border-radius:12px;overflow:hidden;max-width:min(280px,60vw)}',
+    '.bsm-img{display:block;margin:2px 0 4px;border-radius:12px;overflow:hidden;max-width:min(280px,60vw);cursor:zoom-in}',
+    '.bsm-vid{position:relative;cursor:pointer}',
+    '.bsm-vid video{display:block;width:100%;max-height:260px;object-fit:cover;background:#000;pointer-events:none}',
+    '.bsm-play{position:absolute;inset:0;display:grid;place-items:center;color:#fff;background:rgb(0 0 0/.18)}',
+    '.bsm-play svg{width:50px;height:50px;padding:14px 12px 14px 16px;border-radius:50%;background:rgb(0 0 0/.55);box-sizing:border-box}',
+    // Visionneuse plein écran des pièces jointes
+    '.bsv{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;background:rgb(6 8 14/.94);color:#fff;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);animation:bsvIn .18s ease-out}',
+    '.bsv[hidden]{display:none}',
+    '@keyframes bsvIn{from{opacity:0}to{opacity:1}}',
+    'html.bsv-ouverte{overflow:hidden}',
+    '.bsv-haut{display:flex;align-items:center;gap:8px;padding:10px 12px 10px 18px;padding-top:max(10px,env(safe-area-inset-top))}',
+    '.bsv-titre{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}',
+    '.bsv-titre b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.bsv-titre small{font-size:12.5px;opacity:.72}',
+    '.bsv-btn{flex:none;display:grid;place-items:center;width:42px;height:42px;border:0;border-radius:12px;background:rgb(255 255 255/.1);color:#fff;cursor:pointer;text-decoration:none}',
+    '.bsv-btn:hover,.bsv-btn:focus-visible{background:rgb(255 255 255/.22)}',
+    '.bsv-scene{flex:1;min-height:0;display:grid;place-items:center;padding:6px 72px 24px;overflow:auto}',
+    '.bsv-img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;cursor:zoom-in;user-select:none;-webkit-user-select:none}',
+    '.bsv.zoom .bsv-scene{place-items:start center}',
+    '.bsv.zoom .bsv-img{max-width:none;max-height:none;cursor:zoom-out}',
+    '.bsv-media{max-width:100%;max-height:100%;border-radius:8px;background:#000}',
+    '.bsv-pdf{width:min(1000px,100%);height:100%;border:0;border-radius:8px;background:#fff}',
+    '.bsv-carte{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:100%;padding:32px 28px;border-radius:20px;background:rgb(255 255 255/.07);text-align:center}',
+    '.bsv-carte b{font-size:16px;word-break:break-word}',
+    '.bsv-carte p{margin:0;opacity:.72}',
+    '.bsv-carte audio{width:min(380px,76vw)}',
+    '.bsv-nav{position:absolute;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:48px;height:48px;border:0;border-radius:50%;background:rgb(255 255 255/.13);color:#fff;cursor:pointer}',
+    '.bsv-nav:hover,.bsv-nav:focus-visible{background:rgb(255 255 255/.26)}',
+    '.bsv-nav[disabled]{opacity:.25;cursor:default}',
+    '.bsv-nav.prec{left:14px}',
+    '.bsv-nav.suiv{right:14px}',
+    '@media (max-width:640px){.bsv-scene{padding:4px 4px 84px}.bsv-nav{top:auto;bottom:max(18px,env(safe-area-inset-bottom));transform:none}.bsv-nav.prec{left:calc(50% - 60px)}.bsv-nav.suiv{right:calc(50% - 60px)}}',
     '.bsm-img img{display:block;width:100%;max-height:260px;object-fit:cover}',
     '.bsm-doc{display:flex;align-items:center;gap:10px;margin:2px 0 4px;padding:8px 10px;border-radius:12px;background:rgb(127 127 127/.12);color:inherit;text-decoration:none;min-width:200px;max-width:300px}',
     '.bsm-doc:hover{background:rgb(127 127 127/.2)}',
@@ -1450,6 +1675,6 @@
   function auto() { if (serveur()) setTimeout(demarrer, 1200); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
 
-  window.bsMessages = { monter: monter, appel: Appel, sonnerie: Sonnerie,
+  window.bsMessages = { monter: monter, appel: Appel, sonnerie: Sonnerie, visionneuse: Vue,
     organigramme: function () { orgV.auto = true; S.modal = { type: 'organigramme' }; if (location.hash !== '#/messages') location.hash = '#/messages'; else rendre(); }, etat: function () { return S; } };
 })();

@@ -13,7 +13,9 @@ const MAX_NAME = 60;
 const MAX_SIGNAL = 64 * 1024;
 export const MAX_FILE = 10 * 1024 * 1024;
 // Affichés dans le navigateur ; tout le reste est proposé au téléchargement (jamais exécuté dans la page).
-const INLINE = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
+// Ouverts dans la visionneuse du CRM (les autres fichiers sont toujours téléchargés).
+const INLINE = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
+  'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/webm', 'audio/ogg', 'audio/wav', 'audio/x-wav']);
 const PAGE = 50;
 const HEARTBEAT_MS = 20000;
 const GRACE_MS = 15000;
@@ -181,13 +183,25 @@ export function chatRoutes({ db, hub = chatHub() }) {
     const f = await db.get('SELECT * FROM chat_files WHERE id = ?', req.params.id);
     if (!f || !(await canSee(await conv(f.conversation_id), req.user.id))) return res.status(404).json({ error: 'Fichier introuvable.' });
     const inline = INLINE.has(f.mime) && req.query.telecharger === undefined;
+    const data = Buffer.from(f.data);
     res.set({
       'Content-Type': inline ? f.mime : 'application/octet-stream',
       'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(f.name)}`,
       'X-Content-Type-Options': 'nosniff',
       ...(f.mime === 'application/pdf' && inline ? {} : { 'Content-Security-Policy': "default-src 'none'; img-src 'self'; sandbox" }),
       'Cache-Control': 'private, max-age=31536000, immutable',
-    }).send(Buffer.from(f.data));
+      'Accept-Ranges': 'bytes',
+    });
+    // Vidéos et sons : le navigateur demande des morceaux (Range) pour démarrer vite et avancer dans la lecture.
+    const m = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || '').trim());
+    if (m && (m[1] || m[2])) {
+      const n = data.length;
+      const a = m[1] ? Number(m[1]) : Math.max(0, n - Number(m[2]));
+      const b = m[1] && m[2] ? Math.min(Number(m[2]), n - 1) : n - 1;
+      if (!(a <= b && a < n)) return res.status(416).set('Content-Range', `bytes */${n}`).end();
+      return res.status(206).set('Content-Range', `bytes ${a}-${b}/${n}`).send(data.subarray(a, b + 1));
+    }
+    res.send(data);
   });
 
   // « En train d'écrire » : rien en base, juste un signal aux autres membres (le navigateur le renvoie toutes les 2–3 s).

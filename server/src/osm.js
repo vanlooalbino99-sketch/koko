@@ -33,26 +33,33 @@ async function essai(url, q) {
   } finally { clearTimeout(t); }
 }
 
+// Une requête essayée sur chaque serveur jusqu'à ce que l'un réponde (réponses gardées 6 h). null si aucun ne répond.
+export async function interroger(q, { fetchImpl } = {}) {
+  const c = CACHE.get(q);
+  if (c && Date.now() - c.t < CACHE_MS) return c.data;
+  const n = SERVEURS.length, erreurs = [];
+  for (let k = 0; k < n; k++) {
+    const i = (premier + k) % n;
+    try {
+      const data = await (fetchImpl ? fetchImpl(SERVEURS[i], q) : essai(SERVEURS[i], q));
+      premier = i;
+      const out = { elements: Array.isArray(data && data.elements) ? data.elements : [] };
+      CACHE.set(q, { t: Date.now(), data: out });
+      if (CACHE.size > CACHE_MAX) CACHE.delete(CACHE.keys().next().value);
+      return out;
+    } catch (e) { erreurs.push(new URL(SERVEURS[i]).host + ': ' + (e && e.message)); }
+  }
+  console.warn('[osm] aucun serveur Overpass n’a répondu :', erreurs.join(' | '));
+  return null;
+}
+
 export function osmRoutes({ fetchImpl } = {}) {
   const router = Router();
   router.post('/', async (req, res) => {
     const q = req.body && req.body.q;
     if (!valide(q)) return res.status(400).json({ error: 'Requête refusée' });
-    const c = CACHE.get(q);
-    if (c && Date.now() - c.t < CACHE_MS) return res.json(c.data);
-    const n = SERVEURS.length, erreurs = [];
-    for (let k = 0; k < n; k++) {
-      const i = (premier + k) % n;
-      try {
-        const data = await (fetchImpl ? fetchImpl(SERVEURS[i], q) : essai(SERVEURS[i], q));
-        premier = i;
-        const out = { elements: Array.isArray(data && data.elements) ? data.elements : [] };
-        CACHE.set(q, { t: Date.now(), data: out });
-        if (CACHE.size > CACHE_MAX) CACHE.delete(CACHE.keys().next().value);
-        return res.json(out);
-      } catch (e) { erreurs.push(new URL(SERVEURS[i]).host + ': ' + (e && e.message)); }
-    }
-    console.warn('[osm] aucun serveur Overpass n’a répondu :', erreurs.join(' | '));
+    const out = await interroger(q, { fetchImpl });
+    if (out) return res.json(out);
     res.status(503).json({ error: 'OpenStreetMap indisponible' });
   });
   return router;

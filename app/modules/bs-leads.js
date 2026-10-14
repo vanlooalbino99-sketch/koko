@@ -254,13 +254,16 @@
     var nom = o.nom_complet || o.nom_raison_sociale || '';
     if (!nom || /non.?diffusible/i.test(nom + ' ' + (e.adresse || ''))) return null;
     var ens = (e.liste_enseignes && e.liste_enseignes[0]) || e.nom_commercial || '';
+    // « TAI (NESTENN) » : le nom d'usage est entre parenthèses, c'est lui qu'on trouve sur la vitrine.
+    var par = nom.match(/^(.*?)\s*\((.+)\)\s*$/);
+    if (par) { if (!ens) ens = par[2]; if (!(o.complements && o.complements.est_entrepreneur_individuel)) nom = par[1]; }
     var pers = (o.dirigeants || []).filter(function (d) { return d && (d.nom || d.prenoms) && d.type_dirigeant !== 'personne morale'; })[0];
     var ei = o.complements && o.complements.est_entrepreneur_individuel;
     var dir = pers ? joli([String(pers.prenoms || '').split(/\s+/)[0], pers.nom].filter(Boolean).join(' ').toUpperCase()) : (ei ? joli(nom.replace(/\s*\(.*\)\s*$/, '')) : '');
     var naf = e.activite_principale || o.activite_principale || '';
     var sect = secteurOf(prefs.secteur), m = metierOf(sect, prefs.metier);
     var lat = parseFloat(e.latitude), lon = parseFloat(e.longitude);
-    var crea = String(e.date_creation || o.date_creation || '').slice(0, 4);
+    var crea = String(o.date_creation || e.date_creation || '').slice(0, 4);
     var tr = e.tranche_effectif_salarie || o.tranche_effectif_salarie || '';
     return {
       siren: String(o.siren), siret: e.siret || '', nom: joli(nom), enseigne: ens && norm(ens) !== norm(nom) ? joli(ens) : '',
@@ -389,7 +392,35 @@
       });
     }).catch(function () { pts.forEach(function (l) { l.osmDone = true; l.osmKo = true; }); });
   }
-  function enrichir(leads) {
+  // Version équipe : le serveur du CRM cherche dans sa base OpenStreetMap locale, puis sur le site de l'entreprise.
+  // Petits lots l'un après l'autre : les cartes se remplissent au fur et à mesure.
+  function enrichirServeur(leads, apresLot) {
+    var pts = leads.filter(function (l) { return !l.osmDone || l.osmKo; });
+    var lots = [];
+    for (var i = 0; i < pts.length; i += 4) lots.push(pts.slice(i, i + 4));
+    return lots.reduce(function (p, lot) {
+      return p.then(function () {
+        var body = { leads: lot.map(function (l) { return { id: l.siren, siren: l.siren, siret: l.siret, nom: l.nom, enseigne: l.enseigne, dirigeant: l.dirigeant, adresse: l.adresse, cp: l.cp, ville: l.ville, lat: l.lat, lon: l.lon }; }) };
+        return getJson('/api/contacts', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'blackstart' }, body: JSON.stringify(body) }, 150000)
+          .then(function (data) {
+            var res = (data && data.resultats) || {};
+            lot.forEach(function (l) {
+              var x = res[l.siren];
+              l.osmDone = true; l.osmKo = !x;
+              if (!x) return;
+              l.telephone = l.telephone || x.telephone || '';
+              l.site = l.site || cleanUrl(x.site);
+              l.email = l.email || x.email || '';
+              l.sources = x.sources || [];
+            });
+          })
+          .catch(function () { lot.forEach(function (l) { l.osmDone = true; l.osmKo = true; }); })
+          .then(function () { if (apresLot) apresLot(); });
+      });
+    }, Promise.resolve()).then(function () { return true; });
+  }
+  function enrichir(leads, apresLot) {
+    if (window.BS_SERVER) return enrichirServeur(leads, apresLot);
     var pts = leads.filter(function (l) { return l.lat != null && (!l.osmDone || l.osmKo); });
     if (!pts.length) return Promise.resolve(false);
     var groupes = [];
@@ -429,11 +460,12 @@
           (l.telephone ? '<a href="tel:' + esc(digits(l.telephone).replace(/^33/, '+33')) + '">' + ic('phone', 14) + esc(l.telephone) + '</a>' : '') +
           (l.site ? '<a href="' + esc(l.site) + '" target="_blank" rel="noopener noreferrer">' + ic('globe', 14) + esc(l.site.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')) + '</a>' : '') +
           (l.email ? '<a href="mailto:' + esc(l.email) + '">' + ic('mail', 14) + esc(l.email) + '</a>' : '') +
-          '<span class="bsl-src">Source : OpenStreetMap</span></div>';
-      } else if (l.lat != null && !l.osmDone) {
-        contact = '<div class="bsl-contact bsl-wait"><span class="bsl-spin"></span>Recherche du téléphone et du site sur OpenStreetMap…</div>';
+          '<span class="bsl-src">Source : ' + esc(l.sources && l.sources.length ? l.sources.join(', ') : 'OpenStreetMap') + '</span></div>';
+      } else if (!l.osmDone && (window.BS_SERVER || l.lat != null)) {
+        contact = '<div class="bsl-contact bsl-wait"><span class="bsl-spin"></span>Recherche du téléphone, du site et de l’email…</div>';
       } else {
-        contact = '<div class="bsl-contact bsl-none">' + ic('info', 14) + '<span>' + (l.osmKo ? 'Les serveurs OpenStreetMap sont saturés pour l’instant.' : 'Téléphone, site et email non publiés dans les sources ouvertes.') + '</span>' +
+        contact = '<div class="bsl-contact bsl-none">' + ic('info', 14) + '<span>' + (l.osmKo ? (window.BS_SERVER ? 'La recherche des coordonnées n’a pas abouti.' : 'Les serveurs OpenStreetMap sont saturés pour l’instant.')
+          : window.BS_SERVER ? 'Aucun téléphone public trouvé (OpenStreetMap, site internet). Essayez « Chercher le numéro ».' : 'Téléphone, site et email non publiés dans les sources ouvertes.') + '</span>' +
           (l.osmKo ? '<button type="button" class="btn btn-secondary btn-sm" data-act="osm"' + (state.osmBusy ? ' disabled' : '') + '>Réessayer</button>' : '') + '</div>';
       }
       return '<article class="card bsl-card' + (st === 'ajoute' ? ' added' : '') + (st === 'ecarte' ? ' gone' : '') + '" data-i="' + i + '" style="--i:' + i + '">' +
@@ -485,7 +517,7 @@
           '<div class="bsl-list' + (state.busy ? ' busy' : '') + '">' + state.leads.map(leadCard).join('') + '</div>' +
           '<div class="bsl-more"><button type="button" class="btn btn-primary" data-act="gen"' + (state.busy ? ' disabled' : '') + '>' + ic('repeat', 16) + 'Proposer d’autres leads</button></div>' : '') +
         (!st && !state.busy && !state.leads.length && !state.err ? '<div class="card bsl-empty">' + ic('sparkles', 28) + '<h2>Choisissez un secteur et une zone</h2><p>Puis cliquez sur « Générer des leads ». Chaque lot contient ' + LOT + ' entreprises que vous n’avez encore jamais vues.</p></div>' : '') +
-        '<p class="bsl-note">' + ic('shield-check', 14) + '<span>Sources : base Sirene de l’INSEE (API Recherche d’entreprises de l’État) pour l’identité, l’adresse et le dirigeant ; OpenStreetMap pour le téléphone, le site et l’email, quand ils y sont publiés. Les emails sont rarement publics. Prospection B2B : votre offre doit concerner leur activité, et chaque contact doit pouvoir refuser d’être recontacté (RGPD).</span></p>';
+        '<p class="bsl-note">' + ic('shield-check', 14) + '<span>Sources : base Sirene de l’INSEE (API Recherche d’entreprises de l’État) pour l’identité, l’adresse et le dirigeant ; OpenStreetMap et le site internet de l’entreprise (page contact, mentions légales) pour le téléphone, le site et l’email, quand ils y sont publiés. Les emails sont rarement publics. Prospection B2B : votre offre doit concerner leur activité, et chaque contact doit pouvoir refuser d’être recontacté (RGPD).</span></p>';
       root.innerHTML = html;
     }
 
@@ -497,8 +529,8 @@
         state.leads = r.leads; state.stats = r.stats; state.statut = {}; state.busy = false;
         if (!r.leads.length && !r.stats.epuise) state.err = 'Aucun nouveau lead trouvé pour l’instant. Essayez une zone plus large ou un autre métier.';
         if (root.isConnected) { render(); var bar = root.querySelector('.bsl-bar'); if (bar && bar.scrollIntoView && window.scrollY > bar.offsetTop) bar.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
-        state.osmBusy = r.leads.some(function (l) { return l.lat != null; });
-        if (state.osmBusy) enrichir(r.leads).then(function () { state.osmBusy = false; if (root.isConnected) render(); });
+        state.osmBusy = r.leads.some(function (l) { return window.BS_SERVER || l.lat != null; });
+        if (state.osmBusy) enrichir(r.leads, function () { if (root.isConnected) render(); }).then(function () { state.osmBusy = false; if (root.isConnected) render(); });
       }).catch(function (e) {
         state.busy = false;
         state.err = e && e.name === 'AbortError' ? 'La base officielle ne répond pas : réessayez dans un instant.'
@@ -525,7 +557,7 @@
         state.osmBusy = true;
         state.leads.forEach(function (x) { if (x.osmKo) x.osmDone = false; });
         render();
-        enrichir(state.leads).then(function () { state.osmBusy = false; if (root.isConnected) render(); });
+        enrichir(state.leads, function () { if (root.isConnected) render(); }).then(function () { state.osmBusy = false; if (root.isConnected) render(); });
       }
       else if (act === 'reset') { reinitialiser(prefs); state.stats = null; lancer(); }
     });

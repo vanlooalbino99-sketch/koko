@@ -257,6 +257,7 @@
   function demarrer() {
     if (!serveur() || es) return;
     charger();
+    Sonnerie.charger();
     es = new EventSource(API + '/flux');
     var premier = true;
     es.addEventListener('pret', function (e) {
@@ -549,18 +550,90 @@
       var a = audio(); if (!a || a.state !== 'running') return;
       SONS[id || choix()].jouer(a, a.currentTime + 0.02);
     }
+
+    // Sons personnels : un fichier son (MP3…) choisi par le membre sur son ordinateur, gardé sur le serveur
+    // pour son compte (/api/sons), qui remplace le son du CRM pour la visio entrante, le message reçu ou envoyé.
+    var PERSO = { visio: 'Visio entrante', recu: 'Message reçu', envoye: 'Message envoyé' };
+    var perso = {};
+    function entetes() { return { credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart' } }; }
+    function chargerPerso() {
+      if (!serveur()) return Promise.resolve();
+      return fetch('/api/sons', entetes()).then(function (r) { return r.ok ? r.json() : { sons: [] }; }).then(function (b) {
+        var neuf = {};
+        return Promise.all((b.sons || []).map(function (x) {
+          var deja = perso[x.sorte];
+          if (deja && deja.maj === x.maj) { neuf[x.sorte] = deja; return null; }
+          return fetch('/api/sons/' + x.sorte + '?v=' + encodeURIComponent(x.maj), entetes())
+            .then(function (r) { return r.ok ? r.arrayBuffer() : null; })
+            .then(function (ab) { if (ab) neuf[x.sorte] = { nom: x.nom, maj: x.maj, octets: ab }; });
+        })).then(function () { perso = neuf; });
+      }).catch(function () { /* hors ligne : sons du CRM */ });
+    }
+    function decoder(a, octets) {
+      return new Promise(function (ok, ko) {
+        try {
+          var p = a.decodeAudioData(octets.slice(0), ok, ko);
+          if (p && p.then) p.then(ok, ko);
+        } catch (e) { ko(e); }
+      });
+    }
+    function tampon(k) {
+      var p = perso[k], a = audio();
+      if (!p || !a) return Promise.resolve(null);
+      if (!p.dec) p.dec = decoder(a, p.octets).then(function (b) { p.buf = b; return b; }, function () { return null; });
+      return p.dec;
+    }
+    // Joue le son personnel k (s'il existe) ; renvoie de quoi l'arrêter, ou null s'il n'y en a pas.
+    function jouerPerso(k, o) {
+      var a = audio();
+      if (!perso[k] || !a || a.state !== 'running') return null;
+      var h = { src: null, fini: false, stop: function () { h.fini = true; if (h.src) try { h.src.stop(); } catch (e) { /* déjà arrêté */ } } };
+      tampon(k).then(function (b) {
+        if (!b || h.fini) return;
+        var src = a.createBufferSource(), g = a.createGain();
+        src.buffer = b; src.loop = !!(o && o.boucle);
+        g.gain.value = 0.9 * VOL[volume()];
+        src.connect(g); g.connect(a.destination);
+        src.start();
+        if (o && o.max) src.stop(a.currentTime + o.max);
+        h.src = src;
+      });
+      return h;
+    }
+    function televerser(k, file) {
+      if (!PERSO[k]) return Promise.reject(new Error('Son inconnu.'));
+      if (!file) return Promise.reject(new Error('Aucun fichier choisi.'));
+      if (file.size > 3 * 1024 * 1024) return Promise.reject(new Error('Fichier trop lourd : 3 Mo au plus (un son de quelques secondes suffit).'));
+      var type = file.type || (/\.mp3$/i.test(file.name) ? 'audio/mpeg' : /\.m4a$/i.test(file.name) ? 'audio/mp4' : /\.wav$/i.test(file.name) ? 'audio/wav' : /\.ogg$/i.test(file.name) ? 'audio/ogg' : '');
+      if (!/^audio\//.test(type)) return Promise.reject(new Error('Choisissez un fichier son (MP3, M4A, WAV ou OGG).'));
+      var a = audio();
+      return file.arrayBuffer().then(function (ab) {
+        // Vérifié avant l'envoi : le navigateur doit savoir le lire.
+        return (a ? decoder(a, ab) : Promise.resolve(null)).then(function () { return ab; }, function () { throw new Error('Ce fichier ne se lit pas comme un son. Essayez un MP3.'); });
+      }).then(function (ab) {
+        return fetch('/api/sons/' + k + '?nom=' + encodeURIComponent(file.name || 'son'), {
+          method: 'PUT', credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart', 'Content-Type': type }, body: ab,
+        });
+      }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { if (!r.ok) throw new Error(b.error || 'Envoi impossible.'); return b; }); })
+        .then(chargerPerso);
+    }
+    function retirer(k) {
+      return fetch('/api/sons/' + k, { method: 'DELETE', credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart' } })
+        .then(function (r) { if (!r.ok) throw new Error('Suppression impossible.'); delete perso[k]; });
+    }
     function stop(cid) {
       var x = en[cid]; if (!x) return;
       delete en[cid];
       clearInterval(x.boucle); clearTimeout(x.fin);
+      if (x.perso) x.perso.stop();
       try { if (x.notif) x.notif.close(); } catch (e) { /* déjà fermée */ }
       if (x.carte) x.carte.fermer();
     }
     function start(cid, titreN, sous, carte) {
       stop(cid);
       var x = en[cid] = { carte: carte };
-      sonner();
-      x.boucle = setInterval(sonner, 3000);
+      x.perso = jouerPerso('visio', { boucle: true, max: 30 });
+      if (!x.perso) { sonner(); x.boucle = setInterval(sonner, 3000); }
       x.fin = setTimeout(function () { stop(cid); }, 30000);
       try {
         if (window.Notification && Notification.permission === 'granted' && document.hidden) {
@@ -572,8 +645,10 @@
     // Son de message (trois notes cristallines, dans l'esprit du « tri-tone » de l'iPhone), au volume choisi ;
     // aucun si la sonnerie est réglée sur « Aucun son ». Pas plus d'un toutes les 1,5 s.
     var dernierDing = 0;
-    function message() {
-      if (choix() === 'silence' || Date.now() - dernierDing < 1500) return;
+    function message(test) {
+      if (!test && Date.now() - dernierDing < 1500) return;
+      if (!test && jouerPerso('recu', { max: 8 })) { dernierDing = Date.now(); return; }
+      if (choix() === 'silence' && !test) return;
       var a = audio(); if (!a || a.state !== 'running') return;
       dernierDing = Date.now();
       var t = a.currentTime + 0.02;
@@ -581,8 +656,10 @@
     }
     // Son d'envoi : un « swoosh » court qui monte, comme l'envoi d'un iMessage ; même réglage de volume.
     var dernierEnvoi = 0;
-    function envoi() {
-      if (choix() === 'silence' || Date.now() - dernierEnvoi < 600) return;
+    function envoi(test) {
+      if (!test && Date.now() - dernierEnvoi < 600) return;
+      if (!test && jouerPerso('envoye', { max: 6 })) { dernierEnvoi = Date.now(); return; }
+      if (choix() === 'silence' && !test) return;
       var a = audio(); if (!a || a.state !== 'running') return;
       dernierEnvoi = Date.now();
       var t = a.currentTime + 0.01;
@@ -602,6 +679,18 @@
       choisir: function (id) { if (SONS[id]) ecrire('bsm-sonnerie', id); },
       regler: function (v) { if (VOL[v]) ecrire('bsm-sonnerie-volume', v); },
       ecouter: function (id) { audio(); setTimeout(function () { sonner(id); }, 30); },
+      // Sons personnels (Réglages) : liste, envoi d'un fichier, retrait, écoute (le sien ou celui du CRM).
+      perso: function () { return Object.keys(PERSO).map(function (k) { return { id: k, nom: PERSO[k], fichier: perso[k] ? perso[k].nom : '' }; }); },
+      charger: chargerPerso, televerser: televerser, retirer: retirer,
+      ecouterPerso: function (k) {
+        audio();
+        setTimeout(function () {
+          if (perso[k]) jouerPerso(k, { max: 8 });
+          else if (k === 'visio') sonner();
+          else if (k === 'recu') message(true);
+          else envoi(true);
+        }, 30);
+      },
     };
   })();
 

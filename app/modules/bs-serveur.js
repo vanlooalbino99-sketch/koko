@@ -227,6 +227,13 @@
     '.bse-son label{flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;font-weight:600;min-height:32px}',
     '.bse-son input{accent-color:rgb(var(--accent-rgb))}',
     '.bse-vol{display:flex;gap:6px}',
+    '.bse-perso{margin-top:18px;padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}',
+    '.bse-perso-h{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}',
+    '.bse-perso-h small,.bse-perso-t small{color:var(--text-3,#8a8f98);font-size:12.5px}',
+    '.bse-perso-l{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 8px 8px 12px;border-radius:12px;border:1px solid var(--border)}',
+    '.bse-perso-t{flex:1;min-width:150px;display:flex;flex-direction:column;gap:1px;font-size:13.5px}',
+    '.bse-perso-t small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}',
+    '.bse-mp3{cursor:pointer}',
     // Photo de profil : dans Mon compte et en haut à droite.
     '.bse-av.ph,.bs-moi .ph,.bs-moi-tete .ph{background:var(--ph) center/cover no-repeat;color:transparent}',
     '.bse-me .bse-av{width:64px;height:64px;border-radius:50%;font-size:22px}',
@@ -548,7 +555,14 @@
       ui.clear = {};
       var son = '', SN = window.bsMessages && window.bsMessages.sonnerie;
       if (SN) {
-        son = card('Sonnerie des visios', 'Le son joué quand un membre de l’équipe lance une visio. Réglage propre à cet appareil.',
+        var perso = SN.perso ? '<div class="bse-perso"><div class="bse-perso-h"><b>Vos propres sons</b><small>Choisissez un MP3 sur votre ordinateur. Vos sons vous suivent sur tous vos appareils (3 Mo au plus).</small></div>' +
+          SN.perso().map(function (x) {
+            return '<div class="bse-perso-l"><div class="bse-perso-t"><b>' + esc(x.nom) + '</b><small>' + (x.fichier ? '🎵 ' + esc(x.fichier) : 'Son du CRM') + '</small></div>' +
+              '<button type="button" class="btn btn-ghost btn-sm" data-perso-ecoute="' + x.id + '" aria-label="Écouter le son ' + esc(x.nom) + '">▶ Écouter</button>' +
+              '<label class="btn btn-secondary btn-sm bse-mp3">' + (x.fichier ? 'Changer' : 'Choisir un MP3') + '<input type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg" data-perso-fichier="' + x.id + '" hidden></label>' +
+              (x.fichier ? '<button type="button" class="btn btn-ghost btn-sm" data-perso-retirer="' + x.id + '">Retirer</button>' : '') + '</div>';
+          }).join('') + msg('sons') + '</div>' : '';
+        son = card('Sons du CRM', 'Les sons des visios et des messages. La sonnerie et le volume ci-dessous sont propres à cet appareil.',
           '<div class="bse-sons">' + SN.sons().map(function (x) {
             var on = x.id === SN.choix();
             return '<div class="bse-son' + (on ? ' on' : '') + '"><label><input type="radio" name="bse-son" value="' + esc(x.id) + '"' + (on ? ' checked' : '') + '><span>' + esc(x.nom) + '</span></label>' +
@@ -556,7 +570,7 @@
           }).join('') + '</div>' +
           '<div class="setting-row" style="margin-top:12px"><div class="sr-text"><div class="sr-label">Volume</div></div><div class="bse-vol">' +
           [['faible', 'Faible'], ['normal', 'Normal'], ['fort', 'Fort']].map(function (v) { return '<button type="button" class="btn btn-sm ' + (SN.volume() === v[0] ? 'btn-primary' : 'btn-secondary') + '" data-vol="' + v[0] + '">' + v[1] + '</button>'; }).join('') +
-          '</div></div>', ICON.bell);
+          '</div></div>' + perso, ICON.bell);
       }
       el.innerHTML = me + son + sync + team;
       Array.prototype.forEach.call(el.querySelectorAll('form[data-form] [name]'), function (i) {
@@ -592,12 +606,28 @@
       var cid = e.target.getAttribute && e.target.getAttribute('data-chef');
       if (cid) { patchUser(cid, { managerId: e.target.value || null }, 'Responsable mis à jour.'); return; }
       if (e.target.name === 'bse-son') { var SN = window.bsMessages.sonnerie; SN.choisir(e.target.value); SN.ecouter(e.target.value); render(); return; }
+      var pf = e.target.getAttribute && e.target.getAttribute('data-perso-fichier');
+      if (pf) {
+        var fichier = e.target.files && e.target.files[0], SNp = window.bsMessages.sonnerie;
+        if (!fichier) return;
+        setMsg('sons', 'Envoi de « ' + fichier.name + ' »…', '');
+        SNp.televerser(pf, fichier).then(function () { setMsg('sons', 'Son enregistré : « ' + fichier.name + ' ».', 'ok'); SNp.ecouterPerso(pf); })
+          .catch(function (er) { setMsg('sons', er.message, 'err'); });
+        return;
+      }
       var id = e.target.getAttribute && e.target.getAttribute('data-role'); if (!id) return;
       api('PATCH', '/api/users/' + encodeURIComponent(id), { role: e.target.value })
         .then(function () { setMsg('team', 'Rôle mis à jour.', 'ok'); loadUsers(); })
         .catch(function (er) { setMsg('team', er.message, 'err'); loadUsers(); });
     });
     el.addEventListener('click', function (e) {
+      var ps = e.target.closest('[data-perso-ecoute],[data-perso-retirer]');
+      if (ps) {
+        var SNx = window.bsMessages.sonnerie;
+        if (ps.hasAttribute('data-perso-ecoute')) SNx.ecouterPerso(ps.getAttribute('data-perso-ecoute'));
+        else SNx.retirer(ps.getAttribute('data-perso-retirer')).then(function () { setMsg('sons', 'Son du CRM rétabli.', 'ok'); }).catch(function (er) { setMsg('sons', er.message, 'err'); });
+        return;
+      }
       var sb = e.target.closest('[data-ecoute],[data-vol]');
       if (sb) {
         var SN = window.bsMessages.sonnerie;

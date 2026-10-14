@@ -258,6 +258,10 @@
     if (!serveur() || es) return;
     charger();
     Sonnerie.charger();
+    window.addEventListener('bs:acces-change', function () {
+      if (Appel.conv && window.bsAcces && !window.bsAcces.peut('visio')) Appel.quitter();
+      charger();
+    });
     es = new EventSource(API + '/flux');
     var premier = true;
     es.addEventListener('pret', function (e) {
@@ -297,6 +301,10 @@
       rendre();
     });
     es.addEventListener('signal', function (e) { Appel.signal(JSON.parse(e.data)); });
+    // Accès changés par un administrateur : menu et pages appliqués par bs-acces.js.
+    es.addEventListener('acces', function (e) {
+      try { window.dispatchEvent(new CustomEvent('bs:acces', { detail: JSON.parse(e.data) })); } catch (er) { /* ignoré */ }
+    });
     es.onerror = function () { /* EventSource se reconnecte seul */ };
   }
   // Conversation affichée en arrivant dans une rubrique : la dernière ouverte, sinon la plus récente.

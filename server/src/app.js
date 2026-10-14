@@ -20,6 +20,7 @@ import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
 import { osmRoutes } from './osm.js';
 import { contactsRoutes } from './contacts.js';
+import { requireAcces, peut } from './acces.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
@@ -55,9 +56,9 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/api/users', requireAdmin, express.json({ limit: '100kb' }), usersRoutes({ db, identity, hub }));
   app.use('/api/data', requireUser, express.json({ limit: '25mb' }), dataRoutes({ db }));
   app.use('/api/ambiance', requireUser, express.json({ limit: '40mb' }), ambianceApi({ db, store }));
-  app.use('/api/osm', requireUser, express.json({ limit: '40kb' }), osmRoutes());
-  app.use('/api/contacts', requireUser, express.json({ limit: '40kb' }), contactsRoutes(contacts));
-  app.use('/api/formation', requireUser, express.json({ limit: '10kb' }), formationRoutes({ db }));
+  app.use('/api/osm', requireAcces('leads'), express.json({ limit: '40kb' }), osmRoutes());
+  app.use('/api/contacts', requireAcces('leads'), express.json({ limit: '40kb' }), contactsRoutes(contacts));
+  app.use('/api/formation', requireAcces('formations'), express.json({ limit: '10kb' }), formationRoutes({ db }));
   app.use('/api/chat', requireUser, express.json({ limit: '100kb' }), chatRoutes({ db, hub }));
   app.use('/api/photos', requireUser, express.json({ limit: '700kb' }), photosRoutes({ db, hub }));
   app.use('/api/sons', requireUser, sonsRoutes({ db }));
@@ -76,7 +77,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.get('/', (req, res) => {
     if (!req.user) return res.redirect('/connexion');
     const page = html || assemble();
-    const conf = JSON.stringify({ user: req.user, version: VERSION, ...(googleMapsKey ? { carte: { google: googleMapsKey } } : {}) }).replace(/</g, '\\u003c');
+    const conf = JSON.stringify({ user: req.user, version: VERSION, ...(googleMapsKey && peut(req.user, 'carte') ? { carte: { google: googleMapsKey } } : {}) }).replace(/</g, '\\u003c');
     res.set('Cache-Control', 'no-store').type('html')
       .send(page.replace('<head>', `<head>\n<script id="bs-serveur-conf">window.BS_SERVER=${conf};</script>`));
   });

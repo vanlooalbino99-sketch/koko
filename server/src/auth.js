@@ -1,5 +1,6 @@
 // Comptes et sessions : mots de passe hachés (scrypt), jeton de session aléatoire dans un cookie HttpOnly
 // (seule son empreinte SHA-256 est en base), protection CSRF par en-tête, limitation des essais de connexion.
+import { lireAcces } from './acces.js';
 import { randomBytes, scryptSync, timingSafeEqual, createHash, randomUUID } from 'node:crypto';
 
 export const COOKIE = 'bs_session';
@@ -40,14 +41,15 @@ export async function destroySession(db, token) {
 
 export async function sessionUser(db, token) {
   if (!token) return null;
-  const row = await db.get(`SELECT u.id, u.email, u.name, u.role, u.poste, s.expires_at, p.updated_at AS photo FROM sessions s JOIN users u ON u.id = s.user_id
+  const row = await db.get(`SELECT u.id, u.email, u.name, u.role, u.poste, u.acces, s.expires_at, p.updated_at AS photo FROM sessions s JOIN users u ON u.id = s.user_id
                             LEFT JOIN user_photos p ON p.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > ?`, sha(token), now());
   if (!row) return null;
   // Session glissante : prolongée quand on s'en sert, si elle a plus de la moitié de son âge.
   if (Date.parse(row.expires_at) - Date.now() < (SESSION_DAYS / 2) * 864e5) {
     await db.run('UPDATE sessions SET expires_at = ? WHERE token_hash = ?', new Date(Date.now() + SESSION_DAYS * 864e5).toISOString(), sha(token));
   }
-  return { id: row.id, email: row.email, name: row.name, role: row.role, poste: row.poste || null, photo: row.photo || null };
+  return { id: row.id, email: row.email, name: row.name, role: row.role, poste: row.poste || null, photo: row.photo || null,
+    acces: row.role === 'admin' ? null : lireAcces(row.acces) };
 }
 
 export function parseCookies(header) {
@@ -140,5 +142,5 @@ export async function insertUser(db, { name, email, role }, { pass, authId }) {
 }
 
 export function publicUser(u) {
-  return u && { id: u.id, email: u.email, name: u.name, role: u.role, poste: u.poste || null, managerId: u.manager_id || null, createdAt: u.created_at, lastLogin: u.last_login || null };
+  return u && { id: u.id, email: u.email, name: u.name, role: u.role, poste: u.poste || null, managerId: u.manager_id || null, acces: lireAcces(u.acces), createdAt: u.created_at, lastLogin: u.last_login || null };
 }

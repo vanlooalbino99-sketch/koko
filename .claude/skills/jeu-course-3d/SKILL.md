@@ -23,6 +23,7 @@ Le fichier final est la concaténation, dans un seul `<script type="module">`, d
 | `c_world.js` | circuit (spline fermée, sections), terrain, décor instancié | `buildWorld()` → `{ track, ground, update }` |
 | `c_cars.js` | modèles de voitures, physique, IA | `CAR_TYPES`, `buildCarModel`, `createVehicle`, `createAI` |
 | `c_fxhud.js` | particules, traces de pneus, son synthétisé, HUD | `createFX`, `createAudio`, `createHUD` |
+| `c_garage.js` | garage néon de nuit (hangar, néons, sol miroir `Reflector`, verrière) qui remplace le ciel, le soleil et les reflets puis les restitue | `buildGarage()` → `{ enter, exit, update, carPos, shots }` |
 | `d_game.js` | post-traitement, garage, course, caméra, commandes, sauvegarde | tout est dans un bloc `{ … }` |
 
 Règles du contrat (à recopier dans le prompt de chaque agent) :
@@ -43,6 +44,11 @@ et écris toi-même le socle puis `d_game.js` pendant qu'ils travaillent.
 - Décor : asphalte usé avec marquages, piste de terre à ornières, sable à micro-relief, roches rouges stratifiées, pylônes à haute tension avec câbles en chaînette, poteaux en bois, végétation instanciée, montagnes dans la brume.
 - Effets : gros nuages de poussière teintés par le soleil sur la terre, fumée de pneus, traces au sol, étincelles, flammes de nitro.
 - Budgets : < 450 appels de dessin et < 2 M triangles en haute ; trois niveaux de qualité avec baisse automatique si < 28 i/s.
+
+## Copier un rendu de référence (capture d'un jeu AAA)
+
+Étudie la capture avec l'outil Read, liste ce qui fait le rendu (lumière, couleurs dominantes, matériaux, effets), puis donne la capture en référence aux agents.
+Garde les noms et logos de marques réelles hors du jeu. Après assemblage, baisse l'exposition et le halo : les aperçus des agents n'ont pas de post-traitement, et le même éclairage paraît surexposé dans le jeu.
 
 ## Gameplay attendu
 
@@ -74,6 +80,6 @@ Pour le jeu complet, pilote-le par `window.__nc` (startRace, CARS, setQuality) e
 
 ## Livraison
 
-1. Les sources de Nitro Canyon sont dans `sources/` de ce skill. Assembler : `cd .claude/skills/jeu-course-3d/sources && cat a.html b_core.js c_world.js c_cars.js c_fxhud.js d_game.js > ../../../../jeux/nitro-canyon.html`, puis vérifier la syntaxe du module (`node --check` sur le contenu du script).
+1. Les sources de Nitro Canyon sont dans `sources/` de ce skill. Assembler : `cd .claude/skills/jeu-course-3d/sources && cat a.html b_core.js c_world.js c_cars.js c_fxhud.js c_garage.js d_game.js > ../../../../jeux/nitro-canyon.html`, puis vérifier la syntaxe du module (`node --check` sur le contenu du script).
 2. Publier en Artifact la partie comprise entre `<!--ARTIFACT-START-->` et `<!--ARTIFACT-END-->`, sans les lignes `</head>` et `<body>` (marqueurs `HEAD-END` / `BODY-START`).
 3. Committer sur la branche de travail et donner le lien de l'Artifact.

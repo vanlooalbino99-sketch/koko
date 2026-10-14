@@ -43,7 +43,7 @@ si l'ordinateur ou le téléphone peine.
 
 Jeu de course 3D dans un seul fichier : [`nitro-canyon.html`](nitro-canyon.html) (double-clic pour jouer, connexion internet au premier chargement).
 Désert à l'heure dorée, 6 pilotes, 2 tours sur un circuit de 3,2 km : autoroute bordée de lignes à haute tension,
-canyon de roche rouge, piste de terre. Trois voitures (Kitsune S15, Stallion 67, Taiga R) et six peintures au garage.
+canyon de roche rouge, piste de terre. Quatre voitures (Hyperion E8, Kitsune S15, Stallion 67, Taiga R) et six peintures, présentées dans un garage néon de nuit.
 
 | Clavier | Manette | Tactile | Action |
 |---|---|---|---|

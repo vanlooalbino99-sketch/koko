@@ -10,11 +10,11 @@ const RIVALS = [
   { name: 'Vega', type: 'stallion', paint: '#141416' },
   { name: 'Lina', type: 'taiga', paint: '#1d2a44' },
   { name: 'Tetsu', type: 'kitsune', paint: '#e8e6e1' },
-  { name: 'Raven', type: 'stallion', paint: '#5a0f16' },
+  { name: 'Raven', type: CAR_TYPES.hyperion ? 'hyperion' : 'stallion', paint: '#e9b81c' },
   { name: 'Dédé', type: 'taiga', paint: '#d9a12a' },
 ];
 const DOT_COL = ['#35d6ff', '#ff3b4e', '#ffc53d', '#9be15d', '#c38bff', '#ff8a3d'];
-let WORLD, FX, AUDIO, HUD;
+let WORLD, FX, AUDIO, HUD, GARAGE = null;
 const G = { mode: 'load', time: 0, paused: false, camMode: 0, perfT: 0, perfN: 0, perfAcc: 0, perfDone: false };
 
 /* ---------- Post-traitement : flou de vitesse, étalonnage, halo ---------- */
@@ -180,7 +180,8 @@ function buildShowcase(){
   const t = CAR_TYPES[SV.car];
   if (!SV.paint || !t.paints.includes(SV.paint)) SV.paint = t.defaultPaint || t.paints[0];
   showcase = buildCarModel(SV.car, SV.paint, { number: 7 });
-  const p = garagePos(); showcase.root.position.set(p.x, p.y, p.z); showcase.root.rotation.y = p.heading + 0.5;
+  if (GARAGE){ showcase.root.position.copy(GARAGE.carPos); showcase.root.rotation.y = GARAGE.carHeading; }
+  else { const p = garagePos(); showcase.root.position.set(p.x, p.y, p.z); showcase.root.rotation.y = p.heading + 0.5; }
   showcase.pose({ steer: -0.3, spin: 0, roll: 0, pitch: 0, heave: 0, brake: 0, nitro: 0, head: 0.35 });
   scene.add(showcase.root);
 }
@@ -204,9 +205,25 @@ function enterGarage(){
   G.mode = 'garage'; clearCars(); if (FX) FX.clear(); HUD.show(false); $('#touch').hidden = true;
   ['#s-pause', '#s-results'].forEach(s => $(s).hidden = true); $('#s-garage').hidden = false;
   $('#radio-wrap').innerHTML = ''; $('#center').innerHTML = '';
+  if (GARAGE && !GARAGE.active){ GARAGE.enter(); GARAGE.active = true; }
+  CAM.shot = 0; CAM.shotT = 0; G.backfireT = 2.5;
   buildShowcase(); renderGarageUI(); AUDIO.music(0.25);
 }
+function leaveGarage(){ if (GARAGE && GARAGE.active){ GARAGE.exit(); GARAGE.active = false; } }
 function garageCamera(dt){
+  // Garage néon : plans de caméra enchaînés lentement, comme une vitrine de jeu ; glisser = tourner librement
+  if (GARAGE && GARAGE.shots && GARAGE.shots.length && !CAM.free){
+    CAM.shotT += dt;
+    if (CAM.shotT > 8){ CAM.shotT = 0; CAM.shot = (CAM.shot + 1) % GARAGE.shots.length; }
+    const sh = GARAGE.shots[CAM.shot], k = Math.min(1, CAM.shotT / 8), drift = (k - 0.5) * 0.6;
+    const side = _v.set(sh.look.z - sh.pos.z, 0, -(sh.look.x - sh.pos.x)).normalize();
+    _w.copy(sh.pos).addScaledVector(side, drift);
+    if (CAM.shotT < dt * 1.5) camera.position.copy(_w); else camera.position.lerp(_w, 1 - Math.exp(-dt * 3));
+    camera.lookAt(sh.look);
+    if (innerWidth >= 720) camera.setViewOffset(innerWidth, innerHeight, -Math.min(280, innerWidth * 0.21), 0, innerWidth, innerHeight); else camera.clearViewOffset();
+    const f = (sh.fov || 40) + (innerWidth >= 720 ? 6 : 12); if (camera.fov !== f){ camera.fov = f; camera.updateProjectionMatrix(); }
+    return;
+  }
   if (!CAM.drag) CAM.orbit += dt * 0.12;
   const p = showcase.root.position, r = innerWidth < 720 ? 7.8 : 6.2, a = CAM.orbit;
   camera.position.set(p.x + Math.sin(a) * r, p.y + 1.35 + Math.sin(a * 0.7) * 0.25, p.z + Math.cos(a) * r);
@@ -217,7 +234,7 @@ function garageCamera(dt){
   if (innerWidth >= 720) camera.setViewOffset(innerWidth, innerHeight, -Math.min(230, innerWidth * 0.17), 0, innerWidth, innerHeight); else camera.clearViewOffset();
   if (camera.fov !== 42){ camera.fov = 42; camera.updateProjectionMatrix(); }
 }
-$('#c').addEventListener('pointerdown', e => { if (G.mode === 'garage') CAM.drag = { x: e.clientX }; });
+$('#c').addEventListener('pointerdown', e => { if (G.mode === 'garage'){ CAM.drag = { x: e.clientX }; if (!CAM.free){ CAM.free = true; const p = showcase.root.position; CAM.orbit = Math.atan2(camera.position.x - p.x, camera.position.z - p.z); } } });
 addEventListener('pointermove', e => { if (CAM.drag){ CAM.orbit -= (e.clientX - CAM.drag.x) * 0.008; CAM.drag.x = e.clientX; } });
 addEventListener('pointerup', () => { CAM.drag = null; });
 $('#car-prev').onclick = () => pickCar(-1);
@@ -231,6 +248,7 @@ const fmt = t => { if (!isFinite(t)) return '--:--.--'; const m = Math.floor(t /
 function startRace(){
   AUDIO.init(); AUDIO.setSfx(SV.sfx); AUDIO.setMusic(SV.music); AUDIO.one('ui');
   if (showcase){ scene.remove(showcase.root); if (showcase.dispose) showcase.dispose(); showcase = null; }
+  leaveGarage(); CAM.free = false;
   clearCars(); FX.clear();
   const slots = [0, 1, 2, 3, 4, 5], playerSlot = 3;
   let ri = 0;
@@ -405,7 +423,19 @@ function frame(now){
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
   G.time += dt;
   let blur = 0, bloom = 0;
-  if (G.mode === 'garage'){ garageCamera(dt); updateSun(showcase.root.position); }
+  if (G.mode === 'garage'){
+    garageCamera(dt); updateSun(showcase.root.position);
+    if (GARAGE){
+      GARAGE.update(dt, G.time);
+      // Retour de flamme à l'échappement de temps en temps
+      G.backfireT -= dt;
+      const fire = G.backfireT < 0 ? clamp(1 + G.backfireT / 0.45, 0, 1) : 0;
+      showcase.pose({ steer: -0.3, spin: 0, roll: 0, pitch: 0, heave: 0, brake: 0.4, nitro: 0, head: 0.35, backfire: fire });
+      if (G.backfireT < 0 && !G.backfired){ G.backfired = true; AUDIO.one('backfire'); showcase.root.updateMatrixWorld(); _dir.set(-Math.sin(showcase.root.rotation.y), 0.05, -Math.cos(showcase.root.rotation.y)); showcase.exhausts.forEach(e => { _wp.copy(e); showcase.root.localToWorld(_wp); for (let i = 0; i < 6; i++) FX.flame(_wp, _dir, 1); }); }
+      if (G.backfireT < -0.45){ G.backfireT = rand(3.5, 6.5); G.backfired = false; }
+    }
+    FX.update(dt); bloom = GARAGE ? 0.04 : 0;
+  }
   else if (G.mode === 'race' || G.mode === 'results'){
     if (!G.paused){
       if (G.mode === 'race') updateRace(dt);
@@ -448,8 +478,9 @@ function perfWatch(dt){
     WORLD = buildWorld(p => { $('#load-bar').style.width = (15 + p * 65) + '%'; });
     await step(82, 'Préparation des voitures…');
     FX = createFX(); AUDIO = createAudio(); HUD = createHUD(); HUD.setTrack(WORLD.track.polyline(400));
+    if (typeof buildGarage === 'function'){ await step(86, 'Allumage des néons du garage…'); GARAGE = buildGarage(); }
     buildGlare(); setupPost(); resize();
-    if (!CAR_TYPES[SV.car]) SV.car = Object.keys(CAR_TYPES)[0];
+    if (!CAR_TYPES[SV.car] || (!SV.paint && CAR_TYPES.hyperion)) SV.car = CAR_TYPES.hyperion ? 'hyperion' : Object.keys(CAR_TYPES)[0];
     enterGarage();
     await step(95, 'Compilation des shaders…');
     try { renderer.compile(scene, camera); } catch (e) {}

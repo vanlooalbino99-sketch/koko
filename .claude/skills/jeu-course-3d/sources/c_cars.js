@@ -16,6 +16,11 @@ const CAR_TYPES = {
     paints: ['#2a2f36', '#e9e9e4', '#0b3d91', '#ff6a00', '#3b4a2a', '#8a1020'], defaultPaint: '#2a2f36',
     phys: { vmax: 248 / 3.6, acc: 10.2, grip: 13.4, driftYaw: 0.98, driftLat: 1.85, dirt: 0.5, steer: 0.6 },
     dims: { length: 4.20, width: 1.84, height: 1.47, wheelbase: 2.56, track: 1.56, wheelRadius: 0.33 } },
+  hyperion: { id: 'hyperion', name: 'Hyperion E8', cls: 'Supercar hybride widebody',
+    stats: { vitesse: 0.95, accel: 0.9, adherence: 0.85, derapage: 0.7 },
+    paints: ['#1b1c20', '#e9b81c', '#f1f0ec', '#0e3a8c', '#7a0f2a', '#5b6068'], defaultPaint: '#1b1c20',
+    phys: { vmax: 300 / 3.6, acc: 10.8, grip: 13.2, driftYaw: 0.92, driftLat: 1.7, dirt: 0, steer: 0.58 },
+    dims: { length: 4.69, width: 2.05, height: 1.2, wheelbase: 2.8, track: 1.72, wheelRadius: 0.35 } },
 };
 
 // Formes : profils en fonction de t (0 = arrière, 1 = avant), hauteurs en mètres
@@ -38,6 +43,13 @@ const CC_SPEC = {
     cab: { tA: 0.68, tA2: 0.54, tB: 0.1, tC: 0.035, roofH: 1.46, belt: 0.82, roof: 0.66, rearK: 0.8, tS0: 0.115, tS1: 0.67, bp: 0.33 },
     tire: { w: 0.235, rimR: 0.21 }, rim: { color: '#ecebe6', metal: 0.25, rough: 0.35, n: 8, split: false, sw: 0.024 },
     exh: [[-0.42, 0.3, 0.07]] },
+  // supercar hybride : très basse, large, nez plongeant, poupe haute
+  hyperion: { num: 8, zR: -2.3, zF: 2.39, hw: 0.95, mF: 3.0, mR: 4.2, flare: 0.075, nTop: 4, nBot: 8, tumble: 0.16,
+    top: [[0, 0.74], [0.02, 0.86], [0.05, 0.92], [0.12, 0.95], [0.25, 0.94], [0.45, 0.9], [0.6, 0.88], [0.75, 0.855], [0.83, 0.82], [0.9, 0.74], [0.96, 0.62], [1, 0.5]],
+    bot: [[0, 0.34], [0.04, 0.2], [0.1, 0.12], [0.9, 0.12], [0.96, 0.17], [1, 0.24]],
+    cab: { tA: 0.67, tA2: 0.53, tB: 0.31, tC: 0.15, roofH: 1.2, belt: 0.72, roof: 0.55, rearK: 0.55, tS0: 0.31, tS1: 0.645, bp: 0 },
+    tire: { w: 0.3, rimR: 0.272 }, rim: { color: '#141518', metal: 0.75, rough: 0.32, n: 7, split: true, sw: 0.022 }, caliper: '#f2c21b',
+    exh: [[-0.11, 0.3, 0.055], [0.11, 0.3, 0.055]] },
 };
 
 /* ---------- Outils de forme ---------- */
@@ -139,6 +151,81 @@ function cc_tireTex(){
   return CC_CACHE.tire;
 }
 
+function cc_carbonTex(){
+  if (!CC_CACHE.carbon){
+    // sergé 2x2 : bandes croisées en escalier
+    const [c, g] = cnv(128, 128), s = 16;
+    g.fillStyle = '#08090b'; g.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++){
+      const hz = ((i + (j >> 1) * 0 + j) >> 1) % 2 === 0, x = i * s, y = j * s;
+      const gr = hz ? g.createLinearGradient(0, y, 0, y + s) : g.createLinearGradient(x, 0, x + s, 0);
+      gr.addColorStop(0, '#0d0e11'); gr.addColorStop(0.5, '#3a3d45'); gr.addColorStop(1, '#0d0e11');
+      g.fillStyle = gr; g.fillRect(x + 0.5, y + 0.5, s - 1, s - 1);
+    }
+    CC_CACHE.carbon = ctex(c, { repeat: [7, 7] });
+  }
+  return CC_CACHE.carbon;
+}
+function cc_fireTex(){
+  if (!CC_CACHE.fire){
+    // flamme : chaude à la base (bas de l'image), effilochée vers la pointe
+    const [c, g] = cnv(64, 256), img = g.createImageData(64, 256);
+    for (let y = 0; y < 256; y++) for (let x = 0; x < 64; x++){
+      const v = 1 - y / 255, n = fbm2(x / 9, y / 20, 3), a = Math.max(0, Math.pow(1 - v, 1.3) * (0.45 + 0.9 * n) - v * 0.25);
+      const i = (y * 64 + x) * 4, h = Math.min(1, a * 1.4);
+      img.data[i] = 255; img.data[i + 1] = 120 + 135 * h; img.data[i + 2] = 40 + 200 * h * h; img.data[i + 3] = Math.min(255, a * 300);
+    }
+    g.putImageData(img, 0, 0); CC_CACHE.fire = ctex(c);
+  }
+  return CC_CACHE.fire;
+}
+function cc_glowTex(){
+  if (!CC_CACHE.glow){
+    const [c, g] = cnv(128, 128), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(255,240,200,1)'); gr.addColorStop(0.25, 'rgba(255,150,40,0.7)'); gr.addColorStop(1, 'rgba(255,60,0,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128); CC_CACHE.glow = ctex(c);
+  }
+  return CC_CACHE.glow;
+}
+// livrée Hyperion : base graphite, grands panneaux jaunes, géométrie blanche/grise, filets rose fluo et orange
+function cc_liveryHyp(g, sp, light, zOf, band, physSide, physTop, seams){
+  const Y = light ? '#1b1c20' : '#e9b81c', G2 = light ? '#e9b81c' : '#25272d', W = '#ecebe8', GR = '#8e929b', PK = '#ff2bd6', OR = '#ff7a1a';
+  const poly = (pts, fill) => { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath(); g.fillStyle = fill; g.fill(); };
+  const line = (pts, c, w) => { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.strokeStyle = c; g.lineWidth = w; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(); };
+  const tri = (z, y, r, a) => poly([[z + Math.cos(a) * r, y + Math.sin(a) * r], [z + Math.cos(a + 2.1) * r, y + Math.sin(a + 2.1) * r], [z + Math.cos(a + 4.2) * r, y + Math.sin(a + 4.2) * r]], PK);
+  for (const s of [0, 1]) band(s, () => {
+    physSide(s);
+    // panneau jaune de porte, biseauté
+    poly([[zOf(0.33), 0.1], [zOf(0.75), 0.1], [zOf(0.82), 0.5], [zOf(0.72), 1.0], [zOf(0.42), 1.0], [zOf(0.36), 0.62]], Y);
+    // bandes sombres obliques dans le jaune
+    poly([[zOf(0.5), 0.1], [zOf(0.545), 0.1], [zOf(0.47), 1.0], [zOf(0.425), 1.0]], G2);
+    poly([[zOf(0.6), 0.1], [zOf(0.67), 0.1], [zOf(0.6), 1.0], [zOf(0.53), 1.0]], G2);
+    // aile avant et bouclier arrière jaunes
+    poly([[zOf(0.86), 0.26], [zOf(1.03), 0.26], [zOf(1.03), 0.72], [zOf(0.9), 0.82]], Y);
+    poly([[zOf(-0.03), 0.22], [zOf(0.11), 0.22], [zOf(0.15), 0.6], [zOf(-0.03), 0.66]], Y);
+    // géométrie blanche / grise sur l'aile arrière
+    poly([[zOf(0.13), 0.66], [zOf(0.3), 0.52], [zOf(0.33), 0.6], [zOf(0.17), 0.8]], W);
+    poly([[zOf(0.19), 0.24], [zOf(0.31), 0.24], [zOf(0.27), 0.44], [zOf(0.16), 0.5]], GR);
+    poly([[zOf(0.76), 0.58], [zOf(0.87), 0.6], [zOf(0.85), 0.68], [zOf(0.74), 0.66]], GR);
+    poly([[zOf(0.9), 0.2], [zOf(0.98), 0.2], [zOf(0.96), 0.28], [zOf(0.88), 0.28]], W);
+    // filets rose fluo et orange
+    line([[zOf(0.03), 0.7], [zOf(0.3), 0.56], [zOf(0.5), 0.3], [zOf(0.6), 0.14]], PK, 0.02);
+    line([[zOf(0.06), 0.75], [zOf(0.33), 0.61], [zOf(0.56), 0.27], [zOf(0.64), 0.15]], OR, 0.011);
+    line([[zOf(0.62), 1.0], [zOf(0.79), 0.44], [zOf(1.03), 0.4]], PK, 0.014);
+    line([[zOf(0.36), 0.2], [zOf(0.9), 0.2]], OR, 0.009);
+    line([[zOf(0.7), 0.95], [zOf(0.84), 0.62]], W, 0.008);
+    tri(zOf(0.25), 0.38, 0.035, 0.4); tri(zOf(0.71), 0.32, 0.03, 1.2); tri(zOf(0.05), 0.5, 0.03, 2.2); tri(zOf(0.93), 0.52, 0.025, 0.1);
+    g.setTransform(1, 0, 0, 1, 0, 0); seams(s);
+  });
+  // dessus : capot jaune à bande sombre, poupe jaune, filets roses
+  g.save(); g.beginPath(); g.rect(0, 640, 1024, 320); g.clip(); physTop();
+  poly([[zOf(0.74), -1.2], [zOf(1.03), -1.2], [zOf(1.03), 1.2], [zOf(0.74), 1.2]], Y);
+  poly([[zOf(0.74), -0.16], [zOf(1.03), -0.07], [zOf(1.03), 0.07], [zOf(0.74), 0.16]], G2);
+  poly([[zOf(-0.03), -1.2], [zOf(0.1), -1.2], [zOf(0.1), 1.2], [zOf(-0.03), 1.2]], Y);
+  for (const k of [-1, 1]){ line([[zOf(0.74), k * 0.2], [zOf(1.02), k * 0.1]], PK, 0.015); line([[zOf(0.12), k * 0.55], [zOf(0.45), k * 0.4]], OR, 0.012); tri(zOf(0.86), k * 0.5, 0.04, 0.3); }
+  g.restore();
+}
+
 /* ---------- Livrée peinte (atlas 1024² : côté droit, côté gauche, dessus, bande réservée) ---------- */
 function cc_livery(id, paint, num, rival, sp){
   const [c, g] = cnv(1024, 1024), L = sp.zF - sp.zR, MPV = 320 / 1.5, R = mulberry32(id.length * 977 + num * 31 + (rival ? 5 : 0));
@@ -208,7 +295,8 @@ function cc_livery(id, paint, num, rival, sp){
     }
   };
   const zDoor = zOf(lerp(cab.tB, cab.tA, 0.52));
-  if (id === 'kitsune'){
+  if (id === 'hyperion') cc_liveryHyp(g, sp, light, zOf, band, physSide, physTop, seams);
+  else if (id === 'kitsune'){
     const white = light ? '#16171b' : '#f4f3ef';
     for (const s of [0, 1]) band(s, () => {
       physSide(s);
@@ -273,7 +361,7 @@ function cc_livery(id, paint, num, rival, sp){
   // bande réservée : plaque + pastille de peinture pure
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.fillStyle = '#f2efe4'; g.fillRect(8, 968, 240, 48); g.strokeStyle = '#222'; g.lineWidth = 4; g.strokeRect(10, 970, 236, 44);
-  g.fillStyle = '#1a1a1a'; g.font = 'bold 34px Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('NC·' + String(num).padStart(2, '0') + '·KK', 128, 993);
+  g.fillStyle = '#1a1a1a'; g.font = 'bold 34px Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(id === 'hyperion' ? 'NITRO' : 'NC·' + String(num).padStart(2, '0') + '·KK', 128, 993);
   g.fillStyle = paint; g.fillRect(1000, 1000, 24, 24);
   return c;
 }
@@ -291,6 +379,10 @@ function cc_shared(){
       disc: new THREE.MeshStandardMaterial({ color: col('#8d8d92'), roughness: 0.36, metalness: 0.9 }),
       caliper: new THREE.MeshStandardMaterial({ color: col('#d0141c'), roughness: 0.32, metalness: 0.15, envMapIntensity: 1.2 }),
       flame: new THREE.MeshBasicMaterial({ color: col('#6fb0ff'), transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
+      carbon: new THREE.MeshPhysicalMaterial({ map: cc_carbonTex(), roughness: 0.4, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.6 }),
+      fireO: new THREE.MeshBasicMaterial({ map: cc_fireTex(), color: col('#ff6a14'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
+      fireC: new THREE.MeshBasicMaterial({ map: cc_fireTex(), color: col('#ffe2a0'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
+      fireGlow: new THREE.SpriteMaterial({ map: cc_glowTex(), color: col('#ff8a2a'), opacity: 0.7, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
     };
   }
   return CC_CACHE.mats;
@@ -343,7 +435,7 @@ function buildCarModel(typeId, paintHex, opts = {}){
   const T = CAR_TYPES[typeId] || CAR_TYPES.kitsune, id = T.id, sp = CC_SPEC[id], D = T.dims;
   const paint = paintHex || T.defaultPaint, num = opts.number != null ? opts.number : sp.num, rival = !!opts.rival;
   const S = cc_shape(sp, D), cab = sp.cab, sh = cc_shared();
-  const A = { paint: cc_acc(), glass: cc_acc(), trim: cc_acc(), chrome: cc_acc(), dark: cc_acc(), head: cc_acc(), tail: cc_acc() };
+  const A = { paint: cc_acc(), glass: cc_acc(), trim: cc_acc(), chrome: cc_acc(), dark: cc_acc(), head: cc_acc(), tail: cc_acc(), carbon: cc_acc() };
   const L = S.L, MPV = 320 / 1.5;
   const uvProj = (x, y, z, n) => {
     const u = (z - sp.zR) / L;
@@ -443,17 +535,18 @@ function buildCarModel(typeId, paintHex, opts = {}){
   // diffuseur (ailettes) et lame avant
   const zDif = S.edgeZ(0, S.B(0.03) + 0.06, false);
   const yDif = S.B(0.04);
-  for (let k = -3; k <= 3; k++) addG('trim', new THREE.BoxGeometry(0.012, 0.07, 0.36), cc_M4(k * 0.15, yDif - 0.03, zDif + 0.2, 0.12, 0, 0));
-  addG('trim', new THREE.BoxGeometry(1.1, 0.014, 0.38), cc_M4(0, yDif - 0.065, zDif + 0.24, 0.12, 0, 0));
-  if (id !== 'stallion'){ const zs = S.edgeZ(0, S.B(0.97) + 0.03, true); addG('trim', new THREE.BoxGeometry(1.5, 0.018, 0.3), cc_M4(0, S.B(0.97) - 0.01, zs - 0.12)); }
+  if (id !== 'hyperion') for (let k = -3; k <= 3; k++) addG('trim', new THREE.BoxGeometry(0.012, 0.07, 0.36), cc_M4(k * 0.15, yDif - 0.03, zDif + 0.2, 0.12, 0, 0));
+  if (id !== 'hyperion') addG('trim', new THREE.BoxGeometry(1.1, 0.014, 0.38), cc_M4(0, yDif - 0.065, zDif + 0.24, 0.12, 0, 0));
+  if (id !== 'stallion' && id !== 'hyperion'){ const zs = S.edgeZ(0, S.B(0.97) + 0.03, true); addG('trim', new THREE.BoxGeometry(1.5, 0.018, 0.3), cc_M4(0, S.B(0.97) - 0.01, zs - 0.12)); }
   // plaques
   const plateUV = g => { const U = g.attributes.uv; for (let i = 0; i < U.count; i++) U.setXY(i, lerp(8, 248, U.getX(i)) / 1024, 1 - lerp(1016, 968, U.getY(i)) / 1024); return g; };
-  const pyR = id === 'stallion' ? 0.52 : id === 'taiga' ? 0.56 : 0.5;
+  const pyR = id === 'stallion' ? 0.52 : id === 'taiga' ? 0.56 : id === 'hyperion' ? 0.44 : 0.5;
   const pz = S.edgeZ(0, pyR, false) - 0.008;
   addG('paint', plateUV(new THREE.PlaneGeometry(0.42, 0.1)), cc_M4(0, pyR, pz, 0, Math.PI, 0), 'keep');
-  if (id !== 'kitsune'){ const py = id === 'taiga' ? 0.36 : 0.3; addG('paint', plateUV(new THREE.PlaneGeometry(0.42, 0.1)), cc_M4(0, py, S.edgeZ(0, py, true) + 0.012), 'keep'); }
+  if (id !== 'kitsune' && id !== 'hyperion'){ const py = id === 'taiga' ? 0.36 : 0.3; addG('paint', plateUV(new THREE.PlaneGeometry(0.42, 0.1)), cc_M4(0, py, S.edgeZ(0, py, true) + 0.012), 'keep'); }
   // spécifiques
-  if (id === 'kitsune'){
+  if (id === 'hyperion') cc_hypParts(S, sp, D, archs, addG, uvProj, A);
+  else if (id === 'kitsune'){
     // aileron GT sur pieds
     const wz = sp.zR + 0.36, wy = 1.16, ty = S.T(0.08);
     const sh2 = new THREE.Shape(); sh2.moveTo(0, 0); sh2.bezierCurveTo(0.02, 0.04, 0.16, 0.045, 0.34, 0.012); sh2.lineTo(0.34, 0.0); sh2.bezierCurveTo(0.2, 0.0, 0.06, -0.02, 0, 0);
@@ -506,10 +599,11 @@ function buildCarModel(typeId, paintHex, opts = {}){
   }
   // --- matériaux de l'instance
   const liv = ctex(cc_livery(id, paint, num, rival, sp));
-  const mPaint = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: liv, metalness: 0.55, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.035, envMapIntensity: 1.7, normalMap: cc_flakeTex(), normalScale: new THREE.Vector2(0.12, 0.12) });
+  const hyp = id === 'hyperion';
+  const mPaint = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: liv, metalness: hyp ? 0.4 : 0.55, roughness: hyp ? 0.26 : 0.3, clearcoat: 1, clearcoatRoughness: hyp ? 0.02 : 0.035, envMapIntensity: hyp ? 2.4 : 1.7, normalMap: cc_flakeTex(), normalScale: new THREE.Vector2(hyp ? 0.08 : 0.12, hyp ? 0.08 : 0.12) });
   const mHead = new THREE.MeshStandardMaterial({ color: col('#e8ecf2'), emissive: col('#fff1dc'), emissiveIntensity: 0.3, roughness: 0.12, metalness: 0.4, envMapIntensity: 2 });
-  const mTail = new THREE.MeshStandardMaterial({ color: col('#4a0306'), emissive: col('#ff1408'), emissiveIntensity: 0.5, roughness: 0.18, metalness: 0.1 });
-  const mats = { paint: mPaint, glass: sh.glass, trim: sh.trim, chrome: sh.chrome, dark: sh.dark, head: mHead, tail: mTail };
+  const mTail = new THREE.MeshStandardMaterial({ color: col('#4a0306'), emissive: col('#ff1408'), emissiveIntensity: 0.5, roughness: 0.18, metalness: 0.1, toneMapped: !hyp });
+  const mats = { paint: mPaint, glass: sh.glass, trim: sh.trim, chrome: sh.chrome, dark: sh.dark, head: mHead, tail: mTail, carbon: sh.carbon };
   const root = new THREE.Group(), body = new THREE.Group(), inner = new THREE.Group();
   root.name = 'car_' + id; body.add(inner); root.add(body); inner.position.y = -0.45; body.position.y = 0.45;
   for (const k in A){ const g = cc_geoOf(A[k]); if (!g) continue; const m = new THREE.Mesh(g, mats[k]); m.castShadow = k !== 'head'; m.receiveShadow = true; m.name = k; inner.add(m); }
@@ -519,6 +613,16 @@ function buildCarModel(typeId, paintHex, opts = {}){
     const g2 = new THREE.ConeGeometry(0.032, 0.34, 10, 1, true); g2.rotateX(-Math.PI / 2); g2.translate(0, 0, -0.17);
     const f = new THREE.Mesh(mergeGeometries([g1, g2]), sh.flame); f.position.copy(e); f.visible = false; f.renderOrder = 5; inner.add(f); return f;
   });
+  // flammes orange de retour à l'échappement (backfire)
+  const fires = exhausts.map(e => {
+    const grp = new THREE.Group(); grp.position.copy(e); grp.visible = false; inner.add(grp);
+    const o1 = new THREE.ConeGeometry(0.15, 0.95, 16, 1, true); o1.rotateX(-Math.PI / 2); o1.translate(0, 0, -0.47);
+    const o2 = new THREE.ConeGeometry(0.1, 0.6, 12, 1, true); o2.rotateX(-Math.PI / 2); o2.rotateZ(1); o2.translate(0.03, 0.04, -0.3);
+    const c1 = new THREE.ConeGeometry(0.065, 0.48, 12, 1, true); c1.rotateX(-Math.PI / 2); c1.translate(0, 0, -0.24);
+    const outer = new THREE.Mesh(mergeGeometries([o1, o2]), sh.fireO), core = new THREE.Mesh(c1, sh.fireC), glow = new THREE.Sprite(sh.fireGlow);
+    outer.renderOrder = core.renderOrder = glow.renderOrder = 6; glow.position.z = -0.2; glow.scale.setScalar(0.45);
+    grp.add(outer, core, glow); return grp;
+  });
   // roues : coin -> pivot de braquage -> côté (miroir) -> rotation
   const wg = cc_wheelGeo(id, D, sp), rimMat = CC_CACHE['rimMat_' + id] || (CC_CACHE['rimMat_' + id] = new THREE.MeshStandardMaterial({ color: col(sp.rim.color), metalness: sp.rim.metal, roughness: sp.rim.rough, envMapIntensity: 1.6, side: THREE.DoubleSide }));
   const wheelsLocal = [], pivots = [], spins = [];
@@ -527,7 +631,7 @@ function buildCarModel(typeId, paintHex, opts = {}){
     const piv = new THREE.Group(); corner.add(piv); const side = new THREE.Group(); side.scale.x = sx; piv.add(side);
     const spin = new THREE.Group(); side.add(spin);
     for (const [g, m] of [[wg.tire, sh.tire], [wg.rim, rimMat], [wg.disc, sh.disc]]){ const ms = new THREE.Mesh(g, m); ms.castShadow = ms.receiveShadow = true; spin.add(ms); }
-    const cl = new THREE.Mesh(wg.caliper, sh.caliper); cl.castShadow = true; cl.receiveShadow = true; side.add(cl);
+    const cl = new THREE.Mesh(wg.caliper, sp.caliper ? (CC_CACHE['cal_' + id] || (CC_CACHE['cal_' + id] = new THREE.MeshStandardMaterial({ color: col(sp.caliper), roughness: 0.3, metalness: 0.15, envMapIntensity: 1.2 }))) : sh.caliper); cl.castShadow = true; cl.receiveShadow = true; side.add(cl);
     pivots.push(piv); spins.push(spin); wheelsLocal.push(V3(sx * D.track / 2, 0, sz * D.wheelbase / 2));
   });
   const model = {
@@ -544,6 +648,8 @@ function buildCarModel(typeId, paintHex, opts = {}){
       mHead.emissiveIntensity = 0.25 + hd * 6;
       mTail.emissiveIntensity = 0.45 + hd * 1.2 + br * 5;
       for (const f of flames){ f.visible = nt > 0.02; if (f.visible){ const k = nt * (0.75 + Math.random() * 0.5); f.scale.set(0.8 + nt * 0.4, 0.8 + nt * 0.4, k * 1.4); } }
+      const bf = clamp(p.backfire || 0, 0, 1);
+      for (const f of fires){ f.visible = bf > 0.02; if (f.visible){ const k = bf * (0.8 + Math.random() * 0.4), w = 0.6 + bf * 0.6; f.scale.set(w, w, k * 1.2); f.rotation.z = Math.random() * 6.28; } }
     },
   };
   model.pose({});
@@ -576,6 +682,112 @@ CC_SPEC.taiga.cls = f => {
   if (f.y < f.B + 0.17 && f.ny < 0.5) return 'trim';
   return null;
 };
+
+CC_SPEC.hyperion.cls = f => {
+  const ax = Math.abs(f.x);
+  // phares effilés : fine bande au ras du capot
+  if (f.t > 0.9 && ax > 0.4 && ax < 0.86 && f.y > f.T - 0.075 && f.y < f.T - 0.035 && f.nz > 0.15) return 'head';
+  if (f.nz > 0.45 && f.y > f.B + 0.04 && f.y < f.B + 0.2 && ax < 0.78) return 'trim';
+  // poupe : bandeau noir brillant des feux, partie basse en carbone
+  if (f.nz < -0.45 && f.y < f.B + 0.11) return 'carbon';
+  if (f.nz < -0.5 && f.y > 0.66 && f.y < 0.86) return 'trim';
+  return null;
+};
+function cc_mirX(geo){
+  // miroir en X avec retournement de l'ordre des sommets
+  const g = geo.index ? geo.toNonIndexed() : geo; g.scale(-1, 1, 1);
+  for (const k of ['position', 'normal', 'uv']){ const at = g.attributes[k]; if (!at) continue; const n = at.itemSize, a = at.array;
+    for (let i = 0; i < a.length; i += 3 * n) for (let c = 0; c < n; c++){ const t = a[i + n + c]; a[i + n + c] = a[i + 2 * n + c]; a[i + 2 * n + c] = t; } }
+  return g;
+}
+// Pièces de la Hyperion : kit large riveté, ailes flottantes, aileron col de cygne, diffuseur, feux en U
+function cc_hypParts(S, sp, D, archs, addG, uvProj, A){
+  const addP = geo => {
+    const g = geo.index ? geo.toNonIndexed() : geo, P = g.attributes.position, N = g.attributes.normal, a = A.paint, n = { x: 0, y: 0 };
+    for (let i = 0; i < P.count; i++){ const x = P.getX(i), y = P.getY(i), z = P.getZ(i); n.x = N.getX(i); n.y = N.getY(i); a.p.push(x, y, z); a.n.push(n.x, n.y, N.getZ(i)); const uv = uvProj(x, y, z, n); a.u.push(uv[0], uv[1]); }
+  };
+  const halfY = (z, y) => { const h = S.halfAt(S.tOf(z), y); return h > 0 ? h : S.W(S.tOf(z)) * 0.8; };
+  // ailes élargies : lèvre d'arche qui suit la caisse + rivets
+  for (const a of archs) for (const s of [1, -1]){
+    const pts = [];
+    for (let k = 0; k <= 16; k++){ const an = 0.12 + k / 16 * (Math.PI - 0.24), z = a.z - Math.cos(an) * (a.r + 0.02), y = a.y + Math.sin(an) * (a.r + 0.02); pts.push(V3(s * (halfY(z, y) + 0.004), y, z)); }
+    addP(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 32, 0.026, 6, false));
+    for (let k = 0; k < 9; k++){ const an = 0.3 + k / 8 * (Math.PI - 0.6), z = a.z - Math.cos(an) * (a.r + 0.075), y = a.y + Math.sin(an) * (a.r + 0.075);
+      addG('chrome', new THREE.SphereGeometry(0.011, 6, 4), cc_M4(s * (halfY(z, y) + 0.003), y, z)); }
+  }
+  // ailes flottantes (double peau) du montant arrière vers l'aile arrière
+  const cab = sp.cab, z0 = S.zOf(cab.tB) + 0.02, z1 = sp.zR + 0.22, NS = 14;
+  for (const s of [1, -1]){
+    const sh = new THREE.Shape(), up = [], lo = [];
+    for (let k = 0; k <= NS; k++){
+      const u = k / NS, z = lerp(z0, z1, u), x = lerp(cab.roof + 0.02, 0.8, Math.pow(u, 0.8));
+      let yu = lerp(cab.roofH - 0.02, S.T(S.tOf(z1)) + 0.03, u) + Math.sin(u * Math.PI) * 0.07;
+      const yb = S.bodyY(S.tOf(z), x);
+      let yl = Math.max(yu - lerp(0.05, 0.13, u), yb + 0.035);
+      if (u > 0.8) yl = lerp(yl, yb - 0.03, (u - 0.8) / 0.2);
+      if (yu < yl + 0.03) yu = yl + 0.03;
+      up.push([-z, yu, x]); lo.push([-z, yl, x]);
+    }
+    sh.moveTo(up[0][0], up[0][1]); for (const p of up.slice(1)) sh.lineTo(p[0], p[1]); for (const p of lo.slice().reverse()) sh.lineTo(p[0], p[1]);
+    let g = new THREE.ExtrudeGeometry(sh, { depth: 0.035, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 1 });
+    g.rotateY(Math.PI / 2);
+    // cintrage en X selon z
+    const P = g.attributes.position; for (let i = 0; i < P.count; i++){ const z = P.getZ(i), u = clamp((z0 - z) / (z0 - z1), 0, 1); P.setX(i, P.getX(i) + lerp(cab.roof + 0.02, 0.8, Math.pow(u, 0.8)) - 0.02); }
+    g.computeVertexNormals();
+    if (s < 0) g = cc_mirX(g);
+    addP(g);
+  }
+  // bas de caisse, lame avant, canards
+  const zs0 = -D.wheelbase / 2 + D.wheelRadius + 0.14, zs1 = D.wheelbase / 2 - D.wheelRadius - 0.14;
+  for (const s of [1, -1]){
+    addG('carbon', new THREE.BoxGeometry(0.17, 0.035, zs1 - zs0), cc_M4(s * (S.W(0.5) - 0.03), S.B(0.5) + 0.0, (zs0 + zs1) / 2, 0, 0, s * -0.12));
+    addG('carbon', new THREE.BoxGeometry(0.2, 0.012, 0.12), cc_M4(s * 0.82, 0.3, S.edgeZ(0.82, 0.3, true) - 0.03, 0, s * 0.35, s * 0.18));
+  }
+  const yS = S.B(0.97), zS = S.edgeZ(0, yS + 0.03, true);
+  addG('carbon', new THREE.BoxGeometry(1.86, 0.022, 0.42, 1, 1, 1), cc_M4(0, yS - 0.015, zS - 0.13));
+  for (const s of [1, -1]) addG('carbon', new THREE.BoxGeometry(0.012, 0.07, 0.4), cc_M4(s * 0.92, yS + 0.015, zS - 0.13));
+  // diffuseur prononcé
+  const yD = 0.13, zD = sp.zR + 0.06;
+  addG('carbon', new THREE.BoxGeometry(1.62, 0.02, 0.7), cc_M4(0, yD + 0.03, zD, 0.18, 0, 0));
+  for (const x of [-0.74, -0.52, -0.31, 0.31, 0.52, 0.74]) addG('carbon', new THREE.BoxGeometry(0.014, 0.22, 0.7), cc_M4(x, yD + 0.13, zD, 0.18, 0, 0));
+  // aileron arrière : profil, volet, dérives, pieds en col de cygne
+  const wy = 1.3, wz = sp.zR + 0.5, span = 1.98, ch = 0.44, aoa = 0.08;
+  const af = new THREE.Shape(); af.moveTo(0, 0); af.bezierCurveTo(0.02, 0.05, 0.2, 0.06, ch, 0.03); af.lineTo(ch, 0.012); af.bezierCurveTo(0.26, 0.0, 0.07, -0.025, 0, 0);
+  const wing = new THREE.ExtrudeGeometry(af, { depth: span, bevelEnabled: false, curveSegments: 10 }); wing.rotateY(Math.PI / 2);
+  addG('carbon', wing, cc_M4(-span / 2, wy, wz, aoa, 0, 0));
+  addG('carbon', new THREE.BoxGeometry(span, 0.06, 0.012), cc_M4(0, wy + 0.06, wz - ch + 0.005, 0.25, 0, 0));
+  const ep = new THREE.Shape(); ep.moveTo(-0.06, -0.12); ep.lineTo(0.52, -0.08); ep.lineTo(0.54, 0.16); ep.lineTo(0.04, 0.1); ep.closePath();
+  for (const s of [1, -1]){ const e = new THREE.ExtrudeGeometry(ep, { depth: 0.014, bevelEnabled: false }); e.rotateY(Math.PI / 2); addG('carbon', e, cc_M4(s * (span / 2) - 0.007, wy, wz)); }
+  for (const s of [1, -1]){
+    const xb = s * 0.38, zb = wz + 0.14, yb = S.bodyY(S.tOf(zb), 0.38) - 0.01, H = wy + 0.045 - yb, Xe = 0.14 + 0.2;
+    const bz = u => { const v = 1 - u; return [v * v * v * 0 + 3 * v * v * u * -0.05 + 3 * v * u * u * 0.12 + u * u * u * Xe, 3 * v * v * u * H * 0.85 + 3 * v * u * u * (H + 0.17) + u * u * u * H]; };
+    const L1 = [], R1 = [];
+    for (let k = 0; k <= 18; k++){
+      const u = k / 18, p = bz(u), q = bz(Math.min(1, u + 0.01)), r0 = bz(Math.max(0, u - 0.01)), dx = q[0] - r0[0], dy = q[1] - r0[1], l = Math.hypot(dx, dy) || 1, th = lerp(0.035, 0.02, u);
+      L1.push([p[0] - dy / l * th, p[1] + dx / l * th]); R1.push([p[0] + dy / l * th, p[1] - dx / l * th]);
+    }
+    const ns = new THREE.Shape(); ns.moveTo(L1[0][0], L1[0][1]); for (const p of L1.slice(1)) ns.lineTo(p[0], p[1]); for (const p of R1.slice().reverse()) ns.lineTo(p[0], p[1]);
+    const ng = new THREE.ExtrudeGeometry(ns, { depth: 0.022, bevelEnabled: false }); ng.rotateY(Math.PI / 2);
+    addG('carbon', ng, cc_M4(xb - 0.011, yb, zb));
+  }
+  // feux arrière LED en U fins + bandeau central
+  const ez = (x, y) => Math.min(S.edgeZ(x, y, false), sp.zR + 0.5);
+  for (const s of [1, -1]){
+    const uv = [[0.3, 0.805], [0.6, 0.81], [0.72, 0.795], [0.76, 0.765], [0.7, 0.735], [0.44, 0.73]];
+    const pts = uv.map(([x, y]) => V3(s * x, y, ez(x, y) - 0.004));
+    addG('tail', new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.014, 6, false));
+    addG('tail', new THREE.BoxGeometry(0.34, 0.008, 0.01), cc_M4(s * 0.5, 0.77, ez(0.5, 0.77) - 0.006));
+  }
+  addG('tail', new THREE.BoxGeometry(0.56, 0.007, 0.01), cc_M4(0, 0.81, ez(0, 0.81) - 0.004));
+  // phares effilés : fines lames LED sur l'arête du nez
+  const fz = (x, y) => Math.max(S.edgeZ(x, y, true), sp.zF - 0.9);
+  for (const s of [1, -1]){
+    for (const [dy, r] of [[0, 0.016], [-0.045, 0.008]]){
+      const pts = [[0.36, 0.545], [0.56, 0.575], [0.74, 0.565], [0.84, 0.53]].map(([x, y]) => V3(s * x, y + dy, fz(x, y + dy) + 0.002));
+      addG('head', new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 30, r, 6, false));
+    }
+  }
+}
 
 /* ================== Piste : lecture tolérante de l'API ================== */
 function cc_len(tr){ const l = typeof tr.length === 'function' ? tr.length() : tr.length; return l > 0 ? l : (tr.total || 1000); }

@@ -28,7 +28,7 @@
     return '<svg width="' + (size || 18) + '" height="' + (size || 18) + '" viewBox="0 0 24 24" fill="none" stroke="' + (color || 'currentColor') +
       '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (lib || '<circle cx="12" cy="12" r="8"/>') + '</svg>';
   }
-  var EXTRA = { 'arrow-right': '<path d="M5 12h14M13 6l6 6-6 6"/>' };
+  var EXTRA = { 'arrow-right': '<path d="M5 12h14M13 6l6 6-6 6"/>', zap: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>' };
   var MUSIC_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
   function fmtTime(ms) { var s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
   function euro(v) { return Math.round(v).toLocaleString('fr-FR') + ' €'; }
@@ -51,12 +51,12 @@
     var S = {
       d: dur, beats: beats,
       b: function (i) { return beats[Math.min(i, beats.length - 1)]; },
-      el: function (html, css, cls) {
+      el: function (html, css, cls, parent) {
         var e = document.createElement('div');
         e.className = 'bsf-el' + (cls ? ' ' + cls : '');
         if (css) e.style.cssText = css;
         e.innerHTML = html || '';
-        layer.appendChild(e);
+        (parent || layer).appendChild(e);
         return e;
       },
       a: function (el, frames, at, d, ease, extra) {
@@ -83,8 +83,8 @@
         S.tick(function (lt) { var n = Math.max(0, Math.min(text.length, Math.floor((lt - at) / 1000 * (cps || 16)))); el.textContent = text.slice(0, n); el.classList.toggle('bsf-caret', lt >= at && n < text.length + 4); });
       },
       // Pointeur de souris : suite de points [x, y, instant] ; clics : instants.
-      cursor: function (pts, clicks) {
-        var cu = S.el('<svg width="26" height="26" viewBox="0 0 24 24"><path d="M4 2l15 9-6.5 1.6L16 20l-2.6 1.3-3.4-7.2L4 19z" fill="#fff" stroke="#0a1220" stroke-width="1.4" stroke-linejoin="round"/></svg>', 'left:0;top:0;z-index:50', 'bsf-cursor');
+      cursor: function (pts, clicks, parent, size) {
+        var cu = S.el('<svg width="' + (size || 26) + '" height="' + (size || 26) + '" viewBox="0 0 24 24"><path d="M4 2l15 9-6.5 1.6L16 20l-2.6 1.3-3.4-7.2L4 19z" fill="#fff" stroke="#0a1220" stroke-width="1.4" stroke-linejoin="round"/></svg>', 'left:0;top:0;z-index:50', 'bsf-cursor', parent);
         var frames = pts.map(function (p, i) { return { transform: 'translate(' + p[0] + 'px,' + p[1] + 'px)', offset: i / Math.max(1, pts.length - 1) }; });
         var t0 = pts[0][2], t1 = pts[pts.length - 1][2];
         // Positions à des instants précis : on reconstruit les « offsets » à partir des instants.
@@ -93,7 +93,7 @@
         S.a(cu, [{ opacity: 0 }, { opacity: 1 }], t0 - 300, 300, 'linear');
         (clicks || []).forEach(function (at) {
           var p = posAt(pts, at);
-          var r = S.el('', 'left:' + (p[0] - 18) + 'px;top:' + (p[1] - 18) + 'px;width:36px;height:36px;z-index:49', 'bsf-ripple');
+          var r = S.el('', 'left:' + (p[0] - 18) + 'px;top:' + (p[1] - 18) + 'px;width:36px;height:36px;z-index:49', 'bsf-ripple', parent);
           S.a(r, [{ opacity: .9, transform: 'scale(.2)' }, { opacity: 0, transform: 'scale(1.6)' }], at, 600, 'ease-out', { fill: 'none' });
           S.a(cu, [{ transform: 'translate(' + p[0] + 'px,' + p[1] + 'px) scale(1)' }, { transform: 'translate(' + p[0] + 'px,' + p[1] + 'px) scale(.82)' }, { transform: 'translate(' + p[0] + 'px,' + p[1] + 'px) scale(1)' }], at, 260, 'ease-out', { fill: 'none', composite: 'replace' });
         });
@@ -203,6 +203,97 @@
     };
   }
 
+  // ================================================================== scènes « vraie interface »
+  // Captures réelles du CRM (scripts/formation/ecrans.mjs → formation/ecrans/<id>-<clair|sombre>.webp, zones dans
+  // window.BS_ECRANS) mises en scène : fenêtre de navigateur, zoom caméra, curseur, clics, surlignage, bulles.
+  // Version équipe seulement (la version autonome n'a pas les images) : sinon la scène est retirée du module.
+  var ECRANS = window.BS_ECRANS || null;
+  function ecranOk(id) { return !!(SERVER && ECRANS && ECRANS[id]); }
+  function ecranUrl(id) {
+    var light = document.documentElement.getAttribute('data-scheme') === 'light';
+    return 'formation/ecrans/' + id + '-' + (light ? 'clair' : 'sombre') + '.webp' + (ECRANS && ECRANS._v ? '?v=' + ECRANS._v : '');
+  }
+  // o : { t: titre du tuto, ecran: id, captions, steps: [{ b: n° de phrase, d: décalage ms, ecran, zoom, s, curseur, clic, spot, bulle }] }
+  //  zoom : nom de zone (ou null pour revenir au plan large) ; curseur : zone visée ; spot : zone surlignée (false = retire).
+  function tuto(o) {
+    var ids = [o.ecran].concat((o.steps || []).filter(function (s) { return s.ecran; }).map(function (s) { return s.ecran; }));
+    if (!ids.every(ecranOk)) return null;
+    return {
+      tuto: o.t, ecrans: ids, captions: o.captions, min: o.min,
+      build: function (S) {
+        var E0 = ECRANS[o.ecran], mobile = E0.w < 600;
+        // Fenêtre : navigateur (ordinateur) ou téléphone, au format de la capture.
+        var VW = mobile ? 300 : 1040, VH = Math.round(VW * E0.h / E0.w), k = VW / E0.w;
+        var left = Math.round((W - VW) / 2), top = mobile ? 26 : 16;
+        var win = S.el('<div class="bsf-bbar"><i></i><i></i><i></i><span>' + ic('lock', 11) + ' crm.blackstart.ai/#/' + esc(o.page || '') + '</span></div><div class="bsf-bview"><div class="bsf-bcam"></div></div>',
+          'left:' + left + 'px;top:' + top + 'px;width:' + VW + 'px', 'bsf-browser' + (mobile ? ' phone' : ''));
+        var view = win.querySelector('.bsf-bview'), cam = win.querySelector('.bsf-bcam');
+        view.style.height = VH + 'px';
+        cam.style.cssText = 'width:' + VW + 'px;height:' + VH + 'px';
+        S.a(win, [{ opacity: 0, transform: 'translateY(46px) scale(.94) rotateX(8deg)' }, { opacity: 1, transform: 'none' }], 0, 1000);
+        var tag = S.el(ic('play', 12) + '<span>Tuto</span>' + esc(o.t), 'left:' + (left + 14) + 'px;top:' + (top + (mobile ? 14 : 44)) + 'px', 'bsf-tutotag');
+        S.a(tag, [{ opacity: 0, transform: 'translateX(-20px)' }, { opacity: 1, transform: 'none', offset: .15 }, { opacity: 1, transform: 'none', offset: .85 }, { opacity: 0, transform: 'translateX(-10px)' }], 500, 3600, 'linear');
+        function img(id) { var i = new Image(); i.src = ecranUrl(id); i.alt = ''; i.className = 'bsf-shot'; i.draggable = false; cam.appendChild(i); return i; }
+        img(o.ecran);
+        function zone(id, name) {
+          var Z = ECRANS[id].z || {}, r = Array.isArray(name) ? name : Z[name];
+          return r ? [r[0] * k, r[1] * k, r[2] * k, r[3] * k] : null;
+        }
+        var curId = o.ecran, camNow = [0, 0, 1], spotEl = null, curPts = [[VW * .62, VH * .7, 300]], clicks = [];
+        function tr(c) { return 'translate(' + c[0].toFixed(1) + 'px,' + c[1].toFixed(1) + 'px) scale(' + c[2].toFixed(3) + ')'; }
+        function camFor(z, sc) {
+          if (!z) return [0, 0, 1];
+          var s = sc || Math.max(1, Math.min(mobile ? 1.8 : 2.3, Math.min(VW / (z[2] * 1.3), VH / (z[3] * 1.35))));
+          var cx = z[0] + z[2] / 2, cy = z[1] + z[3] / 2;
+          var tx = Math.min(0, Math.max(VW - VW * s, VW / 2 - cx * s)), ty = Math.min(0, Math.max(VH - VH * s, VH / 2 - cy * s));
+          return [tx, ty, s];
+        }
+        (o.steps || []).forEach(function (st) {
+          var at = (st.b != null ? S.b(st.b) : 400) + (st.d || 0);
+          if (st.ecran && st.ecran !== curId) {
+            var im = img(st.ecran); curId = st.ecran;
+            S.a(im, [{ opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0)' }], at, 500, 'ease-out');
+          }
+          if (st.zoom !== undefined) {
+            var to = camFor(st.zoom ? zone(curId, st.zoom) : null, st.s);
+            S.a(cam, [{ transform: tr(camNow) }, { transform: tr(to) }], at, st.lent ? 1800 : 1150, EASE_IO);
+            camNow = to;
+          }
+          if (st.spot !== undefined) {
+            if (spotEl) S.fadeOut(spotEl, at, 300);
+            spotEl = null;
+            var z = st.spot && zone(curId, st.spot);
+            if (z) {
+              spotEl = S.el('', 'left:' + (z[0] - 5) + 'px;top:' + (z[1] - 5) + 'px;width:' + (z[2] + 10) + 'px;height:' + (z[3] + 10) + 'px', 'bsf-spot', cam);
+              S.a(spotEl, [{ opacity: 0, transform: 'scale(1.08)' }, { opacity: 1, transform: 'none' }], at + 150, 600);
+            }
+          }
+          if (st.curseur) {
+            var zc = zone(curId, st.curseur);
+            if (zc) {
+              var px = zc[0] + Math.min(zc[2] / 2, 40 * k + zc[2] * .25), py = zc[1] + zc[3] / 2;
+              if (st.centre) px = zc[0] + zc[2] / 2;
+              curPts.push([curPts[curPts.length - 1][0], curPts[curPts.length - 1][1], Math.max(curPts[curPts.length - 1][2] + 50, at - 900)]);
+              curPts.push([px, py, at]);
+              if (st.clic) clicks.push(at + 120);
+            }
+          }
+          if (st.bulle) {
+            var zb = zone(curId, st.bulle[0]);
+            if (zb) {
+              var below = zb[1] + zb[3] + 54 < VH, bl = S.el(esc(st.bulle[1]), 'left:' + (zb[0] + zb[2] / 2) + 'px;top:' + (below ? zb[1] + zb[3] + 10 : zb[1] - 10) + 'px', 'bsf-bulle' + (below ? '' : ' up'), cam);
+              S.a(bl, [{ opacity: 0, transform: 'translate(-50%,' + (below ? '0' : '-100%') + ') translateY(' + (below ? 8 : -8) + 'px) scale(.9)' }, { opacity: 1, transform: 'translate(-50%,' + (below ? '0' : '-100%') + ')' }], at + 300, 500, SPRING);
+              S.a(bl, [{ opacity: 1 }, { opacity: 0 }], at + (st.duree || 3200), 300, 'linear', { fill: 'forwards' });
+            }
+          }
+        });
+        if (curPts.length > 1) S.cursor(curPts, clicks, cam, mobile ? 30 : 22);
+      },
+    };
+  }
+  // Scènes d'un module : on retire celles dont les captures manquent.
+  function scenes(list) { return list.filter(Boolean); }
+
   // Planète stylisée (SVG) pour les scènes « carte clients ».
   function globeSvg(zoomed) {
     var pts = '', arcs = '', P = [[300, 250], [338, 214], [262, 300], [352, 300], [228, 220], [390, 258], [300, 340], [250, 170]];
@@ -225,7 +316,7 @@
   }
 
   // ================================================================== les 8 modules
-  var MODULES = [
+  var ANCIENS = [
     { f: '01-prise-en-main', t: 'Prise en main de l’interface', s: 'Menu, recherche Ctrl K, bouton Créer, mode clair ou sombre.',
       quiz: [
         ['Quel raccourci ouvre la recherche et les commandes ?', ['Ctrl + K', 'Ctrl + P', 'Alt + F4'], 0],
@@ -744,6 +835,225 @@
         recapScene(['Les RDV du site arrivent dans le CRM, avec un rappel.', 'Le calendrier du site couvre toutes les années.', 'La carte clients montre votre territoire en direct.'], null),
       ] },
   ];
+  // ================================================================== la formation (11 modules, de A à Z)
+  // Chaque module : générique en motion design, tutos sur la vraie interface, récapitulatif, quiz.
+  // Sans les captures (version autonome), le module reprend les anciennes scènes animées (ANCIENS).
+  function module(o) {
+    var tutos = o.tutos.filter(Boolean);
+    var list = tutos.length ? [titleScene(o.n, o.t, o.accroche, o.chips)].concat(o.avant || [], tutos, o.apres || [], [recapScene(o.recap, o.suivant)]) : o.secours;
+    tutos.forEach(function (s) { s.module = o.n; });
+    return { f: o.f, t: o.t, s: o.s, quiz: o.quiz, scenes: list };
+  }
+  var MODULES = [
+    module({ n: 1, f: '01-demarrer', t: 'Bien démarrer dans le CRM', s: 'Connexion, menu, recherche Ctrl K, bouton Créer, profil, thème et mobile.',
+      accroche: 'Deux minutes pour vous repérer partout dans le CRM.', chips: ['Connexion', 'Menu', 'Recherche', 'Créer', 'Profil', 'Mobile'],
+      quiz: [
+        ['Quel raccourci ouvre la recherche et les commandes ?', ['Ctrl + K', 'Ctrl + P', 'Alt + F4'], 0],
+        ['Où trouver « Mon compte », l’organigramme et la déconnexion ?', ['Dans Rapports', 'En cliquant sur votre nom, en haut à droite', 'Dans Paiements'], 1],
+        ['Le CRM fonctionne-t-il sur téléphone ?', ['Non', 'Oui, avec une barre de navigation en bas', 'Seulement en lecture'], 1],
+      ],
+      tutos: [
+        tuto({ t: 'Se connecter', ecran: 'connexion', page: 'connexion', captions: ['Chaque membre de l’équipe a son propre compte : votre e-mail et votre mot de passe suffisent.', 'Une fois connecté, vous retrouvez les données de toute l’équipe, à jour en temps réel.'],
+          steps: [{ b: 0, d: 600, zoom: 'formulaire', spot: 'formulaire' }, { b: 0, d: 1400, curseur: 'email', clic: true }, { b: 1, zoom: null, spot: false }] }),
+        tuto({ t: 'Se repérer dans le menu', ecran: 'accueil', page: 'today', captions: ['À gauche, le menu regroupe toutes les rubriques : prospection, ventes, équipe et analyse.', 'Les pastilles rouges signalent ce qui vous attend : relances, tâches, paiements.', 'Besoin de place ? « Replier le menu » ne garde que les icônes.'],
+          steps: [{ b: 0, d: 300, zoom: 'menu', spot: 'menu', lent: true }, { b: 1, curseur: 'prospection' }, { b: 1, d: 400, bulle: ['prospection', 'Pastille = à traiter aujourd’hui'] }, { b: 2, curseur: 'replier', spot: 'replier' }, { b: 2, d: 2600, zoom: null, spot: false }] }),
+        tuto({ t: 'Tout trouver avec Ctrl K', ecran: 'accueil', page: 'today', captions: ['En haut, la barre de recherche, ou le raccourci Contrôle K, trouve tout : un prospect, un devis, une action.', 'Tapez quelques lettres : les résultats s’affichent aussitôt, Entrée pour ouvrir.'],
+          steps: [{ b: 0, d: 200, zoom: 'recherche', spot: 'recherche' }, { b: 0, d: 900, curseur: 'recherche', clic: true }, { b: 1, ecran: 'recherche', zoom: 'palette', spot: 'palette' }, { b: 1, d: 900, bulle: ['resultat', 'Entrée pour ouvrir'] }] }),
+        tuto({ t: 'Créer en un clic', ecran: 'accueil', page: 'today', captions: ['Le bouton Créer, en haut à droite, crée un prospect, un devis, une facture, une tâche ou un rendez-vous, depuis n’importe quelle page.', 'Astuce : N pour un nouveau prospect, T pour une nouvelle tâche.'],
+          steps: [{ b: 0, d: 200, zoom: 'creer', s: 2 }, { b: 0, d: 700, curseur: 'creer', clic: true, centre: true }, { b: 0, d: 1200, ecran: 'creer', zoom: 'menu', spot: 'menu' }, { b: 1, bulle: ['menu', 'Raccourcis N et T'] }] }),
+        tuto({ t: 'Mon compte, organigramme, déconnexion', ecran: 'accueil', page: 'today', captions: ['Cliquez sur votre nom en haut à droite : Mon compte, l’organigramme de l’équipe, les réglages et la déconnexion.', 'L’icône soleil ou lune bascule tout de suite entre le mode clair et le mode sombre.'],
+          steps: [{ b: 0, d: 200, zoom: 'moi', s: 2 }, { b: 0, d: 700, curseur: 'moi', clic: true, centre: true }, { b: 0, d: 1300, ecran: 'moi', zoom: 'menu', spot: 'menu' }, { b: 1, ecran: 'accueil', zoom: 'theme', s: 2.2, spot: 'theme' }, { b: 1, d: 500, curseur: 'theme', clic: true, centre: true }] }),
+        tuto({ t: 'Le CRM sur téléphone', ecran: 'mobile', page: 'today', captions: ['Sur téléphone, le CRM s’adapte : les rubriques principales passent dans une barre en bas de l’écran.', 'Lancez votre session d’appels directement depuis votre mobile.'],
+          steps: [{ b: 0, d: 600, spot: 'barre', bulle: ['barre', 'Navigation en bas'] }, { b: 1, spot: 'session', curseur: 'session', clic: true, centre: true }] }),
+      ],
+      recap: ['Le menu à gauche, la recherche Ctrl K en haut.', 'Le bouton Créer, partout, pour aller vite.', 'Votre nom en haut à droite : compte, organigramme, déconnexion.'], suivant: 'Ma journée et la session d’appels',
+      secours: ANCIENS[0].scenes }),
+
+    module({ n: 2, f: '02-journee-appels', t: 'Ma journée et la session d’appels', s: 'Écran Aujourd’hui, file d’appels, script, notes, résultat et relance.',
+      accroche: 'Le cœur de la prospection : appeler, noter, relancer.', chips: ['Aujourd’hui', 'Session', 'Script', 'Résultat'],
+      quiz: [
+        ['Dans quel ordre la file d’appels classe-t-elle les prospects ?', ['Par ordre alphabétique', 'Les relances en retard d’abord', 'Au hasard'], 1],
+        ['Que fait « Lancer la session d’appels » ?', ['Elle enchaîne les appels automatiquement, avec le script', 'Elle envoie des SMS', 'Elle exporte la liste'], 0],
+        ['Après un appel « À rappeler », que propose le CRM ?', ['Rien', 'De supprimer la fiche', 'De programmer la relance dans l’agenda'], 2],
+      ],
+      tutos: [
+        tuto({ t: 'L’écran Aujourd’hui', ecran: 'aujourdhui', page: 'today', captions: ['Chaque matin, l’écran Aujourd’hui vous dit quoi faire : votre file d’appels, vos tâches et vos prochaines relances.', 'Les relances en retard passent en premier, avec le nombre de jours de retard.', 'Un clic sur le téléphone vert appelle le prospect.'],
+          steps: [{ b: 0, d: 400, zoom: 'file', spot: 'file', lent: true }, { b: 1, zoom: 'premier', s: 2.1, spot: 'premier' }, { b: 2, curseur: 'appeler', clic: true, centre: true }, { b: 2, d: 1800, zoom: null, spot: false }] }),
+        tuto({ t: 'Lancer une session d’appels', ecran: 'aujourdhui', page: 'today', captions: ['Le grand bouton bleu lance la session : les appels s’enchaînent, sans chercher le numéro suivant.', 'Pour chaque appel : le bouton pour composer, le script pas à pas, et un bloc-notes.', 'Suivez les six étapes du script, de l’accroche à la prise de rendez-vous.'],
+          steps: [{ b: 0, d: 200, zoom: 'session', s: 1.7, spot: 'session' }, { b: 0, d: 800, curseur: 'session', clic: true }, { b: 1, ecran: 'appel', zoom: null, spot: false }, { b: 1, d: 900, spot: 'composer', curseur: 'composer' }, { b: 2, zoom: 'script', spot: 'script' }] }),
+        tuto({ t: 'Noter et clore un appel', ecran: 'appel', page: 'today', captions: ['Notez ce qui se dit pendant l’appel : besoins, objections, prochaine étape.', 'Terminer l’appel ouvre le compte-rendu : choisissez le résultat, la relance se programme toute seule.'],
+          steps: [{ b: 0, d: 200, zoom: 'notes', spot: 'notes' }, { b: 0, d: 700, curseur: 'notes', clic: true }, { b: 1, curseur: 'terminer', clic: true, spot: 'terminer' }, { b: 1, d: 1300, ecran: 'resultat', zoom: 'fenetre', spot: 'fenetre' }] }),
+      ],
+      recap: ['L’écran Aujourd’hui : retards d’abord, tâches et relances.', 'La session enchaîne les appels avec le script.', 'Un résultat par appel, la relance part dans l’agenda.'], suivant: 'Prospects et fiches',
+      secours: ANCIENS[1].scenes }),
+
+    module({ n: 3, f: '03-prospects-fiches', t: 'Prospects et fiches', s: 'Statuts, recherche, filtres, fiche prospect, création, import et export.',
+      accroche: 'Un fichier clair, filtré, toujours à jour.', chips: ['Statuts', 'Filtres', 'Fiche', 'Import'],
+      quiz: [
+        ['Comment voir seulement les prospects « RDV pris » ?', ['Avec la pastille de statut en haut de la liste', 'Il faut tout exporter', 'Dans Réglages'], 0],
+        ['Que contient la fiche d’un prospect ?', ['Seulement son nom', 'Coordonnées, historique complet, tâches et documents', 'Uniquement les devis'], 1],
+        ['Comment ajouter 200 contacts d’un coup ?', ['Un par un', 'Avec « Importer » (CSV ou Excel)', 'Ce n’est pas possible'], 1],
+      ],
+      tutos: [
+        tuto({ t: 'Filtrer ses prospects', ecran: 'prospects', page: 'prospects', captions: ['La liste des prospects : en haut, une pastille par statut, avec le nombre de fiches.', 'Cherchez par entreprise, contact, ville ou téléphone, et affinez avec les filtres.', 'Passez de la vue tableau à la vue liste selon vos préférences.'],
+          steps: [{ b: 0, d: 300, zoom: 'statuts', spot: 'statuts' }, { b: 0, d: 1500, bulle: ['statuts', 'Un clic = un filtre'] }, { b: 1, zoom: 'recherche', spot: 'recherche', curseur: 'recherche', clic: true }, { b: 1, d: 1800, curseur: 'filtres', spot: 'filtres' }, { b: 2, zoom: null, spot: 'vue', curseur: 'vue' }] }),
+        tuto({ t: 'Ouvrir une fiche prospect', ecran: 'prospects', page: 'prospects', captions: ['Cliquez sur une ligne : la fiche du prospect s’ouvre.', 'Tout y est : coordonnées, appel, e-mail, SMS ou WhatsApp en un clic, et l’historique complet de chaque action.'],
+          steps: [{ b: 0, d: 200, zoom: 'premier', spot: 'premier' }, { b: 0, d: 700, curseur: 'premier', clic: true }, { b: 1, ecran: 'fiche', zoom: null, spot: 'fiche' }] }),
+        tuto({ t: 'Créer et importer des prospects', ecran: 'prospects', page: 'prospects', captions: ['Le bouton Nouveau ouvre la fiche de création : entreprise, contact, téléphone, secteur.', 'Importer charge un fichier CSV ou Excel ; les doublons sont détectés. Exporter télécharge votre liste.'],
+          steps: [{ b: 0, d: 200, zoom: 'nouveau', s: 2, curseur: 'nouveau', clic: true, centre: true }, { b: 0, d: 1300, ecran: 'nouveau-prospect', zoom: 'fenetre', spot: 'fenetre' }, { b: 1, ecran: 'import', zoom: 'fenetre', spot: 'fenetre' }] }),
+      ],
+      recap: ['Une pastille par statut pour filtrer en un clic.', 'La fiche garde tout l’historique, action par action.', 'Import CSV ou Excel, export en un clic.'], suivant: 'Trouver de nouveaux leads',
+      secours: ANCIENS[2].scenes }),
+
+    module({ n: 4, f: '04-nouveaux-leads', t: 'Trouver de nouveaux leads', s: 'Le générateur de vrais leads par secteur et par zone, et le suivi de votre niche.',
+      accroche: 'De vraies entreprises, jamais deux fois les mêmes.', chips: ['Secteur', 'Zone', 'Coordonnées', 'Niche'],
+      quiz: [
+        ['D’où viennent les leads proposés ?', ['Inventés au hasard', 'Du registre officiel des entreprises, entreprises actives', 'De vos anciens clients'], 1],
+        ['Le générateur propose-t-il deux fois la même entreprise ?', ['Oui, souvent', 'Non : il retient ce qu’il vous a déjà montré et ce qui est déjà au CRM', 'Seulement le lundi'], 1],
+        ['Où suivre les résultats de votre client idéal ?', ['Dans Rapports, « Suivi de ma niche »', 'Dans Paiements', 'Nulle part'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'Générer des leads', ecran: 'leads', page: 'leads', captions: ['Nouveaux leads : choisissez un secteur, un métier et une zone, ville, code postal ou département.', 'Le générateur trouve de vraies entreprises actives, avec le dirigeant, l’adresse, et quand il les trouve, le téléphone, le site et l’e-mail.', 'Un clic ajoute le lead à vos prospects, à appeler aujourd’hui.'],
+          steps: [{ b: 0, d: 300, zoom: 'formulaire', spot: 'formulaire' }, { b: 0, d: 1200, curseur: 'generer', clic: true, centre: true }, { b: 1, zoom: 'cartes', spot: 'cartes', lent: true }, { b: 2, zoom: 'carte', spot: 'carte' }, { b: 2, d: 600, curseur: 'ajouter', clic: true }] }),
+        tuto({ t: 'Suivre sa niche', ecran: 'niche', page: 'reports', captions: ['Dans Rapports, le suivi de ma niche compare vos secteurs : prospects, contacts, rendez-vous, clients et conversion.', 'Définissez votre client idéal : le générateur vous propose ensuite les leads qui lui ressemblent.'],
+          steps: [{ b: 0, d: 300, zoom: 'niche', spot: 'niche', lent: true }, { b: 1, curseur: 'ideal', clic: true, spot: 'ideal' }] }),
+      ],
+      recap: ['Secteur, métier, zone : des leads réels et nouveaux.', 'Un clic pour les ajouter à vos prospects.', 'Le suivi de niche vous dit quel secteur rapporte.'], suivant: 'Pipeline, agenda et tâches',
+      secours: ANCIENS[2].scenes }),
+
+    module({ n: 5, f: '05-pipeline-agenda', t: 'Pipeline, agenda et tâches', s: 'Glisser-déposer, vues jour, semaine, mois, planifier, rendez-vous du site, tâches.',
+      accroche: 'Voir où en est chaque affaire, et ne rater aucun rendez-vous.', chips: ['Pipeline', 'Agenda', 'Site', 'Tâches'],
+      quiz: [
+        ['Comment changer le statut d’une affaire dans le pipeline ?', ['En la glissant dans une autre colonne', 'En la supprimant', 'Par e-mail'], 0],
+        ['Que se passe-t-il quand un visiteur réserve sur le site ?', ['Rien', 'Le RDV et une tâche de rappel arrivent dans le CRM', 'Un e-mail part sans rien créer'], 1],
+        ['Où voir toutes les tâches en retard ?', ['Dans Tâches, en haut', 'Dans Clients', 'Dans Carte clients'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'Le pipeline', ecran: 'pipeline', page: 'pipeline', captions: ['Le pipeline montre chaque affaire, colonne par colonne : à appeler, injoignable, rendez-vous, audit, proposition.', 'Glissez une carte d’une colonne à l’autre : le statut et l’historique se mettent à jour.'],
+          steps: [{ b: 0, d: 400, zoom: 'colonnes', spot: 'colonnes', lent: true }, { b: 1, zoom: 'carte', s: 1.9, spot: 'carte', curseur: 'carte' }, { b: 1, d: 1300, curseur: 'colonne2', clic: true }] }),
+        tuto({ t: 'L’agenda', ecran: 'agenda', page: 'agenda', captions: ['L’agenda réunit vos relances et vos rendez-vous, en vue jour, semaine ou mois.', 'Planifier crée un créneau lié à un prospect, avec rappel.'],
+          steps: [{ b: 0, d: 200, zoom: 'relances', spot: 'relances' }, { b: 0, d: 2200, zoom: 'vues', s: 2, spot: 'vues', curseur: 'vues' }, { b: 1, curseur: 'planifier', clic: true, spot: 'planifier' }, { b: 1, d: 1200, ecran: 'planifier', zoom: 'fenetre', spot: 'fenetre' }] }),
+        tuto({ t: 'Les tâches', ecran: 'taches', page: 'tasks', captions: ['Tâches : en retard, aujourd’hui, à venir. Cochez-les au fur et à mesure.', 'Celles du jour s’affichent aussi sur l’écran Aujourd’hui.'],
+          steps: [{ b: 0, d: 300, zoom: 'retard', spot: 'retard' }, { b: 0, d: 2000, zoom: 'jour', spot: 'jour' }, { b: 1, zoom: null, spot: 'nouvelle', curseur: 'nouvelle' }] }),
+      ],
+      apres: [ANCIENS[7].scenes[1], ANCIENS[7].scenes[2]],
+      recap: ['Le pipeline se pilote au glisser-déposer.', 'L’agenda : jour, semaine, mois ; on planifie depuis la fiche.', 'Les réservations du site arrivent toutes seules.'], suivant: 'Devis, factures et paiements',
+      secours: ANCIENS[3].scenes }),
+
+    module({ n: 6, f: '06-devis-factures', t: 'Devis, factures et paiements', s: 'Créer un devis, aperçu A4, PDF, conversion en facture, encaissements.',
+      accroche: 'Du devis à l’encaissement, sans ressaisie.', chips: ['Devis', 'PDF', 'Facture', 'Paiement'],
+      quiz: [
+        ['Les totaux d’un devis se calculent…', ['à la main', 'automatiquement, remise et TVA comprises', 'à l’export seulement'], 1],
+        ['Un devis accepté devient une facture…', ['en un clic, avec sa propre numérotation', 'en recopiant tout', 'jamais'], 0],
+        ['Que propose la page Paiements ?', ['Liens de paiement, virement avec IBAN, suivi des encaissements', 'Seulement l’IBAN', 'Rien'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'Créer un devis', ecran: 'devis', page: 'devis', captions: ['Devis et factures : en haut, ce qui est en attente, le taux d’acceptation et ce qui reste à encaisser.', 'Nouveau devis : choisissez le client, ajoutez vos lignes ; remise et TVA se calculent pendant que vous tapez.'],
+          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, curseur: 'nouveau', clic: true, spot: 'nouveau' }, { b: 1, d: 1200, ecran: 'devis-edition', zoom: null, spot: 'fenetre' }] }),
+        tuto({ t: 'Aperçu, PDF et facture', ecran: 'devis', page: 'devis', captions: ['Ouvrez un devis : l’aperçu A4 est prêt à imprimer ou à envoyer en PDF.', 'Devis accepté ? Un clic le convertit en facture, avec sa propre numérotation.'],
+          steps: [{ b: 0, d: 200, zoom: 'liste', spot: 'liste', curseur: 'liste', clic: true }, { b: 0, d: 1500, ecran: 'devis-apercu', zoom: null, spot: 'document' }, { b: 1, spot: 'actions', zoom: 'actions' }] }),
+        tuto({ t: 'Suivre les paiements', ecran: 'paiements', page: 'payments', captions: ['Paiements : ce qui reste à encaisser, les retards, et tout ce qui a été encaissé.', 'Copiez vos liens de paiement ou votre IBAN pour les envoyer à vos clients.'],
+          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 0, d: 2400, zoom: 'factures', spot: 'factures' }, { b: 1, zoom: 'liens', spot: 'liens' }, { b: 1, d: 1800, zoom: 'virement', spot: 'virement' }] }),
+      ],
+      recap: ['Un devis se crée en quelques lignes ; les totaux suivent.', 'Aperçu A4, PDF, puis conversion en facture.', 'Paiements : on voit tout de suite qui a réglé.'], suivant: 'Clients, tableau de bord et rapports',
+      secours: ANCIENS[4].scenes }),
+
+    module({ n: 7, f: '07-pilotage', t: 'Clients, tableau de bord et rapports', s: 'Portefeuille, MRR, objectifs, entonnoir, rapports et présentation.',
+      accroche: 'Mesurer pour mieux décider.', chips: ['Clients', 'MRR', 'Objectifs', 'Rapports'],
+      quiz: [
+        ['Que mesure le MRR ?', ['Le revenu récurrent mensuel', 'Le nombre d’appels', 'Le nombre de devis'], 0],
+        ['À quoi sert l’entonnoir de conversion ?', ['À repérer l’étape où les prospects décrochent', 'À trier les e-mails', 'À rien'], 0],
+        ['Comment partager vos chiffres en réunion ?', ['Avec « Présenter » ou l’export CSV des rapports', 'En recopiant à la main', 'Ce n’est pas possible'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'Le portefeuille clients', ecran: 'clients', page: 'clients', captions: ['Clients : vos clients actifs, le revenu mensuel récurrent, l’ancienneté et le taux de résiliation.', 'Le MRR par secteur et le top clients montrent d’où vient votre chiffre.'],
+          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, zoom: 'mrr', spot: 'mrr' }, { b: 1, d: 2200, zoom: 'top', spot: 'top' }] }),
+        tuto({ t: 'Le tableau de bord', ecran: 'tableau', page: 'dashboard', captions: ['Le tableau de bord : vos chiffres clés de la semaine, vos objectifs d’appels et de rendez-vous.', 'L’entonnoir montre l’étape à améliorer, des appels jusqu’aux clients signés.'],
+          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 0, d: 2400, zoom: 'objectifs', spot: 'objectifs' }, { b: 1, zoom: 'entonnoir', spot: 'entonnoir' }] }),
+        tuto({ t: 'Les rapports', ecran: 'rapports', page: 'reports', captions: ['Rapports : six mois d’activité, les tendances, et le suivi de votre niche.', 'Exportez en CSV, ou passez en mode présentation pour vos réunions.'],
+          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, zoom: 'exporter', s: 2, spot: 'exporter', curseur: 'exporter' }, { b: 1, d: 1500, spot: 'presenter', curseur: 'presenter', clic: true }] }),
+      ],
+      recap: ['Clients : MRR, ancienneté, résiliation.', 'Tableau de bord : objectifs et entonnoir.', 'Rapports : tendances, export et présentation.'], suivant: 'La carte clients',
+      secours: ANCIENS[5].scenes }),
+
+    module({ n: 8, f: '08-carte-clients', t: 'La carte clients', s: 'Carte, globe 3D et vue réaliste : où sont vos clients et vos prospects.',
+      accroche: 'Votre territoire, d’un coup d’œil.', chips: ['Carte', 'Globe 3D', 'Réaliste', 'Villes'],
+      quiz: [
+        ['Quelles vues propose la carte clients ?', ['Carte, Globe 3D et Réaliste', 'Seulement une liste', 'Un tableau Excel'], 0],
+        ['Que montre une bulle sur la carte ?', ['Les clients et prospects d’une ville', 'La météo', 'Les factures'], 0],
+        ['Comment voir la carte en grand ?', ['Avec le bouton plein écran', 'En imprimant', 'Ce n’est pas possible'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'Lire la carte clients', ecran: 'carte', page: 'carte', captions: ['La carte clients place chaque fiche sur sa ville : en vert les clients, en bleu les prospects.', 'En haut, les chiffres clés ; à droite, le classement de vos villes.', 'Filtrez clients ou prospects, et zoomez où vous voulez.'],
+          steps: [{ b: 0, d: 400, zoom: 'carte', spot: 'carte', lent: true }, { b: 1, zoom: 'kpi', spot: 'kpi' }, { b: 1, d: 2200, zoom: 'villes', spot: 'villes' }, { b: 2, zoom: null, spot: 'filtres', curseur: 'filtres', clic: true }] }),
+        tuto({ t: 'Globe 3D et vue réaliste', ecran: 'carte', page: 'carte', captions: ['Trois vues : la carte, le globe 3D qui tourne tout seul ou à la souris, et la vue réaliste par satellite.', 'Le bouton plein écran affiche la carte en grand, idéale en réunion.'],
+          steps: [{ b: 0, d: 300, zoom: 'vues', spot: 'vues', curseur: 'vues', clic: true }, { b: 0, d: 2000, ecran: 'globe', zoom: null, spot: false }, { b: 1, zoom: 'carte', spot: 'carte' }] }),
+      ],
+      recap: ['Verts les clients, bleus les prospects.', 'Carte, Globe 3D ou Réaliste, et plein écran.', 'Le classement des villes montre votre territoire.'], suivant: 'Messages, groupes et visio',
+      secours: ANCIENS[7].scenes.slice(3) }),
+
+    module({ n: 9, f: '09-messagerie', t: 'Messages, groupes et visio', s: 'Messagerie d’équipe, émojis, pièces jointes, groupes, visio et notifications.',
+      accroche: 'Toute l’équipe se parle sans quitter le CRM.', chips: ['Messages', 'Groupes', 'Visio', 'Notifications'],
+      quiz: [
+        ['Peut-on envoyer une photo ou un PDF dans un message ?', ['Oui, avec le trombone', 'Non', 'Seulement par e-mail'], 0],
+        ['Comment parler à plusieurs collègues à la fois ?', ['Avec un groupe', 'En copiant le message', 'Ce n’est pas possible'], 0],
+        ['Que se passe-t-il quand quelqu’un lance une visio ?', ['Une sonnerie et une carte d’appel apparaissent', 'Rien', 'Un e-mail part'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'Écrire à un collègue', ecran: 'messages', page: 'messages', captions: ['Messages : vos conversations à gauche, le fil de discussion à droite.', 'Écrivez en bas : émojis, et pièces jointes avec le trombone, images, PDF ou documents.', 'Trois petits points s’affichent quand votre collègue est en train d’écrire.'],
+          steps: [{ b: 0, d: 300, zoom: 'liste', spot: 'liste' }, { b: 0, d: 2000, zoom: 'fil', spot: 'fil' }, { b: 1, zoom: 'saisie', spot: 'saisie', curseur: 'saisie', clic: true }, { b: 1, d: 1400, curseur: 'joindre' }, { b: 2, zoom: null, spot: false }] }),
+        tuto({ t: 'Les groupes', ecran: 'groupes', page: 'groupes', captions: ['Groupes : un espace par équipe ou par projet, avec les mêmes possibilités que les messages.', 'Nouveau groupe : donnez un nom et choisissez les membres.'],
+          steps: [{ b: 0, d: 300, zoom: 'fil', spot: 'fil' }, { b: 1, zoom: 'nouveau', s: 2, spot: 'nouveau', curseur: 'nouveau', clic: true }] }),
+        tuto({ t: 'Lancer une visio', ecran: 'visio', page: 'visio', captions: ['Visio : lancez une réunion avec l’équipe ou avec un groupe, en un clic.', 'Vos collègues reçoivent une sonnerie et une carte d’appel pour rejoindre. La sonnerie se choisit dans Réglages.'],
+          steps: [{ b: 0, d: 300, zoom: 'lancer', s: 2, spot: 'lancer', curseur: 'lancer', clic: true }, { b: 1, zoom: null, spot: false }] }),
+      ],
+      recap: ['Messages : émojis et pièces jointes.', 'Groupes par équipe ou par projet.', 'Visio en un clic, avec sonnerie.'], suivant: 'Équipe, comptes et sauvegardes',
+      secours: ANCIENS[6].scenes }),
+
+    module({ n: 10, f: '10-equipe', t: 'Équipe, comptes et sauvegardes', s: 'Mon compte, organigramme, membres et droits, sauvegardes, suivi de la formation.',
+      accroche: 'Chacun son compte, toute l’équipe au même endroit.', chips: ['Compte', 'Organigramme', 'Membres', 'Sauvegardes'],
+      quiz: [
+        ['Qui peut supprimer des fiches ?', ['Tout le monde', 'Les administrateurs', 'Personne'], 1],
+        ['Où voir qui fait quoi dans l’équipe ?', ['Dans l’organigramme', 'Dans Paiements', 'Dans la carte'], 0],
+        ['Combien de versions le serveur garde-t-il ?', ['Aucune', 'Les cent dernières, restaurables', 'Une seule'], 1],
+      ],
+      tutos: [
+        tuto({ t: 'Mon compte et ma photo', ecran: 'compte', page: 'today', captions: ['Mon compte : votre nom, votre photo de profil et votre mot de passe.', 'Votre photo apparaît en haut à droite, dans la messagerie et dans l’organigramme.'],
+          steps: [{ b: 0, d: 300, zoom: 'fenetre', spot: 'fenetre' }, { b: 1, zoom: null, spot: false }] }),
+        tuto({ t: 'L’organigramme', ecran: 'organigramme', page: 'today', captions: ['L’organigramme montre le poste et le responsable de chaque membre.', 'Il se met à jour tout seul quand un administrateur modifie un poste.'],
+          steps: [{ b: 0, d: 300, zoom: 'organigramme', spot: 'organigramme', lent: true }, { b: 1, zoom: null, spot: false }] }),
+        tuto({ t: 'Inviter et gérer l’équipe', ecran: 'equipe', page: 'settings', captions: ['Réglages, Équipe et compte : l’administrateur invite les membres et choisit leur rôle.', 'Seuls les administrateurs peuvent supprimer : c’est contrôlé par le serveur.'],
+          steps: [{ b: 0, d: 300, zoom: 'membres', spot: 'membres' }, { b: 0, d: 1800, curseur: 'inviter', clic: true, spot: 'inviter' }, { b: 1, zoom: null, spot: 'membres' }] }),
+        tuto({ t: 'Sauvegardes et versions', ecran: 'donnees', page: 'settings', captions: ['Données : le serveur garde les cent dernières versions de vos données.', 'Une erreur ? Restaurez une version en un clic, ou exportez une sauvegarde.'],
+          steps: [{ b: 0, d: 300, zoom: 'versions', spot: 'versions' }, { b: 1, zoom: 'sauvegarde', spot: 'sauvegarde' }] }),
+        tuto({ t: 'Le suivi de la formation', ecran: 'suivi', page: 'formations', captions: ['Ici, dans Formations, l’administrateur voit les modules vus et le score aux quiz de chaque membre.'],
+          steps: [{ b: 0, d: 300, zoom: 'suivi', spot: 'suivi' }] }),
+      ],
+      apres: [ANCIENS[6].scenes[3]],
+      recap: ['Mon compte : nom, photo, mot de passe.', 'Organigramme et rôles gérés par l’administrateur.', 'Cent versions de sauvegarde, restaurables.'], suivant: 'Outils et réglages',
+      secours: ANCIENS[6].scenes }),
+
+    module({ n: 11, f: '11-outils-reglages', t: 'Outils et réglages', s: 'Enregistreur, script, modèles d’e-mail, apparence, ambiances, icônes et sonneries.',
+      accroche: 'Vos outils au quotidien, et un CRM à votre image.', chips: ['Enregistreur', 'Script', 'Modèles', 'Réglages'],
+      quiz: [
+        ['Où modifier le script d’appel ?', ['Outils, Script d’appel', 'Paiements', 'On ne peut pas'], 0],
+        ['Les enregistrements d’appels sont gardés…', ['Sur l’appareil', 'Nulle part', 'Sur un site externe'], 0],
+        ['Où choisir la sonnerie des visios ?', ['Réglages, Notifications', 'Rapports', 'Carte clients'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'Enregistreur d’appels', ecran: 'enregistreur', page: 'tools', captions: ['Outils : l’enregistreur garde vos appels, associés au prospect, pour les réécouter.', 'Le script d’appel et les modèles d’e-mail se modifient ici, pour toute l’équipe.'],
+          steps: [{ b: 0, d: 300, zoom: 'demarrer', spot: 'demarrer', curseur: 'demarrer', clic: true }, { b: 1, ecran: 'modeles', zoom: null, spot: false }] }),
+        tuto({ t: 'Apparence et ambiance', ecran: 'apparence', page: 'settings', captions: ['Réglages, Apparence : thème clair, sombre ou automatique, couleur d’accent, police et densité.', 'Ambiance : des images animées en fond, et le choix des icônes du menu.'],
+          steps: [{ b: 0, d: 300, zoom: 'themes', spot: 'themes' }, { b: 1, ecran: 'ambiance', zoom: null, spot: 'ambiance' }, { b: 1, d: 2600, ecran: 'icones', spot: 'icones' }] }),
+        tuto({ t: 'Notifications et sonneries', ecran: 'compte', page: 'settings', captions: ['Équipe et compte : choisissez la sonnerie des visios, son volume, et écoutez un aperçu.', 'Notifications : activez les alertes du navigateur pour ne rien manquer.'],
+          steps: [{ b: 0, d: 300, zoom: 'sonnerie', spot: 'sonnerie' }, { b: 1, ecran: 'notifications', zoom: null, spot: 'notifs' }] }),
+      ],
+      recap: ['Enregistreur, script et modèles : vos outils au quotidien.', 'Apparence, ambiance et icônes : un CRM à votre image.', 'Sonneries réglables dans Notifications.'], suivant: null,
+      secours: ANCIENS[6].scenes }),
+  ];
+  // Tous les tutos (onglet « Tutos rapides ») : chaque scène sur la vraie interface, rangée par module.
+  var TUTOS = [];
+  MODULES.forEach(function (m, i) { m.scenes.forEach(function (s) { if (s.tuto) TUTOS.push({ f: null, t: s.tuto, s: m.t, mod: i, quiz: [], scenes: [s] }); }); });
 
   // ================================================================== musique
   // Petite musique entraînante générée en direct (Web Audio) : marimba, ukulélé, basse, claquements de mains et
@@ -967,16 +1277,21 @@
     if (!root || root.getAttribute('data-bsf')) return;
     root.setAttribute('data-bsf', '1');
     ensureCss();
-    var ui = { idx: firstUnseen(), quiz: null, cert: false };
+    var ui = { idx: firstUnseen(), quiz: null, cert: false, mode: 'formation', tidx: 0 };
     var player = null, resizeObs = null;
+    // Onglet « Tutos rapides » : chaque tuto de la vraie interface, seul, sans quiz.
+    function tutos() { return ui.mode === 'tutos' && TUTOS.length; }
+    function cur() { return tutos() ? TUTOS[ui.tidx] : MODULES[ui.idx]; }
     function firstUnseen() { for (var i = 0; i < MODULES.length; i++) if (seen.indexOf(MODULES[i].f) < 0) return i; return 0; }
     function nbSeen() { return MODULES.filter(function (m) { return seen.indexOf(m.f) >= 0; }).length; }
 
     function render() {
       if (player) { player.destroy(); player = null; }
-      var m = MODULES[ui.idx], done = nbSeen();
+      var m = cur(), done = nbSeen(), T = tutos();
       root.innerHTML =
-        '<div class="page-head"><div class="page-head-text"><h1 class="page-title">Formations</h1><p class="page-sub">Le CRM expliqué en motion design, module par module</p></div>' +
+        '<div class="page-head"><div class="page-head-text"><h1 class="page-title">Formations</h1><p class="page-sub">' + (TUTOS.length ? 'Le CRM de A à Z : motion design et tutos sur la vraie interface' : 'Le CRM expliqué en motion design, module par module') + '</p></div>' +
+        (TUTOS.length ? '<div class="seg bsf-modes" role="tablist"><button type="button" role="tab" class="seg-btn' + (T ? '' : ' active') + '" aria-selected="' + !T + '" data-mode="formation">' + ic('play', 14) + ' Formation complète</button>' +
+          '<button type="button" role="tab" class="seg-btn' + (T ? ' active' : '') + '" aria-selected="' + !!T + '" data-mode="tutos">' + ic('zap', 14) + ' Tutos rapides · ' + TUTOS.length + '</button></div>' : '') +
         '<div class="bsf-progress"><strong>' + done + ' / ' + MODULES.length + '</strong> modules vus<span class="bsf-pbar"><i style="width:' + Math.round(done / MODULES.length * 100) + '%"></i></span>' +
         (done === MODULES.length ? '<button type="button" class="btn btn-secondary btn-sm" data-act="cert">' + ic('award', 15) + ' Mon certificat</button>' : '') + '</div></div>' +
         '<div class="bsf-layout"><div class="card bsf-player">' +
@@ -989,6 +1304,14 @@
         '<button type="button" class="bsf-cb-btn' + (prefs.voix ? ' on' : '') + '" data-act="voix" title="Voix off (V)">' + ic('mic', 17) + '</button>' +
         '<button type="button" class="bsf-cb-btn' + (prefs.musique ? ' on' : '') + '" data-act="musique" title="Musique (M)" aria-label="Musique">' + MUSIC_ICON + '</button>' +
         '<button type="button" class="bsf-cb-btn" data-act="full" title="Plein écran (F)">' + ic('fullscreen', 17) + '</button></div>' +
+        (T ? '<div class="bsf-meta"><div class="min-w-0"><div class="bsf-kick">Tuto ' + (ui.tidx + 1) + ' sur ' + TUTOS.length + ' · ' + esc(m.s) + ' · <span class="bsf-dur"></span></div><h2 class="bsf-title">' + esc(m.t) + '</h2><p class="bsf-sub">Sur la vraie interface du CRM</p></div>' +
+          '<div class="bsf-actions"><button type="button" class="btn btn-ghost btn-sm" data-act="module">' + ic('play', 15) + ' Voir le module complet</button>' +
+          (ui.tidx < TUTOS.length - 1 ? '<button type="button" class="btn btn-primary btn-sm" data-act="next">Tuto suivant ' + ic('arrow-right', 15) + '</button>' : '') + '</div></div></div>' +
+          '<div class="card card-flush bsf-list bsf-tlist"><div class="bsf-tsearch"><input type="search" class="input" placeholder="Chercher un tuto…" aria-label="Chercher un tuto" value="' + esc(ui.q || '') + '"></div>' + TUTOS.map(function (tt, i) {
+            return (i === 0 || TUTOS[i - 1].mod !== tt.mod ? '<div class="bsf-tgroup" data-g="' + tt.mod + '">' + (tt.mod + 1) + '. ' + esc(MODULES[tt.mod].t) + '</div>' : '') +
+              '<button type="button" class="bsf-item bsf-titem' + (i === ui.tidx ? ' active' : '') + '" data-tuto="' + i + '" data-g="' + tt.mod + '"><span class="bsf-inum">' + ic(i === ui.tidx ? 'play' : 'zap', 14) + '</span>' +
+              '<span class="bsf-itxt"><span class="bsf-it">' + esc(tt.t) + '</span><span class="bsf-is">' + esc(tt.scenes[0].captions[0]) + '</span></span></button>';
+          }).join('') + '</div></div>' :
         '<div class="bsf-meta"><div class="min-w-0"><div class="bsf-kick">Module ' + (ui.idx + 1) + ' sur ' + MODULES.length + ' · <span class="bsf-dur"></span></div><h2 class="bsf-title">' + esc(m.t) + '</h2><p class="bsf-sub">' + esc(m.s) + '</p></div>' +
         '<div class="bsf-actions">' + (seen.indexOf(m.f) < 0 ? '<button type="button" class="btn btn-ghost btn-sm" data-act="seen">' + ic('check', 15) + ' Marquer comme vu</button>' : '') +
         '<button type="button" class="btn btn-secondary btn-sm" data-act="quiz">' + ic('sparkles', 15) + ' Quiz' + (quiz[m.f] != null ? ' · ' + quiz[m.f] + '/3' : '') + '</button>' +
@@ -997,7 +1320,9 @@
           var v = seen.indexOf(mm.f) >= 0;
           return '<button type="button" class="bsf-item' + (i === ui.idx ? ' active' : '') + (v ? ' done' : '') + '" data-mod="' + i + '"><span class="bsf-inum">' + (v ? ic('check', 15) : i + 1) + '</span>' +
             '<span class="bsf-itxt"><span class="bsf-it">' + esc(mm.t) + '</span><span class="bsf-is">' + esc(mm.s) + (quiz[mm.f] != null ? ' · quiz ' + quiz[mm.f] + '/3' : '') + '</span></span>' + (i === ui.idx ? ic('play', 15) : '') + '</button>';
-        }).join('') + '</div></div>' + teamHtml();
+        }).join('') + '</div></div>') + teamHtml();
+      if (T) filtrer();
+      precharger(m);
       var screen = root.querySelector('.bsf-screen');
       fit(screen);
       player = curPlayer = Player(screen, m, {
@@ -1014,13 +1339,26 @@
           var b = root.querySelector('[data-act="toggle"]'); if (b) b.innerHTML = on ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>' : ic('play', 18);
           root.querySelector('.bsf-screen').classList.toggle('playing', on);
         },
-        onEnd: function () { markSeen(m.f); openQuiz(true); },
+        onEnd: function () { if (T) return; markSeen(m.f); openQuiz(true); },
       });
       root.querySelector('.bsf-dur').textContent = fmtTime(player.total);
       root.querySelector('.bsf-scrub-chap').innerHTML = player.starts.map(function (s, i) {
-        return '<i style="left:' + (s / player.total * 100) + '%" title="' + esc(MODULES[ui.idx].scenes[i].captions[0]) + '"></i>';
+        return '<i style="left:' + (s / player.total * 100) + '%" title="' + esc(m.scenes[i].captions[0]) + '"></i>';
       }).join('');
       if (ui.quiz) showQuiz(); else if (ui.cert) showCert();
+    }
+    function filtrer() {
+      var inp = root.querySelector('.bsf-tsearch input'); if (!inp) return;
+      var q = (ui.q || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), vis = {};
+      Array.prototype.forEach.call(root.querySelectorAll('.bsf-titem'), function (b) {
+        var tt = TUTOS[+b.getAttribute('data-tuto')], txt = (tt.t + ' ' + tt.s + ' ' + tt.scenes[0].captions.join(' ')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        var ok = !q || txt.indexOf(q) >= 0; b.hidden = !ok; if (ok) vis[tt.mod] = 1;
+      });
+      Array.prototype.forEach.call(root.querySelectorAll('.bsf-tgroup'), function (g) { g.hidden = !vis[g.getAttribute('data-g')]; });
+    }
+    // Les captures du module se chargent à l'avance : pas d'écran vide pendant la lecture.
+    function precharger(m) {
+      m.scenes.forEach(function (sc) { (sc.ecrans || []).forEach(function (id) { var im = new Image(); im.src = ecranUrl(id); }); });
     }
     function fit(screen) {
       var stage = screen.querySelector('.bsf-stage');
@@ -1089,9 +1427,11 @@
     function closeOver() { ui.quiz = null; ui.cert = false; var o = root.querySelector('.bsf-over'); if (o) { o.classList.remove('on'); o.innerHTML = ''; } }
 
     root.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-act],[data-mod],[data-opt]');
+      var t = e.target.closest('[data-act],[data-mod],[data-opt],[data-mode],[data-tuto]');
       if (!t && e.target.closest('.bsf-stage') && player) { player.toggle(); return; }
       if (!t || t.disabled) return;
+      if (t.hasAttribute('data-mode')) { ui.mode = t.getAttribute('data-mode'); closeOver(); render(); return; }
+      if (t.hasAttribute('data-tuto')) { ui.tidx = +t.getAttribute('data-tuto'); render(); player.play(); return; }
       if (t.hasAttribute('data-mod')) { ui.idx = +t.getAttribute('data-mod'); closeOver(); render(); try { root.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (er) {} return; }
       if (t.hasAttribute('data-opt')) { var q = ui.quiz, Q = MODULES[ui.idx].quiz[q.i]; q.picked = +t.getAttribute('data-opt'); if (q.picked === Q[2]) q.score++; showQuiz(); return; }
       var act = t.getAttribute('data-act');
@@ -1105,6 +1445,8 @@
       else if (act === 'musique') { prefs.musique = !prefs.musique; writeJson(PREF_KEY, prefs); t.classList.toggle('on', prefs.musique); player.musique(prefs.musique); }
       else if (act === 'full') { var sc = root.querySelector('.bsf-player'); if (document.fullscreenElement) document.exitFullscreen(); else if (sc.requestFullscreen) sc.requestFullscreen().catch(function () {}); }
       else if (act === 'seen') { markSeen(MODULES[ui.idx].f); render(); }
+      else if (act === 'next' && tutos()) { ui.tidx = Math.min(TUTOS.length - 1, ui.tidx + 1); render(); player.play(); }
+      else if (act === 'module') { ui.mode = 'formation'; ui.idx = TUTOS[ui.tidx].mod; render(); }
       else if (act === 'next') { markSeen(MODULES[ui.idx].f); ui.idx = Math.min(MODULES.length - 1, ui.idx + 1); closeOver(); render(); player.play(); }
       else if (act === 'quiz') openQuiz(false);
       else if (act === 'qnext') { ui.quiz.i++; ui.quiz.picked = null; showQuiz(); }
@@ -1121,6 +1463,7 @@
       var mv = function (ev) { go(ev); }, up = function () { bar.removeEventListener('pointermove', mv); bar.removeEventListener('pointerup', up); };
       bar.addEventListener('pointermove', mv); bar.addEventListener('pointerup', up);
     });
+    root.addEventListener('input', function (e) { if (e.target.closest('.bsf-tsearch')) { ui.q = e.target.value; filtrer(); } });
     root.addEventListener('keydown', function (e) {
       if (!e.target.closest || !e.target.closest('.bsf-player') || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
       var k = e.key;
@@ -1194,6 +1537,14 @@
     '.bsf-sub{margin:0;color:var(--text-2);font-size:.92em}',
     '.bsf-actions{display:flex;gap:8px;flex-wrap:wrap}',
     '.bsf-list{display:flex;flex-direction:column;padding:6px}',
+    '.bsf-modes{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border)}',
+    '.bsf-modes button{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:0;border-radius:9px;background:none;color:var(--text-2);font:inherit;font-size:.88em;font-weight:600;cursor:pointer;white-space:nowrap}',
+    '.bsf-modes button.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgb(0 0 0/.18)}',
+    '.bsf-tsearch{padding:6px 6px 8px;position:sticky;top:0;z-index:1;background:inherit}.bsf-tsearch input{width:100%}',
+    '.bsf-tgroup{padding:12px 10px 4px;font-size:.72em;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}',
+    '.bsf-titem .bsf-is{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}',
+    '.bsf-titem[hidden],.bsf-tgroup[hidden]{display:none}',
+    '.bsf-tlist{max-height:560px;overflow:auto}@media (min-width:1150px){.bsf-tlist{max-height:calc(100vh - 150px);position:sticky;top:12px}}',
     '.bsf-item{display:flex;align-items:center;gap:12px;width:100%;padding:10px;border-radius:12px;text-align:left;color:var(--text);background:none;border:0;cursor:pointer;font:inherit;transition:background .2s}',
     '.bsf-item:hover{background:var(--surface-2)}',
     '.bsf-item.active{background:var(--accent-soft)}',
@@ -1294,6 +1645,22 @@
     '.bsf-focus.warn{border-color:#fbbf24;box-shadow:0 0 0 6px rgb(251 191 36/.16),0 0 30px rgb(251 191 36/.45)}',
     '.bsf-cursor{filter:drop-shadow(0 4px 6px rgb(0 0 0/.5))}',
     '.bsf-ripple{border-radius:50%;border:3px solid #fff;opacity:0}',
+    // Scènes « vraie interface »
+    '.bsf-browser{border-radius:14px;overflow:hidden;background:#0b1424;box-shadow:0 30px 80px -20px rgb(0 0 0/.75),0 0 0 1px rgb(148 163 184/.22),0 0 60px -10px rgb(59 130 246/.35)}',
+    '.bsf-bbar{height:28px;display:flex;align-items:center;gap:7px;padding:0 12px;background:linear-gradient(#1b2840,#131e33);border-bottom:1px solid rgb(148 163 184/.16)}',
+    '.bsf-bbar>i{width:10px;height:10px;border-radius:50%;background:#f87171}.bsf-bbar>i:nth-child(2){background:#fbbf24}.bsf-bbar>i:nth-child(3){background:#34d399}',
+    '.bsf-bbar>span{margin:0 auto;display:flex;align-items:center;gap:6px;padding:3px 14px;border-radius:7px;background:rgb(2 6 23/.45);color:#a9bfdd;font:500 11px/1.2 Inter,system-ui,sans-serif;transform:translateX(-24px)}',
+    '.bsf-bview{position:relative;overflow:hidden}',
+    '.bsf-bcam{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}',
+    '.bsf-shot{position:absolute;left:0;top:0;width:100%;height:100%;display:block;user-select:none}',
+    '.bsf-browser.phone{border-radius:38px;padding:10px;background:#05080f;box-shadow:0 30px 80px -20px rgb(0 0 0/.8),0 0 0 2px #2a3550,0 0 60px -10px rgb(59 130 246/.4)}',
+    '.bsf-browser.phone .bsf-bbar{display:none}.bsf-browser.phone .bsf-bview{border-radius:28px}',
+    '.bsf-spot{border-radius:10px;border:2px solid #60a5fa;box-shadow:0 0 0 4000px rgb(2 6 23/.5),0 0 22px 4px rgb(96 165 250/.65),inset 0 0 18px rgb(96 165 250/.25);pointer-events:none;z-index:40}',
+    '.bsf-bulle{z-index:45;white-space:nowrap;padding:6px 11px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;font:700 12px/1.25 Inter,system-ui,sans-serif;box-shadow:0 10px 24px -6px rgb(37 99 235/.7)}',
+    '.bsf-bulle::before{content:"";position:absolute;left:50%;top:-5px;width:10px;height:10px;background:#4f7cf6;transform:translateX(-50%) rotate(45deg);border-radius:2px}',
+    '.bsf-bulle.up::before{top:auto;bottom:-5px;background:#5b72f3}',
+    '.bsf-tutotag{z-index:60;display:flex;align-items:center;gap:8px;padding:7px 14px 7px 10px;border-radius:999px;background:rgb(2 6 23/.78);backdrop-filter:blur(8px);border:1px solid rgb(96 165 250/.45);color:#eaf1fb;font:700 14px/1.2 Inter,system-ui,sans-serif;box-shadow:0 12px 30px -8px rgb(0 0 0/.6)}',
+    '.bsf-tutotag svg{color:#60a5fa}.bsf-tutotag span{padding:2px 7px;border-radius:6px;background:#3b82f6;color:#fff;font-size:10px;letter-spacing:.08em;text-transform:uppercase}',
     '.bsf-key{min-width:70px;height:70px;padding:0 16px;border-radius:14px;display:grid;place-items:center;font-size:24px;font-weight:800;background:linear-gradient(180deg,#22314d,#16233a);border:1px solid rgb(148 163 184/.3);box-shadow:0 5px 0 #0b1426;z-index:40}',
     '.bsf-dim{background:rgb(3 7 15/.6)}',
     '.bsf-pal{border-radius:16px;background:#101d33;border:1px solid rgb(148 163 184/.25);box-shadow:0 40px 80px -20px #000;overflow:hidden;z-index:30}',
@@ -1469,5 +1836,5 @@
     (document.head || document.documentElement).appendChild(st);
   }
 
-  window.bsFormation = { monter: monter, modules: MODULES, lecteur: function () { return curPlayer; } };
+  window.bsFormation = { monter: monter, modules: MODULES, tutos: TUTOS, lecteur: function () { return curPlayer; } };
 })();

@@ -44,6 +44,8 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/voix', express.static(join(ROOT, 'app', 'voix'), { immutable: true, maxAge: '30d', fallthrough: false, index: false }));
   // Logo en verre 3D de la page de connexion (Three.js assemblé par npm run build:verre).
   app.use('/verre', express.static(join(ROOT, 'app', 'verre'), { maxAge: '7d', fallthrough: false, index: false }));
+  // Captures de la vraie interface pour les tutos de la formation (régénérées par scripts/formation/ecrans.mjs).
+  app.use('/formation', express.static(join(ROOT, 'app', 'formation'), { maxAge: '7d', fallthrough: false, index: false }));
   app.use(attachUser(db));
 
   // API

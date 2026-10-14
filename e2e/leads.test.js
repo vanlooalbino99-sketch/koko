@@ -1,4 +1,4 @@
-// Test de bout en bout du générateur de leads (rubrique « Nouveaux leads »), sur la version autonome.
+// Test de bout en bout du générateur de leads (rubrique « Nouveaux leads »), sur la version autonome et la version équipe.
 // Les services publics (Recherche d'entreprises, geo.api.gouv.fr, OpenStreetMap) sont simulés avec leur format réel.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { assemble } from '../scripts/build.mjs';
+import { createApp } from '../server/src/app.js';
 
 const LOCAL_CHROMIUM = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 let browser, dir, file;
@@ -43,12 +44,8 @@ function entreprise(n) {
   };
 }
 
-test('génère des lots toujours nouveaux, sans doublon, et les ajoute au CRM', async () => {
-  const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } });
-  const page = await ctx.newPage();
-  const errors = [];
-  page.on('pageerror', (e) => errors.push(e.message));
-  const cors = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+const cors = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+async function simulerApis(page) {
   const recherches = [];
   await page.route('https://recherche-entreprises.api.gouv.fr/**', (route) => {
     const u = new URL(route.request().url());
@@ -61,7 +58,26 @@ test('génère des lots toujours nouveaux, sans doublon, et les ajoute au CRM', 
   await page.route('https://geo.api.gouv.fr/**', (route) => route.fulfill({ headers: cors, body: JSON.stringify([
     { nom: 'Lyon', code: '69123', codesPostaux: ['69001', '69002', '69003'], codeDepartement: '69', centre: { type: 'Point', coordinates: [4.835, 45.758] } },
   ]) }));
-  await page.route('https://overpass-api.de/**', (route) => route.fulfill({ headers: cors, body: JSON.stringify({ elements: [
+  return recherches;
+}
+async function lancerPlombiersLyon(page) {
+  await page.getByRole('tab', { name: 'Artisans / BTP' }).click();
+  await page.selectOption('select[name=metier]', 'plombier');
+  await page.fill('input[name=zone]', 'Lyon');
+  await page.locator('input[name=zone]').dispatchEvent('change');
+  await page.locator('button[data-act=gen]').first().click();
+  await page.locator('.bsl-card[data-i="11"]').waitFor();
+}
+
+test('génère des lots toujours nouveaux, sans doublon, et les ajoute au CRM', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  const recherches = await simulerApis(page);
+  // Le serveur principal d'OpenStreetMap est saturé (504) : le générateur doit passer au suivant.
+  await page.route('https://overpass-api.de/**', (route) => route.fulfill({ status: 504, headers: cors, body: 'Gateway Timeout' }));
+  await page.route('https://overpass.private.coffee/**', (route) => route.fulfill({ headers: cors, body: JSON.stringify({ elements: [
     { type: 'node', lat: 45.7601, lon: 4.8501, tags: { name: 'Plomberie Express', phone: '+33 4 78 00 00 01', website: 'plomberie-express.fr' } },
     { type: 'node', lat: 45.7602, lon: 4.8502, tags: { name: 'Boulangerie Voisine', phone: '+33 4 78 99 99 99' } },
   ] }) }));
@@ -74,12 +90,7 @@ test('génère des lots toujours nouveaux, sans doublon, et les ajoute au CRM', 
   await page.evaluate(() => { location.hash = '#/leads'; });
   await page.locator('.bsl-root .page-title').waitFor();
 
-  await page.getByRole('tab', { name: 'Artisans / BTP' }).click();
-  await page.selectOption('select[name=metier]', 'plombier');
-  await page.fill('input[name=zone]', 'Lyon');
-  await page.locator('input[name=zone]').dispatchEvent('change');
-  await page.locator('button[data-act=gen]').first().click();
-  await page.locator('.bsl-card[data-i="11"]').waitFor();
+  await lancerPlombiersLyon(page);
 
   const q = recherches[0].searchParams;
   assert.equal(q.get('activite_principale'), '43.22A,43.22B');
@@ -145,6 +156,55 @@ test('génère des lots toujours nouveaux, sans doublon, et les ajoute au CRM', 
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   assert.deepEqual(errors, []);
   await ctx.close();
+});
+
+test('version équipe : le serveur du CRM trouve téléphone, site et email, sans OpenStreetMap en direct', async () => {
+  // Base locale des lieux simulée : un plombier au même nom que l'enseigne d'un lead, et un voisin sans rapport.
+  const lieux = {
+    etat: { pret: true }, attendre: async () => ({ pret: true }), parSiret: () => [], parSiren: () => [],
+    autour: () => [
+      { lat: 45.7601, lon: 4.8501, nom: 'Plomberie Express', marque: '', tel: '+33 4 78 00 00 01', site: 'plomberie-express.fr', email: 'contact@plomberie-express.fr', siret: '' },
+      { lat: 45.7602, lon: 4.8502, nom: 'Boulangerie Voisine', marque: '', tel: '+33 4 78 99 99 99', site: '', email: '', siret: '' },
+    ],
+  };
+  const sdir = mkdtempSync(join(tmpdir(), 'bs-leads-srv-'));
+  const made = await createApp({ dataDir: sdir, contacts: { lieux, lireSites: false } });
+  const server = await new Promise((res) => { const s = made.app.listen(0, () => res(s)); });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  try {
+    await simulerApis(page);
+    let overpass = 0;
+    await page.route(/overpass|maps\.mail\.ru/, (route) => { overpass++; route.abort(); });
+    await page.goto(base + '/');
+    await page.fill('input[name=name]', 'Albino');
+    await page.fill('input[name=email]', 'albino@exemple.fr');
+    await page.fill('input[name=password]', 'motdepasse1');
+    await page.click('button[type=submit]');
+    await page.waitForURL(base + '/');
+    await page.waitForFunction(() => window.__bsStore && window.__bsStore.get().loaded && window.BS_SERVER);
+    await page.evaluate(() => document.getElementById('splash')?.remove());
+    await page.evaluate(() => { location.hash = '#/leads'; });
+    await page.locator('.bsl-root .page-title').waitFor();
+    await lancerPlombiersLyon(page);
+    await page.waitForFunction(() => document.querySelectorAll('.bsl-card').length === 12 && !document.querySelector('.bsl-wait'));
+    const carte = page.locator('.bsl-card', { hasText: 'Plomberie Express' });
+    await carte.locator('a[href="tel:0478000001"], a[href="tel:+33478000001"]').waitFor();
+    const texte = await carte.innerText();
+    assert.match(texte, /04 78 00 00 01/);
+    assert.match(texte, /plomberie-express\.fr/);
+    assert.match(texte, /contact@plomberie-express\.fr/);
+    assert.match(texte, /Source : OpenStreetMap/);
+    assert.equal(await page.locator('text=04 78 99 99 99').count(), 0, 'le voisin n’est pas pris');
+    assert.equal(await page.locator('.bsl-none', { hasText: 'Aucun téléphone public trouvé' }).count(), 11);
+    assert.equal(overpass, 0, 'le navigateur n’interroge plus OpenStreetMap lui-même');
+    assert.deepEqual(errors, []);
+  } finally {
+    await ctx.close(); made.hub.close(); server.close(); await made.db.close(); rmSync(sdir, { recursive: true, force: true });
+  }
 });
 
 test('Rapports : suivi de ma niche (client idéal, entonnoir, tableau par secteur)', async () => {

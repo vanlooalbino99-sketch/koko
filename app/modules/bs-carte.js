@@ -26,7 +26,9 @@
     return '<svg width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (p || '<circle cx="12" cy="12" r="8"/>') + '</svg>';
   }
   var VUE_KEY = 'bs-carte-vue';
-  function readVue() { try { return localStorage.getItem(VUE_KEY) === 'globe' || !window.bsCarteMap ? 'globe' : 'carte'; } catch (e) { return 'carte'; } }
+  function readVue() { try { var v = localStorage.getItem(VUE_KEY); return v === 'globe' || !window.bsCarteMap ? 'globe' : v === 'reel' ? 'reel' : 'carte'; } catch (e) { return 'carte'; } }
+  // Mode réaliste : clé Google Maps facultative, fournie par le serveur (variable GOOGLE_MAPS_KEY).
+  function googleKey() { var c = window.BS_SERVER && window.BS_SERVER.carte; return c && c.google || null; }
   function writeVue(v) { try { localStorage.setItem(VUE_KEY, v); } catch (e) {} }
   function readCache() { try { return JSON.parse(localStorage.getItem(GEO_KEY) || '{}') || {}; } catch (e) { return {}; } }
   function writeCache(c) { try { localStorage.setItem(GEO_KEY, JSON.stringify(c)); } catch (e) {} }
@@ -131,7 +133,7 @@
       if (eng) { eng.destroy(); eng = null; } globe = null;
       clearInterval(feedTimer); stopTour(true);
       compute();
-      var isMap = ui.vue === 'carte' && !!window.bsCarteMap;
+      var isMap = (ui.vue === 'carte' || ui.vue === 'reel') && !!window.bsCarteMap, isSat = isMap && ui.vue === 'reel';
       var st = store(), all = (st.prospects || []), nbClients = all.filter(isClient).length;
       var located = places.reduce(function (s, g) { return s + g.items.length; }, 0), total = located + unlocated.length;
       var max = Math.max(1, places.length ? places[0].items.length : 1);
@@ -153,16 +155,16 @@
         '<div class="bsc-kpis">' + kpis.map(function (k, i) {
           return '<div class="bsc-kpi ' + k[4] + '" style="--i:' + i + '"><span class="bsc-kic">' + ic(k[0], 16) + '</span><div><b data-count="' + k[1] + '" data-suffix="' + esc(k[2]) + '">' + (k[2] === ' €' ? euro(k[1]) : k[1] + '<small>' + esc(k[2]) + '</small>') + '</b><span>' + k[3] + '</span></div></div>';
         }).join('') + '</div>' +
-        '<div class="bsc-layout"><div class="bsc-main"><div class="card bsc-globe-card' + (isMap ? ' map' : '') + '"><canvas class="bsc-canvas" aria-label="' + (isMap ? 'Carte des clients : glissez pour déplacer, molette pour zoomer' : 'Planète des clients : glissez pour la faire tourner') + '"></canvas>' +
+        '<div class="bsc-layout"><div class="bsc-main"><div class="card bsc-globe-card' + (isMap ? ' map' : '') + (isSat ? ' sat' : '') + '"><canvas class="bsc-canvas" aria-label="' + (isMap ? 'Carte des clients : glissez pour déplacer, molette pour zoomer' : 'Planète des clients : glissez pour la faire tourner') + '"></canvas>' +
         (isMap ? '' : '<div class="bsc-vignette" aria-hidden="true"></div>') +
         '<div class="bsc-tip" hidden></div>' +
         '<div class="bsc-topbar"><div class="bsc-live"><i></i>En direct</div><div class="bsc-mode" role="group" aria-label="Type de vue">' +
-        [['carte', 'map', 'Carte'], ['globe', 'globe', 'Globe 3D']].map(function (v) { return '<button type="button" data-vue="' + v[0] + '" aria-pressed="' + (ui.vue === v[0]) + '">' + ic(v[1], 13) + '<span>' + v[2] + '</span></button>'; }).join('') +
+        [['carte', 'map', 'Carte', 'Carte vectorielle'], ['reel', 'satellite', 'Réaliste', 'Mode réaliste : vue satellite avec routes et noms'], ['globe', 'globe', 'Globe 3D', 'Globe 3D']].map(function (v) { return '<button type="button" data-vue="' + v[0] + '" aria-pressed="' + (ui.vue === v[0]) + '" title="' + v[3] + '">' + ic(v[1], 13) + '<span>' + v[2] + '</span></button>'; }).join('') +
         '</div><button type="button" class="bsc-tour" data-act="tour" aria-pressed="false">' + ic('play', 13) + '<span>Visite guidée</span></button></div>' +
         '<div class="bsc-tools">' + fsButton() + '<button type="button" data-z="1.5" title="Zoomer" aria-label="Zoomer">+</button><button type="button" data-z="0.67" title="Dézoomer" aria-label="Dézoomer">−</button><button type="button" data-act="home" title="Recentrer sur mes fiches" aria-label="Recentrer">' + ic('target', 15) + '</button><button type="button" data-act="world" title="Vue du monde" aria-label="Vue du monde">' + ic('globe', 15) + '</button></div>' +
         '<div class="bsc-spot" hidden></div>' +
         '<div class="bsc-legend"><span><i style="background:' + COL.client + '"></i>Clients</span><span><i style="background:' + COL.prospect + '"></i>Prospects</span>' + (hub ? '<span><i class="hub" style="background:' + COL.hub + '"></i>Siège</span>' : '') +
-        (isMap ? '<span class="bsc-lg-heat" title="Teinte des départements selon le nombre de fiches"><b></b>Fiches par département</span>' : '') + '</div>' +
+        (isMap ? '<span class="bsc-lg-heat"' + (isSat ? ' hidden' : '') + ' title="Teinte des départements selon le nombre de fiches"><b></b>Fiches par département</span>' : '') + '</div>' +
         (isMap ? '' : '<div class="bsc-hint">Glissez pour tourner · molette pour zoomer · clic sur une ville</div>') + '</div>' +
         feedHtml() + '</div>' +
         '<div class="bsc-side">' +
@@ -196,7 +198,7 @@
             return { key: g.key, lon: g.lon, lat: g.lat, n: g.items.length, clients: g.clients, name: g.name, place: g,
               sub: g.items.length + (g.items.length > 1 ? ' fiches' : ' fiche') + (m ? ' · ' + euro(m) + '/mois' : '') };
           }),
-          hub: hub,
+          hub: hub, style: isSat ? 'satellite' : 'vecteur', google: googleKey(),
           onHover: function (c, mx, my) { showTip(c ? c.items.map(function (m) { return m.place; }) : null, mx, my); },
           onPick: function (m) { if (m.place) pick(m.place); },
         });
@@ -205,7 +207,7 @@
           city: function (g) { map.focus(g.lon, g.lat, nearSpan(g)); },
           at: function (lon, lat) { map.focus(lon, lat, 30); },
           world: function () { map.world(); },
-          ping: map.ping, zoomBy: map.zoomBy, select: map.select, destroy: map.destroy,
+          ping: map.ping, zoomBy: map.zoomBy, select: map.select, destroy: map.destroy, setStyle: map.setStyle,
         };
         // Entrée en scène : vue de la France, puis cadrage sur vos fiches.
         map.fit([], 0);
@@ -391,7 +393,19 @@
       if (t.hasAttribute('data-open')) { var oid = t.getAttribute('data-open'); if (isFs()) { exitFs(); setTimeout(function () { openFiche(oid); }, 150); } else openFiche(oid); return; }
       if (t.getAttribute('data-act') === 'fs') { if (isFs()) exitFs(); else enterFs(); return; }
       if (t.hasAttribute('data-f')) { ui.filtre = t.getAttribute('data-f'); ui.sel = null; render(); return; }
-      if (t.hasAttribute('data-vue')) { var nv = t.getAttribute('data-vue'); if (nv !== ui.vue) { ui.vue = nv; writeVue(nv); render(); } return; }
+      if (t.hasAttribute('data-vue')) {
+        var nv = t.getAttribute('data-vue'); if (nv === ui.vue) return;
+        var flat = function (v) { return v === 'carte' || v === 'reel'; };
+        // Carte ⇄ Réaliste : même vue, seul le fond change (pas de rechargement ni de recadrage).
+        if (flat(nv) && flat(ui.vue) && eng && eng.setStyle) {
+          ui.vue = nv; writeVue(nv); eng.setStyle(nv === 'reel' ? 'satellite' : 'vecteur');
+          Array.prototype.forEach.call(root.querySelectorAll('[data-vue]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-vue') === nv)); });
+          var card = root.querySelector('.bsc-globe-card'); if (card) card.classList.toggle('sat', nv === 'reel');
+          var heat = root.querySelector('.bsc-lg-heat'); if (heat) heat.hidden = nv === 'reel';
+          return;
+        }
+        ui.vue = nv; writeVue(nv); render(); return;
+      }
       stopTour();
       if (!eng) return;
       if (t.hasAttribute('data-z')) { eng.zoomBy(+t.getAttribute('data-z')); return; }
@@ -566,6 +580,8 @@
     '.bsc-legend i.hub{border-radius:2px;transform:rotate(45deg)}',
     '.bsc-lg-heat b{width:30px;height:9px;border-radius:3px;background:linear-gradient(90deg,rgb(56 189 248/.12),rgb(56 189 248/.6))}',
     '.bsc-globe-card.map .bsc-hint{bottom:12px}',
+    '.bsc-globe-card.map.sat,[data-scheme=light] .bsc-globe-card.map.sat{background:#0b1220}',
+    '.bsc-lg-heat[hidden]{display:none!important}',
     '.bsc-globe-card.map .bsc-legend{bottom:12px}',
     '.bsc-feedcard .bsc-feed{display:grid;grid-template-columns:minmax(0,1fr);gap:2px 14px}',
     '@media (min-width:900px){.bsc-feedcard .bsc-feed{grid-template-columns:repeat(2,minmax(0,1fr))}}',

@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs';
 
 // Ordre d'insertion (les tables référencées d'abord).
 export const TABLES = ['users', 'sessions', 'kv', 'kv_history', 'ambiance_images', 'settings', 'formation', 'site_requests',
-  'chat_conversations', 'chat_members', 'chat_files', 'chat_messages', 'chat_reads', 'user_photos'];
+  'chat_conversations', 'chat_members', 'chat_files', 'chat_messages', 'chat_reads', 'user_photos', 'user_sons', 'recordings'];
 
 /** Compte les lignes de chaque table (pour comparer avant et après la copie). */
 export async function countRows(db) {

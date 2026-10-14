@@ -122,6 +122,31 @@ export const SQLITE_MIGRATIONS = [
   // v8 : lien avec le compte Supabase Auth (quand la connexion passe par Supabase).
   `ALTER TABLE users ADD COLUMN auth_id TEXT;
    CREATE UNIQUE INDEX users_auth_id ON users(auth_id);`,
+  // v9 : sons personnels (MP3 de chaque membre), pages accessibles à chaque membre, enregistrements d'appels envoyés au serveur.
+  `CREATE TABLE user_sons (
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     kind TEXT NOT NULL CHECK (kind IN ('visio', 'recu', 'envoye')),
+     name TEXT NOT NULL,
+     mime TEXT NOT NULL,
+     data BLOB NOT NULL,
+     updated_at TEXT NOT NULL,
+     PRIMARY KEY (user_id, kind)
+   );
+   ALTER TABLE users ADD COLUMN acces TEXT;
+   CREATE TABLE recordings (
+     id TEXT PRIMARY KEY,
+     user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+     author TEXT NOT NULL,
+     prospect_id TEXT,
+     prospect_name TEXT,
+     name TEXT NOT NULL,
+     mime TEXT NOT NULL,
+     size INTEGER NOT NULL,
+     duration INTEGER NOT NULL DEFAULT 0,
+     data BLOB NOT NULL,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX recordings_user ON recordings(user_id, created_at);`,
 ];
 
 // PostgreSQL : le même schéma que SQLite après toutes ses migrations, en une fois.
@@ -247,4 +272,31 @@ export const PG_MIGRATIONS = [
    );
    INSERT INTO chat_conversations (id, kind, name, created_at) VALUES ('equipe', 'equipe', 'Équipe', to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
    ${TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY;`).join('\n   ')}`,
+  // Comme la v9 de SQLite : sons personnels, pages accessibles, enregistrements d'appels.
+  `CREATE TABLE user_sons (
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     kind TEXT NOT NULL CHECK (kind IN ('visio', 'recu', 'envoye')),
+     name TEXT NOT NULL,
+     mime TEXT NOT NULL,
+     data BYTEA NOT NULL,
+     updated_at TEXT NOT NULL,
+     PRIMARY KEY (user_id, kind)
+   );
+   ALTER TABLE users ADD COLUMN acces TEXT;
+   CREATE TABLE recordings (
+     id TEXT PRIMARY KEY,
+     user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+     author TEXT NOT NULL,
+     prospect_id TEXT,
+     prospect_name TEXT,
+     name TEXT NOT NULL,
+     mime TEXT NOT NULL,
+     size BIGINT NOT NULL,
+     duration INTEGER NOT NULL DEFAULT 0,
+     data BYTEA NOT NULL,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX recordings_user ON recordings(user_id, created_at);
+   ALTER TABLE user_sons ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE recordings ENABLE ROW LEVEL SECURITY;`,
 ];

@@ -5,15 +5,20 @@
 import express, { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { getSetting, setSetting } from '../store.js';
+import { lireAcces, peut, REFUS } from '../acces.js';
 
 export const EQUIPE = 'equipe';
+// Rubrique du menu qui ouvre chaque sorte de conversation (accès choisis par l'administrateur).
+const CLE = { equipe: 'messages', direct: 'messages', groupe: 'groupes' };
 export const POSTES = ['CEO', 'Directeur commercial', 'Manager', 'Commercial', 'Seller', 'Prospecteur (SDR)', 'Assistant(e)', 'Support client'];
 const MAX_BODY = 4000;
 const MAX_NAME = 60;
 const MAX_SIGNAL = 64 * 1024;
 export const MAX_FILE = 10 * 1024 * 1024;
 // Affichés dans le navigateur ; tout le reste est proposé au téléchargement (jamais exécuté dans la page).
-const INLINE = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
+// Ouverts dans la visionneuse du CRM (les autres fichiers sont toujours téléchargés).
+const INLINE = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
+  'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/webm', 'audio/ogg', 'audio/wav', 'audio/x-wav']);
 const PAGE = 50;
 const HEARTBEAT_MS = 20000;
 const GRACE_MS = 15000;
@@ -69,7 +74,15 @@ export function chatRoutes({ db, hub = chatHub() }) {
   const memberIds = async (c) => (c.kind === 'equipe'
     ? allIds()
     : (await db.all('SELECT user_id FROM chat_members WHERE conversation_id = ?', c.id)).map((x) => x.user_id));
-  const canSee = async (c, userId) => !!c && (c.kind === 'equipe' || !!(await db.get('SELECT 1 AS ok FROM chat_members WHERE conversation_id = ? AND user_id = ?', c.id, userId)));
+  const droitsDe = (u) => u && { role: u.role, acces: u.role === 'admin' ? null : lireAcces(u.acces) };
+  const accesDe = async (id) => droitsDe(await db.get('SELECT role, acces FROM users WHERE id = ?', id));
+  // Seuls les membres qui ont la rubrique reçoivent les messages et appels en temps réel.
+  const autorises = async (ids, cle) => {
+    const d = new Map((await db.all('SELECT id, role, acces FROM users')).map((u) => [u.id, droitsDe(u)]));
+    return ids.filter((id) => peut(d.get(id), cle));
+  };
+  const destinataires = async (c) => autorises(await memberIds(c), CLE[c.kind]);
+  const canSee = async (c, userId) => !!c && peut(await accesDe(userId), CLE[c.kind]) && (c.kind === 'equipe' || !!(await db.get('SELECT 1 AS ok FROM chat_members WHERE conversation_id = ? AND user_id = ?', c.id, userId)));
   const lastRead = async (cid, uid) => (await db.get('SELECT last_read FROM chat_reads WHERE conversation_id = ? AND user_id = ?', cid, uid))?.last_read || 0;
   const fileOf = (id) => (id ? db.get('SELECT id, name, mime, size FROM chat_files WHERE id = ?', id) : null);
   const toMsg = async (m) => m && { id: Number(m.id), conversationId: m.conversation_id, userId: m.user_id, author: m.author, kind: m.kind, body: m.body, at: m.created_at, file: (await fileOf(m.file_id)) || null };
@@ -88,20 +101,21 @@ export function chatRoutes({ db, hub = chatHub() }) {
       last: await toMsg(last), unread, lastRead: Number(read), call: callOf(c.id),
     };
   }
-  function visible(userId) {
-    return db.all(`SELECT c.* FROM chat_conversations c WHERE c.kind = 'equipe'
-                     OR EXISTS (SELECT 1 FROM chat_members m WHERE m.conversation_id = c.id AND m.user_id = ?)`, userId);
+  async function visible(userId) {
+    const u = await accesDe(userId);
+    return (await db.all(`SELECT c.* FROM chat_conversations c WHERE c.kind = 'equipe'
+                     OR EXISTS (SELECT 1 FROM chat_members m WHERE m.conversation_id = c.id AND m.user_id = ?)`, userId)).filter((c) => peut(u, CLE[c.kind]));
   }
   async function post(c, user, body, kind = 'texte', fileId = null) {
     const { id } = await db.get('INSERT INTO chat_messages (conversation_id, user_id, author, kind, body, created_at, file_id) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id',
       c.id, user ? user.id : null, user ? user.name : 'Blackstart', kind, body, now(), fileId);
     const msg = await toMsg(await db.get('SELECT * FROM chat_messages WHERE id = ?', id));
     if (user) await readUpTo(c.id, user.id, msg.id);
-    hub.send(await memberIds(c), 'message', msg);
+    hub.send(await destinataires(c), 'message', msg);
     return msg;
   }
   const announce = async (c, ids) => {
-    for (const id of ids || await memberIds(c)) hub.send([id], 'conversation', await view(c, id));
+    for (const id of await autorises(ids || await memberIds(c), CLE[c.kind])) hub.send([id], 'conversation', await view(c, id));
   };
   const cleanIds = async (list) => {
     const known = new Set(await allIds());
@@ -118,7 +132,7 @@ export function chatRoutes({ db, hub = chatHub() }) {
     const c = await conv(cid);
     if (!c) return;
     if (ended) await post(c, null, `Visio terminée (${Math.max(1, Math.round((Date.now() - call.started) / 60000))} min)`, 'info');
-    hub.send(await memberIds(c), 'call', { conversationId: cid, participants: callOf(cid), left: userId });
+    hub.send(await autorises(await destinataires(c), 'visio'), 'call', { conversationId: cid, participants: callOf(cid), left: userId });
   }
   const leaveAllCalls = async (userId) => { for (const cid of [...hub.calls.keys()]) await leaveCall(cid, userId); };
 
@@ -181,20 +195,32 @@ export function chatRoutes({ db, hub = chatHub() }) {
     const f = await db.get('SELECT * FROM chat_files WHERE id = ?', req.params.id);
     if (!f || !(await canSee(await conv(f.conversation_id), req.user.id))) return res.status(404).json({ error: 'Fichier introuvable.' });
     const inline = INLINE.has(f.mime) && req.query.telecharger === undefined;
+    const data = Buffer.from(f.data);
     res.set({
       'Content-Type': inline ? f.mime : 'application/octet-stream',
       'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(f.name)}`,
       'X-Content-Type-Options': 'nosniff',
       ...(f.mime === 'application/pdf' && inline ? {} : { 'Content-Security-Policy': "default-src 'none'; img-src 'self'; sandbox" }),
       'Cache-Control': 'private, max-age=31536000, immutable',
-    }).send(Buffer.from(f.data));
+      'Accept-Ranges': 'bytes',
+    });
+    // Vidéos et sons : le navigateur demande des morceaux (Range) pour démarrer vite et avancer dans la lecture.
+    const m = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || '').trim());
+    if (m && (m[1] || m[2])) {
+      const n = data.length;
+      const a = m[1] ? Number(m[1]) : Math.max(0, n - Number(m[2]));
+      const b = m[1] && m[2] ? Math.min(Number(m[2]), n - 1) : n - 1;
+      if (!(a <= b && a < n)) return res.status(416).set('Content-Range', `bytes */${n}`).end();
+      return res.status(206).set('Content-Range', `bytes ${a}-${b}/${n}`).send(data.subarray(a, b + 1));
+    }
+    res.send(data);
   });
 
   // « En train d'écrire » : rien en base, juste un signal aux autres membres (le navigateur le renvoie toutes les 2–3 s).
   r.post('/conversations/:id/ecrit', async (req, res) => {
     const c = await conv(req.params.id);
     if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
-    hub.send((await memberIds(c)).filter((id) => id !== req.user.id), 'ecrit', { conversationId: c.id, userId: req.user.id });
+    hub.send((await destinataires(c)).filter((id) => id !== req.user.id), 'ecrit', { conversationId: c.id, userId: req.user.id });
     res.json({ ok: true });
   });
 
@@ -211,6 +237,7 @@ export function chatRoutes({ db, hub = chatHub() }) {
 
   // Nouveau groupe : son nom et ses membres (le créateur en fait toujours partie).
   r.post('/groupes', async (req, res) => {
+    if (!peut(req.user, 'groupes')) return res.status(403).json(REFUS);
     const name = cleanName(req.body?.name);
     if (!name) return res.status(400).json({ error: 'Donnez un nom au groupe.' });
     const ids = await cleanIds([...(req.body?.members || []), req.user.id]);
@@ -227,6 +254,7 @@ export function chatRoutes({ db, hub = chatHub() }) {
 
   // Message direct : une seule conversation par paire de membres.
   r.post('/directs', async (req, res) => {
+    if (!peut(req.user, 'messages')) return res.status(403).json(REFUS);
     const other = String(req.body?.userId || '');
     if (other === req.user.id || !(await db.get('SELECT 1 AS ok FROM users WHERE id = ?', other))) return res.status(400).json({ error: 'Membre introuvable.' });
     const key = [req.user.id, other].sort().join(':');
@@ -288,6 +316,7 @@ export function chatRoutes({ db, hub = chatHub() }) {
     if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
     const join = req.body?.action !== 'quitter';
     if (!join) { await leaveCall(c.id, req.user.id); return res.json({ participants: callOf(c.id) }); }
+    if (!peut(req.user, 'visio')) return res.status(403).json(REFUS);
     if (!hub.conns.has(req.user.id)) return res.status(409).json({ error: 'Connexion temps réel absente : rechargez la page.' });
     let call = hub.calls.get(c.id);
     const first = !call;
@@ -295,13 +324,14 @@ export function chatRoutes({ db, hub = chatHub() }) {
     const others = callOf(c.id).filter((id) => id !== req.user.id);
     call.people.add(req.user.id);
     if (first) await post(c, req.user, `${req.user.name} a lancé une visio`, 'visio');
-    hub.send(await memberIds(c), 'call', { conversationId: c.id, participants: callOf(c.id), joined: req.user.id });
+    hub.send(await autorises(await destinataires(c), 'visio'), 'call', { conversationId: c.id, participants: callOf(c.id), joined: req.user.id });
     res.json({ participants: callOf(c.id), others, iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] });
   });
 
   // Relais de mise en relation WebRTC, seulement entre deux participants de la même visio.
   r.post('/signal', (req, res) => {
     const { to, conversationId, data } = req.body || {};
+    if (!peut(req.user, 'visio')) return res.status(403).json(REFUS);
     const call = hub.calls.get(String(conversationId || ''));
     if (!call || !call.people.has(req.user.id) || !call.people.has(String(to))) return res.status(409).json({ error: 'Cette personne n’est plus dans la visio.' });
     if (JSON.stringify(data ?? null).length > MAX_SIGNAL) return res.status(413).json({ error: 'Signal trop volumineux.' });

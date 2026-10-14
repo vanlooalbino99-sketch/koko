@@ -15,15 +15,20 @@ import { formationRoutes } from './routes/formation.js';
 import { siteRoutes } from './routes/site.js';
 import { chatRoutes, chatHub } from './routes/chat.js';
 import { photosRoutes } from './routes/photos.js';
+import { sonsRoutes } from './routes/sons.js';
+import { enregistrementsRoutes } from './routes/enregistrements.js';
 import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
+import { osmRoutes } from './osm.js';
+import { contactsRoutes } from './contacts.js';
+import { requireAcces, peut } from './acces.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
 
 // Base : PostgreSQL (Supabase) si databaseUrl est donné, sinon SQLite dans dataDir.
 // Mots de passe : Supabase Auth si supabase = { url, serviceKey } est donné, sinon vérifiés par le serveur.
-export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone } = {}) {
+export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {} } = {}) {
   const db = await openStore({ dataDir, databaseUrl });
   const identity = supabase ? supabaseIdentity(supabase) : localIdentity();
   const app = express();
@@ -42,6 +47,8 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/voix', express.static(join(ROOT, 'app', 'voix'), { immutable: true, maxAge: '30d', fallthrough: false, index: false }));
   // Logo en verre 3D de la page de connexion (Three.js assemblé par npm run build:verre).
   app.use('/verre', express.static(join(ROOT, 'app', 'verre'), { maxAge: '7d', fallthrough: false, index: false }));
+  // Captures de la vraie interface pour les tutos de la formation (régénérées par scripts/formation/ecrans.mjs).
+  app.use('/formation', express.static(join(ROOT, 'app', 'formation'), { maxAge: '7d', fallthrough: false, index: false }));
   app.use(attachUser(db));
 
   // API
@@ -52,9 +59,13 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/api/users', requireAdmin, express.json({ limit: '100kb' }), usersRoutes({ db, identity, hub }));
   app.use('/api/data', requireUser, express.json({ limit: '25mb' }), dataRoutes({ db }));
   app.use('/api/ambiance', requireUser, express.json({ limit: '40mb' }), ambianceApi({ db, store }));
-  app.use('/api/formation', requireUser, express.json({ limit: '10kb' }), formationRoutes({ db }));
+  app.use('/api/osm', requireAcces('leads'), express.json({ limit: '40kb' }), osmRoutes());
+  app.use('/api/contacts', requireAcces('leads'), express.json({ limit: '40kb' }), contactsRoutes(contacts));
+  app.use('/api/formation', requireAcces('formations'), express.json({ limit: '10kb' }), formationRoutes({ db }));
   app.use('/api/chat', requireUser, express.json({ limit: '100kb' }), chatRoutes({ db, hub }));
   app.use('/api/photos', requireUser, express.json({ limit: '700kb' }), photosRoutes({ db, hub }));
+  app.use('/api/sons', requireUser, sonsRoutes({ db }));
+  app.use('/api/enregistrements', requireUser, enregistrementsRoutes({ db }));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Adresse inconnue.' }));
   app.use('/ambiance', ambianceFiles({ store }));
 
@@ -70,7 +81,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.get('/', (req, res) => {
     if (!req.user) return res.redirect('/connexion');
     const page = html || assemble();
-    const conf = JSON.stringify({ user: req.user, version: VERSION }).replace(/</g, '\\u003c');
+    const conf = JSON.stringify({ user: req.user, version: VERSION, ...(googleMapsKey && peut(req.user, 'carte') ? { carte: { google: googleMapsKey } } : {}) }).replace(/</g, '\\u003c');
     res.set('Cache-Control', 'no-store').type('html')
       .send(page.replace('<head>', `<head>\n<script id="bs-serveur-conf">window.BS_SERVER=${conf};</script>`));
   });

@@ -438,7 +438,8 @@
     var h = document.documentElement, c = state.config, on = active();
     h.classList.toggle('bs-amb-on', on);
     h.classList.toggle('bs-amb-fond', on && !!c.fond);
-    h.classList.toggle('bs-amb-hero', on && !!c.banniere);
+    // Fond animé en verre 3D à l'écran : rien que l'animation, pas d'image sur la bannière.
+    h.classList.toggle('bs-amb-hero', on && !!c.banniere && !h.classList.contains('bs-orbite'));
     h.classList.toggle('bs-amb-splash', on && !!c.demarrage);
     h.classList.toggle('bs-amb-kb', !!c.mouvement);
     h.style.setProperty('--bs-amb-voile', String(clamp(c.voile, 0, 95, 58) / 100));
@@ -696,10 +697,12 @@
   var vieFond = null, vieZen = null;
   function vieFondSync() {
     if (!vieFond) return;
-    var c = state.config, want = active() && !!c.fond && !!c.mouvement && !zen;
+    // Fond animé en verre 3D actif : l'image de fond est cachée, ses lumières aussi.
+    var c = state.config, want = active() && !!c.fond && !!c.mouvement && !zen && !(window.bsOrbite && window.bsOrbite.voulu());
     if (want) vieFond.image(imageOf(current || pick()));
     vieFond.run(want);
   }
+  window.addEventListener('bs:orbite', function () { apply(false); });
   function parallax(e) {
     if (!zen || reducedMotion()) return;
     var par = zen.querySelector('.z-par');
@@ -1245,8 +1248,11 @@
       el.innerHTML =
         card('Vos images d’ambiance', where + ' Elles s’affichent en fond, sur la bannière d’« Aujourd’hui » et à l’ouverture du CRM.', lock + drop + msg + grid) +
         (ro ? '' : card('Galerie d’ambiances', scenes().length + ' créations originales, dessinées dans votre navigateur en haute définition : intelligence artificielle, espace, paysages, abstrait. L’aperçu montre l’image exacte qui sera ajoutée ; « Autre version » en propose une nouvelle.', galerie())) +
-        card('Où les afficher', '', toggle('fond', 'Fond de l’application', 'Image plein écran derrière toutes les pages, blocs en verre dépoli.', ro) +
-          toggle('banniere', 'Bannière « Aujourd’hui »', 'L’image apparaît dans le bandeau d’accueil, avec un bouton « Immersion ».', ro) +
+        card('Où les afficher', '', (window.bsOrbite ? '<label class="toggle-row"><span class="toggle-text"><span class="toggle-label">Fond animé en verre 3D</span><span class="toggle-hint">L’animation de l’accueil du site, derrière toutes les pages, sur cet appareil : une forme en verre bleu qui s’éclate et se recompose au milieu d’anneaux de lumière. Activé, il remplace les images d’ambiance dans le CRM (fond et bannière) ; elles restent à l’ouverture et sur la page de connexion.</span></span><button type="button" role="switch" aria-checked="' + window.bsOrbite.voulu() + '" class="toggle' + (window.bsOrbite.voulu() ? ' on' : '') + '" data-orbite><span></span></button></label>' +
+            (window.bsOrbite.voulu() && window.bsOrbite.formes ? '<div class="setting-row"><div class="sr-text"><div class="sr-label">Forme en verre</div><div class="sr-hint">Celle qui tourne dans le fond animé.</div></div><select class="input select" data-orbite-forme aria-label="Forme en verre">' +
+              window.bsOrbite.formes().map(function (f) { return '<option value="' + f.id + '"' + (f.id === window.bsOrbite.forme() ? ' selected' : '') + '>' + esc(f.nom) + '</option>'; }).join('') + '</select></div>' : '') : '') +
+          toggle('fond', 'Fond de l’application', 'Image plein écran derrière toutes les pages, blocs en verre dépoli' + (window.bsOrbite && window.bsOrbite.voulu() ? ' (quand le fond animé en verre 3D est désactivé).' : '.'), ro) +
+          toggle('banniere', 'Bannière « Aujourd’hui »', 'L’image apparaît dans le bandeau d’accueil, avec un bouton « Immersion »' + (window.bsOrbite && window.bsOrbite.voulu() ? ' (quand le fond animé en verre 3D est désactivé).' : '.'), ro) +
           toggle('demarrage', 'Écran d’ouverture', 'L’image accueille le chargement du CRM.', ro) +
           (SERVER ? toggle('connexion', 'Page de connexion', 'Fond de la page de connexion (visible sans compte : n’y mettez pas d’image confidentielle).', ro)
             : '<label class="toggle-row is-disabled"><span class="toggle-text"><span class="toggle-label">Page de connexion</span><span class="toggle-hint">Disponible dans la version équipe (serveur).</span></span></label>') +
@@ -1272,7 +1278,8 @@
     }
     function setMsgBusy(m) { ui.msg = m; var box = el.querySelector('.bsa-msg'); if (box) box.textContent = m; else render(); }
     el.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-act],[data-tog],[data-mode],[data-perso],[data-gcat]'); if (!t || t.disabled) return;
+      var t = e.target.closest('[data-act],[data-tog],[data-mode],[data-perso],[data-gcat],[data-orbite]'); if (!t || t.disabled) return;
+      if (t.hasAttribute('data-orbite')) { window.bsOrbite.regler(!window.bsOrbite.voulu()); render(); return; }
       if (t.hasAttribute('data-gcat')) { ui.gcat = t.getAttribute('data-gcat'); render(); queueThumbs(); return; }
       if (t.hasAttribute('data-tog')) { var k = t.getAttribute('data-tog'), p = {}; p[k] = !state.config[k]; setConfig(p); return; }
       if (t.hasAttribute('data-perso')) { setPerso({ off: !perso.off }); return; }
@@ -1311,7 +1318,9 @@
       if (veil && key === 'flou') { veil.style.backdropFilter = 'blur(' + v + 'px)'; veil.style.webkitBackdropFilter = 'blur(' + v + 'px)'; }
     });
     el.addEventListener('change', function (e) {
-      var t = e.target; if (!t.hasAttribute || !t.hasAttribute('data-range')) return;
+      var t = e.target;
+      if (t.hasAttribute && t.hasAttribute('data-orbite-forme')) { window.bsOrbite.choisirForme(t.value); return; }
+      if (!t.hasAttribute || !t.hasAttribute('data-range')) return;
       var p = {}; p[t.getAttribute('data-range')] = Number(t.value); setConfig(p);
     });
     var onPaste = function (e) {

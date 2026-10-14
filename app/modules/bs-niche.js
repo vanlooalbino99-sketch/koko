@@ -212,7 +212,7 @@
         (ui.edit ? editeur()
           : '<div class="bsn-ideal"><span class="bsn-ideal-l">Client idéal</span>' + (vide ? '<span class="bsn-none">Pas encore défini : choisissez vos secteurs, métiers et zone pour suivre votre niche.</span>' : chips(c)) +
             '<span class="bsn-ideal-act"><button type="button" class="btn btn-secondary btn-sm" data-act="edit">' + ic(vide ? 'plus' : 'pencil', 14) + (vide ? 'Définir mon client idéal' : 'Modifier') + '</button>' +
-            (vide ? '' : '<button type="button" class="btn btn-primary btn-sm" data-act="gen">' + ic('sparkles', 14) + 'Générer des leads dans ma niche</button>') + '</span></div>') +
+            (vide || (window.bsAcces && !window.bsAcces.peut('leads')) ? '' : '<button type="button" class="btn btn-primary btn-sm" data-act="gen">' + ic('sparkles', 14) + 'Générer des leads dans ma niche</button>') + '</span></div>') +
         (vide ? '' :
           '<div class="kpis bsn-kpis">' +
           kpi('Prospects dans la niche', b.n, pct(b.n, all.length) + ' % de vos prospects' + (b.generes ? ' · ' + b.generes + ' générés' : ''), 'users', 'blue') +

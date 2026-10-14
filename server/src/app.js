@@ -16,6 +16,7 @@ import { siteRoutes } from './routes/site.js';
 import { chatRoutes, chatHub } from './routes/chat.js';
 import { photosRoutes } from './routes/photos.js';
 import { sonsRoutes } from './routes/sons.js';
+import { enregistrementsRoutes } from './routes/enregistrements.js';
 import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
 import { osmRoutes } from './osm.js';
@@ -62,6 +63,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/api/chat', requireUser, express.json({ limit: '100kb' }), chatRoutes({ db, hub }));
   app.use('/api/photos', requireUser, express.json({ limit: '700kb' }), photosRoutes({ db, hub }));
   app.use('/api/sons', requireUser, sonsRoutes({ db }));
+  app.use('/api/enregistrements', requireUser, enregistrementsRoutes({ db }));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Adresse inconnue.' }));
   app.use('/ambiance', ambianceFiles({ store }));
 

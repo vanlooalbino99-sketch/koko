@@ -219,7 +219,7 @@
     var ids = [o.ecran].concat((o.steps || []).filter(function (s) { return s.ecran; }).map(function (s) { return s.ecran; }));
     if (!ids.every(ecranOk)) return null;
     return {
-      tuto: o.t, ecrans: ids, captions: o.captions, min: o.min,
+      tuto: o.t, nouveau: !!o.nouveau, ecrans: ids, captions: o.captions, min: o.min,
       build: function (S) {
         var E0 = ECRANS[o.ecran], mobile = E0.w < 600;
         // Fenêtre : navigateur (ordinateur) ou téléphone, au format de la capture.
@@ -256,7 +256,7 @@
           }
           if (st.zoom !== undefined) {
             var to = camFor(st.zoom ? zone(curId, st.zoom) : null, st.s);
-            S.a(cam, [{ transform: tr(camNow) }, { transform: tr(to) }], at, st.lent ? 1800 : 1150, EASE_IO);
+            S.a(cam, [{ transform: tr(camNow) }, { transform: tr(to) }], at, st.lent ? 1800 : 1150, EASE_IO, { fill: 'forwards' });
             camNow = to;
           }
           if (st.spot !== undefined) {
@@ -264,7 +264,7 @@
             spotEl = null;
             var z = st.spot && zone(curId, st.spot);
             if (z) {
-              spotEl = S.el('', 'left:' + (z[0] - 5) + 'px;top:' + (z[1] - 5) + 'px;width:' + (z[2] + 10) + 'px;height:' + (z[3] + 10) + 'px', 'bsf-spot', cam);
+              spotEl = S.el('', 'left:' + (z[0] - 5) + 'px;top:' + (z[1] - 5) + 'px;width:' + (z[2] + 10) + 'px;height:' + (z[3] + 10) + 'px', 'bsf-halo', cam);
               S.a(spotEl, [{ opacity: 0, transform: 'scale(1.08)' }, { opacity: 1, transform: 'none' }], at + 150, 600);
             }
           }
@@ -995,25 +995,27 @@
     module({ n: 9, f: '09-messagerie', t: 'Messages, groupes et visio', s: 'Messagerie d’équipe, émojis, pièces jointes, groupes, visio et notifications.',
       accroche: 'Toute l’équipe se parle sans quitter le CRM.', chips: ['Messages', 'Groupes', 'Visio', 'Notifications'],
       quiz: [
-        ['Peut-on envoyer une photo ou un PDF dans un message ?', ['Oui, avec le trombone', 'Non', 'Seulement par e-mail'], 0],
+        ['Que se passe-t-il quand on clique sur une photo reçue ?', ['Elle s’ouvre en grand, avec zoom et téléchargement', 'Rien', 'Elle se supprime'], 0],
         ['Comment parler à plusieurs collègues à la fois ?', ['Avec un groupe', 'En copiant le message', 'Ce n’est pas possible'], 0],
         ['Que se passe-t-il quand quelqu’un lance une visio ?', ['Une sonnerie et une carte d’appel apparaissent', 'Rien', 'Un e-mail part'], 0],
       ],
       tutos: [
         tuto({ t: 'Écrire à un collègue', ecran: 'messages', page: 'messages', captions: ['Messages : vos conversations à gauche, le fil de discussion à droite.', 'Écrivez en bas : émojis, et pièces jointes avec le trombone, images, PDF ou documents.', 'Trois petits points s’affichent quand votre collègue est en train d’écrire.'],
           steps: [{ b: 0, d: 300, zoom: 'liste', spot: 'liste' }, { b: 0, d: 2000, zoom: 'fil', spot: 'fil' }, { b: 1, zoom: 'saisie', spot: 'saisie', curseur: 'saisie', clic: true }, { b: 1, d: 1400, curseur: 'joindre' }, { b: 2, zoom: null, spot: false }] }),
+        tuto({ t: 'Ouvrir une pièce jointe en grand', nouveau: true, ecran: 'piece-jointe', page: 'messages', captions: ['Une photo, une vidéo ou un PDF reçu ? Cliquez dessus : il s’ouvre en grand, par-dessus le CRM.', 'Zoomez, passez à la pièce suivante avec les flèches, téléchargez, puis Échap pour fermer.'],
+          steps: [{ b: 0, d: 300, zoom: 'image', spot: 'image' }, { b: 0, d: 1500, curseur: 'image', clic: true, centre: true }, { b: 1, ecran: 'visionneuse', zoom: null, spot: false }, { b: 1, d: 1600, bulle: ['telecharger', 'Télécharger'], curseur: 'telecharger' }, { b: 1, d: 3200, curseur: 'fermer', clic: true }] }),
         tuto({ t: 'Les groupes', ecran: 'groupes', page: 'groupes', captions: ['Groupes : un espace par équipe ou par projet, avec les mêmes possibilités que les messages.', 'Nouveau groupe : donnez un nom et choisissez les membres.'],
           steps: [{ b: 0, d: 300, zoom: 'fil', spot: 'fil' }, { b: 1, zoom: 'nouveau', s: 2, spot: 'nouveau', curseur: 'nouveau', clic: true }] }),
         tuto({ t: 'Lancer une visio', ecran: 'visio', page: 'visio', captions: ['Visio : lancez une réunion avec l’équipe ou avec un groupe, en un clic.', 'Vos collègues reçoivent une sonnerie et une carte d’appel pour rejoindre. La sonnerie se choisit dans Réglages.'],
           steps: [{ b: 0, d: 300, zoom: 'lancer', s: 2, spot: 'lancer', curseur: 'lancer', clic: true }, { b: 1, zoom: null, spot: false }] }),
       ],
-      recap: ['Messages : émojis et pièces jointes.', 'Groupes par équipe ou par projet.', 'Visio en un clic, avec sonnerie.'], suivant: 'Équipe, comptes et sauvegardes',
+      recap: ['Messages : émojis, et pièces jointes qui s’ouvrent en grand.', 'Groupes par équipe ou par projet.', 'Visio en un clic, avec sonnerie.'], suivant: 'Équipe, comptes et sauvegardes',
       secours: ANCIENS[6].scenes }),
 
     module({ n: 10, f: '10-equipe', t: 'Équipe, comptes et sauvegardes', s: 'Mon compte, organigramme, membres et droits, sauvegardes, suivi de la formation.',
       accroche: 'Chacun son compte, toute l’équipe au même endroit.', chips: ['Compte', 'Organigramme', 'Membres', 'Sauvegardes'],
       quiz: [
-        ['Qui peut supprimer des fiches ?', ['Tout le monde', 'Les administrateurs', 'Personne'], 1],
+        ['Comment limiter les rubriques qu’un membre peut ouvrir ?', ['Ce n’est pas possible', 'Colonne Accès : l’administrateur coche ses rubriques', 'En lui donnant un autre mot de passe'], 1],
         ['Où voir qui fait quoi dans l’équipe ?', ['Dans l’organigramme', 'Dans Paiements', 'Dans la carte'], 0],
         ['Combien de versions le serveur garde-t-il ?', ['Aucune', 'Les cent dernières, restaurables', 'Une seule'], 1],
       ],
@@ -1024,31 +1026,37 @@
           steps: [{ b: 0, d: 300, zoom: 'organigramme', spot: 'organigramme', lent: true }, { b: 1, zoom: null, spot: false }] }),
         tuto({ t: 'Inviter et gérer l’équipe', ecran: 'equipe', page: 'settings', captions: ['Réglages, Équipe et compte : l’administrateur invite les membres et choisit leur rôle.', 'Seuls les administrateurs peuvent supprimer : c’est contrôlé par le serveur.'],
           steps: [{ b: 0, d: 300, zoom: 'membres', spot: 'membres' }, { b: 0, d: 1800, curseur: 'inviter', clic: true, spot: 'inviter' }, { b: 1, zoom: null, spot: 'membres' }] }),
+        tuto({ t: 'Choisir les accès d’un membre', nouveau: true, ecran: 'acces', page: 'settings', captions: ['Colonne Accès : l’administrateur choisit les rubriques que chaque membre peut ouvrir.', 'Cochez ce qu’il voit, décochez le reste, puis enregistrez : son menu change tout de suite sur ses écrans.'],
+          steps: [{ b: 0, d: 300, zoom: 'colonne', spot: 'bouton', curseur: 'bouton', clic: true }, { b: 1, zoom: 'panneau', spot: 'panneau' }, { b: 1, d: 2600, bulle: ['panneau', 'Une case par rubrique'] }] }),
         tuto({ t: 'Sauvegardes et versions', ecran: 'donnees', page: 'settings', captions: ['Données : le serveur garde les cent dernières versions de vos données.', 'Une erreur ? Restaurez une version en un clic, ou exportez une sauvegarde.'],
           steps: [{ b: 0, d: 300, zoom: 'versions', spot: 'versions' }, { b: 1, zoom: 'sauvegarde', spot: 'sauvegarde' }] }),
         tuto({ t: 'Le suivi de la formation', ecran: 'suivi', page: 'formations', captions: ['Ici, dans Formations, l’administrateur voit les modules vus et le score aux quiz de chaque membre.'],
           steps: [{ b: 0, d: 300, zoom: 'suivi', spot: 'suivi' }] }),
       ],
       apres: [ANCIENS[6].scenes[3]],
-      recap: ['Mon compte : nom, photo, mot de passe.', 'Organigramme et rôles gérés par l’administrateur.', 'Cent versions de sauvegarde, restaurables.'], suivant: 'Outils et réglages',
+      recap: ['Mon compte : nom, photo, mot de passe.', 'Rôles et accès de chaque membre, cochés par l’administrateur.', 'Cent versions de sauvegarde, restaurables.'], suivant: 'Outils et réglages',
       secours: ANCIENS[6].scenes }),
 
-    module({ n: 11, f: '11-outils-reglages', t: 'Outils et réglages', s: 'Enregistreur, script, modèles d’e-mail, apparence, ambiances, icônes et sonneries.',
-      accroche: 'Vos outils au quotidien, et un CRM à votre image.', chips: ['Enregistreur', 'Script', 'Modèles', 'Réglages'],
+    module({ n: 11, f: '11-outils-reglages', t: 'Outils et réglages', s: 'Enregistrements de l’équipe, sons MP3, script, modèles, apparence, ambiances et icônes.',
+      accroche: 'Vos outils au quotidien, et un CRM à votre image.', chips: ['Enregistrements', 'Sons MP3', 'Script', 'Réglages'],
       quiz: [
         ['Où modifier le script d’appel ?', ['Outils, Script d’appel', 'Paiements', 'On ne peut pas'], 0],
-        ['Les enregistrements d’appels sont gardés…', ['Sur l’appareil', 'Nulle part', 'Sur un site externe'], 0],
-        ['Où choisir la sonnerie des visios ?', ['Réglages, Notifications', 'Rapports', 'Carte clients'], 0],
+        ['Qui peut écouter les enregistrements des membres ?', ['Personne', 'L’administrateur, avec un filtre par membre', 'Tous les clients'], 1],
+        ['Comment mettre votre propre son pour un message reçu ?', ['Réglages, Équipe et compte, Sons du CRM : choisir un MP3', 'Ce n’est pas possible', 'En changeant de navigateur'], 0],
       ],
       tutos: [
+        tuto({ t: 'Écouter les enregistrements de l’équipe', nouveau: true, ecran: 'enregistrements-equipe', page: 'tools', captions: ['Les enregistrements de chaque membre arrivent tout seuls sur le serveur.', 'L’administrateur les écoute, les télécharge, et filtre par membre.'],
+          steps: [{ b: 0, d: 300, zoom: 'liste', spot: 'liste' }, { b: 1, curseur: 'filtre', clic: true, spot: 'filtre' }, { b: 1, d: 1800, curseur: 'ecouter', clic: true, spot: 'ecouter' }] }),
+        tuto({ t: 'Mettre vos propres sons MP3', nouveau: true, ecran: 'sons', page: 'settings', captions: ['Sons du CRM : un son pour la visio, un pour les messages reçus, un pour les messages envoyés.', 'Choisir un MP3 envoie le fichier de votre ordinateur ; Écouter le teste, Retirer remet le son d’origine.'],
+          steps: [{ b: 0, d: 300, zoom: 'sons', spot: 'sons' }, { b: 1, curseur: 'mp3', clic: true, spot: 'mp3' }, { b: 1, d: 1400, bulle: ['mp3', 'Votre fichier MP3'] }] }),
         tuto({ t: 'Enregistreur d’appels', ecran: 'enregistreur', page: 'tools', captions: ['Outils : l’enregistreur garde vos appels, associés au prospect, pour les réécouter.', 'Le script d’appel et les modèles d’e-mail se modifient ici, pour toute l’équipe.'],
           steps: [{ b: 0, d: 300, zoom: 'demarrer', spot: 'demarrer', curseur: 'demarrer', clic: true }, { b: 1, ecran: 'modeles', zoom: null, spot: false }] }),
         tuto({ t: 'Apparence et ambiance', ecran: 'apparence', page: 'settings', captions: ['Réglages, Apparence : thème clair, sombre ou automatique, couleur d’accent, police et densité.', 'Ambiance : des images animées en fond, et le choix des icônes du menu.'],
           steps: [{ b: 0, d: 300, zoom: 'themes', spot: 'themes' }, { b: 1, ecran: 'ambiance', zoom: null, spot: 'ambiance' }, { b: 1, d: 2600, ecran: 'icones', spot: 'icones' }] }),
-        tuto({ t: 'Notifications et sonneries', ecran: 'compte', page: 'settings', captions: ['Équipe et compte : choisissez la sonnerie des visios, son volume, et écoutez un aperçu.', 'Notifications : activez les alertes du navigateur pour ne rien manquer.'],
-          steps: [{ b: 0, d: 300, zoom: 'sonnerie', spot: 'sonnerie' }, { b: 1, ecran: 'notifications', zoom: null, spot: 'notifs' }] }),
+        tuto({ t: 'Notifications', ecran: 'notifications', page: 'settings', captions: ['Notifications : activez les alertes du navigateur pour ne rien manquer, même CRM fermé.'],
+          steps: [{ b: 0, d: 300, zoom: 'notifs', spot: 'notifs' }] }),
       ],
-      recap: ['Enregistreur, script et modèles : vos outils au quotidien.', 'Apparence, ambiance et icônes : un CRM à votre image.', 'Sonneries réglables dans Notifications.'], suivant: null,
+      recap: ['Enregistreur, script et modèles : vos outils au quotidien.', 'Apparence, ambiance et icônes : un CRM à votre image.', 'Vos propres sons MP3 dans Sons du CRM.'], suivant: null,
       secours: ANCIENS[6].scenes }),
   ];
   // Tous les tutos (onglet « Tutos rapides ») : chaque scène sur la vraie interface, rangée par module.
@@ -1310,7 +1318,7 @@
           '<div class="card card-flush bsf-list bsf-tlist"><div class="bsf-tsearch"><input type="search" class="input" placeholder="Chercher un tuto…" aria-label="Chercher un tuto" value="' + esc(ui.q || '') + '"></div>' + TUTOS.map(function (tt, i) {
             return (i === 0 || TUTOS[i - 1].mod !== tt.mod ? '<div class="bsf-tgroup" data-g="' + tt.mod + '">' + (tt.mod + 1) + '. ' + esc(MODULES[tt.mod].t) + '</div>' : '') +
               '<button type="button" class="bsf-item bsf-titem' + (i === ui.tidx ? ' active' : '') + '" data-tuto="' + i + '" data-g="' + tt.mod + '"><span class="bsf-inum">' + ic(i === ui.tidx ? 'play' : 'zap', 14) + '</span>' +
-              '<span class="bsf-itxt"><span class="bsf-it">' + esc(tt.t) + '</span><span class="bsf-is">' + esc(tt.scenes[0].captions[0]) + '</span></span></button>';
+              '<span class="bsf-itxt"><span class="bsf-it">' + esc(tt.t) + (tt.scenes[0].nouveau ? ' <em class="bsf-new">Nouveau</em>' : '') + '</span><span class="bsf-is">' + esc(tt.scenes[0].captions[0]) + '</span></span></button>';
           }).join('') + '</div></div>' :
         '<div class="bsf-meta"><div class="min-w-0"><div class="bsf-kick">Module ' + (ui.idx + 1) + ' sur ' + MODULES.length + ' · <span class="bsf-dur"></span></div><h2 class="bsf-title">' + esc(m.t) + '</h2><p class="bsf-sub">' + esc(m.s) + '</p></div>' +
         '<div class="bsf-actions">' + (seen.indexOf(m.f) < 0 ? '<button type="button" class="btn btn-ghost btn-sm" data-act="seen">' + ic('check', 15) + ' Marquer comme vu</button>' : '') +
@@ -1431,7 +1439,7 @@
       if (!t && e.target.closest('.bsf-stage') && player) { player.toggle(); return; }
       if (!t || t.disabled) return;
       if (t.hasAttribute('data-mode')) { ui.mode = t.getAttribute('data-mode'); closeOver(); render(); return; }
-      if (t.hasAttribute('data-tuto')) { ui.tidx = +t.getAttribute('data-tuto'); render(); player.play(); return; }
+      if (t.hasAttribute('data-tuto')) { ui.tidx = +t.getAttribute('data-tuto'); render(); player.play(); try { root.querySelector('.bsf-player').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (er) {} return; }
       if (t.hasAttribute('data-mod')) { ui.idx = +t.getAttribute('data-mod'); closeOver(); render(); try { root.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (er) {} return; }
       if (t.hasAttribute('data-opt')) { var q = ui.quiz, Q = MODULES[ui.idx].quiz[q.i]; q.picked = +t.getAttribute('data-opt'); if (q.picked === Q[2]) q.score++; showQuiz(); return; }
       var act = t.getAttribute('data-act');
@@ -1544,6 +1552,7 @@
     '.bsf-tgroup{padding:12px 10px 4px;font-size:.72em;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}',
     '.bsf-titem .bsf-is{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}',
     '.bsf-titem[hidden],.bsf-tgroup[hidden]{display:none}',
+    '.bsf-new{font-style:normal;font-size:.72em;font-weight:700;padding:1px 6px;border-radius:6px;background:rgba(16,185,129,.16);color:#10b981;margin-left:4px;vertical-align:1px}',
     '.bsf-tlist{max-height:560px;overflow:auto}@media (min-width:1150px){.bsf-tlist{max-height:calc(100vh - 150px);position:sticky;top:12px}}',
     '.bsf-item{display:flex;align-items:center;gap:12px;width:100%;padding:10px;border-radius:12px;text-align:left;color:var(--text);background:none;border:0;cursor:pointer;font:inherit;transition:background .2s}',
     '.bsf-item:hover{background:var(--surface-2)}',
@@ -1655,7 +1664,7 @@
     '.bsf-shot{position:absolute;left:0;top:0;width:100%;height:100%;display:block;user-select:none}',
     '.bsf-browser.phone{border-radius:38px;padding:10px;background:#05080f;box-shadow:0 30px 80px -20px rgb(0 0 0/.8),0 0 0 2px #2a3550,0 0 60px -10px rgb(59 130 246/.4)}',
     '.bsf-browser.phone .bsf-bbar{display:none}.bsf-browser.phone .bsf-bview{border-radius:28px}',
-    '.bsf-spot{border-radius:10px;border:2px solid #60a5fa;box-shadow:0 0 0 4000px rgb(2 6 23/.5),0 0 22px 4px rgb(96 165 250/.65),inset 0 0 18px rgb(96 165 250/.25);pointer-events:none;z-index:40}',
+    '.bsf-halo{border-radius:10px;border:2px solid #60a5fa;box-shadow:0 0 0 4000px rgb(2 6 23/.5),0 0 22px 4px rgb(96 165 250/.65),inset 0 0 18px rgb(96 165 250/.25);pointer-events:none;z-index:40}',
     '.bsf-bulle{z-index:45;white-space:nowrap;padding:6px 11px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;font:700 12px/1.25 Inter,system-ui,sans-serif;box-shadow:0 10px 24px -6px rgb(37 99 235/.7)}',
     '.bsf-bulle::before{content:"";position:absolute;left:50%;top:-5px;width:10px;height:10px;background:#4f7cf6;transform:translateX(-50%) rotate(45deg);border-radius:2px}',
     '.bsf-bulle.up::before{top:auto;bottom:-5px;background:#5b72f3}',

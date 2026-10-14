@@ -9,7 +9,7 @@
 //   node --experimental-sqlite scripts/formation/ecrans.mjs [id …]      (sans id : toutes les captures)
 //
 // À relancer quand l'interface change. Chromium : celui de Playwright, ou BS_CHROMIUM.
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -78,6 +78,17 @@ for (const [qui, conv, txt] of [
   [sarah, groupe.id, 'Bravo Lucas ! Pensez à mettre vos relances dans l’agenda.'],
   [alex, groupe.id, 'Objectif de la semaine : 40 appels chacun. On y va !'],
 ]) { await qui.api('POST', `/api/chat/conversations/${conv}/messages`, { body: txt }); await sleep(30); }
+// Fichiers bruts envoyés depuis la page (pièce jointe, enregistrements d'appels).
+const brut = (s, path, fichier, type) => s.p.evaluate(async ([path, b64, type, H]) => {
+  const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const r = await fetch(path, { method: 'POST', headers: { 'X-Requested-With': H['X-Requested-With'], 'Content-Type': type }, body: bin });
+  return r.status;
+}, [path, readFileSync(fichier).toString('base64'), type, H]);
+await brut(sarah, `/api/chat/conversations/${direct.id}/fichiers?nom=chantier-lumiere.jpg&type=image/jpeg&texte=${encodeURIComponent('Les photos du chantier Lumière 📸')}`, join(ROOT, 'demos', 'captures', 'renovation.jpg'), 'image/jpeg');
+const mp3 = join(ROOT, 'app', 'voix', readdirSync(join(ROOT, 'app', 'voix')).find((f) => f.endsWith('.mp3')));
+for (const [s, n, pr, d] of [[sarah, 1, 'Ostéo Santé Confluence', 184], [sarah, 2, 'Cabinet Lumière', 96], [lucas, 3, 'Paysages Verts', 242], [lucas, 4, 'Kiné Performance', 131]]) {
+  await brut(s, `/api/enregistrements?id=demo-enr-${n}&nom=${encodeURIComponent('Appel ' + pr)}&prospect=${encodeURIComponent(pr)}&duree=${d}`, mp3, 'audio/mpeg');
+}
 for (const s of [alex, sarah, lucas]) await s.ctx.close();
 
 // ------------------------------------------------------------------ outils de prise de vue
@@ -212,20 +223,32 @@ const ECRANS = [
   // 9. Messagerie
   { id: 'messages', act: async (p) => { await aller(p, 'messages', 1500); await cliquer(p, '.bsm-conv:has-text("Sarah"), [data-conv]:has-text("Sarah"), button:has-text("Sarah Benali")', 1200); },
     z: { liste: sel('aside.bsm-side'), fil: sel('.bsm-scroll'), saisie: sel('form.bsm-compose'), visio: sel('.bsm-visio'), joindre: sel('.bsm-compose .bsm-outil >> nth=0'), emoji: sel('.bsm-compose .bsm-outil >> nth=-1') } },
+  { id: 'piece-jointe', act: async (p) => { await aller(p, 'messages', 1500); await cliquer(p, '.bsm-conv:has-text("Sarah")', 1500); },
+    z: { image: sel('.bsm-img >> nth=-1'), fil: sel('.bsm-scroll') } },
+  { id: 'visionneuse', act: async (p) => { await aller(p, 'messages', 1500); await cliquer(p, '.bsm-conv:has-text("Sarah")', 1500); await cliquer(p, '.bsm-img >> nth=-1', 1300); },
+    z: { scene: sel('.bsv-scene img, .bsv-img'), haut: sel('.bsv-haut'), telecharger: sel('.bsv-haut a.bsv-btn'), fermer: sel('[data-vue=fermer]') } },
   { id: 'groupes', act: async (p) => { await aller(p, 'groupes', 1500); await cliquer(p, ':is(button, div, a):has-text("Équipe commerciale") >> nth=-1', 1200); },
     z: { liste: sel('aside.bsm-side'), fil: sel('.bsm-scroll'), nouveau: texte('button', 'Nouveau groupe') } },
   { id: 'visio', act: (p) => aller(p, 'visio', 1300), z: { lancer: texte('button', 'Lancer'), groupe: texte('button', 'Nouveau groupe') } },
 
   // 10. Équipe et compte
   { id: 'organigramme', act: async (p) => { await aller(p, 'today'); await cliquer(p, '.bs-moi', 600); await cliquer(p, '.bs-moi-menu :text("Organigramme")', 1500); }, z: { organigramme: sel('.bsm-org, .organigramme, [role=dialog]') } },
-  { id: 'compte', act: async (p) => { await aller(p, 'today'); await cliquer(p, '.bs-moi', 600); await cliquer(p, '.bs-moi-menu :text("Mon compte")', 1300); }, z: { fenetre: texte('section.card', 'Mon compte'), sonnerie: texte('section.card', 'Sonnerie des visios') } },
+  { id: 'compte', act: async (p) => { await aller(p, 'today'); await cliquer(p, '.bs-moi', 600); await cliquer(p, '.bs-moi-menu :text("Mon compte")', 1300); }, z: { fenetre: texte('section.card', 'Mon compte') } },
   { id: 'equipe', act: async (p) => { await aller(p, 'settings'); await cliquer(p, ':text("Équipe & compte")', 1300); await p.evaluate(() => document.querySelector('.bse-table')?.closest('section')?.scrollIntoView({ block: 'start' })); await sleep(500); },
     z: { membres: sel('.bse-table >> nth=0'), inviter: sel('form[data-form=add]'), equipe: texte('section.card', 'Les membres voient') } },
+  { id: 'acces', act: async (p) => { await aller(p, 'settings'); await cliquer(p, ':text("Équipe & compte")', 1300); await cliquer(p, `[data-acces="${ids.sarah}"]`, 900);
+    await p.evaluate(() => document.querySelector('.bse-table')?.scrollIntoView({ block: 'start' })); await sleep(500); },
+    z: { bouton: sel(`[data-acces="${ids.sarah}"]`), panneau: sel('.bse-acces-p'), colonne: sel('.bse-table') } },
+  { id: 'sons', act: async (p) => { await aller(p, 'settings'); await cliquer(p, ':text("Équipe & compte")', 1300);
+    await p.evaluate(() => [...document.querySelectorAll('section.card')].find((c) => /Sons du CRM/.test(c.textContent))?.scrollIntoView({ block: 'start' })); await sleep(500); },
+    z: { sons: texte('section.card', 'Sons du CRM'), mp3: sel('.bse-mp3 >> nth=0') } },
   { id: 'donnees', act: async (p) => { await aller(p, 'settings'); await cliquer(p, ':text-is("Données")', 1300); }, z: { sauvegarde: texte('.card', 'auvegarde'), versions: texte('.card', 'ersion') } },
   { id: 'suivi', act: async (p) => { await aller(p, 'formations', 1600); await p.locator('.bsf-team-card').scrollIntoViewIfNeeded(); await sleep(500); }, z: { suivi: sel('.bsf-team-card'), lecteur: sel('.bsf-player') } },
 
   // 11. Outils et réglages
   { id: 'enregistreur', act: (p) => aller(p, 'tools'), z: { onglets: sel('.tabs, [role=tablist]'), demarrer: texte('button', 'Démarrer l'), liste: texte('.card', 'Enregistrements') } },
+  { id: 'enregistrements-equipe', act: async (p) => { await aller(p, 'tools', 1500); await p.evaluate(() => document.querySelector('.bse-enr')?.scrollIntoView({ block: 'center' })); await sleep(600); },
+    z: { liste: sel('.bse-enr'), filtre: sel('[data-enr-membre]'), ecouter: sel('[data-enr-play] >> nth=0') } },
   { id: 'script', act: async (p) => { await aller(p, 'tools'); await cliquer(p, ':text("Script d\'appel")', 900); }, z: { script: sel('.card') } },
   { id: 'modeles', act: async (p) => { await aller(p, 'tools'); await cliquer(p, ':text("Modèles d\'email")', 900); }, z: { modeles: sel('.card') } },
   { id: 'apparence', act: async (p) => { await aller(p, 'settings'); await cliquer(p, ':text-is("Apparence")', 1000); }, z: { themes: texte('.card', 'Thème'), accent: texte('.card', 'ccent'), sections: sel('.settings-nav, .subnav') } },

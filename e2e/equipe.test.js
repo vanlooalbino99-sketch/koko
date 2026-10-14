@@ -140,8 +140,8 @@ test('premier compte, données partagées et fusion entre deux sessions', async 
   for (let i = 0; i < 3; i++) { await a.click('.bsf-opt >> nth=0'); await a.click('[data-act="qnext"]'); }
   await a.locator('.bsf-score').waitFor();
   const prog = await a.evaluate(() => fetch('/api/formation').then((r) => r.json()));
-  assert.equal(prog.mine['01-prise-en-main'].vu, true);
-  assert.ok(prog.equipe.some((u) => u.modules['01-prise-en-main']));
+  assert.equal(prog.mine['01-demarrer'].vu, true);
+  assert.ok(prog.equipe.some((u) => u.modules['01-demarrer']));
 
   assert.deepEqual(a.errors, []);
   assert.deepEqual(b.errors, []);

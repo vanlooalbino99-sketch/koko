@@ -66,6 +66,14 @@ export function siteUrl(u) {
 // Pages d'annuaires ou de réseaux sociaux : pas le site de l'entreprise, on ne les lit pas.
 const PAS_SITE = /(facebook|instagram|linkedin|twitter|x\.com|tiktok|youtube|pagesjaunes|societe\.com|pappers|google\.|goo\.gl|yelp|tripadvisor|doctolib|leboncoin|annuaire|kompass|infogreffe|verif\.com|manageo)/i;
 const emailOk = (e) => /^[^@\s]+@[^@\s]+\.[a-z]{2,24}$/i.test(String(e || '').trim());
+// Email lu sur un site : celui du domaine du site ou d'une messagerie grand public, pas celui de l'agence web qui l'a fait.
+const MESSAGERIE = /@(gmail|googlemail|hotmail|outlook|live|msn|yahoo|ymail|icloud|me|orange|wanadoo|free|sfr|neuf|laposte|bbox|aol|gmx|protonmail|proton|numericable|club-internet)\./i;
+const racine = (h) => String(h || '').toLowerCase().replace(/^www\./, '').split('.').slice(-2).join('.');
+function emailDuSite(r, site) {
+  let hote = '';
+  try { hote = new URL(site).hostname; } catch { return ''; }
+  return [...(r.emails || []), r.email].find((e) => emailOk(e) && (racine(e.split('@')[1]) === racine(hote) || MESSAGERIE.test(e))) || '';
+}
 
 async function getJson(url, { headers = {}, method = 'GET', body, timeout = 10000 } = {}) {
   const ctl = new AbortController();
@@ -168,8 +176,9 @@ export const SOURCES = {
     const data = await getJson(`https://discover.search.hereapi.com/v1/discover?at=${lead.lat},${lead.lon}&q=${q}&limit=5&lang=fr-FR&in=countryCode:FRA&apiKey=${encodeURIComponent(hereKey)}`);
     let best = null, bs = 0;
     for (const it of data.items || []) {
-      let s = nomScore(lead, it.title);
-      if (it.position && distM(lead.lat, lead.lon, it.position.lat, it.position.lng) > 400) s *= 0.5;
+      const d = it.position ? distM(lead.lat, lead.lon, it.position.lat, it.position.lng) : 1e9;
+      // Même nom (à moins de 400 m), ou un mot distinctif commun à la même adresse (artisan connu sous son nom de famille).
+      const s = d <= 400 ? Math.max(nomScore(lead, it.title), d <= 120 && motCommun(lead, it.title) ? 0.75 : 0) : 0;
       if (s > bs) { bs = s; best = it; }
     }
     if (!best || bs < 0.75) return null;
@@ -214,12 +223,14 @@ export async function chercher(lead, conf = {}, trouve) {
   }
   if (conf.lireSites !== false) {
     try {
-      if (res.site && !PAS_SITE.test(res.site) && (!res.telephone || !res.email)) {
+      const vraiSite = res.site && !PAS_SITE.test(res.site);
+      if (vraiSite && (!res.telephone || !res.email)) {
         const r = await lectureSite(() => avecDelai((conf.enrichir || enrichFromWebsite)(res.site, lead, conf.siteOpts), 20000));
-        if (r && r.confirmed !== 'mismatch') prendre({ telephone: r.telephone, email: r.email }, SITE);
-      } else if (!res.site && /^\d{9}$/.test(lead.siren || '')) {
+        if (r && r.confirmed !== 'mismatch') prendre({ telephone: r.telephone, email: emailDuSite(r, res.site) }, SITE);
+      } else if (!vraiSite && /^\d{9}$/.test(lead.siren || '')) {
+        // Pas de site, ou seulement une page Facebook : on cherche le vrai site.
         const r = await lectureSite(() => avecDelai((conf.deviner || guessWebsite)(lead, conf.siteOpts), 25000));
-        if (r && r.confirmed === 'siren') prendre({ site: r.site, telephone: r.telephone, email: r.email }, SITE);
+        if (r && r.confirmed === 'siren') { if (r.site) res.site = ''; prendre({ site: r.site, telephone: r.telephone, email: emailDuSite(r, r.site) }, SITE); }
       }
     } catch (e) { erreurs.push('site: ' + (e && e.message)); }
   }

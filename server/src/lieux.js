@@ -81,7 +81,7 @@ const COLONNES = {
   lat: ['y', 'lat', 'latitude'], lon: ['x', 'lon', 'lng', 'long', 'longitude'], nom: ['name', 'nom'], marque: ['brand', 'marque'],
   tel: ['phone', 'contact:phone', 'telephone', 'téléphone', 'tel'], mobile: ['contact:mobile', 'mobile'],
   site: ['website', 'contact:website', 'site', 'site_web', 'url'], email: ['email', 'contact:email', 'mail', 'courriel'],
-  siret: ['siret', 'ref:fr:siret', 'ref_fr_siret'], type: ['type', 'categorie', 'category'],
+  siret: ['siret', 'ref_siret', 'ref:fr:siret', 'ref_fr_siret'], type: ['type', 'categorie', 'category'], facebook: ['facebook', 'contact:facebook'],
 };
 function indexColonnes(entete) {
   const h = entete.map((x) => String(x).trim().toLowerCase());
@@ -90,6 +90,14 @@ function indexColonnes(entete) {
   return ix;
 }
 
+// Coordonnées Lambert-93 (mètres, France métropolitaine) → latitude, longitude.
+export function depuisLambert93(x, y) {
+  const n = 0.725607765053267, C = 11754255.426096, Xs = 700000, Ys = 12655612.049876, e = 0.0818191910428158;
+  const dx = x - Xs, dy = y - Ys, g = Math.atan(dx / -dy), L = -Math.log(Math.hypot(dx, dy) / C) / n;
+  let phi = 2 * Math.atan(Math.exp(L)) - Math.PI / 2;
+  for (let i = 0; i < 8; i++) { const es = e * Math.sin(phi); phi = 2 * Math.atan(Math.pow((1 + es) / (1 - es), e / 2) * Math.exp(L)) - Math.PI / 2; }
+  return [phi * 180 / Math.PI, 3 + g / n * 180 / Math.PI];
+}
 // Case de la grille (environ 550 m × 380 m) d'un point.
 export function cellule(lat, lon) { return (Math.floor(lat * 200) + 40000) * 100000 + (Math.floor(lon * 200) + 40000); }
 function premier(v) { return String(v || '').split(';')[0].trim(); }
@@ -116,9 +124,12 @@ export async function chargerZip(db, buf) {
     lignes++;
     const v = (k) => (ix[k] >= 0 ? l[ix[k]] || '' : '');
     let lat = parseFloat(v('lat')), lon = parseFloat(v('lon'));
-    if (Math.abs(lat) > 90 && Math.abs(lon) <= 90) [lat, lon] = [lon, lat];
+    if (lon > 1e4 && lon < 1.3e6 && lat > 6e6 && lat < 7.2e6) [lat, lon] = depuisLambert93(lon, lat);
+    else if (Math.abs(lat) > 90 && Math.abs(lon) <= 90) [lat, lon] = [lon, lat];
     if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
-    const tel = premier(v('tel')) || premier(v('mobile')), site = premier(v('site')), email = premier(v('email'));
+    const tel = premier(v('tel')) || premier(v('mobile')), email = premier(v('email'));
+    // Sans site, la page Facebook de l'établissement (souvent la seule présence en ligne d'un artisan ou d'un restaurant).
+    const fb = premier(v('facebook')), site = premier(v('site')) || (/^(https?:\/\/)?([\w-]+\.)?facebook\.com\//i.test(fb) ? fb : fb && /^[\w.-]+$/.test(fb) ? 'https://www.facebook.com/' + fb : '');
     const nom = v('nom').trim(), marque = v('marque').trim();
     if (!(tel || site || email) || !(nom || marque)) return;
     ins.run(cellule(lat, lon), lat, lon, nom.slice(0, 200), marque.slice(0, 120), tel.slice(0, 40), site.slice(0, 300), email.slice(0, 120), v('siret').replace(/\D/g, '').slice(0, 14), v('type').slice(0, 60));

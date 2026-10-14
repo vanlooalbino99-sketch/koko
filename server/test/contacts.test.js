@@ -5,8 +5,8 @@ import zlib from 'node:zlib';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { baseLieux, lecteurCsv, entreesZip } from '../src/lieux.js';
-import { chercherLot, trouverLocal, leadDepuisApi, telFr } from '../src/contacts.js';
+import { baseLieux, lecteurCsv, entreesZip, depuisLambert93 } from '../src/lieux.js';
+import { chercherLot, trouverLocal, leadDepuisApi, telFr, SOURCES } from '../src/contacts.js';
 import { extract, discoverLinks, pageHasSiren, slugCandidates } from '../src/siteweb.js';
 import { testApp } from './helpers.js';
 
@@ -64,6 +64,11 @@ test('CSV : séparateur détecté, guillemets doublés, retour à la ligne dans 
   assert.deepEqual(lignes, [['a', 'b', 'c'], ['1', 'x "y";z', 'deux\nlignes'], ['3', '', 'fin']]);
 });
 
+test('coordonnées Lambert-93 converties en latitude et longitude', () => {
+  const [lat, lon] = depuisLambert93(652469, 6861940); // Notre-Dame de Paris
+  assert.ok(Math.abs(lat - 48.853) < 0.01 && Math.abs(lon - 2.35) < 0.01);
+});
+
 test('zip : lecture du répertoire central', () => {
   const e = entreesZip(ZIPS['https://exemple.test/commerces.zip']);
   assert.equal(e.length, 1);
@@ -95,7 +100,7 @@ test('correspondance : SIRET, enseigne entre parenthèses, rien pour le voisin',
 test('lot : base locale puis site de l’entreprise (deviné, vérifié par le SIREN)', async () => {
   const conf = {
     lieux, siteOpts: {},
-    enrichir: async () => ({ confirmed: 'none', telephone: '', email: 'agence@nestenn.com' }),
+    enrichir: async () => ({ confirmed: 'none', telephone: '', email: 'contact@agence-web.fr', emails: ['contact@agence-web.fr', 'agence@nestenn.com'] }),
     deviner: async (l) => (l.siren === '222222226' ? { confirmed: 'siren', site: 'https://pelissolo.fr/', telephone: '01 45 00 00 00', email: 'contact@pelissolo.fr' } : null),
   };
   const r = await chercherLot([
@@ -106,6 +111,20 @@ test('lot : base locale puis site de l’entreprise (deviné, vérifié par le S
   assert.deepEqual(r.a, { telephone: '02 33 00 00 00', site: 'https://immobilier-cherbourg.nestenn.com/', email: 'agence@nestenn.com', sources: ['OpenStreetMap', 'Site de l’entreprise'] });
   assert.deepEqual(r.b, { telephone: '01 45 00 00 00', site: 'https://pelissolo.fr/', email: 'contact@pelissolo.fr', sources: ['Site de l’entreprise'] });
   assert.deepEqual(r.c, { telephone: '', site: '', email: '', sources: [] });
+});
+
+test('HERE : le lieu au même nom près de l’adresse, avec son téléphone, son site et son email', async () => {
+  const vrai = globalThis.fetch;
+  let url = '';
+  globalThis.fetch = async (u) => { url = String(u); return new Response(JSON.stringify({ items: [
+    { title: 'Boulangerie Voisine', position: { lat: 45.7602, lng: 4.8502 }, contacts: [{ phone: [{ value: '+33478999999' }] }] },
+    { title: 'Plomberie Martin', position: { lat: 45.7601, lng: 4.8501 }, contacts: [{ phone: [{ value: '+33478112233' }], www: [{ value: 'https://plomberie-martin.fr' }] }, { email: [{ value: 'contact@plomberie-martin.fr' }] }] },
+  ] }), { status: 200 }); };
+  try {
+    const r = await SOURCES.here({ nom: 'Martin Jean', enseigne: '', lat: 45.7600, lon: 4.8500 }, { hereKey: 'cle' });
+    assert.match(url, /^https:\/\/discover\.search\.hereapi\.com\/v1\/discover\?at=45\.76,4\.85&q=Martin%20Jean/);
+    assert.deepEqual(r, { telephone: '04 78 11 22 33', site: 'https://plomberie-martin.fr/', email: 'contact@plomberie-martin.fr' });
+  } finally { globalThis.fetch = vrai; }
 });
 
 test('site : téléphone et email de la page contact, SIREN des mentions légales', () => {

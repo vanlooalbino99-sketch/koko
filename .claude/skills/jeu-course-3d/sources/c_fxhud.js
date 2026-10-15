@@ -177,13 +177,20 @@ function createFX(){
   }
   function smoke(pos, vel, k = 1){
     k = clamp(k, 0, 1); if (k <= 0) return;
-    const n = cnt(0.4 + 1.4 * k);
+    const n = cnt(0.7 + 2.2 * k);
     for (let j = 0; j < n; j++){
-      const v = 0.78 + R() * 0.12;
-      spawn(SOFT, pos.x + (R() - 0.5) * 0.4, pos.y + 0.15 + R() * 0.15, pos.z + (R() - 0.5) * 0.4,
-        vel.x * 0.4 + (R() - 0.5) * 1.6, 0.4 + R() * 0.9, vel.z * 0.4 + (R() - 0.5) * 1.6,
-        (1.8 + R() * 1.6) * (0.7 + 0.5 * k), 0.45 + R() * 0.3, (3 + R() * 2.8) * (0.6 + 0.6 * k),
-        v, v * 0.985, v * 0.97, (0.2 + R() * 0.16) * (0.5 + 0.5 * k), 2.2, 0.35, R() * 6.28, (R() - 0.5) * 1.2, (R() * 4) | 0);
+      const v = 0.8 + R() * 0.12;
+      spawn(SOFT, pos.x + (R() - 0.5) * 0.5, pos.y + 0.15 + R() * 0.2, pos.z + (R() - 0.5) * 0.5,
+        vel.x * 0.4 + (R() - 0.5) * 2, 0.5 + R() * 1.1, vel.z * 0.4 + (R() - 0.5) * 2,
+        (2.4 + R() * 2.2) * (0.7 + 0.6 * k), 0.55 + R() * 0.35, (4 + R() * 3.5) * (0.7 + 0.7 * k),
+        v, v * 0.985, v * 0.97, (0.24 + R() * 0.16) * (0.5 + 0.5 * k), 2, 0.3, R() * 6.28, (R() - 0.5) * 1.2, (R() * 4) | 0);
+    }
+    // gros nuage blanc qui reste derrière la voiture pendant un long dérapage
+    if (R() < k * 0.55 * Q.particles){
+      const v = 0.86 + R() * 0.08;
+      spawn(SOFT, pos.x + (R() - 0.5) * 1.4, pos.y + 0.5 + R() * 0.5, pos.z + (R() - 0.5) * 1.4,
+        vel.x * 0.25 + (R() - 0.5) * 2.4, 0.6 + R() * 0.9, vel.z * 0.25 + (R() - 0.5) * 2.4,
+        4.5 + R() * 3, 1.6, (8 + R() * 5) * (0.6 + 0.4 * k), v, v * 0.99, v * 0.98, 0.16 + R() * 0.08, 1.2, 0.12, R() * 6.28, (R() - 0.5) * 0.4, (R() * 4) | 0);
     }
   }
   function sparks(pos, dir, k = 1){
@@ -512,10 +519,18 @@ function createHUD(){
   }
 
   /* --- Mini-carte --- */
-  let track = null, trackPath = null, viewR = 260, startPt = null;
+  let track = null, trackPath = null, viewR = 260, startPt = null, streetPath = null;
+  // Rues (polylignes ouvertes) dessinées sous le circuit ; null pour les effacer
+  function setStreets(lines, r){
+    streetPath = null; C.mm = null;
+    if (r) viewR = r;
+    if (!lines || !lines.length) return;
+    streetPath = new Path2D();
+    for (const l of lines){ if (!l || l.length < 2) continue; streetPath.moveTo(l[0][0], l[0][1]); for (let i = 1; i < l.length; i++) streetPath.lineTo(l[i][0], l[i][1]); }
+  }
   function setTrack(poly){
     track = (poly || []).filter(p => p && isFinite(p[0]) && isFinite(p[1]));
-    if (track.length < 2){ track = null; return; }
+    if (track.length < 2){ track = null; trackPath = null; startPt = null; C.mm = null; return; }
     trackPath = new Path2D(); trackPath.moveTo(track[0][0], track[0][1]);
     let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
     for (const [x, z] of track){ trackPath.lineTo(x, z); x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
@@ -537,6 +552,13 @@ function createHUD(){
     g.strokeStyle = 'rgba(255,255,255,0.07)'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R * 0.5, 0, Math.PI * 2); g.stroke();
     // monde -> écran : l'avant du joueur pointe vers le haut
     const a = -s * ch, c = s * sh, b = -s * sh, d = -s * ch;
+    if (streetPath){
+      g.save(); g.setTransform(a, b, c, d, cx - a * px - c * pz, cy - b * px - d * pz);
+      g.lineJoin = 'round'; g.lineCap = 'round';
+      g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 16 / s; g.stroke(streetPath);
+      g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 7 / s; g.stroke(streetPath);
+      g.restore();
+    }
     if (trackPath){
       g.save(); g.setTransform(a, b, c, d, cx - a * px - c * pz, cy - b * px - d * pz);
       g.lineJoin = 'round'; g.lineCap = 'round';
@@ -567,7 +589,7 @@ function createHUD(){
   let radioTimer = 0, radioNode = null;
   return {
     show(on){ if (hud) hud.hidden = !on; if (!on){ if (eCenter) eCenter.innerHTML = ''; if (eRadio) eRadio.innerHTML = ''; this.drift(null); } },
-    setTrack,
+    setTrack, setStreets,
     update(st){
       if (!st) return;
       const pos = st.pos | 0, tot = st.total | 0;

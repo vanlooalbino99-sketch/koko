@@ -30,7 +30,8 @@ de rendez-vous. Les messages et les rendez-vous arrivent dans le CRM comme leads
 Le dossier [`jeux/`](jeux/) contient **Koko et la Grande Lanterne**, un jeu d'aventure en 3D dans un seul fichier HTML
 (personnages ronds à antennes, village de nuit, cinq éclats d'étoile à retrouver). Détails et commandes dans
 [`jeux/README.md`](jeux/README.md).
-Le même dossier contient **Nitro Canyon**, un jeu de course 3D dans le désert (`jeux/nitro-canyon.html`).
+Le même dossier contient **Nitro Canyon**, un jeu de course 3D (`jeux/nitro-canyon.html`) : course dans le désert,
+course de rue et balade libre dans Tananarive.
 
 ---
 

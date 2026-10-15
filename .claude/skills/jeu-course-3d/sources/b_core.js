@@ -53,7 +53,7 @@ function stdMat(hex, o = {}){
 /* ================== Qualité, palette, soleil ================== */
 const QUAL = {
   basse:   { name: 'basse',   pr: 1,    shadow: 1024, msaa: 0, post: false, particles: 0.5, props: 0.45, grass: 0.35 },
-  moyenne: { name: 'moyenne', pr: 1.25, shadow: 2048, msaa: 0, post: true,  particles: 0.8, props: 0.75, grass: 0.7 },
+  moyenne: { name: 'moyenne', pr: 1.5,  shadow: 2048, msaa: 2, post: true,  particles: 0.8, props: 0.75, grass: 0.7 },
   haute:   { name: 'haute',   pr: 2,    shadow: 4096, msaa: 4, post: true,  particles: 1,   props: 1,    grass: 1 },
 };
 const isTouch = matchMedia('(pointer: coarse)').matches;
@@ -67,7 +67,7 @@ const PAL = { sand: '#d9b98c', sandDark: '#b48d63', rockRed: '#a4502c', rockOran
 /* ================== Moteur : rendu, ciel, lumière ================== */
 let renderer, scene, camera, sky, sunLight, hemiLight;
 function initEngine(canvas){
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: !Q.post, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   if (!renderer.capabilities.isWebGL2) throw new Error('WebGL2 indisponible');
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q.pr));
   renderer.setSize(innerWidth, innerHeight, false);

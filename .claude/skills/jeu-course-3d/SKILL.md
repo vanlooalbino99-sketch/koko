@@ -24,12 +24,15 @@ Le fichier final est la concaténation, dans un seul `<script type="module">`, d
 | `c_cars.js` | modèles de voitures, physique, IA | `CAR_TYPES`, `buildCarModel`, `createVehicle`, `createAI` |
 | `c_fxhud.js` | particules, traces de pneus, son synthétisé, HUD | `createFX`, `createAudio`, `createHUD` |
 | `c_garage.js` | garage néon de nuit (hangar, néons, sol miroir `Reflector`, verrière) qui remplace le ciel, le soleil et les reflets puis les restitue | `buildGarage()` → `{ enter, exit, update, carPos, shots }` |
+| `c_tana.js` | Tananarive (Antananarivo) loin du désert : collines, rues en pente, maisons en terrasses, lac Anosy, Rova, Analakely, rizières ; circuit de rue, collisions des bâtiments, boucles de circulation, quartiers ; son propre éclairage | `buildTana()` → même API que le monde du désert + `{ root, collide, spawns, districts, trafficLoops, streetLines, enter, exit }` |
 | `d_game.js` | post-traitement, garage, course, caméra, commandes, sauvegarde | tout est dans un bloc `{ … }` |
 
 Règles du contrat (à recopier dans le prompt de chaque agent) :
 - mètres, Y vers le haut ; cap `h` : avant = `(sin h, cos h)`, `rotation.y = h` ; droite = `(-tz, tx)` ; `lat > 0` à droite ; tourner à droite = `h` diminue ;
 - un morceau ne redéclare aucun nom d'un autre ; aides internes dans des fonctions ;
-- pas de lumière ajoutée hors du socle (éclairage cohérent) ; émissifs autorisés.
+- pas de lumière ajoutée hors du socle (éclairage cohérent) ; émissifs autorisés ;
+- un deuxième monde (ville) se construit dans un groupe `root` loin de l'origine (−30 km), avec `enter()` / `exit()` qui mémorisent puis restituent soleil, ciel, reflets, brouillard et exposition. Ordre : quitter le garage, puis entrer dans la ville ; quitter la ville avant d'entrer au garage ;
+- la physique ne connaît que `world.ground`, `world.track`, `world.collide(x, z, r)` (bâtiments, circulation) et `world.freeRoam` (balade sans murs de circuit).
 
 Avec 4 cœurs, l'outil Workflow n'exécute que 2 agents à la fois : lance 3 agents (monde, voitures, effets/son/HUD)
 et écris toi-même le socle puis `d_game.js` pendant qu'ils travaillent.
@@ -50,10 +53,18 @@ et écris toi-même le socle puis `d_game.js` pendant qu'ils travaillent.
 Étudie la capture avec l'outil Read, liste ce qui fait le rendu (lumière, couleurs dominantes, matériaux, effets), puis donne la capture en référence aux agents.
 Garde les noms et logos de marques réelles hors du jeu. Après assemblage, baisse l'exposition et le halo : les aperçus des agents n'ont pas de post-traitement, et le même éclairage paraît surexposé dans le jeu.
 
+## Ville réelle (Tananarive)
+
+Ce qui rend une ville reconnaissable : le relief (collines, rues qui serpentent), les monuments visibles de loin (Rova en haut de la colline, lac Anosy en cœur avec son monument),
+les couleurs des façades (briques, enduits ocre, saumon, rose passé), les toits de tuiles pentus, les enseignes peintes en malgache et en français, la terre rouge latérite,
+les véhicules locaux (taxi-be, petits taxis crème des années 60). On roule à droite. La circulation automatique suit des boucles tracées au centre de la voie de droite,
+freine derrière la voiture qui précède et devant le joueur ; elle est cinématique (pas de physique) pour rester légère.
+
 ## Gameplay attendu
 
 Physique arcade lourde (6 rapports, adhérence par surface, dérapage au frein à main qui remplit la nitro, rebonds sur les murs),
 5 adversaires IA (vitesse cible selon la courbure à venir, évitement, petit élastique), compte à rebours, tours, classement,
+balade libre en ville (quartiers annoncés, circulation, R pour revenir sur la route),
 mini-carte, compteur, radio scénarisée, garage avec 3 voitures et peintures, résultats, records sauvegardés,
 clavier + manette (API Gamepad) + boutons tactiles.
 
@@ -69,7 +80,8 @@ node .claude/skills/jeu-course-3d/scripts/shot.cjs sortie.png b_core.js c_cars.j
 Le dernier morceau construit la scène, fait 2 rendus puis pose `window.__previewReady = true`.
 Le script redirige le CDN de Three.js vers un `node_modules/three@0.160.0` local (variable `THREE_DIR` en tête du script, à adapter).
 Regarde chaque capture et corrige ; vérifie qu'aucune ligne `erreur:` ou `pageerror` n'apparaît.
-Pour le jeu complet, pilote-le par `window.__nc` (startRace, CARS, setQuality) et simule la physique sans rendu.
+Pour le jeu complet, pilote-le par `window.__nc` (startRace, CARS, setQuality, SV.dest) et simule la physique sans rendu.
+`scripts/gametest2.cjs jeu.html` (variables `STEPS=desert,tana,libre`, `QUAL`, `TOUCH`) capture la course dans Tana et la balade libre.
 
 ## Pièges déjà rencontrés
 
@@ -77,9 +89,12 @@ Pour le jeu complet, pilote-le par `window.__nc` (startRace, CARS, setQuality) e
 - Une fonction « hauteur du sol » utilisée pour placer des objets ne doit pas tenir compte des troncs, poteaux ou maisons.
 - `renderer.info` ne compte que le dernier rendu : mesure les appels de dessin avec `info.autoReset = false`.
 - Sur mobile : qualité moyenne par défaut, `touch-action: none` sur le canvas, boutons tactiles gros et espacés.
+- Crée le rendu avec `antialias: true` même si le post-traitement fait son propre MSAA : si la qualité baisse en cours de partie (rendu direct à l'écran), l'image reste nette.
+- Netteté : un filtre de renforcement borné par les pixels voisins (pas de halo) dans la passe finale ; flou de vitesse seulement au-dessus de ~100 km/h.
+- En ville, la caméra de poursuite et le plan d'intro doivent tester les façades (`collide`) entre la voiture et la caméra.
 
 ## Livraison
 
-1. Les sources de Nitro Canyon sont dans `sources/` de ce skill. Assembler : `cd .claude/skills/jeu-course-3d/sources && cat a.html b_core.js c_world.js c_cars.js c_fxhud.js c_garage.js d_game.js > ../../../../jeux/nitro-canyon.html`, puis vérifier la syntaxe du module (`node --check` sur le contenu du script).
+1. Les sources de Nitro Canyon sont dans `sources/` de ce skill. Assembler : `cd .claude/skills/jeu-course-3d/sources && cat a.html b_core.js c_world.js c_cars.js c_fxhud.js c_garage.js c_tana.js d_game.js > ../../../../jeux/nitro-canyon.html`, puis vérifier la syntaxe du module (`node --check` sur le contenu du script).
 2. Publier en Artifact la partie comprise entre `<!--ARTIFACT-START-->` et `<!--ARTIFACT-END-->`, sans les lignes `</head>` et `<body>` (marqueurs `HEAD-END` / `BODY-START`).
 3. Committer sur la branche de travail et donner le lien de l'Artifact.

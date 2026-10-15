@@ -72,17 +72,17 @@ kbd{font-family:var(--display);font-weight:700;font-size:14px;padding:1px 7px;bo
 
 /* HUD */
 .hud{position:fixed;inset:0;pointer-events:none;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px calc(env(safe-area-inset-bottom,0px) + 14px)}
-.hud-tl{position:absolute;left:18px;top:calc(env(safe-area-inset-top,0px) + 14px);display:flex;flex-direction:column;gap:2px;text-shadow:0 2px 6px rgba(0,0,0,.65)}
+.hud-tl{position:absolute;left:10px;top:calc(env(safe-area-inset-top,0px) + 8px);display:flex;flex-direction:column;gap:2px;padding:8px 34px 10px 10px;border-radius:6px;background:linear-gradient(90deg,rgba(6,8,12,.58),rgba(6,8,12,.32) 70%,rgba(6,8,12,0));text-shadow:0 1px 3px #000,0 0 2px #000}
 .obj{font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase}
 .posbig{font-family:var(--display);font-weight:700;font-size:54px;line-height:.9;font-style:italic}
 .posbig sup{font-size:24px;margin-left:2px}
 .posbig small{font-size:22px;color:var(--muted);margin-left:6px;font-style:normal}
 .laptime{font-family:var(--display);font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
 .standings{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:1px;font-weight:700;font-size:16px;letter-spacing:.04em;text-transform:uppercase}
-.standings li{color:rgba(255,255,255,.82)}
+.standings li{color:rgba(255,255,255,.94)}
 .standings li.me{color:var(--nitro)}
 .standings li em{font-style:normal;font-family:var(--display);opacity:.7;margin-right:6px}
-.hud-tr{position:absolute;right:18px;top:calc(env(safe-area-inset-top,0px) + 14px);text-align:right;text-shadow:0 2px 6px rgba(0,0,0,.65)}
+.hud-tr{position:absolute;right:18px;top:calc(env(safe-area-inset-top,0px) + 14px);text-align:right;text-shadow:0 1px 3px #000,0 0 2px #000}
 .hud-tr .lap{font-family:var(--display);font-weight:700;font-size:28px;font-style:italic}
 .hud-tr small{display:block;font-size:14px;font-weight:700;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
 .hud-tr .t{font-family:var(--display);font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
@@ -127,6 +127,11 @@ kbd{font-family:var(--display);font-weight:700;font-size:14px;padding:1px 7px;bo
 .touchmode #minimap{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 132px);width:112px;height:112px}
 .touchmode #speedo{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 120px);right:6px;width:150px;height:150px}
 .touchmode .radio{width:calc(100% - 32px);bottom:calc(env(safe-area-inset-bottom,0px) + 130px)}
+.free .posbig,.free .laptime,.free .standings,.free .hud-tr small,.free .hud-tr .lap,.free .hud-tr .t{display:none}
+.free .obj{font-size:20px;color:var(--gold)}
+.dest{grid-template-columns:repeat(3,1fr)}
+.dest button{line-height:1.05;padding:8px 2px}
+.dest button small{display:block;font-size:12px;letter-spacing:.04em;opacity:.75}
 .err{position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;font-size:19px;font-weight:600;background:#07080b}
 @media (max-width:720px){
   .garage{align-items:flex-end}
@@ -155,7 +160,7 @@ kbd{font-family:var(--display);font-weight:700;font-size:14px;padding:1px 7px;bo
 <section class="screen garage" id="s-garage" hidden>
   <div class="garage-panel">
     <h1 class="logo"><b>Nitro</b><i>Canyon</i></h1>
-    <p class="tagline">Désert de Fortune, heure dorée. Six pilotes, deux tours, un seul gagnant.</p>
+    <p class="tagline" id="tagline">Désert de Fortune, heure dorée. Six pilotes, deux tours, un seul gagnant.</p>
     <div class="card">
       <div class="car-head">
         <div><h2 id="car-name">Kitsune S15</h2><small id="car-class">Coupé de drift</small></div>
@@ -168,6 +173,12 @@ kbd{font-family:var(--display);font-weight:700;font-size:14px;padding:1px 7px;bo
       <div class="swatches" id="swatches"></div>
     </div>
     <div class="card">
+      <p class="label">Destination</p>
+      <div class="seg dest" id="dest" role="group" aria-label="Destination">
+        <button data-dest="desert" aria-pressed="true">Désert<small>course</small></button><button data-dest="tana" aria-pressed="false">Tana<small>course de rue</small></button><button data-dest="libre" aria-pressed="false">Tana<small>balade libre</small></button>
+      </div>
+    </div>
+    <div class="card" id="diff-card">
       <p class="label">Adversaires</p>
       <div class="seg" id="diff" role="group" aria-label="Difficulté">
         <button data-d="0" aria-pressed="false">Facile</button><button data-d="1" aria-pressed="true">Normal</button><button data-d="2" aria-pressed="false">Pro</button>
@@ -181,7 +192,7 @@ kbd{font-family:var(--display);font-weight:700;font-size:14px;padding:1px 7px;bo
 
 <div class="hud" id="hud" hidden>
   <div class="hud-tl">
-    <div class="obj">Gagne la course</div>
+    <div class="obj" id="h-obj">Gagne la course</div>
     <div class="posbig" id="h-pos">1<sup>er</sup><small>/6</small></div>
     <div class="laptime" id="h-time">0:00.00</div>
     <ol class="standings" id="h-stand"></ol>

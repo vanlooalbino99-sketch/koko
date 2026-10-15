@@ -42,8 +42,15 @@ si l'ordinateur ou le téléphone peine.
 # Nitro Canyon
 
 Jeu de course 3D dans un seul fichier : [`nitro-canyon.html`](nitro-canyon.html) (double-clic pour jouer, connexion internet au premier chargement).
-Désert à l'heure dorée, 6 pilotes, 2 tours sur un circuit de 3,2 km : autoroute bordée de lignes à haute tension,
-canyon de roche rouge, piste de terre. Quatre voitures (Hyperion E8, Kitsune S15, Stallion 67, Taiga R) et six peintures, présentées dans un garage néon de nuit.
+Trois destinations au choix dans le garage néon :
+
+| Destination | Ce qu'on y fait |
+|---|---|
+| Désert | Course à 6 pilotes, 2 tours sur 3,2 km : autoroute bordée de lignes à haute tension, canyon de roche rouge, piste de terre |
+| Tana, course de rue | Course à 6 pilotes dans les rues en pente de Tananarive |
+| Tana, balade libre | Rouler où on veut dans la ville, avec la circulation (taxi-be, petits taxis), le nom des quartiers à l'écran |
+
+Voitures : Hyperion E8, Kitsune S15, Stallion 67, Taiga R, et les véhicules de Tana (Taxi-be, Quatrelle taxi, Deux-pattes), chacun avec six peintures.
 
 | Clavier | Manette | Tactile | Action |
 |---|---|---|---|
@@ -52,6 +59,8 @@ canyon de roche rouge, piste de terre. Quatre voitures (Hyperion E8, Kitsune S15
 | Maj | A | Nitro | Nitro |
 | C | Y | — | Caméra |
 | R / Échap | — / Start | II | Revenir sur la route / pause |
+
+À Tana, on roule à droite. La qualité graphique se règle dans la pause.
 
 Les sources découpées en morceaux et la méthode pour l'améliorer sont dans le skill
 [`.claude/skills/jeu-course-3d`](../.claude/skills/jeu-course-3d/SKILL.md).

@@ -52,7 +52,7 @@ const W = +(process.env.W || 960), H = +(process.env.H || 540), PFX = process.en
       await page.keyboard.down('KeyW'); await waitT(1.6); await page.keyboard.up('KeyW'); await shot('libre_d' + k); await info('district ' + k);
     }
     // Collision avec un mur : on fonce perpendiculairement
-    await page.keyboard.down('KeyW'); await page.keyboard.down('KeyD'); await waitT(4); await page.keyboard.up('KeyD'); await page.keyboard.up('KeyW'); await info('après virage');
+    await page.keyboard.down('KeyW'); await page.keyboard.down('KeyD'); await waitT(2); await page.keyboard.up('KeyD'); await page.keyboard.up('KeyW'); await info('après virage');
   }
   await b.close();
   console.log(logs.join('\n'));

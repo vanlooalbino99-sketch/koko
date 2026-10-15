@@ -764,7 +764,7 @@ function buildCarModel(typeId, paintHex, opts = {}){
     mPaint = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: liv, metalness: hyp ? 0.4 : sp.classic ? 0.25 : 0.55, roughness: hyp ? 0.26 : sp.classic ? 0.34 : 0.3, clearcoat: 1, clearcoatRoughness: hyp ? 0.02 : sp.classic ? 0.06 : 0.035, envMapIntensity: hyp ? 2.4 : 1.7, normalMap: cc_flakeTex(), normalScale: new THREE.Vector2(hyp ? 0.08 : 0.12, hyp ? 0.08 : 0.12) });
     // Reflets irisés (effet caméléon), plus marqués sur les rouges et oranges « candy »
     { const pc = col(paint || '#888888'), candy = pc.r > 0.35 && pc.r > pc.g * 2 && pc.r > pc.b * 2.5;
-      mPaint.iridescence = candy ? 0.6 : 0.2; mPaint.iridescenceIOR = 1.6; mPaint.iridescenceThicknessRange = [180, 640];
+      mPaint.iridescence = candy ? 0.22 : 0.1; mPaint.iridescenceIOR = 1.45; mPaint.iridescenceThicknessRange = [260, 420];
       if (candy){ mPaint.clearcoatRoughness = 0.015; mPaint.envMapIntensity *= 1.15; } }
     own.push(mPaint);
   }

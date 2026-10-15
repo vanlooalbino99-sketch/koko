@@ -20,7 +20,7 @@
       { id: 'today', label: 'Aujourd’hui' }, { id: 'agenda', label: 'Agenda' }, { id: 'prospects', label: 'Prospects' },
       { id: 'leads', label: 'Nouveaux leads', serveur: true }, { id: 'pipeline', label: 'Pipeline' }, { id: 'tasks', label: 'Tâches' }] },
     { groupe: 'Ventes', items: [
-      { id: 'devis', label: 'Devis & factures' }, { id: 'clients', label: 'Clients' }, { id: 'payments', label: 'Paiements' }] },
+      { id: 'mail', label: 'Mail', serveur: true }, { id: 'devis', label: 'Devis & factures' }, { id: 'clients', label: 'Clients' }, { id: 'payments', label: 'Paiements' }] },
     { groupe: 'Équipe', items: [
       { id: 'messages', label: 'Messages', serveur: true }, { id: 'groupes', label: 'Groupes', serveur: true }, { id: 'visio', label: 'Visio', serveur: true }] },
     { groupe: 'Analyse', items: [
@@ -34,7 +34,7 @@
   var CLES = [];
   RUBRIQUES.forEach(function (g) { g.items.forEach(function (r) { CLES.push(r.id); }); });
   // Ordre des pages du menu : la première ouverte sert d'accueil.
-  var PAGES = ['today', 'agenda', 'prospects', 'leads', 'pipeline', 'tasks', 'messages', 'groupes', 'visio', 'devis',
+  var PAGES = ['today', 'agenda', 'prospects', 'leads', 'pipeline', 'tasks', 'messages', 'groupes', 'visio', 'mail', 'devis',
     'clients', 'payments', 'dashboard', 'reports', 'carte', 'formations', 'tools', 'settings'];
 
   function effectif(role, acces) { return role !== 'admin' && Array.isArray(acces) ? acces.slice() : null; }

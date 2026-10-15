@@ -1,7 +1,7 @@
 // Rubriques ouvertes à chaque membre. users.acces garde la liste AUTORISÉE en JSON ; NULL = tout le CRM
 // (y compris les rubriques ajoutées plus tard). Les administrateurs ont toujours tout.
 // Réglages (Mon compte, mot de passe, apparence, notifications) reste toujours ouvert.
-export const ACCES = ['today', 'agenda', 'prospects', 'leads', 'pipeline', 'tasks', 'devis', 'clients', 'payments',
+export const ACCES = ['today', 'agenda', 'prospects', 'leads', 'pipeline', 'tasks', 'mail', 'devis', 'clients', 'payments',
   'messages', 'groupes', 'visio', 'dashboard', 'reports', 'carte', 'formations', 'tools',
   'settings.company', 'settings.goals', 'settings.data'];
 

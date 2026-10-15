@@ -147,6 +147,38 @@ export const SQLITE_MIGRATIONS = [
      created_at TEXT NOT NULL
    );
    CREATE INDEX recordings_user ON recordings(user_id, created_at);`,
+  // v10 : comptes mail de chaque membre (envoi depuis le CRM, mot de passe chiffré) et mails envoyés.
+  `CREATE TABLE mail_accounts (
+     id TEXT PRIMARY KEY,
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     provider TEXT NOT NULL,
+     email TEXT NOT NULL,
+     display_name TEXT,
+     smtp_host TEXT NOT NULL,
+     smtp_port INTEGER NOT NULL,
+     smtp_secure INTEGER NOT NULL,
+     username TEXT NOT NULL,
+     secret TEXT NOT NULL,
+     signature TEXT,
+     created_at TEXT NOT NULL,
+     UNIQUE (user_id, email)
+   );
+   CREATE TABLE mail_sent (
+     id TEXT PRIMARY KEY,
+     user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+     author TEXT NOT NULL,
+     account_email TEXT NOT NULL,
+     to_addr TEXT NOT NULL,
+     cc TEXT,
+     subject TEXT NOT NULL,
+     body TEXT NOT NULL,
+     attachments TEXT,
+     prospect_id TEXT,
+     status TEXT NOT NULL,
+     error TEXT,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX mail_sent_user ON mail_sent(user_id, created_at);`,
 ];
 
 // PostgreSQL : le même schéma que SQLite après toutes ses migrations, en une fois.
@@ -299,4 +331,38 @@ export const PG_MIGRATIONS = [
    CREATE INDEX recordings_user ON recordings(user_id, created_at);
    ALTER TABLE user_sons ENABLE ROW LEVEL SECURITY;
    ALTER TABLE recordings ENABLE ROW LEVEL SECURITY;`,
+  // Comme la v10 de SQLite : comptes mail et mails envoyés.
+  `CREATE TABLE mail_accounts (
+     id TEXT PRIMARY KEY,
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     provider TEXT NOT NULL,
+     email TEXT NOT NULL,
+     display_name TEXT,
+     smtp_host TEXT NOT NULL,
+     smtp_port INTEGER NOT NULL,
+     smtp_secure INTEGER NOT NULL,
+     username TEXT NOT NULL,
+     secret TEXT NOT NULL,
+     signature TEXT,
+     created_at TEXT NOT NULL,
+     UNIQUE (user_id, email)
+   );
+   CREATE TABLE mail_sent (
+     id TEXT PRIMARY KEY,
+     user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+     author TEXT NOT NULL,
+     account_email TEXT NOT NULL,
+     to_addr TEXT NOT NULL,
+     cc TEXT,
+     subject TEXT NOT NULL,
+     body TEXT NOT NULL,
+     attachments TEXT,
+     prospect_id TEXT,
+     status TEXT NOT NULL,
+     error TEXT,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX mail_sent_user ON mail_sent(user_id, created_at);
+   ALTER TABLE mail_accounts ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE mail_sent ENABLE ROW LEVEL SECURITY;`,
 ];

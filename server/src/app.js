@@ -17,6 +17,7 @@ import { chatRoutes, chatHub } from './routes/chat.js';
 import { photosRoutes } from './routes/photos.js';
 import { sonsRoutes } from './routes/sons.js';
 import { enregistrementsRoutes } from './routes/enregistrements.js';
+import { mailRoutes } from './routes/mail.js';
 import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
 import { osmRoutes } from './osm.js';
@@ -28,7 +29,7 @@ const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).ver
 
 // Base : PostgreSQL (Supabase) si databaseUrl est donné, sinon SQLite dans dataDir.
 // Mots de passe : Supabase Auth si supabase = { url, serviceKey } est donné, sinon vérifiés par le serveur.
-export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {} } = {}) {
+export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {}, mail = {} } = {}) {
   const db = await openStore({ dataDir, databaseUrl });
   const identity = supabase ? supabaseIdentity(supabase) : localIdentity();
   const app = express();
@@ -46,6 +47,13 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   // Voix off de la formation (fichiers MP3 nommés par l'empreinte du texte : jamais modifiés, cache long).
   app.use('/voix', express.static(join(ROOT, 'app', 'voix'), { immutable: true, maxAge: '30d', fallthrough: false, index: false }));
   // Logo en verre 3D de la page de connexion (Three.js assemblé par npm run build:verre).
+  // Outils PDF du navigateur (devis et factures joints aux mails), servis par le CRM plutôt que par un CDN.
+  const VENDOR = { 'jspdf.umd.min.js': 'jspdf/dist/jspdf.umd.min.js', 'html2canvas.min.js': 'html2canvas/dist/html2canvas.min.js' };
+  app.get('/vendor/:f', (req, res) => {
+    const f = VENDOR[req.params.f];
+    if (!f) return res.status(404).end();
+    res.set('Cache-Control', 'public, max-age=604800').sendFile(join(ROOT, 'node_modules', f));
+  });
   app.use('/verre', express.static(join(ROOT, 'app', 'verre'), { maxAge: '7d', fallthrough: false, index: false }));
   // Captures de la vraie interface pour les tutos de la formation (régénérées par scripts/formation/ecrans.mjs).
   app.use('/formation', express.static(join(ROOT, 'app', 'formation'), { maxAge: '7d', fallthrough: false, index: false }));
@@ -66,6 +74,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/api/photos', requireUser, express.json({ limit: '700kb' }), photosRoutes({ db, hub }));
   app.use('/api/sons', requireUser, sonsRoutes({ db }));
   app.use('/api/enregistrements', requireUser, enregistrementsRoutes({ db }));
+  app.use('/api/mail', requireAcces('mail'), mailRoutes({ db, dataDir, ...mail }));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Adresse inconnue.' }));
   app.use('/ambiance', ambianceFiles({ store }));
 

@@ -20,8 +20,8 @@
   "dependencies": {
     "express": "^5.2.1",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.2",
-    "nodemailer": "^6.10.1",
+    "jspdf": "^4.2.1",
+    "nodemailer": "^10.1.1",
     "pg": "^8.13.1"
   },
   "devDependencies": {

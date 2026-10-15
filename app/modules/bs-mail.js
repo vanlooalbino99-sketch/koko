@@ -477,7 +477,7 @@
     '.bsmail-envh b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bsmail-envh small{grid-column:2;color:var(--text-3)}' +
     '.bsmail-st{grid-row:span 2;align-self:center;font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 9px}.bsmail-st.ok{background:rgba(34,197,94,.15);color:#16a34a}.bsmail-st.err{background:rgba(239,68,68,.15);color:#dc2626}' +
     '.bsmail-envc{padding:0 0 14px;display:flex;flex-direction:column;gap:8px}.bsmail-envc pre{white-space:pre-wrap;font:inherit;margin:0;padding:12px;border-radius:10px;background:var(--surface-2)}' +
-    '@media (max-width:640px){.bsmail-l{grid-template-columns:1fr}.bsmail-total{text-align:left}.bsmail-doc{max-width:100%}}';
+    '@media (max-width:640px){.bsmail-compte{flex-wrap:wrap;row-gap:4px}.bsmail-ct{flex:1 1 calc(100% - 60px)}.bsmail-compte>button:first-of-type{margin-left:48px}.bsmail-l{grid-template-columns:1fr}.bsmail-total{text-align:left}.bsmail-doc{max-width:100%}}';
   function css() {
     if (document.getElementById('bsmail-css')) return;
     var s = document.createElement('style'); s.id = 'bsmail-css'; s.textContent = CSS; document.head.appendChild(s);

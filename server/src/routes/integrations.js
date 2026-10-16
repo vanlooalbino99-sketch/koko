@@ -18,6 +18,19 @@ export function integrable(headers, hote) {
   return sources.some((s) => s === '*' || s === 'https:' || (hote && (s === `https://${hote}` || s === hote)));
 }
 
+// Au démarrage : note dans le journal du serveur si chaque outil accepte d'être affiché dans le CRM.
+export async function journaliserCadres(web = globalThis.fetch, log = console.log) {
+  for (const [nom, url] of Object.entries(SITES)) {
+    try {
+      const rep = await web(url, { redirect: 'follow', signal: AbortSignal.timeout(8000) });
+      if (rep.body && rep.body.cancel) rep.body.cancel().catch(() => {});
+      const xfo = rep.headers.get('x-frame-options') || '-';
+      const fa = (/(?:^|;)\s*frame-ancestors\s+([^;]*)/i.exec(rep.headers.get('content-security-policy') || '') || [])[1] || '-';
+      log(`[${nom}] ${rep.status} ${rep.url} · affichage dans le CRM : ${rep.ok && integrable(rep.headers, '') ? 'autorisé' : 'refusé'} (x-frame-options: ${xfo} · frame-ancestors: ${fa.trim()} · permissions-policy: ${(rep.headers.get('permissions-policy') || '-').slice(0, 200)})`);
+    } catch (e) { log(`[${nom}] vérification impossible : ${e.message}`); }
+  }
+}
+
 export function integrationsRoutes({ fetch: web = globalThis.fetch } = {}) {
   const r = Router();
   const cache = new Map();

@@ -13,6 +13,7 @@ import { createUser, validateUserInput } from './auth.js';
 import { copySqliteToPg } from './copie.js';
 import { baseLieux } from './lieux.js';
 import { essaiReel } from './contacts.js';
+import { journaliserCadres } from './routes/integrations.js';
 
 const env = process.env;
 const port = Number(env.PORT) || 3000;
@@ -54,6 +55,7 @@ if (env.ADMIN_EMAIL && env.ADMIN_PASSWORD && (await db.get('SELECT COUNT(*) AS n
 }
 
 const server = app.listen(port, () => {
+  journaliserCadres().catch(() => {});
   const where = db.kind === 'pg' ? 'PostgreSQL (Supabase)' : dataDir;
   console.log(`Blackstart CRM — http://localhost:${port} (données : ${where}, mots de passe : ${identity.kind === 'supabase' ? 'Supabase Auth' : 'serveur'})`);
   if (lieux) {

@@ -76,6 +76,7 @@ const h = (c) => ({ ...JSONH, Cookie: c });
 const call = (c, method, path, body) => fetch(base + path, { method, headers: h(c), redirect: 'manual', body: body === undefined ? undefined : JSON.stringify(body) });
 
 // Faux fetch : Google, Gmail, Cloudflare et le relais (qui appelle le vrai code du Worker).
+let gmailCoupe = false;
 async function fauxFetch(url, o = {}) {
   url = String(url);
   appels.fetch.push({ url, o });
@@ -86,7 +87,11 @@ async function fauxFetch(url, o = {}) {
     return rep({ access_token: 'acc-2', expires_in: 3600 });
   }
   if (url === 'https://openidconnect.googleapis.com/v1/userinfo') return rep({ email: 'albino@gmail.com', name: 'Albino' });
-  if (url.startsWith('https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send')) { reseau.gmail = Buffer.from(o.body).toString('utf8'); return rep({ id: 'gm-1' }); }
+  if (url.startsWith('https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send')) {
+    if (gmailCoupe) return rep({ error: { code: 403, status: 'PERMISSION_DENIED', message: 'Gmail API has not been used in project 966887727417 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/gmail.googleapis.com/overview?project=966887727417 then retry.',
+      details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'SERVICE_DISABLED', metadata: { consumer: 'projects/966887727417', service: 'gmail.googleapis.com' } }] } }, 403);
+    reseau.gmail = Buffer.from(o.body).toString('utf8'); return rep({ id: 'gm-1' });
+  }
   if (url.startsWith('https://api.cloudflare.com/client/v4')) {
     const chemin = url.slice('https://api.cloudflare.com/client/v4'.length);
     if (o.headers.Authorization !== 'Bearer jeton-cloudflare-valide-123456') return rep({ success: false, errors: [{ message: 'Invalid token' }] }, 403);
@@ -184,6 +189,14 @@ test('Gmail : « Se connecter avec Google », puis envoi par l’API Gmail (sans
   assert.equal(r.status, 200, JSON.stringify(await r.clone().json()));
   assert.match(reseau.gmail, /Subject: Facture F-002/);
   assert.match(reseau.gmail, /Facture\.pdf/);
+  // API Gmail pas activée dans le projet Google : message en français et lien direct vers « Activer ».
+  gmailCoupe = true;
+  r = await call(admin, 'POST', '/api/mail/envoyer', { compte: gm.id, a: 'client@exemple.com', sujet: 'Relance', texte: 'Bonjour' });
+  const ko = await r.json();
+  gmailCoupe = false;
+  assert.equal(r.status, 502);
+  assert.match(ko.error, /pas encore activé/);
+  assert.equal(ko.lien, 'https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=966887727417');
   sondeOk = true;
 });
 

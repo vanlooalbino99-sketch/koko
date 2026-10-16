@@ -46,9 +46,24 @@ function cleDe(dataDir) {
 }
 
 // Erreur de connexion → phrase claire. reseau = le serveur mail n'a pas pu être joint (et non un refus du mot de passe).
+// Réponse d'erreur de l'API Gmail → message en français (+ lien vers la page Google à ouvrir quand il y en a une).
+export function erreurGmail(status, e) {
+  const msg = String(e.message || ''), details = Array.isArray(e.details) ? e.details : [];
+  const info = details.find((d) => d && d.reason) || {};
+  if (info.reason === 'SERVICE_DISABLED' || /has not been used in project|is disabled/i.test(msg)) {
+    const projet = String((info.metadata && info.metadata.consumer) || '').replace(/^projects\//, '') || ((/project (\d+)/.exec(msg) || [])[1] || '');
+    return Object.assign(new Error('L’envoi Gmail n’est pas encore activé dans votre projet Google (étape 2 du guide). Ouvrez la page ci-dessous, cliquez sur « Activer », attendez 2 à 3 minutes puis renvoyez le mail.'),
+      { code: 'GAPI', lien: 'https://console.cloud.google.com/apis/library/gmail.googleapis.com' + (/^\d+$/.test(projet) ? '?project=' + projet : ''), lienTexte: 'Activer l’envoi Gmail' });
+  }
+  if (/insufficient.*scope/i.test(msg) || info.reason === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT')
+    return Object.assign(new Error('Google n’a pas donné l’autorisation d’envoyer : déconnectez Gmail dans Mail › Mes boîtes, reconnectez-le et cochez « Envoyer des e-mails ».'), { code: 'GAPI' });
+  if (status === 429 || /rate limit|quota/i.test(msg)) return Object.assign(new Error('Gmail limite les envois pour le moment : réessayez dans quelques minutes.'), { code: 'GAPI' });
+  return Object.assign(new Error('Gmail a refusé l’envoi' + (msg ? ' : ' + msg.slice(0, 200) : ` (${status}).`)), { code: 'GAPI' });
+}
+
 export function expliquer(err, relais = false) {
   const code = String(err && (err.code || '')), msg = String(err && err.message || '');
-  if (/^G(AUTH|CONF|API)$/.test(code) || code === 'ERELAIS') return { reseau: false, error: msg };
+  if (/^G(AUTH|CONF|API)$/.test(code) || code === 'ERELAIS') return { reseau: false, error: msg, ...(err.lien ? { lien: err.lien, lienTexte: err.lienTexte } : {}) };
   if (relais && code === 'ESMTP') return { reseau: false, error: 'Envoi refusé par le serveur mail : ' + msg.slice(0, 200) };
   if (relais && code !== 'EAUTH') return { reseau: false, error: 'Le serveur mail ne répond pas au relais : vérifiez le serveur d’envoi (SMTP) et le port de la boîte. ' + msg.slice(0, 120) };
   if (code === 'EAUTH' || /auth|credentials|password|login|535|534/i.test(msg) && !/timeout/i.test(msg))
@@ -109,7 +124,7 @@ export function mailRoutes({ db, dataDir, transport = (o) => nodemailer.createTr
       method: 'POST', headers: { Authorization: `Bearer ${await jetonGoogle(c)}`, 'Content-Type': 'message/rfc822' }, body: brut });
     const b = await r.json().catch(() => ({}));
     if (r.status === 401) { jetons.delete(c.id); throw Object.assign(new Error('Accès Google expiré ou retiré : reconnectez Gmail dans Mail › Mes boîtes.'), { code: 'GAUTH' }); }
-    if (!r.ok) throw Object.assign(new Error((b.error && b.error.message) || `Gmail a refusé l’envoi (${r.status}).`), { code: 'GAPI' });
+    if (!r.ok) throw erreurGmail(r.status, b.error || {});
     return { messageId: b.id };
   }
 
@@ -362,7 +377,7 @@ export function mailRoutes({ db, dataDir, transport = (o) => nodemailer.createTr
     } catch (err) {
       const e = expliquer(err, relaisUtilise);
       await trace('echec', e.error);
-      res.status(502).json({ error: e.error, reseau: e.reseau });
+      res.status(502).json({ error: e.error, reseau: e.reseau, lien: e.lien, lienTexte: e.lienTexte });
     }
   });
 

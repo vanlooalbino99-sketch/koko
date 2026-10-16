@@ -26,7 +26,7 @@
     if (body !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(body); }
     return fetch(API + path, o).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (b) {
-        if (!r.ok) { var e = new Error(b.error || (r.status === 413 ? 'Envoi trop lourd.' : 'Erreur ' + r.status)); e.status = r.status; throw e; }
+        if (!r.ok) { var e = new Error(b.error || (r.status === 413 ? 'Envoi trop lourd.' : 'Erreur ' + r.status)); e.status = r.status; e.lien = b.lien; e.lienTexte = b.lienTexte; throw e; }
         return b;
       });
     });
@@ -296,7 +296,7 @@
       '<div class="bsmail-tabs" role="tablist">' + onglets.map(function (o) {
         return '<button type="button" role="tab" aria-selected="' + (S.onglet === o[0]) + '" class="bsmail-tab' + (S.onglet === o[0] ? ' on' : '') + '" data-onglet="' + o[0] + '">' + o[1] + '</button>';
       }).join('') + '</div>' + bandeau +
-      (S.msg ? '<div class="bsmail-msg ' + S.msg.k + '">' + esc(S.msg.t) + '</div>' : '') +
+      (S.msg ? '<div class="bsmail-msg ' + S.msg.k + '">' + esc(S.msg.t) + (S.msg.lien && /^https:\/\/console\.cloud\.google\.com\//.test(S.msg.lien) ? '<div class="bsmail-act" style="justify-content:flex-start;margin-top:10px"><a class="btn btn-primary btn-sm" href="' + esc(S.msg.lien) + '" target="_blank" rel="noopener">' + esc(S.msg.lienTexte || 'Ouvrir la page Google') + '</a></div>' : '') + '</div>' : '') +
       (S.comptes === null ? '<p class="bsmail-vide">Chargement…</p>' : S.onglet === 'comptes' ? vueComptes() : S.onglet === 'envoyes' ? vueEnvoyes() : vueEcrire());
     if (nomFocus) { var el = racine.querySelector('[name="' + nomFocus + '"]'); if (el) { el.focus(); if (el.setSelectionRange && el.value && el.type !== 'email') try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) { /* champ sans curseur */ } } }
   }
@@ -411,7 +411,7 @@
             S.envoi = false; S.b = { compte: b.compte, a: '', cc: '', sujet: '', texte: '', pieces: [], prospectId: '' }; S.envoyes = null;
             flash('Mail envoyé à ' + a + '.', 'ok');
           })
-          .catch(function (er) { S.envoi = false; flash(er.message, 'err'); });
+          .catch(function (er) { S.envoi = false; S.msg = { t: er.message, k: 'err', lien: er.lien, lienTexte: er.lienTexte }; rendre(); });
       }
     });
   }

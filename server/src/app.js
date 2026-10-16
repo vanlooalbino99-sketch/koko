@@ -18,6 +18,7 @@ import { photosRoutes } from './routes/photos.js';
 import { sonsRoutes } from './routes/sons.js';
 import { enregistrementsRoutes } from './routes/enregistrements.js';
 import { mailRoutes } from './routes/mail.js';
+import { integrationsRoutes } from './routes/integrations.js';
 import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
 import { osmRoutes } from './osm.js';
@@ -29,7 +30,7 @@ const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).ver
 
 // Base : PostgreSQL (Supabase) si databaseUrl est donné, sinon SQLite dans dataDir.
 // Mots de passe : Supabase Auth si supabase = { url, serviceKey } est donné, sinon vérifiés par le serveur.
-export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {}, mail = {} } = {}) {
+export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {}, mail = {}, integrations = {} } = {}) {
   const db = await openStore({ dataDir, databaseUrl });
   const identity = supabase ? supabaseIdentity(supabase) : localIdentity();
   const app = express();
@@ -75,6 +76,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/api/sons', requireUser, sonsRoutes({ db }));
   app.use('/api/enregistrements', requireUser, enregistrementsRoutes({ db }));
   app.use('/api/mail', requireAcces('mail'), mailRoutes({ db, dataDir, ...mail }));
+  app.use('/api/integrations', requireAcces('entrainement'), integrationsRoutes(integrations));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Adresse inconnue.' }));
   app.use('/ambiance', ambianceFiles({ store }));
 

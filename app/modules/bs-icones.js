@@ -8,6 +8,10 @@
  *   serveur (partagé avec l'équipe, modifiable par les administrateurs) pour la version équipe.
  * - Couleurs : neutre (blanc en mode sombre), accent, multicolore ou une couleur personnalisée pour tout le
  *   menu ; chaque rubrique peut aussi recevoir sa propre couleur (pastilles ou nuancier), qui prime sur le reste.
+ * - Animation des icônes du menu (choix personnel, gardé dans ce navigateur) : désactivée, au survol (et à
+ *   l'ouverture d'une rubrique) ou « fun » (une vague parcourt le menu de temps en temps). Chaque rubrique a
+ *   son geste : le téléphone sonne, l'enveloppe s'envole, la pièce tourne… Coupée si l'appareil ou les
+ *   réglages demandent moins d'animations.
  * - L'interface appelle window.bsIcones.nav(id, icôneParDéfaut) pour dessiner le menu, et le composant
  *   d'icône de l'interface se sert de window.bsIcones.svg(nom) pour les icônes qu'il ne connaît pas.
  */
@@ -149,6 +153,74 @@
   };
   var rev = 0;
   var svgCache = {};
+
+  // ---------------------------------------------------------------- animation des icônes du menu
+  var ANIM_KEY = 'bs-icones-anim';
+  // Gestes : étapes [pourcentage, transformation, opacité?], et point d'appui.
+  var GESTES = {
+    sonne: { o: '50% 15%', k: [[0, 'rotate(0)'], [12, 'rotate(-18deg)'], [24, 'rotate(16deg)'], [36, 'rotate(-12deg)'], [48, 'rotate(10deg)'], [62, 'rotate(-5deg)'], [76, 'rotate(2deg)'], [100, 'rotate(0)']] },
+    saute: { o: '50% 100%', k: [[0, 'translateY(0) scale(1)'], [20, 'translateY(0) scale(1.12,.86)'], [45, 'translateY(-6px) scale(.94,1.08)'], [70, 'translateY(0) scale(1.08,.92)'], [85, 'translateY(-1px) scale(1)'], [100, 'translateY(0) scale(1)']] },
+    tourne: { o: '50% 50%', k: [[0, 'rotate(0)'], [100, 'rotate(360deg)']] },
+    pop: { o: '50% 50%', k: [[0, 'scale(1)'], [30, 'scale(1.35)'], [55, 'scale(.88)'], [75, 'scale(1.1)'], [100, 'scale(1)']] },
+    brille: { o: '50% 50%', k: [[0, 'rotate(0) scale(1)'], [35, 'rotate(30deg) scale(1.35)'], [65, 'rotate(-12deg) scale(.9)'], [100, 'rotate(0) scale(1)']] },
+    penche: { o: '50% 10%', k: [[0, 'rotate(0)'], [20, 'rotate(20deg)'], [45, 'rotate(-16deg)'], [65, 'rotate(9deg)'], [82, 'rotate(-4deg)'], [100, 'rotate(0)']] },
+    vole: { o: '50% 50%', k: [[0, 'translate(0,0) rotate(0)', 1], [40, 'translate(11px,-9px) rotate(-14deg)', 0], [41, 'translate(-11px,9px) rotate(0)', 0], [75, 'translate(1px,-1px)', 1], [100, 'translate(0,0)', 1]] },
+    glisse: { o: '50% 50%', k: [[0, 'translateX(0)'], [25, 'translateX(-4px)'], [55, 'translateX(5px)'], [80, 'translateX(-1px)'], [100, 'translateX(0)']] },
+    pivote: { o: '50% 50%', k: [[0, 'perspective(60px) rotateY(0)'], [100, 'perspective(60px) rotateY(360deg)']] },
+    feuillette: { o: '50% 50%', k: [[0, 'perspective(60px) rotateX(0)'], [60, 'perspective(60px) rotateX(370deg)'], [80, 'perspective(60px) rotateX(350deg)'], [100, 'perspective(60px) rotateX(360deg)']] },
+    secoue: { o: '30% 50%', k: [[0, 'translateX(0) rotate(0)'], [12, 'translateX(-2px) rotate(-10deg)'], [24, 'translateX(2px) rotate(10deg)'], [36, 'translateX(-2px) rotate(-8deg)'], [48, 'translateX(2px) rotate(6deg)'], [64, 'translateX(-1px) rotate(-3deg)'], [100, 'translateX(0) rotate(0)']] },
+    gelee: { o: '50% 50%', k: [[0, 'scale(1,1)'], [25, 'scale(1.28,.72)'], [37, 'scale(.75,1.25)'], [50, 'scale(1.15,.85)'], [65, 'scale(.95,1.05)'], [78, 'scale(1.04,.96)'], [100, 'scale(1,1)']] },
+    pousse: { o: '50% 100%', k: [[0, 'scaleY(1)'], [28, 'scaleY(.35)'], [62, 'scaleY(1.2)'], [80, 'scaleY(.95)'], [100, 'scaleY(1)']] },
+    bat: { o: '50% 50%', k: [[0, 'scale(1)'], [14, 'scale(1.28)'], [28, 'scale(1)'], [42, 'scale(1.2)'], [70, 'scale(1)'], [100, 'scale(1)']] },
+  };
+  var GESTE = {
+    today: 'sonne', agenda: 'feuillette', prospects: 'saute', leads: 'brille', pipeline: 'glisse', tasks: 'pop',
+    telephone: 'sonne', mail: 'vole', devis: 'gelee', clients: 'saute', payments: 'pivote',
+    campagnes: 'secoue', modeles: 'gelee', contenu: 'feuillette', sources: 'pousse',
+    messages: 'saute', groupes: 'gelee', visio: 'bat', entrainement: 'bat',
+    dashboard: 'pop', reports: 'pousse', carte: 'tourne', formations: 'bat', tools: 'penche', settings: 'tourne',
+  };
+  var ANIMS = [['non', 'Désactivée'], ['survol', 'Au survol'], ['fun', 'Fun']];
+  var anim = readAnim();
+  function readAnim() { var v = ''; try { v = localStorage.getItem(ANIM_KEY) || ''; } catch (e) {} return ANIMS.some(function (a) { return a[0] === v; }) ? v : 'non'; }
+  function applyAnim() { document.documentElement.setAttribute('data-bsi-anim', anim); }
+  function saveAnim(v) {
+    anim = ANIMS.some(function (a) { return a[0] === v; }) ? v : 'non';
+    try { localStorage.setItem(ANIM_KEY, anim); } catch (e) {}
+    applyAnim(); listeners.forEach(function (l) { l(); });
+  }
+  function moinsDAnimations() {
+    return document.documentElement.getAttribute('data-motion') === 'reduced' || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+  // Une rubrique joue son geste une fois (survol, ouverture) ; en « fun », une vague parcourt aussi le menu.
+  function animCss() {
+    if (document.getElementById('bs-icones-anim')) return;
+    var st = document.createElement('style'); st.id = 'bs-icones-anim';
+    var CYCLE = 9, PART = 0.11, PAS = 0.3;
+    var css = [], ids = NAV.filter(function (n) { return n.id; }).map(function (n) { return n.id; });
+    function etapes(k, f) {
+      return k.map(function (e) { return (Math.round(e[0] * f * 100) / 100) + '%{transform:' + e[1] + (e.length > 2 ? ';opacity:' + e[2] : '') + '}'; }).join('');
+    }
+    Object.keys(GESTES).forEach(function (g) {
+      var k = GESTES[g].k, fin = k[k.length - 1];
+      css.push('@keyframes bsi-' + g + '{' + etapes(k, 1) + '}');
+      css.push('@keyframes bsi-' + g + '-v{' + etapes(k, PART) + '100%{transform:' + fin[1] + (fin.length > 2 ? ';opacity:' + fin[2] : '') + '}}');
+    });
+    var on = 'html[data-bsi-anim="survol"] ', fun = 'html[data-bsi-anim="fun"] ';
+    css.push('html[data-bsi-anim="survol"] button[data-nav] .ic,html[data-bsi-anim="fun"] button[data-nav] .ic{will-change:transform}');
+    ids.forEach(function (id, i) {
+      var g = GESTE[id] || 'pop', G = GESTES[g], b = 'button[data-nav="' + id + '"]';
+      var une = 'animation:bsi-' + g + ' .85s cubic-bezier(.3,.7,.4,1) both;transform-origin:' + G.o;
+      css.push([on + b + ':hover .ic', on + b + ':focus-visible .ic', on + b + '.active .ic', fun + b + ':hover .ic', fun + b + ':focus-visible .ic'].join(',') + '{' + une + '}');
+      css.push(fun + b + ':not(:hover):not(:focus-visible) .ic{animation:bsi-' + g + '-v ' + CYCLE + 's cubic-bezier(.3,.7,.4,1) ' + (1 + i * PAS).toFixed(2) + 's infinite both;transform-origin:' + G.o + '}');
+      // Aperçu dans Réglages › Icônes du menu.
+      css.push('html:not([data-bsi-anim="non"]) [data-navsel="' + id + '"]:hover .bsi-cur .ic{' + une + '}');
+    });
+    css.push('@media (prefers-reduced-motion:reduce){html[data-bsi-anim] button[data-nav] .ic,html[data-bsi-anim] [data-navsel] .ic{animation:none!important}}');
+    css.push('html[data-motion="reduced"][data-bsi-anim] button[data-nav] .ic,html[data-motion="reduced"][data-bsi-anim] [data-navsel] .ic{animation:none!important}');
+    st.textContent = css.join('\n');
+    (document.head || document.documentElement).appendChild(st);
+  }
 
   function readStyle() { try { return cleanStyle(JSON.parse(localStorage.getItem('bs-icones-style') || '{}')); } catch (e) { return cleanStyle({}); } }
   function isHex(c) { return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c); }
@@ -400,6 +472,7 @@
       '.bsi-pick-c{position:relative;width:30px;height:30px;border-radius:9px;overflow:hidden;border:1px solid var(--border);background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);cursor:pointer;flex:none}',
       '.bsi-pick-c input{position:absolute;inset:-6px;width:calc(100% + 12px);height:calc(100% + 12px);opacity:0;cursor:pointer;border:0;padding:0}',
       '.bsi-auto{font-size:12.5px}',
+      '.bsi-anim-h{flex-basis:100%;margin:0}',
       'html[data-bsi-trait="fin"] .bsi-cur .ic{stroke-width:1.5}',
       'html[data-bsi-trait="gras"] .bsi-cur .ic{stroke-width:2.6}',
     ].join('\n');
@@ -487,7 +560,18 @@
       return '<div class="bsi-style"><div class="bsi-st"><span class="bsi-st-l">Trait</span>' + seg('trait', [['fin', 'Fin'], ['normal', 'Normal'], ['gras', 'Gras']], ro) + '</div>' +
         '<div class="bsi-st"><span class="bsi-st-l">Couleur</span>' + seg('couleur', [['neutre', 'Neutre'], ['accent', 'Accent'], ['multi', 'Multicolore'], ['perso', 'Personnalisée']], ro) + '</div>' +
         (style.couleur === 'perso' ? '<div class="bsi-st"><span class="bsi-st-l">Teinte du menu</span>' + swatches(style.perso, 'perso', ro) + '</div>' : '') +
-        (nT && !ro ? '<button type="button" class="btn btn-ghost btn-sm" data-act="resetcol">Effacer les couleurs par rubrique (' + nT + ')</button>' : '') + '</div>';
+        (nT && !ro ? '<button type="button" class="btn btn-ghost btn-sm" data-act="resetcol">Effacer les couleurs par rubrique (' + nT + ')</button>' : '') +
+        '<div class="bsi-st"><span class="bsi-st-l">Animation</span><div role="tablist" class="segmented" aria-label="Animation des icônes">' + ANIMS.map(function (a) {
+          var on = anim === a[0];
+          return '<button type="button" role="tab" aria-selected="' + on + '" class="seg' + (on ? ' active' : '') + '" data-anim="' + a[0] + '"><span>' + a[1] + '</span></button>';
+        }).join('') + '</div></div>' +
+        '<p class="bsi-hint bsi-anim-h" data-anim-h>' + animHint() + '</p></div>';
+    }
+    function animHint() {
+      if (anim !== 'non' && moinsDAnimations()) return 'Votre appareil ou le réglage « Réduire les animations » (Apparence) coupe les animations : désactivez-le pour les voir.';
+      if (anim === 'fun') return 'Une vague parcourt le menu de temps en temps, et chaque icône fait son geste quand vous la survolez. Réglage personnel, gardé dans ce navigateur.';
+      if (anim === 'survol') return 'Chaque icône fait son geste quand vous la survolez ou ouvrez la rubrique. Réglage personnel, gardé dans ce navigateur.';
+      return 'Faites bouger les icônes : le téléphone sonne, l’enveloppe s’envole, la pièce tourne… Réglage personnel, gardé dans ce navigateur.';
     }
     function colorRow(ro) {
       var own = style.teintes[ui.sel] || '';
@@ -511,7 +595,8 @@
       }
     }
     el.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-navsel],[data-cat],[data-ic],[data-act],[data-st],[data-pack],[data-col]'); if (!t || t.disabled) return;
+      var t = e.target.closest('[data-navsel],[data-cat],[data-ic],[data-act],[data-st],[data-pack],[data-col],[data-anim]'); if (!t || t.disabled) return;
+      if (t.hasAttribute('data-anim')) { saveAnim(t.getAttribute('data-anim')); return; }
       if (t.hasAttribute('data-col')) { if (!canEdit()) return; var kc = t.getAttribute('data-col').split(':'); saveStyle(colorPatch(kc[0], kc[1])); return; }
       if (t.hasAttribute('data-pack')) { if (!canEdit()) return; var pk = PACKS.filter(function (x) { return x.id === t.getAttribute('data-pack'); })[0]; if (pk) save(Object.assign({}, pk.map)); return; }
       if (t.hasAttribute('data-st')) { if (!canEdit()) return; var kv = t.getAttribute('data-st').split(':'), p = {}; p[kv[0]] = kv[1]; saveStyle(p); return; }
@@ -545,9 +630,9 @@
     render();
   }
 
-  window.bsIcones = { svg: svg, nav: nav, monterReglages: monterReglages, choix: function () { return Object.assign({}, map); }, choisir: function (id, nom) { var n = Object.assign({}, map); if (nom) n[id] = nom; else delete n[id]; return save(n); }, chercher: search };
-  applyStyle();
-  if (document.head) globalCss(); else document.addEventListener('DOMContentLoaded', globalCss);
+  window.bsIcones = { svg: svg, nav: nav, monterReglages: monterReglages, animation: function (v) { if (v === undefined) return anim; saveAnim(v); }, choix: function () { return Object.assign({}, map); }, choisir: function (id, nom) { var n = Object.assign({}, map); if (nom) n[id] = nom; else delete n[id]; return save(n); }, chercher: search };
+  applyStyle(); applyAnim();
+  if (document.head) { globalCss(); animCss(); } else document.addEventListener('DOMContentLoaded', function () { globalCss(); animCss(); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hook); else hook();
 })();
 

@@ -7,14 +7,14 @@
 //   secret du client OAuth) vient de GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, sinon un administrateur la colle
 //   dans Mail › Mes boîtes.
 import express, { Router } from 'express';
-import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import net from 'node:net';
 import nodemailer from 'nodemailer';
 import MailComposer from 'nodemailer/lib/mail-composer/index.js';
 import { getSetting, setSetting } from '../store.js';
+import { coffre } from '../coffre.js';
 
 // Serveurs d'envoi des fournisseurs connus (les mêmes que dans app/modules/bs-mail.js).
 export const FOURNISSEURS = {
@@ -37,13 +37,6 @@ const texte = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000
 const ligne = (v, n) => texte(v, n).replace(/[\r\n]+/g, ' ');
 const adresses = (v) => String(v || '').split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-function cleDe(dataDir) {
-  if (process.env.MAIL_SECRET) return createHash('sha256').update(process.env.MAIL_SECRET).digest();
-  const f = join(dataDir || 'data', 'mail.key');
-  if (!existsSync(f)) { mkdirSync(dataDir || 'data', { recursive: true }); writeFileSync(f, randomBytes(32).toString('base64'), { mode: 0o600 }); }
-  return Buffer.from(readFileSync(f, 'utf8').trim(), 'base64');
-}
 
 // Erreur de connexion → phrase claire. reseau = le serveur mail n'a pas pu être joint (et non un refus du mot de passe).
 // Réponse d'erreur de l'API Gmail → message en français (+ lien vers la page Google à ouvrir quand il y en a une).
@@ -75,17 +68,7 @@ export function expliquer(err, relais = false) {
 
 export function mailRoutes({ db, dataDir, transport = (o) => nodemailer.createTransport(o), sonde = sondeSmtp, fetch: web = globalThis.fetch }) {
   const r = Router();
-  const cle = cleDe(dataDir);
-  const chiffrer = (t) => {
-    const iv = randomBytes(12), c = createCipheriv('aes-256-gcm', cle, iv);
-    const data = Buffer.concat([c.update(String(t), 'utf8'), c.final()]);
-    return [iv, c.getAuthTag(), data].map((b) => b.toString('base64')).join('.');
-  };
-  const dechiffrer = (s) => {
-    const [iv, tag, data] = String(s).split('.').map((b) => Buffer.from(b, 'base64'));
-    const d = createDecipheriv('aes-256-gcm', cle, iv); d.setAuthTag(tag);
-    return Buffer.concat([d.update(data), d.final()]).toString('utf8');
-  };
+  const { chiffrer, dechiffrer } = coffre(dataDir);
   const vue = (c) => ({ id: c.id, fournisseur: c.provider, email: c.email, nom: c.display_name || '', signature: c.signature || '',
     google: c.smtp_host === 'oauth:google', serveur: c.smtp_host, port: Number(c.smtp_port), ssl: !!Number(c.smtp_secure), identifiant: c.username, creeLe: c.created_at });
   const options = (c, pass) => ({ host: c.smtp_host, port: Number(c.smtp_port), secure: !!Number(c.smtp_secure), auth: { user: c.username, pass },

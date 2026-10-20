@@ -18,6 +18,7 @@
     "build:verre": "node scripts/build-verre.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "express": "^5.2.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",

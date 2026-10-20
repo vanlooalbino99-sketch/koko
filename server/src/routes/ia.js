@@ -1,0 +1,189 @@
+// /api/ia : Claude dans le CRM.
+// - Simulateur d'appel (rubrique Entraînement) : Claude joue le prospect décrit par la fiche, réplique par réplique,
+//   puis note l'appel (note sur 10, points forts, 3 choses à améliorer).
+// - Rédaction (rubrique Marketing) : posts, mails, SMS et messages LinkedIn.
+// La clé d'API vient de ANTHROPIC_API_KEY (Railway), sinon un administrateur la colle dans Entraînement ;
+// elle est alors chiffrée en base et n'est jamais renvoyée au navigateur.
+import express, { Router } from 'express';
+import Anthropic from '@anthropic-ai/sdk';
+import { getSetting, setSetting } from '../store.js';
+import { coffre } from '../coffre.js';
+import { peut } from '../acces.js';
+
+export const MODELE = 'claude-opus-5-5';
+const PAR_JOUR = 400; // appels à Claude par membre et par jour (garde-fou de coût)
+const texte = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, n);
+const CLE_FORMAT = /^sk-ant-[A-Za-z0-9_-]{20,}$/;
+
+const PROSPECT = `Tu joues un prospect au téléphone, dans une simulation d'appel commercial qui sert d'entraînement à un vendeur.
+La fiche ci-dessous décrit qui tu es, où vous en êtes, ton caractère et les objections à faire. Le vendeur te parle ; tu lui réponds.
+
+Règles :
+- Réponds uniquement par ce que le prospect dit à voix haute : 1 à 3 phrases courtes, en français parlé, naturel (« euh », « bon », « écoutez »… avec modération).
+- Pas de didascalies, pas d'astérisques, pas de guillemets, pas d'émojis, pas de listes.
+- Reste dans le personnage du début à la fin, même si le vendeur te pose des questions sur la simulation.
+- Fais les objections de la fiche une à la fois, quand elles viennent naturellement ; ne les donne pas toutes d'un coup.
+- Sois réaliste : si le vendeur est clair, écoute et pose une question utile, ne cède pas trop facilement, ne sois pas hostile sans raison.
+- Si le vendeur obtient vraiment ce qu'il vise (par exemple un rendez-vous avec une date et une heure), accepte.
+- Quand l'appel se termine (accord, refus net, tu raccroches), dis ta dernière phrase puis écris [FIN] à la toute fin.
+- Ne note pas l'appel et ne donne pas de conseils : la notation se fait à part.`;
+
+const COACH = `Tu es un coach commercial exigeant mais bienveillant. Tu notes un appel de prospection B2B en français qui vient d'être fait en simulation face à un prospect joué par une IA.
+Juge le vendeur seulement (pas le prospect) : accroche et présentation, découverte (questions sur le besoin), écoute et reformulation, traitement de chaque objection, clarté de la proposition, demande d'engagement (rendez-vous avec date et heure), ton et longueur des répliques.
+Note sur 10 : 5 = correct sans plus, 7 = bon, 9 ou 10 = excellent et objectif atteint proprement. Un appel très court ou abandonné ne dépasse pas 3.
+Écris en français, en vouvoyant le vendeur, avec des phrases courtes et concrètes, en citant ses mots quand c'est utile.`;
+
+const NOTE = {
+  type: 'object',
+  properties: {
+    note: { type: 'integer', description: 'Note de 0 à 10' },
+    verdict: { type: 'string', description: 'Une phrase qui résume l’appel' },
+    objectif_atteint: { type: 'boolean' },
+    points_forts: { type: 'array', items: { type: 'string' }, description: '1 à 3 points forts' },
+    a_ameliorer: { type: 'array', items: { type: 'string' }, description: 'Les 3 choses à améliorer en priorité' },
+    objections: {
+      type: 'array', description: 'Chaque objection faite par le prospect',
+      items: { type: 'object', properties: { objection: { type: 'string' }, bien_traitee: { type: 'boolean' }, conseil: { type: 'string' } }, required: ['objection', 'bien_traitee', 'conseil'], additionalProperties: false },
+    },
+    phrase_a_essayer: { type: 'string', description: 'Une phrase que le vendeur peut dire au prochain appel' },
+  },
+  required: ['note', 'verdict', 'objectif_atteint', 'points_forts', 'a_ameliorer', 'objections', 'phrase_a_essayer'],
+  additionalProperties: false,
+};
+
+const REDACTION = {
+  post: 'Un post LinkedIn (ou réseau social) : une accroche forte sur la première ligne, des phrases courtes, des sauts de ligne, un appel à commenter ou à écrire en message privé, 3 hashtags maximum à la fin, 1300 caractères maximum.',
+  email: 'Un e-mail de prospection : première ligne « Objet : … », puis le corps (120 mots maximum), personnel, une seule demande claire, signature avec {{moi}}.',
+  sms: 'Un SMS : 300 caractères maximum, direct et poli, sans lien raccourci.',
+  linkedin: 'Un message privé LinkedIn : 600 caractères maximum, personnel, pas de pitch agressif, une question pour ouvrir la discussion.',
+};
+
+// Erreur du SDK Claude → statut HTTP et phrase claire pour le CRM.
+export function erreurClaude(e) {
+  if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError)
+    return { status: 400, error: 'La clé Claude est refusée : vérifiez-la sur console.anthropic.com (API Keys) puis collez-la de nouveau dans Entraînement.' };
+  if (e instanceof Anthropic.RateLimitError) return { status: 429, error: 'Claude reçoit trop de demandes pour cette clé : réessayez dans une minute.' };
+  if (e instanceof Anthropic.BadRequestError)
+    return { status: 400, error: 'Claude a refusé la demande. Vérifiez qu’il reste du crédit sur votre compte Claude (console.anthropic.com, rubrique Billing).' };
+  if (e instanceof Anthropic.APIConnectionError) return { status: 502, error: 'Claude ne répond pas pour le moment : réessayez.' };
+  if (e instanceof Anthropic.APIError && Number(e.status) >= 500) return { status: 503, error: 'Claude est surchargé : réessayez dans un instant.' };
+  return { status: 502, error: 'Claude n’a pas pu répondre : réessayez.' };
+}
+
+const textes = (r) => (r.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+
+export function iaRoutes({ db, dataDir, creer = (apiKey) => new Anthropic({ apiKey, maxRetries: 1, timeout: 90000 }) }) {
+  const r = Router();
+  const { chiffrer, dechiffrer } = coffre(dataDir);
+  const quotas = new Map(); // membre → { jour, n }
+
+  async function cle() {
+    if (process.env.ANTHROPIC_API_KEY) return { cle: process.env.ANTHROPIC_API_KEY, source: 'env' };
+    const g = await getSetting(db, 'ia_claude', null);
+    if (!g || !g.cle) return null;
+    try { return { cle: dechiffrer(g.cle), source: 'crm', at: g.at }; } catch { return null; }
+  }
+  async function client(res) {
+    const c = await cle();
+    if (!c) { res.status(409).json({ error: 'Claude n’est pas encore branché : un administrateur doit coller la clé Claude dans Entraînement.', code: 'SANS_CLE' }); return null; }
+    return creer(c.cle);
+  }
+  function quota(req, res) {
+    const jour = new Date().toISOString().slice(0, 10), q = quotas.get(req.user.id);
+    const n = q && q.jour === jour ? q.n + 1 : 1;
+    if (n > PAR_JOUR) { res.status(429).json({ error: 'Limite du jour atteinte pour Claude (garde-fou de coût) : réessayez demain.' }); return false; }
+    quotas.set(req.user.id, { jour, n });
+    return true;
+  }
+  // Appel à Claude, avec repli automatique sur un autre modèle si Claude décline (fallbacks côté serveur).
+  async function demander(c, params) {
+    const rep = await c.beta.messages.create({ model: MODELE, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default', cache_control: { type: 'ephemeral' }, ...params });
+    if (rep.stop_reason === 'refusal') throw Object.assign(new Error('refus'), { refus: true });
+    return rep;
+  }
+  const echec = (res, e) => {
+    if (e && e.refus) return res.status(422).json({ error: 'Claude a préféré ne pas répondre à cette demande : reformulez-la.' });
+    const x = erreurClaude(e);
+    if (x.status >= 500) console.error('[ia]', e && e.message);
+    return res.status(x.status).json({ error: x.error });
+  };
+  const admin = (req, res) => { if (req.user.role === 'admin') return true; res.status(403).json({ error: 'Réservé aux administrateurs.' }); return false; };
+  const entrainement = (req, res) => { if (peut(req.user, 'entrainement')) return true; res.status(403).json({ error: 'Accès à l’Entraînement non autorisé.' }); return false; };
+
+  r.get('/etat', async (req, res) => {
+    const c = await cle();
+    res.json({ ia: !!c, source: c ? c.source : null, admin: req.user.role === 'admin', modele: MODELE });
+  });
+
+  r.put('/cle', express.json({ limit: '4kb' }), async (req, res) => {
+    if (!admin(req, res)) return;
+    if (process.env.ANTHROPIC_API_KEY) return res.status(409).json({ error: 'La clé Claude est déjà réglée sur le serveur (variable ANTHROPIC_API_KEY).' });
+    const k = texte(req.body && req.body.cle, 300).replace(/\s+/g, '');
+    if (!CLE_FORMAT.test(k)) return res.status(400).json({ error: 'Ce n’est pas une clé Claude : elle commence par « sk-ant- » (console.anthropic.com, rubrique API Keys).' });
+    try { await creer(k).models.retrieve(MODELE); } catch (e) { return echec(res, e); }
+    await setSetting(db, 'ia_claude', { cle: chiffrer(k), at: new Date().toISOString(), par: req.user.id });
+    res.json({ ia: true, source: 'crm' });
+  });
+
+  r.delete('/cle', async (req, res) => {
+    if (!admin(req, res)) return;
+    await db.run('DELETE FROM settings WHERE key = ?', 'ia_claude');
+    res.json({ ia: !!process.env.ANTHROPIC_API_KEY });
+  });
+
+  // Une réplique du prospect. messages : [{ de: 'vendeur'|'prospect', texte }], le dernier venant du vendeur.
+  r.post('/simulation/repondre', express.json({ limit: '200kb' }), async (req, res) => {
+    if (!entrainement(req, res)) return;
+    const b = req.body || {};
+    const fiche = texte(b.fiche, 6000);
+    const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-80).map((m) => ({ de: m && m.de === 'prospect' ? 'prospect' : 'vendeur', texte: texte(m && m.texte, 2000) })).filter((m) => m.texte);
+    if (!fiche) return res.status(400).json({ error: 'La fiche du prospect est vide.' });
+    if (!msgs.length || msgs[msgs.length - 1].de !== 'vendeur') return res.status(400).json({ error: 'C’est au vendeur de parler.' });
+    const c = await client(res); if (!c || !quota(req, res)) return;
+    const messages = [{ role: 'user', content: '(Le téléphone sonne, tu décroches.)' }]
+      .concat(msgs.map((m) => ({ role: m.de === 'prospect' ? 'assistant' : 'user', content: m.texte })));
+    try {
+      const rep = await demander(c, { max_tokens: 2000, output_config: { effort: 'low' }, system: PROSPECT + '\n\nFiche du scénario :\n' + fiche, messages });
+      const brut = textes(rep);
+      const fin = /\[FIN\]/i.test(brut);
+      const dit = brut.replace(/\[FIN\]/gi, '').replace(/\*[^*]*\*/g, '').replace(/^[«"\s]+|[»"\s]+$/g, '').replace(/\s+/g, ' ').trim();
+      res.json({ texte: dit || (fin ? 'Au revoir.' : '…'), fin });
+    } catch (e) { echec(res, e); }
+  });
+
+  // Note de l'appel terminé.
+  r.post('/simulation/noter', express.json({ limit: '200kb' }), async (req, res) => {
+    if (!entrainement(req, res)) return;
+    const b = req.body || {};
+    const fiche = texte(b.fiche, 6000);
+    const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-80).map((m) => ({ de: m && m.de === 'prospect' ? 'Prospect' : 'Vendeur', texte: texte(m && m.texte, 2000) })).filter((m) => m.texte);
+    if (!msgs.some((m) => m.de === 'Vendeur')) return res.status(400).json({ error: 'L’appel est vide : il n’y a rien à noter.' });
+    const c = await client(res); if (!c || !quota(req, res)) return;
+    const duree = Math.max(0, Math.min(7200, Number(b.duree) || 0));
+    const contenu = 'Scénario donné au prospect :\n' + fiche + '\n\nTranscription de l’appel' + (duree ? ' (' + Math.round(duree / 60) + ' min)' : '') + ' :\n' + msgs.map((m) => m.de + ' : ' + m.texte).join('\n');
+    try {
+      const rep = await demander(c, { max_tokens: 8000, output_config: { effort: 'medium', format: { type: 'json_schema', schema: NOTE } }, system: COACH, messages: [{ role: 'user', content: contenu }] });
+      let n;
+      try { n = JSON.parse(textes(rep)); } catch { return res.status(502).json({ error: 'La note de Claude est illisible : réessayez.' }); }
+      n.note = Math.max(0, Math.min(10, Math.round(Number(n.note) || 0)));
+      res.json(n);
+    } catch (e) { echec(res, e); }
+  });
+
+  // Rédaction pour le Marketing.
+  r.post('/rediger', express.json({ limit: '20kb' }), async (req, res) => {
+    const b = req.body || {};
+    const type = REDACTION[b.type] ? b.type : 'post';
+    const consigne = texte(b.consigne, 4000);
+    if (!consigne) return res.status(400).json({ error: 'Dites à Claude ce qu’il doit écrire.' });
+    const c = await client(res); if (!c || !quota(req, res)) return;
+    const system = 'Tu rédiges en français pour une agence qui crée des CRM sur mesure et fait de la génération de leads pour des petites entreprises françaises. ' +
+      'Réponds uniquement avec le texte demandé, prêt à copier, sans titre, sans commentaire et sans markdown. Garde tels quels les champs entre doubles accolades comme {{prenom}} ou {{entreprise}}.\n\nFormat : ' + REDACTION[type];
+    try {
+      const rep = await demander(c, { max_tokens: 4000, output_config: { effort: 'low' }, system, messages: [{ role: 'user', content: consigne }] });
+      res.json({ texte: textes(rep) });
+    } catch (e) { echec(res, e); }
+  });
+
+  return r;
+}

@@ -2,6 +2,7 @@
 // (y compris les rubriques ajoutées plus tard). Les administrateurs ont toujours tout.
 // Réglages (Mon compte, mot de passe, apparence, notifications) reste toujours ouvert.
 export const ACCES = ['today', 'agenda', 'prospects', 'leads', 'pipeline', 'tasks', 'telephone', 'mail', 'devis', 'clients', 'payments',
+  'campagnes', 'modeles', 'contenu', 'sources',
   'messages', 'groupes', 'visio', 'entrainement', 'dashboard', 'reports', 'carte', 'formations', 'tools',
   'settings.company', 'settings.goals', 'settings.data'];
 

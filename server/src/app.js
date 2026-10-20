@@ -20,6 +20,7 @@ import { enregistrementsRoutes } from './routes/enregistrements.js';
 import { mailRoutes } from './routes/mail.js';
 import { integrationsRoutes } from './routes/integrations.js';
 import { iaRoutes } from './routes/ia.js';
+import { paiementsRoutes } from './routes/paiements.js';
 import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
 import { osmRoutes } from './osm.js';
@@ -31,7 +32,7 @@ const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).ver
 
 // Base : PostgreSQL (Supabase) si databaseUrl est donné, sinon SQLite dans dataDir.
 // Mots de passe : Supabase Auth si supabase = { url, serviceKey } est donné, sinon vérifiés par le serveur.
-export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {}, mail = {}, integrations = {}, ia = {} } = {}) {
+export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {}, mail = {}, integrations = {}, ia = {}, paiements = {} } = {}) {
   const db = await openStore({ dataDir, databaseUrl });
   const identity = supabase ? supabaseIdentity(supabase) : localIdentity();
   const app = express();
@@ -79,6 +80,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/api/mail', requireAcces('mail'), mailRoutes({ db, dataDir, ...mail }));
   app.use('/api/integrations', requireAcces('entrainement'), integrationsRoutes(integrations));
   app.use('/api/ia', requireUser, iaRoutes({ db, dataDir, ...ia }));
+  app.use('/api/paiements', requireAcces('payments'), paiementsRoutes({ db, dataDir, ...paiements }));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Adresse inconnue.' }));
   app.use('/ambiance', ambianceFiles({ store }));
 

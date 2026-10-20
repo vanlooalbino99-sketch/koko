@@ -2,6 +2,7 @@
 // - Simulateur d'appel (rubrique Entraînement) : Claude joue le prospect décrit par la fiche, réplique par réplique,
 //   puis note l'appel (note sur 10, points forts, 3 choses à améliorer).
 // - Rédaction (rubrique Marketing) : posts, mails, SMS et messages LinkedIn.
+// - Qualification des leads LinkedIn (rubrique Nouveaux leads) : score, raison et note d'invitation.
 // La clé d'API vient de ANTHROPIC_API_KEY (Railway), sinon un administrateur la colle dans Entraînement ;
 // elle est alors chiffrée en base et n'est jamais renvoyée au navigateur.
 import express, { Router } from 'express';
@@ -56,6 +57,38 @@ const REDACTION = {
   email: 'Un e-mail de prospection : première ligne « Objet : … », puis le corps (120 mots maximum), personnel, une seule demande claire, signature avec {{moi}}.',
   sms: 'Un SMS : 300 caractères maximum, direct et poli, sans lien raccourci.',
   linkedin: 'Un message privé LinkedIn : 600 caractères maximum, personnel, pas de pitch agressif, une question pour ouvrir la discussion.',
+};
+
+// Qualification des leads LinkedIn (rubrique Nouveaux leads). Les noms ne sont jamais envoyés à Claude : il écrit
+// « {{prenom}} » et le CRM le remplace.
+const QUALIFIEUR = `Tu qualifies des leads B2B trouvés sur LinkedIn pour une agence française qui crée des CRM sur mesure et fait de la génération de leads pour des TPE et PME.
+Pour chaque lead (poste, entreprise, lieu), dis s'il correspond à la cible décrite : un décideur (gérant, fondateur, dirigeant, directeur commercial…) d'une petite entreprise du secteur et de la zone visés, qui peut acheter un CRM ou de la prospection.
+Écarte les salariés sans pouvoir de décision, les étudiants, les personnes en recherche d'emploi, les grands groupes, les concurrents (agences CRM, éditeurs de logiciels, cabinets de génération de leads) et les profils trop vagues pour juger.
+Score de 0 à 100 : 70 et plus = qualifié, 40 à 69 = à vérifier, moins de 40 = hors cible.
+La raison tient en une phrase courte, factuelle, en français.
+Le message est une note d'invitation LinkedIn en français, 280 caractères au plus, qui commence par « Bonjour {{prenom}}, », vouvoie, dit que vous avez vu son profil sur LinkedIn, cite son métier ou son entreprise, ne vend rien d'emblée et finit par une question simple. N'écris jamais le nom de la personne : garde {{prenom}} tel quel.`;
+
+const QUALIF = {
+  type: 'object',
+  properties: {
+    leads: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          score: { type: 'integer', description: 'De 0 à 100' },
+          categorie: { type: 'string', enum: ['qualifie', 'a_verifier', 'hors_cible'] },
+          raison: { type: 'string' },
+          message: { type: 'string', description: 'Note d’invitation LinkedIn, 280 caractères au plus' },
+        },
+        required: ['id', 'score', 'categorie', 'raison', 'message'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['leads'],
+  additionalProperties: false,
 };
 
 // Erreur du SDK Claude → statut HTTP et phrase claire pour le CRM.
@@ -167,6 +200,38 @@ export function iaRoutes({ db, dataDir, creer = (apiKey) => new Anthropic({ apiK
       try { n = JSON.parse(textes(rep)); } catch { return res.status(502).json({ error: 'La note de Claude est illisible : réessayez.' }); }
       n.note = Math.max(0, Math.min(10, Math.round(Number(n.note) || 0)));
       res.json(n);
+    } catch (e) { echec(res, e); }
+  });
+
+  // Qualification de leads LinkedIn : 25 au plus par demande, sans les noms.
+  r.post('/linkedin/qualifier', express.json({ limit: '100kb' }), async (req, res) => {
+    if (!peut(req.user, 'leads')) return res.status(403).json({ error: 'Accès aux Nouveaux leads non autorisé.' });
+    const b = req.body || {};
+    const vus = new Set();
+    const leads = (Array.isArray(b.leads) ? b.leads : []).map((l) => ({
+      id: texte(l && l.id, 80), poste: texte(l && l.poste, 300), entreprise: texte(l && l.entreprise, 160), lieu: texte(l && l.lieu, 120),
+    })).filter((l) => l.id && (l.poste || l.entreprise) && !vus.has(l.id) && vus.add(l.id));
+    if (!leads.length) return res.status(400).json({ error: 'Aucun lead à qualifier.' });
+    if (leads.length > 25) return res.status(400).json({ error: 'Pas plus de 25 leads à la fois.' });
+    const c = b.cible || {};
+    const cible = [
+      ['Offre', texte(c.offre, 600)], ['Postes visés', texte(c.postes, 600)], ['Secteurs visés', texte(c.secteurs, 600)],
+      ['Zone visée', texte(c.zone, 200)], ['À écarter', texte(c.exclure, 600)],
+    ].filter((x) => x[1]).map((x) => x[0] + ' : ' + x[1]).join('\n');
+    const cli = await client(res); if (!cli || !quota(req, res)) return;
+    const contenu = 'Cible :\n' + (cible || 'Décideurs de TPE et PME françaises.') + '\n\nLeads à qualifier (JSON) :\n' + JSON.stringify(leads);
+    try {
+      const rep = await demander(cli, { max_tokens: 12000, output_config: { effort: 'low', format: { type: 'json_schema', schema: QUALIF } }, system: QUALIFIEUR, messages: [{ role: 'user', content: contenu }] });
+      let q;
+      try { q = JSON.parse(textes(rep)); } catch { return res.status(502).json({ error: 'La réponse de Claude est illisible : réessayez.' }); }
+      const parId = new Map((Array.isArray(q && q.leads) ? q.leads : []).map((x) => [String(x && x.id), x]));
+      const CAT = ['qualifie', 'a_verifier', 'hors_cible'];
+      res.json({
+        leads: leads.filter((l) => parId.has(l.id)).map((l) => {
+          const x = parId.get(l.id), score = Math.max(0, Math.min(100, Math.round(Number(x.score) || 0)));
+          return { id: l.id, score, categorie: CAT.includes(x.categorie) ? x.categorie : score >= 70 ? 'qualifie' : score >= 40 ? 'a_verifier' : 'hors_cible', raison: texte(x.raison, 300), message: texte(x.message, 300) };
+        }),
+      });
     } catch (e) { echec(res, e); }
   });
 

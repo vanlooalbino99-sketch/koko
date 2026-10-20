@@ -160,7 +160,9 @@
       if (u === 'whatsapp') { window.open('https://wa.me/' + M.international(tel) + '?text=' + encodeURIComponent(txt), '_blank', 'noopener'); noterEnvoi(mod, p, 'Message WhatsApp préparé'); return; }
       if (u === 'linkedin') {
         M.copier(txt).then(function () {
-          window.open('https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent(((p.contact || '') + ' ' + (p.entreprise || '')).trim()), '_blank', 'noopener');
+          // Lead venu de LinkedIn : son profil ; sinon une recherche par nom et entreprise.
+          var profil = /^https:\/\/www\.linkedin\.com\/(in|sales\/lead)\/[^\s"'<>]+$/.test(p.linkedin || '') ? p.linkedin : '';
+          window.open(profil || 'https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent(((p.contact || '') + ' ' + (p.entreprise || '')).trim()), '_blank', 'noopener');
           noterEnvoi(mod, p, 'Message LinkedIn préparé'); S.msg = { k: 'ok', t: 'Message copié : collez-le dans LinkedIn (Ctrl + V).' }; dessiner(true);
         });
         return;

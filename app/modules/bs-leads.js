@@ -430,7 +430,10 @@
 
 
   // ------------------------------------------------------------------ page
-  var state = { leads: [], stats: null, prefs: null, statut: {}, busy: false, err: '', osmBusy: false };
+  var ONGLET_KEY = 'bs-leads-onglet';
+  function readOnglet() { try { return JSON.parse(localStorage.getItem(ONGLET_KEY) || 'null') === 'linkedin' ? 'linkedin' : 'sirene'; } catch (e) { return 'sirene'; } }
+  var state = { leads: [], stats: null, prefs: null, statut: {}, busy: false, err: '', osmBusy: false, onglet: readOnglet() };
+  var vue = null; // page affichée : { root, render }
 
   function monter(root) {
     if (!root || root.getAttribute('data-bsl')) return;
@@ -438,6 +441,9 @@
     ensureCss();
     if (!state.prefs) state.prefs = readPrefs();
     var prefs = state.prefs;
+    state.onglet = readOnglet() === 'linkedin' && window.bsLinkedin ? 'linkedin' : 'sirene';
+    // Rafraîchit la page après une réponse arrivée plus tard (seulement sur l'onglet des entreprises).
+    function maj() { if (root.isConnected && state.onglet !== 'linkedin') render(); }
 
     function savePrefs() { writeJson(PREFS_KEY, prefs); }
     function metierOptions() {
@@ -492,11 +498,27 @@
     function hue(s) { var h = 0; String(s || '').split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) % 360; }); return h; }
     function restants() { return state.leads.filter(function (l) { return !state.statut[l.siren] && !inCrm(l); }); }
 
+    function onglets() {
+      if (!window.bsLinkedin) return '';
+      var n = window.bsLinkedin._interne.leads().filter(function (l) { return !l.statut; }).length;
+      return '<div class="bsl-onglets" role="tablist" aria-label="Source des leads">' +
+        '<button type="button" role="tab" data-onglet="sirene" aria-selected="' + (state.onglet === 'sirene') + '" class="bsl-onglet' + (state.onglet === 'sirene' ? ' on' : '') + '">' + ic('building', 16) + 'Entreprises (Sirene)</button>' +
+        '<button type="button" role="tab" data-onglet="linkedin" aria-selected="' + (state.onglet === 'linkedin') + '" class="bsl-onglet' + (state.onglet === 'linkedin' ? ' on' : '') + '">' +
+        '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.125 2.062 2.062 0 0 1 0 4.125zM7.119 20.452H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>' +
+        'LinkedIn' + (n ? ' <b>' + n + '</b>' : '') + '</button></div>';
+    }
     function render() {
+      if (state.onglet === 'linkedin' && window.bsLinkedin) {
+        root.innerHTML = '<div class="page-head"><div class="page-head-text"><h1 class="page-title">Nouveaux leads</h1>' +
+          '<p class="page-sub">Des décideurs trouvés sur LinkedIn, notés selon vos critères, leur entreprise vérifiée dans la base officielle.</p></div></div>' +
+          onglets() + '<div class="bsli-root"></div>';
+        window.bsLinkedin.monter(root.querySelector('.bsli-root'));
+        return;
+      }
       var s = secteurOf(prefs.secteur), st = state.stats, rest = restants();
       var html =
         '<div class="page-head"><div class="page-head-text"><h1 class="page-title">Nouveaux leads</h1>' +
-        '<p class="page-sub">De vraies entreprises en activité, tirées de la base officielle Sirene. Chaque lot est nouveau : jamais deux fois le même lead.</p></div></div>' +
+        '<p class="page-sub">De vraies entreprises en activité, tirées de la base officielle Sirene. Chaque lot est nouveau : jamais deux fois le même lead.</p></div></div>' + onglets() +
         '<section class="card bsl-form" aria-label="Critères">' +
         '<div class="bsl-secteurs" role="tablist" aria-label="Secteur">' + SECTEURS.map(function (x) {
           return '<button type="button" role="tab" aria-selected="' + (x.id === s.id) + '" class="bsl-sect' + (x.id === s.id ? ' on' : '') + '" data-sect="' + esc(x.id) + '">' + esc(x.id) + '</button>';
@@ -528,22 +550,29 @@
       generer(prefs).then(function (r) {
         state.leads = r.leads; state.stats = r.stats; state.statut = {}; state.busy = false;
         if (!r.leads.length && !r.stats.epuise) state.err = 'Aucun nouveau lead trouvé pour l’instant. Essayez une zone plus large ou un autre métier.';
-        if (root.isConnected) { render(); var bar = root.querySelector('.bsl-bar'); if (bar && bar.scrollIntoView && window.scrollY > bar.offsetTop) bar.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+        if (root.isConnected && state.onglet !== 'linkedin') { render(); var bar = root.querySelector('.bsl-bar'); if (bar && bar.scrollIntoView && window.scrollY > bar.offsetTop) bar.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
         state.osmBusy = r.leads.some(function (l) { return window.BS_SERVER || l.lat != null; });
-        if (state.osmBusy) enrichir(r.leads, function () { if (root.isConnected) render(); }).then(function () { state.osmBusy = false; if (root.isConnected) render(); });
+        if (state.osmBusy) enrichir(r.leads, maj).then(function () { state.osmBusy = false; maj(); });
       }).catch(function (e) {
         state.busy = false;
         state.err = e && e.name === 'AbortError' ? 'La base officielle ne répond pas : réessayez dans un instant.'
           : e && /fetch|network/i.test(e.message || '') ? 'Pas de connexion à la base officielle (internet indisponible ?). Réessayez.' : (e && e.message) || 'Erreur inconnue.';
-        if (root.isConnected) render();
+        maj();
       });
     }
     function openFiche(id) { if (window.__bsY && id) window.__bsY.set(function (s) { return { overlays: (s.overlays || []).concat([{ key: 'bsl' + Date.now(), type: 'prospect', id: id }]) }; }); }
 
     root.addEventListener('click', function (ev) {
       var b = ev.target.closest('button');
-      if (!b || !root.contains(b)) return;
+      if (!b || !root.contains(b) || b.closest('.bsli-root')) return;
       var i;
+      if (b.hasAttribute('data-onglet')) {
+        var o = b.getAttribute('data-onglet');
+        if (o === state.onglet) return;
+        state.onglet = o; writeJson(ONGLET_KEY, o); render();
+        if (o === 'sirene' && !state.leads.length && !state.busy && readJson(PREFS_KEY, null)) lancer();
+        return;
+      }
       if (b.hasAttribute('data-sect')) { prefs.secteur = b.getAttribute('data-sect'); prefs.metier = ''; savePrefs(); state.stats = null; render(); return; }
       if ((i = b.getAttribute('data-add')) != null) { var l = state.leads[+i], r = addToCrm(l); l.crmId = r.id; state.statut[l.siren] = 'ajoute'; render(); return; }
       if ((i = b.getAttribute('data-skip')) != null) { state.statut[state.leads[+i].siren] = 'ecarte'; render(); return; }
@@ -557,27 +586,41 @@
         state.osmBusy = true;
         state.leads.forEach(function (x) { if (x.osmKo) x.osmDone = false; });
         render();
-        enrichir(state.leads, function () { if (root.isConnected) render(); }).then(function () { state.osmBusy = false; if (root.isConnected) render(); });
+        enrichir(state.leads, maj).then(function () { state.osmBusy = false; maj(); });
       }
       else if (act === 'reset') { reinitialiser(prefs); state.stats = null; lancer(); }
     });
     root.addEventListener('change', function (ev) {
       var t = ev.target, n = t && t.name;
+      if (t && t.closest && t.closest('.bsli-root')) return;
       if (n === 'metier' || n === 'rayon' || n === 'taille') { prefs[n] = t.value; savePrefs(); state.stats = null; render(); }
       if (n === 'zone') { prefs.zone = t.value.trim(); savePrefs(); state.stats = null; render(); }
     });
     root.addEventListener('keydown', function (ev) {
+      if (ev.target && ev.target.closest && ev.target.closest('.bsli-root')) return;
       if (ev.key === 'Enter' && ev.target && ev.target.name === 'zone') { prefs.zone = ev.target.value.trim(); savePrefs(); lancer(); }
     });
+    vue = { root: root, render: render };
     render();
     // À chaque visite : un lot tout neuf si aucun n'est en cours d'examen.
-    if (!state.leads.length && !state.busy && readJson(PREFS_KEY, null)) lancer();
+    if (state.onglet === 'sirene' && !state.leads.length && !state.busy && readJson(PREFS_KEY, null)) lancer();
+  }
+  // Choisit l'onglet (« sirene » ou « linkedin ») ; la page se redessine si elle est affichée.
+  function onglet(o) {
+    state.onglet = o === 'linkedin' ? 'linkedin' : 'sirene';
+    writeJson(ONGLET_KEY, state.onglet);
+    if (vue && vue.root.isConnected) vue.render();
   }
 
   // ------------------------------------------------------------------ styles
   var CSS = [
     '.bsl-root{display:flex;flex-direction:column;gap:16px;min-width:0}',
     '.bsl-root .page-head{margin-bottom:0}',
+    '.bsl-onglets{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);align-self:flex-start;max-width:100%;overflow-x:auto}',
+    '.bsl-onglet{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border:0;border-radius:10px;background:none;color:var(--text-2);font-weight:650;font-size:.92em;white-space:nowrap;cursor:pointer;transition:background-color .15s,color .15s}',
+    '.bsl-onglet:hover{color:var(--text)}',
+    '.bsl-onglet.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgb(0 0 0/.12)}',
+    '.bsl-onglet b{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#0a66c2;color:#fff;font-size:.78em;display:inline-grid;place-items:center}',
     '.bsl-form{padding:16px;display:flex;flex-direction:column;gap:14px}',
     '.bsl-secteurs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:2px}',
     '.bsl-secteurs::-webkit-scrollbar{display:none}',
@@ -662,8 +705,9 @@
     if (!metierOf(secteurOf(state.prefs.secteur), state.prefs.metier)) state.prefs.metier = '';
     writeJson(PREFS_KEY, state.prefs);
     state.leads = []; state.stats = null; state.statut = {}; state.err = '';
+    state.onglet = 'sirene'; writeJson(ONGLET_KEY, 'sirene');
     location.hash = '#/leads';
   }
 
-  window.bsLeads = { monter: monter, cibler: cibler, SECTEURS: SECTEURS, TAILLES: TAILLES, CANAL: CANAL, _interne: { toLead: toLead, sameName: sameName, joli: joli, searchKey: searchKey } };
+  window.bsLeads = { monter: monter, cibler: cibler, onglet: onglet, SECTEURS: SECTEURS, TAILLES: TAILLES, CANAL: CANAL, _interne: { toLead: toLead, sameName: sameName, joli: joli, searchKey: searchKey } };
 })();

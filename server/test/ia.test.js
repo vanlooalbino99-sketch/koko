@@ -123,9 +123,36 @@ test('rédaction et refus : texte prêt à copier, refus et erreurs en français
   assert.equal(erreurClaude(new Anthropic.APIConnectionError({ message: 'x' })).status, 502);
 });
 
+test('leads LinkedIn : Claude qualifie sans recevoir les noms, réponse bornée et rangée par lead', async () => {
+  demandes.length = 0;
+  prochaine = { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ leads: [
+    { id: 'a', score: 140, categorie: 'qualifie', raison: 'Gérant d’une plomberie à Lyon.', message: 'Bonjour {{prenom}}, ' + 'x'.repeat(400) },
+    { id: 'b', score: 20, categorie: 'bizarre', raison: 'Étudiant.', message: 'Bonjour {{prenom}},' },
+    { id: 'z', score: 99, categorie: 'qualifie', raison: 'inventé', message: '' },
+  ] }) }] };
+  const leads = [
+    { id: 'a', nom: 'Jean Dupont', poste: 'Gérant chez Plomberie Dupont', entreprise: 'Plomberie Dupont', lieu: 'Lyon' },
+    { id: 'b', nom: 'Léa Martin', poste: 'Étudiante en droit', entreprise: '', lieu: 'Paris' },
+    { id: 'c', nom: 'Vide', poste: '', entreprise: '' },
+  ];
+  let r = await call(marie, 'POST', '/api/ia/linkedin/qualifier', { cible: { postes: 'gérant', zone: 'Lyon' }, leads });
+  assert.equal(r.status, 200);
+  const b = await r.json();
+  assert.deepEqual(b.leads.map((l) => [l.id, l.score, l.categorie]), [['a', 100, 'qualifie'], ['b', 20, 'hors_cible']]);
+  assert.ok(b.leads[0].message.length <= 300);
+  const p = demandes[0];
+  assert.equal(p.output_config.format.type, 'json_schema');
+  assert.ok(!JSON.stringify(p).includes('Dupont Jean') && !JSON.stringify(p).includes('Jean Dupont') && !JSON.stringify(p).includes('Léa'), 'les noms ne partent pas chez Claude');
+  assert.match(p.messages[0].content, /Zone visée : Lyon/);
+  assert.match(p.system, /\{\{prenom\}\}/);
+  r = await call(marie, 'POST', '/api/ia/linkedin/qualifier', { leads: Array.from({ length: 26 }, (_, i) => ({ id: 'l' + i, poste: 'Gérant' })) });
+  assert.equal(r.status, 400);
+});
+
 test('simulateur : suit l’accès Entraînement ; la clé peut être retirée', async () => {
   await call(admin, 'PATCH', `/api/users/${marieId}`, { acces: ['today'] });
   assert.equal((await call(marie, 'POST', '/api/ia/simulation/repondre', { fiche: FICHE, messages: [{ de: 'vendeur', texte: 'Bonjour' }] })).status, 403);
+  assert.equal((await call(marie, 'POST', '/api/ia/linkedin/qualifier', { leads: [{ id: 'a', poste: 'Gérant' }] })).status, 403);
   assert.equal((await call(marie, 'DELETE', '/api/ia/cle')).status, 403);
   assert.equal((await call(admin, 'DELETE', '/api/ia/cle')).status, 200);
   assert.equal((await (await call(admin, 'GET', '/api/ia/etat')).json()).ia, false);

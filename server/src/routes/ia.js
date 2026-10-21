@@ -3,6 +3,7 @@
 //   puis note l'appel (note sur 10, points forts, 3 choses à améliorer).
 // - Rédaction (rubrique Marketing) : posts, mails, SMS et messages LinkedIn.
 // - Qualification des leads LinkedIn (rubrique Nouveaux leads) : score, raison et note d'invitation.
+// - Équipe d'assistants IA (Aujourd'hui, Assistants IA) : CEO, VP Sales, Production… ouverts membre par membre.
 // La clé d'API vient de ANTHROPIC_API_KEY (Railway), sinon un administrateur la colle dans Entraînement ;
 // elle est alors chiffrée en base et n'est jamais renvoyée au navigateur.
 import express, { Router } from 'express';
@@ -10,6 +11,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getSetting, setSetting } from '../store.js';
 import { coffre } from '../coffre.js';
 import { peut } from '../acces.js';
+import { ASSISTANTS, parId as parAssistant, consignes, accesDe, peutUtiliser } from '../assistants.js';
 
 export const MODELE = 'claude-opus-5-5';
 const PAR_JOUR = 400; // appels à Claude par membre et par jour (garde-fou de coût)
@@ -232,6 +234,53 @@ export function iaRoutes({ db, dataDir, creer = (apiKey) => new Anthropic({ apiK
           return { id: l.id, score, categorie: CAT.includes(x.categorie) ? x.categorie : score >= 70 ? 'qualifie' : score >= 40 ? 'a_verifier' : 'hors_cible', raison: texte(x.raison, 300), message: texte(x.message, 300) };
         }),
       });
+    } catch (e) { echec(res, e); }
+  });
+
+  // L'équipe d'assistants IA (CEO, VP Sales, Production…). Chaque membre ne voit que ceux qui lui sont ouverts ;
+  // un administrateur les voit tous et choisit qui y a accès.
+  const reglageAssistants = () => getSetting(db, 'ia_assistants', {});
+  r.get('/assistants', async (req, res) => {
+    const reg = await reglageAssistants(), estAdmin = req.user.role === 'admin';
+    res.json({
+      ia: !!(await cle()),
+      assistants: ASSISTANTS.filter((a) => peutUtiliser(req.user, reg, a)).map((a) => ({
+        id: a.id, nom: a.nom, titre: a.titre, description: a.description, icone: a.icone, couleur: a.couleur, suggestions: a.suggestions,
+        ...(estAdmin ? { acces: accesDe(reg, a) } : {}),
+      })),
+    });
+  });
+
+  r.put('/assistants/:id/acces', express.json({ limit: '20kb' }), async (req, res) => {
+    if (!admin(req, res)) return;
+    const a = parAssistant(req.params.id);
+    if (!a) return res.status(404).json({ error: 'Assistant inconnu.' });
+    const b = req.body || {};
+    const ids = new Set((await db.all('SELECT id FROM users')).map((u) => u.id));
+    const membres = [...new Set((Array.isArray(b.membres) ? b.membres : []).filter((x) => typeof x === 'string' && ids.has(x)))];
+    const reg = await reglageAssistants();
+    reg[a.id] = { tous: !!b.tous, membres };
+    await setSetting(db, 'ia_assistants', reg);
+    res.json({ acces: accesDe(reg, a) });
+  });
+
+  // Conversation avec un assistant. contexte : les chiffres et l'état du CRM vus par le membre (entreprises, statuts,
+  // montants), jamais les noms, téléphones ni e-mails des contacts : le navigateur ne les envoie pas.
+  r.post('/assistants/:id', express.json({ limit: '80kb' }), async (req, res) => {
+    const a = parAssistant(req.params.id);
+    if (!a) return res.status(404).json({ error: 'Assistant inconnu.' });
+    if (!peutUtiliser(req.user, await reglageAssistants(), a)) return res.status(403).json({ error: 'Cet assistant n’est pas ouvert à votre compte : demandez l’accès à un administrateur.' });
+    const b = req.body || {};
+    const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-24).map((m) => ({ role: m && m.de === 'ia' ? 'assistant' : 'user', content: texte(m && m.texte, 4000) })).filter((m) => m.content);
+    while (msgs.length && msgs[0].role !== 'user') msgs.shift();
+    if (!msgs.length || msgs[msgs.length - 1].role !== 'user') return res.status(400).json({ error: 'Posez votre question.' });
+    const ctx = texte(b.contexte, 30000);
+    const c = await client(res); if (!c || !quota(req, res)) return;
+    const qui = texte(req.user.name, 80) + (req.user.role === 'admin' ? ' (administrateur)' : ' (membre de l’équipe)');
+    const system = consignes(a) + '\n\nTu parles avec : ' + qui + '.' + (ctx ? '\n\nÉtat du CRM aujourd’hui :\n' + ctx : '');
+    try {
+      const rep = await demander(c, { max_tokens: 6000, output_config: { effort: 'low' }, system, messages: msgs });
+      res.json({ texte: textes(rep) });
     } catch (e) { echec(res, e); }
   });
 

@@ -145,6 +145,8 @@ app/                      Le CRM (navigateur), découpé en fichiers
   modules/bs-icones*.js   Icônes du menu (≈ 1 000 icônes, styles, couleurs)
   modules/bs-reglement.js Règlement des devis et factures, QR codes
   modules/bs-messages.js  Messagerie d'équipe (v5.10) : Messages, Groupes et Visio (WebRTC, signalisation par le serveur)
+  modules/bs-aujourdhui.js Page « Aujourd'hui » : chiffres du jour, Mes prospects (score IA), performance, activités
+  modules/bs-assistants.js Équipe d'assistants IA (Claude) : assistant de l'équipe, CEO, VP Sales, Production…
   styles/*.css            Styles ; aurore.css (v5.9) : aurore, verre et dégradés tirés de la couleur d'accent
 scripts/build.mjs         Assemble app/ en un seul fichier HTML
 server/src/               Serveur Express
@@ -152,7 +154,8 @@ server/src/               Serveur Express
   auth.js                 Mots de passe (scrypt), sessions, CSRF, limitation des essais
   db.js                   SQLite (node:sqlite) et migrations
   merge.js                Fusion à trois voies des données
-  routes/                 auth, users, data, ambiance, formation, site (passerelle du site internet), chat (messagerie, flux temps réel, visio)
+  routes/                 auth, users, data, ambiance, formation, site (passerelle du site internet), chat (messagerie, flux temps réel, visio), ia (Claude)
+  assistants.js           Rôles et consignes des assistants IA, accès membre par membre
 server/test/              Tests de l'API et de la fusion (node --test)
 e2e/                      Tests de bout en bout dans Chromium (serveur à deux sessions, CRM de démonstration)
 demos/                    CRM métier de démonstration (immobilier, rénovation, courtage), un fichier chacun

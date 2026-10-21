@@ -149,6 +149,43 @@ test('leads LinkedIn : Claude qualifie sans recevoir les noms, réponse bornée 
   assert.equal(r.status, 400);
 });
 
+test('assistants IA : liste selon l’accès, réglage par l’administrateur, conversation avec le contexte du CRM', async () => {
+  let l = await (await call(admin, 'GET', '/api/ia/assistants')).json();
+  assert.equal(l.ia, true);
+  assert.ok(l.assistants.length >= 8);
+  assert.deepEqual(l.assistants.find((a) => a.id === 'ceo').acces, { tous: false, membres: [] });
+  l = await (await call(marie, 'GET', '/api/ia/assistants')).json();
+  assert.deepEqual(l.assistants.map((a) => a.id), ['membre', 'leads', 'clients']);
+  assert.equal(l.assistants[0].acces, undefined);
+  assert.equal((await call(marie, 'POST', '/api/ia/assistants/ceo', { messages: [{ de: 'moi', texte: 'Bonjour' }] })).status, 403);
+  assert.equal((await call(marie, 'PUT', '/api/ia/assistants/ceo/acces', { tous: false, membres: [marieId] })).status, 403);
+
+  let r = await call(admin, 'PUT', '/api/ia/assistants/ceo/acces', { tous: false, membres: [marieId, 'inconnu'] });
+  assert.deepEqual((await r.json()).acces, { tous: false, membres: [marieId] });
+  r = await call(admin, 'PUT', '/api/ia/assistants/clients/acces', { tous: false, membres: [] });
+  assert.equal(r.status, 200);
+  l = await (await call(marie, 'GET', '/api/ia/assistants')).json();
+  assert.deepEqual(l.assistants.map((a) => a.id), ['membre', 'ceo', 'leads']);
+
+  assert.equal((await call(marie, 'POST', '/api/ia/assistants/ceo', { messages: [{ de: 'ia', texte: 'Bonjour !' }] })).status, 400);
+  const avant = demandes.length;
+  prochaine = { stop_reason: 'end_turn', content: [{ type: 'text', text: 'Commencez par les 3 rappels en retard.' }] };
+  r = await call(marie, 'POST', '/api/ia/assistants/ceo', {
+    messages: [{ de: 'ia', texte: 'Bonjour, je suis votre assistant.' }, { de: 'moi', texte: 'Par quoi je commence ?' }],
+    contexte: 'Appels à passer : 7\nEn retard : 3',
+  });
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).texte, 'Commencez par les 3 rappels en retard.');
+  assert.equal(demandes.length, avant + 1);
+  const d = demandes.at(-1);
+  assert.equal(d.model, MODELE);
+  assert.deepEqual(d.messages, [{ role: 'user', content: 'Par quoi je commence ?' }]);
+  assert.match(d.system, /bras droit du CEO/);
+  assert.match(d.system, /Tu parles avec : Marie \(membre/);
+  assert.match(d.system, /En retard : 3/);
+  assert.equal((await call(admin, 'POST', '/api/ia/assistants/inconnu', { messages: [{ de: 'moi', texte: 'Bonjour' }] })).status, 404);
+});
+
 test('simulateur : suit l’accès Entraînement ; la clé peut être retirée', async () => {
   await call(admin, 'PATCH', `/api/users/${marieId}`, { acces: ['today'] });
   assert.equal((await call(marie, 'POST', '/api/ia/simulation/repondre', { fiche: FICHE, messages: [{ de: 'vendeur', texte: 'Bonjour' }] })).status, 403);

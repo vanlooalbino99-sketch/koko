@@ -179,6 +179,13 @@ export const SQLITE_MIGRATIONS = [
      created_at TEXT NOT NULL
    );
    CREATE INDEX mail_sent_user ON mail_sent(user_id, created_at);`,
+  // v11 : image de chaque groupe de la messagerie.
+  `CREATE TABLE chat_photos (
+     conversation_id TEXT PRIMARY KEY REFERENCES chat_conversations(id) ON DELETE CASCADE,
+     mime TEXT NOT NULL,
+     data BLOB NOT NULL,
+     updated_at TEXT NOT NULL
+   );`,
 ];
 
 // PostgreSQL : le même schéma que SQLite après toutes ses migrations, en une fois.
@@ -365,4 +372,12 @@ export const PG_MIGRATIONS = [
    CREATE INDEX mail_sent_user ON mail_sent(user_id, created_at);
    ALTER TABLE mail_accounts ENABLE ROW LEVEL SECURITY;
    ALTER TABLE mail_sent ENABLE ROW LEVEL SECURITY;`,
+  // Comme la v11 de SQLite : image des groupes.
+  `CREATE TABLE chat_photos (
+     conversation_id TEXT PRIMARY KEY REFERENCES chat_conversations(id) ON DELETE CASCADE,
+     mime TEXT NOT NULL,
+     data BYTEA NOT NULL,
+     updated_at TEXT NOT NULL
+   );
+   ALTER TABLE chat_photos ENABLE ROW LEVEL SECURITY;`,
 ];

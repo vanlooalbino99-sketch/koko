@@ -235,3 +235,46 @@ test('visio : participants, relais de signal entre participants seulement, fin',
   assert.deepEqual((await paul('GET', '/api/chat')).body.conversations.find((c) => c.id === 'equipe').call, []);
   [fa, fm, fp].forEach((f) => f.close());
 });
+
+test('supprimer un message : son auteur ou un administrateur, pour tout le monde', async () => {
+  const fm = await marie.flux();
+  const a = await paul('POST', '/api/chat/conversations/equipe/messages', { body: 'Oups, mauvais message' });
+  const b = await marie('POST', '/api/chat/conversations/equipe/messages', { body: 'Message de Marie' });
+  const f = await paul.raw('POST', '/api/chat/conversations/equipe/fichiers?nom=a.txt&type=text/plain', Buffer.from('pièce'));
+  assert.equal((await marie('DELETE', `/api/chat/conversations/equipe/messages/${a.body.message.id}`)).status, 403, 'pas le message d’un autre');
+  assert.equal((await paul('DELETE', `/api/chat/conversations/equipe/messages/${a.body.message.id}`)).status, 200);
+  assert.deepEqual(await fm.wait('supprime'), { conversationId: 'equipe', id: a.body.message.id });
+  assert.equal((await admin('DELETE', `/api/chat/conversations/equipe/messages/${b.body.message.id}`)).status, 200, 'un administrateur peut supprimer');
+  assert.equal((await paul('DELETE', `/api/chat/conversations/equipe/messages/${f.body.message.id}`)).status, 200);
+  assert.equal((await marie.get(`/api/chat/fichiers/${f.body.message.file.id}`)).status, 404, 'la pièce jointe part avec le message');
+  const reste = (await marie('GET', '/api/chat/conversations/equipe/messages')).body.messages.map((m) => m.id);
+  assert.ok(![a, b, f].some((x) => reste.includes(x.body.message.id)));
+  assert.equal((await paul('DELETE', `/api/chat/conversations/equipe/messages/${a.body.message.id}`)).status, 404);
+  const g = await admin('POST', '/api/chat/groupes', { name: 'Secret', members: [] });
+  const s = await admin('POST', `/api/chat/conversations/${g.body.conversation.id}/messages`, { body: 'x' });
+  assert.equal((await paul('DELETE', `/api/chat/conversations/${g.body.conversation.id}/messages/${s.body.message.id}`)).status, 404, 'hors du groupe');
+  fm.close();
+});
+
+test('image d’un groupe : membres seulement, image valide, annonce, retrait', async () => {
+  const g = await admin('POST', '/api/chat/groupes', { name: 'Commerciaux', members: [ids.Marie] });
+  const id = g.body.conversation.id;
+  assert.equal(g.body.conversation.photo, null);
+  const jpeg = 'data:image/jpeg;base64,' + Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]).toString('base64');
+  const fm = await marie.flux();
+  assert.equal((await paul('PUT', `/api/chat/groupes/${id}/photo`, { image: jpeg })).status, 404, 'pas membre');
+  assert.equal((await marie('PUT', `/api/chat/groupes/${id}/photo`, { image: 'data:image/jpeg;base64,' + Buffer.from('<svg>').toString('base64') })).status, 400);
+  assert.equal((await marie('PUT', `/api/chat/groupes/equipe/photo`, { image: jpeg })).status, 404, 'seulement les groupes');
+  const r = await marie('PUT', `/api/chat/groupes/${id}/photo`, { image: jpeg });
+  assert.equal(r.status, 200);
+  assert.ok(r.body.conversation.photo);
+  assert.ok((await fm.wait('conversation', (c) => c.id === id && !!c.photo)).photo);
+  const img = await admin.get(`/api/chat/groupes/${id}/photo`);
+  assert.equal(img.headers.get('content-type'), 'image/jpeg');
+  assert.equal((await paul.get(`/api/chat/groupes/${id}/photo`)).status, 404);
+  const msgs = (await admin('GET', `/api/chat/conversations/${id}/messages`)).body.messages;
+  assert.equal(msgs.at(-1).body, 'Marie a changé l’image du groupe');
+  assert.equal((await admin('DELETE', `/api/chat/groupes/${id}/photo`)).body.conversation.photo, null);
+  assert.equal((await admin.get(`/api/chat/groupes/${id}/photo`)).status, 404);
+  fm.close();
+});

@@ -73,7 +73,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/api/osm', requireAcces('leads'), express.json({ limit: '40kb' }), osmRoutes());
   app.use('/api/contacts', requireAcces('leads'), express.json({ limit: '40kb' }), contactsRoutes(contacts));
   app.use('/api/formation', requireAcces('formations'), express.json({ limit: '10kb' }), formationRoutes({ db }));
-  app.use('/api/chat', requireUser, express.json({ limit: '100kb' }), chatRoutes({ db, hub }));
+  app.use('/api/chat', requireUser, express.json({ limit: '600kb' }), chatRoutes({ db, hub }));
   app.use('/api/photos', requireUser, express.json({ limit: '700kb' }), photosRoutes({ db, hub }));
   app.use('/api/sons', requireUser, sonsRoutes({ db }));
   app.use('/api/enregistrements', requireUser, enregistrementsRoutes({ db }));

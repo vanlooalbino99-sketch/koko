@@ -20,6 +20,8 @@ export const MAX_FILE = 10 * 1024 * 1024;
 const INLINE = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
   'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/webm', 'audio/ogg', 'audio/wav', 'audio/x-wav']);
 const PAGE = 50;
+const MAX_PHOTO = 400 * 1024;
+const PHOTOS = { 'image/jpeg': [0xff, 0xd8, 0xff], 'image/png': [0x89, 0x50, 0x4e, 0x47], 'image/webp': [0x52, 0x49, 0x46, 0x46] };
 const HEARTBEAT_MS = 20000;
 const GRACE_MS = 15000;
 const now = () => new Date().toISOString();
@@ -95,8 +97,9 @@ export function chatRoutes({ db, hub = chatHub() }) {
     const read = await lastRead(c.id, userId);
     const unread = (await db.get('SELECT COUNT(*) AS n FROM chat_messages WHERE conversation_id = ? AND id > ? AND kind = ? AND (user_id IS NULL OR user_id != ?)',
       c.id, read, 'texte', userId)).n;
+    const photo = c.kind === 'groupe' ? (await db.get('SELECT updated_at FROM chat_photos WHERE conversation_id = ?', c.id))?.updated_at || null : null;
     return {
-      id: c.id, kind: c.kind, name: c.name, createdBy: c.created_by, createdAt: c.created_at,
+      id: c.id, kind: c.kind, name: c.name, createdBy: c.created_by, createdAt: c.created_at, photo,
       members: c.kind === 'equipe' ? null : await memberIds(c),
       last: await toMsg(last), unread, lastRead: Number(read), call: callOf(c.id),
     };
@@ -216,6 +219,24 @@ export function chatRoutes({ db, hub = chatHub() }) {
     res.send(data);
   });
 
+  // Supprimer un message : son auteur, ou un administrateur (y compris les lignes d'information).
+  // Le message et sa pièce jointe disparaissent pour tout le monde.
+  r.delete('/conversations/:id/messages/:mid', async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
+    const m = await db.get('SELECT * FROM chat_messages WHERE id = ? AND conversation_id = ?', Number(req.params.mid) || 0, c.id);
+    if (!m) return res.status(404).json({ error: 'Message introuvable.' });
+    if (m.user_id !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'Vous ne pouvez supprimer que vos propres messages.' });
+    await db.tx(async () => {
+      await db.run('DELETE FROM chat_messages WHERE id = ?', m.id);
+      if (m.file_id) await db.run('DELETE FROM chat_files WHERE id = ?', m.file_id);
+    });
+    const ids = await destinataires(c);
+    hub.send(ids, 'supprime', { conversationId: c.id, id: Number(m.id) });
+    for (const id of ids) hub.send([id], 'conversation', await view(c, id));
+    res.json({ ok: true });
+  });
+
   // « En train d'écrire » : rien en base, juste un signal aux autres membres (le navigateur le renvoie toutes les 2–3 s).
   r.post('/conversations/:id/ecrit', async (req, res) => {
     const c = await conv(req.params.id);
@@ -309,6 +330,33 @@ export function chatRoutes({ db, hub = chatHub() }) {
     before.filter((id) => !now_.includes(id)).forEach((id) => hub.send([id], 'retire', { conversationId: c.id }));
     res.json({ conversation: now_.includes(req.user.id) ? await view(fresh, req.user.id) : null });
   });
+
+  // Image du groupe : une petite image carrée recadrée par le navigateur. Tout membre du groupe peut la changer.
+  r.get('/groupes/:id/photo', async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Groupe introuvable.' });
+    const p = await db.get('SELECT mime, data FROM chat_photos WHERE conversation_id = ?', c.id);
+    if (!p) return res.status(404).json({ error: 'Pas d’image.' });
+    res.set({ 'Cache-Control': 'private, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff' }).type(p.mime).send(Buffer.from(p.data));
+  });
+  async function photoGroupe(req, res, image) {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id)) || c.kind !== 'groupe') return res.status(404).json({ error: 'Groupe introuvable.' });
+    if (image) {
+      const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(image));
+      if (!m) return res.status(400).json({ error: 'Choisissez une image JPEG, PNG ou WebP.' });
+      const data = Buffer.from(m[2], 'base64');
+      if (!data.length || data.length > MAX_PHOTO) return res.status(400).json({ error: 'Image trop lourde (400 Ko au plus).' });
+      if (!PHOTOS[m[1]].every((b, i) => data[i] === b)) return res.status(400).json({ error: 'Ce fichier n’est pas une image valide.' });
+      await db.run(`INSERT INTO chat_photos (conversation_id, mime, data, updated_at) VALUES (?, ?, ?, ?)
+                  ON CONFLICT(conversation_id) DO UPDATE SET mime = excluded.mime, data = excluded.data, updated_at = excluded.updated_at`, c.id, m[1], data, now());
+    } else await db.run('DELETE FROM chat_photos WHERE conversation_id = ?', c.id);
+    await post(c, null, image ? `${req.user.name} a changé l’image du groupe` : `${req.user.name} a retiré l’image du groupe`, 'info');
+    await announce(c);
+    res.json({ conversation: await view(c, req.user.id) });
+  }
+  r.put('/groupes/:id/photo', (req, res, next) => photoGroupe(req, res, req.body?.image || '').catch(next));
+  r.delete('/groupes/:id/photo', (req, res, next) => photoGroupe(req, res, null).catch(next));
 
   // ---------------------------------------------------------------- visio
   r.post('/conversations/:id/visio', async (req, res) => {

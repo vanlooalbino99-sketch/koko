@@ -79,7 +79,37 @@
   function titre(c) { return c.kind === 'equipe' ? 'Équipe' : c.kind === 'direct' ? nomDe(autre(c)) : c.name; }
   function convIcon(c) {
     if (c.kind === 'direct') { var o = autre(c); return avatar(o, nomDe(o)); }
+    if (c.kind === 'groupe' && c.photo) return '<span class="bsm-av ph gph" style="--ph:url(&quot;' + esc(photoGroupe(c)) + '&quot;)" role="img" aria-label="' + esc(c.name) + '"></span>';
     return '<span class="bsm-av bsm-av-grp ' + (c.kind === 'equipe' ? 'eq' : '') + '" style="--h:' + teinte(c.id) + '">' + ic(c.kind === 'equipe' ? 'users' : 'hash', 17) + '</span>';
+  }
+  function photoGroupe(c) { return API + '/groupes/' + encodeURIComponent(c.id) + '/photo?v=' + encodeURIComponent(c.photo); }
+  // Image de groupe : recadrée au carré et réduite à 320 px dans le navigateur (le serveur ne garde qu'une petite image).
+  function reduireImage(file) {
+    return new Promise(function (ok, ko) {
+      if (!file || !/^image\//.test(file.type)) { ko(new Error('Choisissez une image (JPEG, PNG…).')); return; }
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var t = Math.min(img.naturalWidth, img.naturalHeight), cv = document.createElement('canvas');
+        cv.width = cv.height = 320;
+        cv.getContext('2d').drawImage(img, (img.naturalWidth - t) / 2, (img.naturalHeight - t) / 2, t, t, 0, 0, 320, 320);
+        URL.revokeObjectURL(url);
+        ok(cv.toDataURL('image/jpeg', 0.86));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); ko(new Error('Cette image ne peut pas être lue : essayez une photo JPEG ou PNG.')); };
+      img.src = url;
+    });
+  }
+  function peutSupprimer(m) { return m.userId === S.me || !!(window.BS_SERVER && window.BS_SERVER.user && window.BS_SERVER.user.role === 'admin'); }
+  function supprimerMessage(id) {
+    var c = S.convs[S.actif]; if (!c) return;
+    if (!confirm('Supprimer ce message pour tout le monde ?')) return;
+    api('DELETE', '/conversations/' + encodeURIComponent(c.id) + '/messages/' + encodeURIComponent(id)).then(function () { retirerMessage(c.id, Number(id)); })
+      .catch(function (e) { carte({ titre: 'Suppression impossible', sous: e.message, icone: 'info', bouton: 'OK', action: function () {}, force: true }); });
+  }
+  function retirerMessage(cid, id) {
+    var arr = S.msgs[cid];
+    if (arr) for (var i = arr.length - 1; i >= 0; i--) if (arr[i].id === id) arr.splice(i, 1);
+    rendre();
   }
   function heure(iso) { var d = new Date(iso); return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
   function jour(iso) {
@@ -283,6 +313,7 @@
       majBadge(); rendre();
     });
     es.addEventListener('message', function (e) { recu(JSON.parse(e.data)); });
+    es.addEventListener('supprime', function (e) { var x = JSON.parse(e.data); retirerMessage(x.conversationId, x.id); });
     es.addEventListener('equipe', function () { charger(); });
     es.addEventListener('profil', function (e) { profil(JSON.parse(e.data)); });
     es.addEventListener('ecrit', function (e) { quelquUnEcrit(JSON.parse(e.data)); });
@@ -791,9 +822,10 @@
         }
         var moi = m.userId === S.me;
         var suite = prev && prev.userId === m.userId && (new Date(m.at) - new Date(prev.at)) < 5 * 60000;
-        html.push('<div class="bsm-msg' + (moi ? ' moi' : '') + (suite ? ' suite' : '') + '">' + (moi ? '' : (suite ? '<span class="bsm-av-sp"></span>' : avatar(m.userId, m.author))) +
+        html.push('<div class="bsm-msg' + (moi ? ' moi' : '') + (suite ? ' suite' : '') + '" data-mid="' + m.id + '">' + (moi ? '' : (suite ? '<span class="bsm-av-sp"></span>' : avatar(m.userId, m.author))) +
           '<div class="bsm-bulle">' + (suite || moi || c.kind === 'direct' ? '' : '<b class="bsm-auteur" style="--h:' + teinte(m.userId) + '">' + esc(m.author) + (posteDe(m.userId) ? '<small>' + esc(posteDe(m.userId)) + '</small>' : '') + '</b>') +
-          piece(m.file) + (m.body ? '<div class="bsm-txt">' + texte(m.body) + '</div>' : '') + '<time>' + heure(m.at) + '</time></div></div>');
+          piece(m.file) + (m.body ? '<div class="bsm-txt">' + texte(m.body) + '</div>' : '') + '<time>' + heure(m.at) + '</time></div>' +
+          (peutSupprimer(m) ? '<button type="button" class="bsm-suppr" data-suppr="' + m.id + '" title="Supprimer ce message" aria-label="Supprimer ce message">' + ic('trash', 15) + '</button>' : '') + '</div>');
         prev = m;
       });
       corps = html.join('');
@@ -844,6 +876,14 @@
       }).join('') + '</div>' : '<p class="bsm-rien">Invitez des membres dans Réglages › Équipe &amp; compte pour faire vos réunions ici.</p>') +
       '<p class="bsm-note">' + ic('info', 14) + '<span>La visio relie directement les navigateurs des participants : idéale jusqu’à 5 ou 6 personnes. Autorisez la caméra et le micro quand le navigateur le demande.</span></p>';
   }
+  // Image du groupe dans la fenêtre de création ou de réglages : aperçu, choisir, retirer.
+  function imageGroupe(src, retirer, nom) {
+    var en = S.modal && S.modal.photoEnCours;
+    return '<div class="bsm-gimg"><span class="bsm-av xl ' + (src ? 'ph gph' : 'bsm-av-grp') + '"' + (src ? ' style="--ph:url(&quot;' + esc(src) + '&quot;)"' : ' style="--h:250"') + '>' + (src ? '' : ic('camera', 28)) + '</span>' +
+      '<div class="bsm-gimg-t"><b>Image du groupe</b><span>Une photo ou un logo, recadré au carré.</span><div class="bsm-gimg-b">' +
+      '<label class="btn btn-secondary btn-sm">' + (en ? '<span class="bsm-spin"></span>' : ic('upload', 14)) + (src ? 'Changer l’image' : 'Choisir une image') + '<input type="file" accept="image/*" class="bsm-gfichier" hidden></label>' +
+      (retirer || (S.modal && S.modal.photo) ? '<button type="button" class="btn btn-ghost btn-sm" data-act="photo-retirer">Retirer</button>' : '') + '</div></div></div>';
+  }
   function rendreModal() {
     var m = S.modal, autres = S.users.filter(function (u) { return u.id !== S.me; });
     var c = m.conv ? S.convs[m.conv] : null;
@@ -856,7 +896,8 @@
     var corps;
     if (m.type === 'groupe') {
       corps = '<h2>Nouveau groupe</h2><p>Un espace de discussion pour une partie de l’équipe : commerciaux, un client, un projet…</p>' +
-        '<label class="bsm-lbl">Nom du groupe<input class="input" name="nom" maxlength="60" placeholder="Ex. Commerciaux, Projet Dupont" autofocus></label>' +
+        imageGroupe(m.photo || '', '', 'Ex') +
+        '<label class="bsm-lbl">Nom du groupe<input class="input" name="nom" maxlength="60" placeholder="Ex. Commerciaux, Projet Dupont" value="' + esc(m.nom || '') + '" autofocus></label>' +
         '<div class="bsm-lbl">Membres</div>' + cases(m.sel || []) +
         '<div class="bsm-modal-foot"><button type="button" class="btn btn-secondary btn-md" data-act="fermer">Annuler</button><button type="submit" class="btn btn-primary btn-md">Créer le groupe</button></div>';
     } else if (m.type === 'direct') {
@@ -867,12 +908,13 @@
     } else if (m.type === 'reglages' && c) {
       var peutRetirer = window.BS_SERVER && window.BS_SERVER.user && window.BS_SERVER.user.role === 'admin';
       corps = '<h2>Réglages du groupe</h2>' +
-        '<label class="bsm-lbl">Nom du groupe<input class="input" name="nom" maxlength="60" value="' + esc(c.name) + '" autofocus></label>' +
+        imageGroupe(m.photo || (c.photo ? photoGroupe(c) : ''), c.photo ? 'retirer' : '', c.name) +
+        '<label class="bsm-lbl">Nom du groupe<input class="input" name="nom" maxlength="60" value="' + esc(m.nom != null ? m.nom : c.name) + '" autofocus></label>' +
         '<div class="bsm-lbl">Membres</div><div class="bsm-pick">' + (c.members || []).map(function (id) {
           return '<div class="bsm-pick-i">' + avatar(id, nomDe(id)) + '<span>' + esc(nomDe(id)) + (id === S.me ? ' <small>vous</small>' : '') + (id === c.createdBy ? ' <small>créateur</small>' : '') + '</span>' +
             (peutRetirer && id !== S.me ? '<button type="button" class="btn btn-ghost btn-sm" data-retirer="' + esc(id) + '">Retirer</button>' : '') + '</div>';
         }).join('') + '</div>' +
-        '<div class="bsm-lbl">Ajouter des membres</div>' + cases([], c.members || []) +
+        '<div class="bsm-lbl">Ajouter des membres</div>' + cases(m.sel || [], c.members || []) +
         '<div class="bsm-modal-foot"><button type="button" class="btn btn-danger btn-md" data-act="quitter-groupe">Quitter le groupe</button><span class="grow"></span><button type="button" class="btn btn-secondary btn-md" data-act="fermer">Annuler</button><button type="submit" class="btn btn-primary btn-md">Enregistrer</button></div>';
     } else if (m.type === 'organigramme') {
       var admin = window.BS_SERVER && window.BS_SERVER.user && window.BS_SERVER.user.role === 'admin';
@@ -1015,6 +1057,7 @@
         return;
       }
       if ((id = b.getAttribute('data-retirer'))) { modifierGroupe({ remove: [id] }, false); return; }
+      if ((id = b.getAttribute('data-suppr'))) { supprimerMessage(id); return; }
       if ((id = b.getAttribute('data-visio'))) { Appel.rejoindre(id); return; }
       if ((id = b.getAttribute('data-appeler'))) {
         api('POST', '/directs', { userId: id }).then(function (r) { S.convs[r.conversation.id] = r.conversation; Appel.rejoindre(r.conversation.id); })
@@ -1031,6 +1074,10 @@
       else if (act === 'direct') { S.modal = { type: 'direct' }; rendre(); }
       else if (act === 'reglages') { S.modal = { type: 'reglages', conv: S.actif }; rendre(); }
       else if (act === 'fermer') { S.modal = null; rendre(); }
+      else if (act === 'photo-retirer') {
+        if (S.modal.photo) { S.modal.photo = ''; rendre(); }
+        else if (S.modal.type === 'reglages') photoDuGroupe(S.modal.conv, null);
+      }
       else if (act === 'quitter-groupe') {
         if (confirm('Quitter ce groupe ? Vous ne verrez plus ses messages.')) modifierGroupe({ remove: [S.me] }, true);
       }
@@ -1046,7 +1093,11 @@
       if (!f.classList.contains('bsm-modal')) return;
       var nom = f.querySelector('[name=nom]'), sel = [].slice.call(f.querySelectorAll('[name=m]:checked:not(:disabled)')).map(function (x) { return x.value; });
       if (S.modal.type === 'groupe') {
-        api('POST', '/groupes', { name: nom.value, members: sel }).then(function (r) { S.convs[r.conversation.id] = r.conversation; S.modal = null; aller(r.conversation.id); })
+        var image = S.modal.photo;
+        api('POST', '/groupes', { name: nom.value, members: sel }).then(function (r) {
+          S.convs[r.conversation.id] = r.conversation; S.modal = null; aller(r.conversation.id);
+          if (image) api('PUT', '/groupes/' + encodeURIComponent(r.conversation.id) + '/photo', { image: image }).then(function (x) { S.convs[x.conversation.id] = x.conversation; rendre(); }).catch(function () {});
+        })
           .catch(function (e) { S.modal.err = e.message; rendre(); });
       } else if (S.modal.type === 'reglages') modifierGroupe({ name: nom.value, add: sel }, true);
     });
@@ -1060,6 +1111,16 @@
     });
     root.addEventListener('change', function (ev) {
       if (ev.target.classList && ev.target.classList.contains('bsm-fichier')) { envoyerFichiers(ev.target.files); ev.target.value = ''; }
+      if (ev.target.classList && ev.target.classList.contains('bsm-gfichier') && S.modal) {
+        var f = ev.target.files[0], md = S.modal;
+        garderSaisie(md);
+        md.photoEnCours = true; md.err = ''; rendre();
+        reduireImage(f).then(function (url) {
+          md.photoEnCours = false;
+          if (md.type === 'reglages') photoDuGroupe(md.conv, url);
+          else { md.photo = url; rendre(); }
+        }).catch(function (e) { md.photoEnCours = false; md.err = e.message; rendre(); });
+      }
     });
     root.addEventListener('paste', function (ev) {
       if (!ev.target.classList || !ev.target.classList.contains('bsm-input')) return;
@@ -1092,6 +1153,22 @@
     root.addEventListener('scroll', function (ev) {
       if (ev.target.classList && ev.target.classList.contains('bsm-scroll') && ev.target.scrollTop < 40 && S.more[S.actif]) plusAnciens();
     }, true);
+  }
+  // Le choix d'une image redessine la fenêtre : on garde le nom tapé et les membres cochés.
+  function garderSaisie(md) {
+    var f = document.querySelector('.bsm-modal form') || document.querySelector('.bsm-modal');
+    if (!f) return;
+    var nom = f.querySelector('[name=nom]');
+    if (nom) md.nom = nom.value;
+    md.sel = [].map.call(f.querySelectorAll('input[name=m]:checked:not(:disabled)'), function (i) { return i.value; });
+  }
+  // Réglages du groupe : l'image est enregistrée tout de suite (sans attendre « Enregistrer »).
+  function photoDuGroupe(id, url) {
+    var md = S.modal;
+    if (md) garderSaisie(md);
+    (url ? api('PUT', '/groupes/' + encodeURIComponent(id) + '/photo', { image: url }) : api('DELETE', '/groupes/' + encodeURIComponent(id) + '/photo'))
+      .then(function (r) { S.convs[id] = r.conversation; if (md) md.photo = ''; rendre(); })
+      .catch(function (e) { if (S.modal) S.modal.err = e.message; rendre(); });
   }
   function modifierGroupe(changes, fermer) {
     var id = S.modal ? S.modal.conv : S.actif;
@@ -1386,6 +1463,19 @@
     '.bsm-msg{display:flex;align-items:flex-end;gap:9px;max-width:min(680px,86%);margin-top:8px}',
     '.bsm-msg.suite{margin-top:0}',
     '.bsm-av.ph{background:var(--ph) center/cover no-repeat;border-radius:50%!important}',
+    '.bsm-av.ph.gph{border-radius:12px!important}',
+    '.bsm-av.xl.ph.gph{border-radius:26px!important}',
+    '.bsm-gimg{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2)}',
+    '.bsm-gimg .bsm-av.xl{width:72px;height:72px;border-radius:22px}',
+    '.bsm-gimg-t{display:flex;flex-direction:column;gap:2px;min-width:0}',
+    '.bsm-gimg-t b{font-size:.95em}',
+    '.bsm-gimg-t>span{font-size:.8em;color:var(--text-3)}',
+    '.bsm-gimg-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}',
+    '.bsm-gimg-b label{cursor:pointer}',
+    '.bsm-suppr{align-self:center;flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;border:0;background:transparent;color:var(--text-3);cursor:pointer;opacity:0;transition:opacity .15s,background .15s,color .15s}',
+    '.bsm-msg:hover .bsm-suppr,.bsm-suppr:focus-visible{opacity:1}',
+    '.bsm-suppr:hover{background:color-mix(in srgb,#ef4444 14%,transparent);color:#ef4444}',
+    '@media (hover:none){.bsm-suppr{opacity:.55}}',
     '.bsm-msg .bsm-av{width:30px;height:30px;border-radius:10px;font-size:.66em}',
     '.bsm-av-sp{width:30px;flex:none}',
     '.bsm-msg.moi{align-self:flex-end;flex-direction:row-reverse}',
@@ -1563,7 +1653,7 @@
     '.bsm-lbl{display:flex;flex-direction:column;gap:6px;font-size:.84em;font-weight:600;color:var(--text-2)}',
     '.bsm-pick{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto}',
     '.bsm-pick-i{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);text-align:left;cursor:pointer;width:100%}',
-    '.bsm-pick-i span{flex:1;min-width:0;display:flex;flex-direction:column;font-weight:600;font-size:.92em}',
+    '.bsm-pick-i>span:not(.bsm-av){flex:1;min-width:0;display:flex;flex-direction:column;font-weight:600;font-size:.92em}',
     '.bsm-pick-i small{font-weight:500;color:var(--text-3);font-size:.8em}',
     '.bsm-pick-i input{width:18px;height:18px;accent-color:var(--accent)}',
     '.bsm-pick-i.deja{opacity:.6;cursor:default}',

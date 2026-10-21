@@ -3,6 +3,7 @@
 // Réglages (Mon compte, mot de passe, apparence, notifications) reste toujours ouvert.
 export const ACCES = ['today', 'agenda', 'prospects', 'leads', 'pipeline', 'tasks', 'telephone', 'mail', 'devis', 'clients', 'payments',
   'campagnes', 'modeles', 'contenu', 'sources',
+  'assistants', 'automatisations',
   'messages', 'groupes', 'visio', 'entrainement', 'dashboard', 'reports', 'carte', 'formations', 'tools',
   'settings.company', 'settings.goals', 'settings.data'];
 

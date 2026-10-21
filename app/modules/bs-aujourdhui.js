@@ -129,7 +129,9 @@
   }
   function toast(t) {
     var Y = window.__bsY; if (!Y || !Y.set) return;
-    Y.set(function (s) { return { toasts: (s.toasts || []).concat([{ id: uid(), text: t, tone: 'error' }]) }; });
+    var x = { id: uid(), message: t, tone: 'error', action: null, actionLabel: 'Annuler' };
+    Y.set(function (s) { return { toasts: (s.toasts || []).slice(-2).concat([x]) }; });
+    setTimeout(function () { Y.set(function (s) { return { toasts: (s.toasts || []).filter(function (y) { return y.id !== x.id; }) }; }); }, 2800);
   }
 
   // ---------------------------------------------------------------- page

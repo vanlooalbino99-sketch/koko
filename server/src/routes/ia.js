@@ -11,7 +11,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getSetting, setSetting } from '../store.js';
 import { coffre } from '../coffre.js';
 import { peut } from '../acces.js';
-import { ASSISTANTS, parId as parAssistant, consignes, accesDe, peutUtiliser } from '../assistants.js';
+import { ASSISTANTS, REPONSE, parId as parAssistant, consignes, competenceDe, accesDe, peutUtiliser } from '../assistants.js';
 
 export const MODELE = 'claude-opus-5-5';
 const PAR_JOUR = 400; // appels à Claude par membre et par jour (garde-fou de coût)
@@ -105,6 +105,23 @@ export function erreurClaude(e) {
   return { status: 502, error: 'Claude n’a pas pu répondre : réessayez.' };
 }
 
+// Actions proposées par un assistant : types connus, champs bornés, 10 au plus. Le navigateur les applique au clic.
+const TYPES_ACTION = ['tache', 'relance', 'statut', 'note', 'email', 'modele'];
+const STATUTS_ACTION = ['a_appeler', 'injoignable', 'rdv_pris', 'audit_realise', 'proposition_envoyee', 'client_signe', 'perdu'];
+const CANAUX = ['email', 'sms', 'linkedin', 'whatsapp', 'appel'];
+export function nettoyerActions(l) {
+  return (Array.isArray(l) ? l : []).filter((x) => x && TYPES_ACTION.includes(x.type)).slice(0, 10).map((x) => ({
+    type: x.type,
+    prospect: (/^P\d{1,4}$/.exec(String(x.prospect || '').replace(/[[\]\s]/g, '')) || [''])[0],
+    titre: texte(x.titre, 200),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? x.date : '',
+    heure: /^\d{2}:\d{2}$/.test(String(x.heure || '')) ? x.heure : '',
+    statut: STATUTS_ACTION.includes(x.statut) ? x.statut : '',
+    objet: texte(x.objet, 200),
+    texte: texte(x.texte, 5000),
+    canal: CANAUX.includes(x.canal) ? x.canal : '',
+  }));
+}
 const textes = (r) => (r.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
 
 export function iaRoutes({ db, dataDir, creer = (apiKey) => new Anthropic({ apiKey, maxRetries: 1, timeout: 90000 }) }) {
@@ -246,6 +263,7 @@ export function iaRoutes({ db, dataDir, creer = (apiKey) => new Anthropic({ apiK
       ia: !!(await cle()),
       assistants: ASSISTANTS.filter((a) => peutUtiliser(req.user, reg, a)).map((a) => ({
         id: a.id, nom: a.nom, titre: a.titre, description: a.description, icone: a.icone, couleur: a.couleur, suggestions: a.suggestions,
+        competences: (a.competences || []).map((c) => ({ id: c.id, titre: c.titre, resume: c.resume, methode: c.methode, consigne: c.consigne, ...(c.amorce ? { amorce: c.amorce } : {}) })),
         ...(estAdmin ? { acces: accesDe(reg, a) } : {}),
       })),
     });
@@ -277,10 +295,14 @@ export function iaRoutes({ db, dataDir, creer = (apiKey) => new Anthropic({ apiK
     const ctx = texte(b.contexte, 30000);
     const c = await client(res); if (!c || !quota(req, res)) return;
     const qui = texte(req.user.name, 80) + (req.user.role === 'admin' ? ' (administrateur)' : ' (membre de l’équipe)');
-    const system = consignes(a) + '\n\nTu parles avec : ' + qui + '.' + (ctx ? '\n\nÉtat du CRM aujourd’hui :\n' + ctx : '');
+    const comp = competenceDe(a, typeof b.competence === 'string' ? b.competence : '');
+    const system = consignes(a, comp && comp.id) + '\n\nTu parles avec : ' + qui + '.' + (ctx ? '\n\nÉtat du CRM aujourd’hui :\n' + ctx : '');
     try {
-      const rep = await demander(c, { max_tokens: 6000, output_config: { effort: 'low' }, system, messages: msgs });
-      res.json({ texte: textes(rep) });
+      // Une compétence lancée demande plus de réflexion qu'une question rapide.
+      const rep = await demander(c, { max_tokens: 16000, output_config: { effort: comp ? 'medium' : 'low', format: { type: 'json_schema', schema: REPONSE } }, system, messages: msgs });
+      let j;
+      try { j = JSON.parse(textes(rep)); } catch { return res.status(502).json({ error: 'La réponse de Claude est illisible : réessayez.' }); }
+      res.json({ texte: texte(j && j.texte, 8000), actions: nettoyerActions(j && j.actions) });
     } catch (e) { echec(res, e); }
   });
 

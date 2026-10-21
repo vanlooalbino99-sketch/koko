@@ -157,6 +157,10 @@ test('assistants IA : liste selon l’accès, réglage par l’administrateur, c
   l = await (await call(marie, 'GET', '/api/ia/assistants')).json();
   assert.deepEqual(l.assistants.map((a) => a.id), ['membre', 'leads', 'clients']);
   assert.equal(l.assistants[0].acces, undefined);
+  const membre = l.assistants[0];
+  assert.equal(membre.competences.length, 6);
+  for (const c of membre.competences) assert.ok(c.id && c.titre && c.resume && c.methode && c.consigne, c.id);
+  assert.equal(membre.competences.find((c) => c.id === 'objection').amorce, 'Aide-moi à répondre à cette objection : ');
   assert.equal((await call(marie, 'POST', '/api/ia/assistants/ceo', { messages: [{ de: 'moi', texte: 'Bonjour' }] })).status, 403);
   assert.equal((await call(marie, 'PUT', '/api/ia/assistants/ceo/acces', { tous: false, membres: [marieId] })).status, 403);
 
@@ -169,20 +173,46 @@ test('assistants IA : liste selon l’accès, réglage par l’administrateur, c
 
   assert.equal((await call(marie, 'POST', '/api/ia/assistants/ceo', { messages: [{ de: 'ia', texte: 'Bonjour !' }] })).status, 400);
   const avant = demandes.length;
-  prochaine = { stop_reason: 'end_turn', content: [{ type: 'text', text: 'Commencez par les 3 rappels en retard.' }] };
+  prochaine = { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ texte: 'Commencez par les 3 rappels en retard.', actions: [
+    { type: 'relance', prospect: '[P2]', titre: '', date: '2026-10-22', heure: '10:00', statut: '', objet: '', texte: '', canal: '' },
+    { type: 'tache', prospect: '', titre: 'Préparer la démo', date: 'demain', heure: '9h', statut: 'inconnu', objet: '', texte: '', canal: 'fax' },
+    { type: 'pirater', prospect: 'P1', titre: 'x', date: '', heure: '', statut: '', objet: '', texte: '', canal: '' },
+  ] }) }] };
   r = await call(marie, 'POST', '/api/ia/assistants/ceo', {
     messages: [{ de: 'ia', texte: 'Bonjour, je suis votre assistant.' }, { de: 'moi', texte: 'Par quoi je commence ?' }],
     contexte: 'Appels à passer : 7\nEn retard : 3',
   });
   assert.equal(r.status, 200);
-  assert.equal((await r.json()).texte, 'Commencez par les 3 rappels en retard.');
+  const j = await r.json();
+  assert.equal(j.texte, 'Commencez par les 3 rappels en retard.');
+  assert.deepEqual(j.actions, [
+    { type: 'relance', prospect: 'P2', titre: '', date: '2026-10-22', heure: '10:00', statut: '', objet: '', texte: '', canal: '' },
+    { type: 'tache', prospect: '', titre: 'Préparer la démo', date: '', heure: '', statut: '', objet: '', texte: '', canal: '' },
+  ]);
   assert.equal(demandes.length, avant + 1);
   const d = demandes.at(-1);
   assert.equal(d.model, MODELE);
   assert.deepEqual(d.messages, [{ role: 'user', content: 'Par quoi je commence ?' }]);
   assert.match(d.system, /bras droit du CEO/);
+  assert.match(d.system, /Appliquer/);
+  assert.equal(d.output_config.format.type, 'json_schema');
   assert.match(d.system, /Tu parles avec : Marie \(membre/);
   assert.match(d.system, /En retard : 3/);
+  assert.match(d.system, /Tes compétences/);
+  assert.match(d.system, /Calcul à rebours/, 'la méthode de chaque compétence part avec la question');
+  assert.doesNotMatch(d.system, /Compétence demandée/);
+  assert.equal(d.output_config.effort, 'low');
+
+  // Une compétence lancée en un clic : sa méthode est mise en avant et Claude réfléchit davantage.
+  prochaine = { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ texte: 'Voici vos priorités.', actions: [] }) }] };
+  r = await call(marie, 'POST', '/api/ia/assistants/ceo', { messages: [{ de: 'moi', texte: 'Fixe mes priorités' }], competence: 'priorites' });
+  assert.equal(r.status, 200);
+  assert.match(demandes.at(-1).system, /Compétence demandée maintenant : « Fixer mes 3 priorités »/);
+  assert.equal(demandes.at(-1).output_config.effort, 'medium');
+  prochaine = { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ texte: 'Bonjour !', actions: [] }) }] };
+  r = await call(marie, 'POST', '/api/ia/assistants/ceo', { messages: [{ de: 'moi', texte: 'Bonjour' }], competence: 'inconnue' });
+  assert.equal(r.status, 200);
+  assert.doesNotMatch(demandes.at(-1).system, /Compétence demandée/);
   assert.equal((await call(admin, 'POST', '/api/ia/assistants/inconnu', { messages: [{ de: 'moi', texte: 'Bonjour' }] })).status, 404);
 });
 

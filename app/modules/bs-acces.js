@@ -23,6 +23,8 @@
       { id: 'telephone', label: 'Téléphone (Ringover)' }, { id: 'mail', label: 'Mail', serveur: true }, { id: 'devis', label: 'Devis & factures' }, { id: 'clients', label: 'Clients' }, { id: 'payments', label: 'Paiements' }] },
     { groupe: 'Marketing', items: [
       { id: 'campagnes', label: 'Campagnes (séquences de mails)' }, { id: 'modeles', label: 'Modèles de messages' }, { id: 'contenu', label: 'Contenu (publications)' }, { id: 'sources', label: 'Sources & ROI' }] },
+    { groupe: 'Automatisation', items: [
+      { id: 'assistants', label: 'Assistants IA', serveur: true }, { id: 'automatisations', label: 'Automatisations' }] },
     { groupe: 'Équipe', items: [
       { id: 'messages', label: 'Messages', serveur: true }, { id: 'groupes', label: 'Groupes', serveur: true }, { id: 'visio', label: 'Visio', serveur: true }, { id: 'entrainement', label: 'Entraînement (Pitchbase)' }] },
     { groupe: 'Analyse', items: [
@@ -37,7 +39,7 @@
   RUBRIQUES.forEach(function (g) { g.items.forEach(function (r) { CLES.push(r.id); }); });
   // Ordre des pages du menu : la première ouverte sert d'accueil.
   var PAGES = ['today', 'agenda', 'prospects', 'leads', 'pipeline', 'tasks', 'messages', 'groupes', 'visio', 'entrainement', 'telephone', 'mail', 'devis',
-    'clients', 'payments', 'campagnes', 'modeles', 'contenu', 'sources', 'dashboard', 'reports', 'carte', 'formations', 'tools', 'settings'];
+    'clients', 'payments', 'campagnes', 'modeles', 'contenu', 'sources', 'assistants', 'automatisations', 'dashboard', 'reports', 'carte', 'formations', 'tools', 'settings'];
 
   function effectif(role, acces) { return role !== 'admin' && Array.isArray(acces) ? acces.slice() : null; }
   var acces = USER ? effectif(USER.role, USER.acces) : null;

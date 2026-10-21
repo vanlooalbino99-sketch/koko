@@ -25,8 +25,8 @@ after(async () => { server.close(); await made.cleanup(); });
 test('Marketing est branché dans le CRM : menu, pages, accès, icônes, enregistrement des données', () => {
   const app = lire('app/core/app.min.js'), html = lire('app/index.html');
   for (const bout of ['"payments","campagnes","modeles","contenu","sources"', '{id:"payments",label:"Paiements",icon:"wallet"},{group:"Marketing"},{id:"campagnes",label:"Campagnes",icon:"megaphone"}',
-    '{id:"sources",label:"Sources & ROI",icon:"chart-pie"},{group:"Équipe"}', 'window.bsCampagnes.monter(bsEl)', 'window.bsModeles.monter(bsEl)', 'window.bsContenu.monter(bsEl)',
-    'window.bsSources.monter(bsEl)', '"templates","marketing"]', 'marketing:n.marketing&&typeof n.marketing=="object"', 'campagnes:bsMk&&window.bsCampagnes']) assert.ok(app.includes(bout), bout);
+    '{id:"sources",label:"Sources & ROI",icon:"chart-pie"},{group:"Automatisation"}', 'window.bsCampagnes.monter(bsEl)', 'window.bsModeles.monter(bsEl)', 'window.bsContenu.monter(bsEl)',
+    'window.bsSources.monter(bsEl)', '"templates","marketing","automatisations"]', 'marketing:n.marketing&&typeof n.marketing=="object"', 'campagnes:bsMk&&window.bsCampagnes']) assert.ok(app.includes(bout), bout);
   // bs-marketing.js (outils communs) est chargé avant les pages.
   const ordre = ['bs-marketing', 'bs-campagnes', 'bs-modeles', 'bs-contenu', 'bs-sources'].map((m) => html.indexOf(`modules/${m}.js`));
   assert.ok(ordre.every((i, k) => i > 0 && (k === 0 || i > ordre[k - 1])), 'ordre des scripts');

@@ -447,3 +447,98 @@ test('garde-fous : rythme, effacement à 30 jours, « ne plus contacter », fich
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('fiche d’un prospect : ses contacts LinkedIn récupérés en un clic, rangés dans la fiche', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } });
+  await servir(ctx); await simulerApis(ctx);
+  const crm = await ctx.newPage();
+  const errors = [];
+  crm.on('pageerror', (e) => errors.push(e.message));
+  await ouvrirCrm(crm);
+  const vide = { telephone: '', email: '', secteur: 'Artisans / BTP', statut: 'a_appeler', priorite: 'moyenne', tags: [], notes: '', dealValue: 0, mrrValue: 0, callLog: [], events: [], createdAt: '2026-10-01', updatedAt: '2026-10-01' };
+  await crm.evaluate((v) => window.__bsStore.set((s) => ({ prospects: [
+    { ...v, id: 'p-dupont', entreprise: 'PLOMBERIE DUPONT SARL', contact: '', ville: 'Lyon' },
+    { ...v, id: 'p-garnier', entreprise: 'Sanitaires Garnier', contact: '', ville: 'Marseille' },
+  ].concat(s.prospects || []) })), vide);
+  const fiche = (id) => crm.evaluate((x) => window.__bsY.set((s) => ({ overlays: (s.overlays || []).filter((o) => o.type !== 'prospect').concat([{ key: 'k' + x, type: 'prospect', id: x }]) })), id);
+  const prospect = (id) => crm.evaluate((x) => window.__bsStore.get().prospects.find((p) => p.id === x), id);
+  const code = await crm.evaluate(() => window.bsLinkedin.codeBouton());
+
+  // Sur la fiche : le bloc « Contacts LinkedIn » et la recherche des décideurs de l'entreprise.
+  await fiche('p-dupont');
+  const bloc = crm.locator('.bsli-ct-root');
+  await bloc.waitFor();
+  assert.match(await bloc.innerText(), /Contacts LinkedIn/i);
+  const lien = await bloc.locator('[data-ct-chercher=linkedin]').getAttribute('href');
+  assert.equal(decodeURIComponent(lien), 'https://www.linkedin.com/search/results/people/?keywords="Plomberie Dupont"&origin=GLOBAL_SEARCH_HEADER', 'sans la forme juridique');
+  const [onglet] = await Promise.all([ctx.waitForEvent('page'), bloc.locator('[data-ct-chercher=linkedin]').click()]);
+  await onglet.close();
+  await bloc.getByText('cliquez sur votre favori').waitFor();
+
+  // Page « Personnes » de l'entreprise : tout le monde y travaille, les 2 sont rangés, l'associé devient le contact
+  // principal, et la fiche se rouvre.
+  const li = await ctx.newPage();
+  await li.goto(PAGES.ENTREPRISE);
+  await cliquerBouton(li, code);
+  let [[url]] = await li.evaluate(() => window.__ouvert);
+  await crm.evaluate((u) => { location.href = u; }, url);
+  await crm.waitForFunction(() => (window.__bsStore.get().prospects.find((p) => p.id === 'p-dupont').contacts || []).length === 2);
+  let p = await prospect('p-dupont');
+  assert.deepEqual(p.contacts.map((c) => [c.nom, c.poste]), [['Lucas Bernard', 'Associé et cogérant'], ['Emma Leroy', 'Plombière chauffagiste']]);
+  assert.equal(p.contact, 'Lucas Bernard');
+  assert.equal(p.poste, 'Associé et cogérant');
+  assert.equal(p.linkedin, 'https://www.linkedin.com/in/lucas-bernard-abc/');
+  assert.match(p.events[0].text, /^2 contacts LinkedIn ajoutés : Lucas Bernard \(Associé et cogérant\), Emma Leroy/);
+  await crm.locator('.bsli-ct-root .bsli-ct').nth(1).waitFor();
+  assert.match(await crm.locator('.bsli-ct-root .bsli-ct.princ').innerText(), /Lucas Bernard\s*Principal/);
+  assert.equal(await crm.evaluate(() => window.bsLinkedin._interne.leads().filter((l) => l.crmId === 'p-dupont').length), 2, 'pas à trier une deuxième fois');
+
+  // Recherche de personnes : seul Jean Dupont travaille chez Plomberie Dupont ; les autres sont proposés.
+  await li.goto(PAGES.RECHERCHE);
+  await cliquerBouton(li, code);
+  [[url]] = await li.evaluate(() => window.__ouvert);
+  await crm.evaluate((u) => { location.href = u; }, url);
+  const panneau = crm.locator('.bsli-pour');
+  await panneau.getByText('Claire Moreau').waitFor();
+  assert.match(await panneau.innerText(), /Contacts de PLOMBERIE DUPONT SARL/);
+  assert.match(await panneau.innerText(), /3 contacts sur la fiche · principal : Lucas Bernard/);
+  assert.equal(await panneau.locator('[data-pour-ajouter]').count(), 4);
+  await panneau.locator('li', { hasText: 'Claire Moreau' }).locator('[data-pour-ajouter]').click();
+  await crm.waitForFunction(() => window.__bsStore.get().prospects.find((p) => p.id === 'p-dupont').contacts.length === 4);
+  assert.equal(await panneau.locator('[data-pour-ajouter]').count(), 3);
+
+  // Dans la fiche : changer le contact principal, retirer un contact.
+  await panneau.locator('[data-pour-ouvrir]').click();
+  await crm.locator('.bsli-ct-root .bsli-ct', { hasText: 'Jean Dupont' }).locator('[data-ct-princ]').click();
+  await crm.waitForFunction(() => window.__bsStore.get().prospects.find((p) => p.id === 'p-dupont').contact === 'Jean Dupont');
+  p = await prospect('p-dupont');
+  assert.equal(p.poste, 'Gérant chez Plomberie Dupont', 'le poste et le profil suivent le contact principal');
+  assert.equal(p.linkedin, 'https://www.linkedin.com/in/jean-dupont-12345/');
+  await crm.locator('.bsli-ct-root .bsli-ct', { hasText: 'Claire Moreau' }).locator('[data-ct-suppr]').click();
+  await crm.waitForFunction(() => window.__bsStore.get().prospects.find((p) => p.id === 'p-dupont').contacts.length === 3);
+
+  // Une personne déjà reçue qui travaille dans l'entreprise d'un autre prospect : proposée sur sa fiche, en un clic.
+  await fiche('p-garnier');
+  const recus = crm.locator('.bsli-ct-root .bsli-ct-recus');
+  await recus.waitFor();
+  assert.match(await recus.innerText(), /1 personne de cette entreprise est déjà dans vos leads LinkedIn : Sophie Garnier/);
+  await recus.locator('[data-ct-recus]').click();
+  await crm.waitForFunction(() => window.__bsStore.get().prospects.find((p) => p.id === 'p-garnier').contact === 'Sophie Garnier');
+  p = await prospect('p-garnier');
+  assert.deepEqual(p.contacts.map((c) => c.nom), ['Sophie Garnier']);
+  if (process.env.BS_SHOTS) {
+    await fiche('p-dupont');
+    await crm.locator('.bsli-ct-root .bsli-ct').nth(2).waitFor();
+    await crm.locator('.bsli-ct-root').scrollIntoViewIfNeeded();
+    await crm.screenshot({ path: join(process.env.BS_SHOTS, 'linkedin-contacts-fiche.png') });
+  }
+
+  // « Terminé » : la recherche pour ce prospect est close.
+  await crm.evaluate(() => window.__bsY.set({ overlays: [] }));
+  await crm.evaluate(() => { location.hash = '#/leads'; });
+  await crm.locator('.bsli-pour [data-pour-fin]').click();
+  assert.equal(await crm.evaluate(() => localStorage.getItem('bs-linkedin-pour')), null);
+  assert.ok(await crm.locator('.bsli-pour').isHidden());
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

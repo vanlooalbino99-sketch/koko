@@ -439,7 +439,7 @@
   // Ajoute des leads à la liste à trier. capture = page où ils ont été vus. Retourne { nouveaux, connus }.
   function fusionner(liste, source, capture) {
     capture = PAGE_SURE.test(String(capture || '')) ? String(capture).slice(0, 200) : '';
-    var l = leads(), index = {}, lot = new Date().toISOString(), res = { nouveaux: 0, connus: 0 };
+    var l = leads(), index = {}, lot = new Date().toISOString(), res = { nouveaux: 0, connus: 0, ids: [] };
     l.forEach(function (x) { index[cleLead(x)] = x; });
     var neufs = [];
     (liste || []).forEach(function (brut) {
@@ -448,12 +448,12 @@
       var k = cleLead(x), a = index[k];
       if (a) {
         ['poste', 'entreprise', 'lieu', 'email', 'url'].forEach(function (c) { if (!a[c] && x[c]) a[c] = x[c]; });
-        res.connus++;
+        res.connus++; res.ids.push(a.id);
         return;
       }
       x.id = 'li' + uid(); x.recu = lot; x.statut = '';
       if (capture) x.vu = capture;
-      index[k] = x; neufs.push(x); res.nouveaux++;
+      index[k] = x; neufs.push(x); res.nouveaux++; res.ids.push(x.id);
     });
     LEADS = neufs.concat(l);
     if (neufs.length) ecrireJson(CLE_LOT, lot);
@@ -473,7 +473,9 @@
   function recevoirCode(code) {
     var o = decoder(code);
     var src = SOURCES[o.p] ? o.p : 'autre';
-    return fusionner(o.l.slice(0, 200), src, o.u);
+    var r = fusionner(o.l.slice(0, 200), src, o.u);
+    r.page = src; r.adresse = String(o.u || '');
+    return r;
   }
   function arrivee() {
     var m = String(location.hash || '').match(/^#\/leads\?(?:.*&)?li=([A-Za-z0-9_-]+)/);
@@ -481,6 +483,27 @@
     var r = null;
     try { r = recevoirCode(m[1]); } catch (e) { r = null; }
     try { history.replaceState(null, '', '#/leads'); } catch (e) { /* adresse inchangée */ }
+    // Recherche lancée depuis la fiche d'un prospect : ses contacts y sont rangés tout de suite.
+    var rg = r ? rattacher(r) : null;
+    if (rg) {
+      // Tout est rangé : on rouvre la fiche du prospect. Sinon on ferme la fiche pour montrer les autres personnes de la page.
+      var montrer = function () {
+        if (rg.ajoutes) toast(pluriel(rg.ajoutes, 'contact LinkedIn ajouté', 'contacts LinkedIn ajoutés') + ' à la fiche de ' + rg.entreprise + '.');
+        if (!window.__bsY) return;
+        window.__bsY.set(function (s) {
+          var o = (s.overlays || []).filter(function (x) { return x.type !== 'prospect'; });
+          if (UI.pour && !UI.pour.autres.length) o = o.concat([{ key: 'bsli' + Date.now(), type: 'prospect', id: UI.pour.id }]);
+          return { overlays: o };
+        });
+      };
+      if (window.__bsY) montrer(); else setTimeout(montrer, 800);
+    }
+    if (rg) {
+      ecrireJson(CLE_ONGLET, 'linkedin');
+      if (window.bsLeads && window.bsLeads.onglet) window.bsLeads.onglet('linkedin');
+      redessiner();
+      return;
+    }
     ecrireJson(CLE_ONGLET, 'linkedin');
     UI.filtre = 'nouveaux'; UI.garde = {};
     if (window.bsLeads && window.bsLeads.onglet) window.bsLeads.onglet('linkedin');
@@ -814,6 +837,150 @@
     return { id: id, doublon: false };
   }
 
+  // ================================================================== contacts d'un prospect
+  // Depuis la fiche d'un prospect, « Trouver les décideurs » ouvre la recherche des personnes de cette entreprise sur
+  // LinkedIn et retient pour quelle fiche on cherche (3 heures). Quand le bouton « Envoyer au CRM » renvoie la page,
+  // les personnes de cette entreprise sont rangées d'elles-mêmes dans la fiche (prospect.contacts) ; les autres
+  // restent proposées dans l'onglet LinkedIn. Le premier décideur devient le contact principal s'il n'y en a pas.
+  var CLE_POUR = 'bs-linkedin-pour', POUR_MS = 3 * 3600e3, MAX_CONTACTS = 50;
+  var FORMES = /^(sarl|sas|sasu|eurl|sa|sci|snc|selarl|selas|scp|scm|eirl|ei|ets|etablissements|societe|ste|groupe|holding|et|de|du|des|la|le|les|l|d|the)$/;
+  function pour() { var x = lireJson(CLE_POUR, null); return x && x.id && Date.now() - (Number(x.at) || 0) < POUR_MS ? x : null; }
+  function prospectDe(id) { var st = window.__bsStore ? window.__bsStore.get() : {}; return (st.prospects || []).filter(function (p) { return p.id === id; })[0] || null; }
+  function motsEntreprise(s) { return norm(s).split(' ').filter(function (w) { return w.length > 1 && !FORMES.test(w); }).join(' '); }
+  function memeEntreprise(a, b) {
+    a = motsEntreprise(a); b = motsEntreprise(b);
+    if (!a || !b) return false;
+    return a === b || (a.length >= 4 && (' ' + b + ' ').indexOf(' ' + a + ' ') >= 0) || (b.length >= 4 && (' ' + a + ' ').indexOf(' ' + b + ' ') >= 0);
+  }
+  // Nom à chercher sur LinkedIn : sans forme juridique ni parenthèses (« BOULANGERIE MARTIN (SARL) » → « Boulangerie Martin »).
+  function nomRecherche(s) {
+    return String(s || '').replace(/\([^)]*\)/g, ' ').split(/\s+/).filter(function (w) { return w && !FORMES.test(norm(w)) || /^(de|du|des|la|le|les|et)$/i.test(w); }).join(' ')
+      .replace(/^(de|du|des|la|le|les|et)\s+/i, '').trim().toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, function (m, a, b) { return a + b.toUpperCase(); });
+  }
+  function lienContacts(p, type) {
+    var nom = nomRecherche(p.entreprise) || p.entreprise || '';
+    var ville = String(p.ville || '').trim();
+    if (type === 'google') return 'https://www.google.com/search?q=' + encodeURIComponent('site:linkedin.com/in "' + nom + '"' + (ville ? ' "' + ville + '"' : '')) + '&hl=fr&gl=fr';
+    return 'https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent('"' + nom + '"') + '&origin=GLOBAL_SEARCH_HEADER';
+  }
+  // 0 : décideur (gérant, fondateur…), 1 : cadre (directeur, responsable…), 2 : autre.
+  var DECIDEURS = mots(POSTES), CADRES = mots(MOYENS);
+  function rang(poste) { var t = norm(poste); return trouve(t, DECIDEURS) ? 0 : trouve(t, CADRES) ? 1 : 2; }
+  function cleContact(c) { return cleProfil(c.linkedin || c.url) || 'n:' + norm(c.nom); }
+  function contactsDe(p) { return Array.isArray(p && p.contacts) ? p.contacts.filter(function (c) { return c && c.nom; }) : []; }
+  // Range des leads LinkedIn dans la fiche d'un prospect ; retourne le nombre de contacts nouveaux.
+  function rangerContacts(pid, liste) {
+    var p = prospectDe(pid); if (!p || !window.__bsStore) return 0;
+    var vus = {};
+    contactsDe(p).forEach(function (c) { vus[cleContact(c)] = 1; });
+    var neufs = [];
+    liste.forEach(function (l) {
+      var c = { id: 'ct' + uid(), nom: l.nom, poste: l.poste || '', linkedin: l.url || '', email: l.email || '', lieu: l.lieu || '', source: 'LinkedIn', ajouteLe: auj() };
+      var k = cleContact(c);
+      if (!vus[k]) { vus[k] = 1; neufs.push(c); }
+      l.statut = 'ajoute'; l.crmId = pid;
+    });
+    sauver();
+    if (!neufs.length) return 0;
+    var tous = contactsDe(p).concat(neufs).slice(0, MAX_CONTACTS);
+    var principal = String(p.contact || '').trim(), patch = {};
+    if (!principal) {
+      var m = neufs.slice().sort(function (a, b) { return rang(a.poste) - rang(b.poste); })[0];
+      patch = { contact: m.nom, poste: p.poste || m.poste, linkedin: p.linkedin || m.linkedin };
+    } else {
+      // Le contact principal est parmi les personnes trouvées : on complète son poste et son profil.
+      var meme = neufs.filter(function (c) { return norm(c.nom) === norm(principal); })[0];
+      if (meme) patch = { poste: p.poste || meme.poste, linkedin: p.linkedin || meme.linkedin };
+    }
+    var ev = { id: uid(), ts: new Date().toISOString(), date: auj(), time: heure(), type: 'note',
+      text: pluriel(neufs.length, 'contact LinkedIn ajouté', 'contacts LinkedIn ajoutés') + ' : ' + neufs.map(function (c) { return c.nom + (c.poste ? ' (' + c.poste + ')' : ''); }).join(', ') };
+    window.__bsStore.set(function (st) {
+      return { prospects: (st.prospects || []).map(function (x) { return x.id === pid ? Object.assign({}, x, patch, { contacts: tous, updatedAt: auj(), events: [ev].concat(x.events || []).slice(0, 200) }) : x; }) };
+    });
+    return neufs.length;
+  }
+  function majContacts(pid, f) {
+    window.__bsStore.set(function (st) { return { prospects: (st.prospects || []).map(function (x) { return x.id === pid ? Object.assign({}, x, f(x), { updatedAt: auj() }) : x; }) }; });
+  }
+  // Leads reçus par le bouton pendant une recherche « pour » un prospect : ceux de son entreprise vont dans sa fiche ;
+  // les autres personnes de la page (entreprise illisible ou différente) sont proposées, pas rangées.
+  function rattacher(r) {
+    var x = pour(); if (!x) return null;
+    var p = prospectDe(x.id); if (!p) return null;
+    var lus = leads().filter(function (l) { return r.ids.indexOf(l.id) >= 0; });
+    var cles = [p.entreprise, nomRecherche(p.entreprise)];
+    var siens = lus.filter(function (l) { return cles.some(function (n) { return memeEntreprise(l.entreprise, n) || (l.sir && memeEntreprise(l.sir.nom, n)); }); });
+    if (!lus.length) return null;
+    var ajoutes = rangerContacts(p.id, siens);
+    UI.pour = { id: p.id, entreprise: p.entreprise, ajoutes: siens.map(function (l) { return l.id; }), autres: lus.filter(function (l) { return siens.indexOf(l) < 0 && l.statut !== 'ajoute'; }).map(function (l) { return l.id; }) };
+    return { ajoutes: ajoutes, entreprise: p.entreprise };
+  }
+  // Leads LinkedIn déjà reçus qui travaillent dans l'entreprise du prospect (pas encore rangés).
+  function dejaRecus(p) {
+    var cles = [p.entreprise, nomRecherche(p.entreprise)], vus = {};
+    contactsDe(p).forEach(function (c) { vus[cleContact(c)] = 1; });
+    return leads().filter(function (l) {
+      return l.statut !== 'ecarte' && !(l.statut === 'ajoute' && l.crmId !== p.id) && !vus[cleContact({ nom: l.nom, linkedin: l.url })] &&
+        cles.some(function (n) { return memeEntreprise(l.entreprise, n) || (l.sir && memeEntreprise(l.sir.nom, n)); });
+    });
+  }
+
+  // Bloc « Contacts LinkedIn » de la fiche d'un prospect (monté par la fiche à chaque affichage).
+  function contactsFiche(el, p) {
+    if (!el || !p) return;
+    ensureCss();
+    el.setAttribute('data-pid', p.id);
+    var cs = contactsDe(p).slice().sort(function (a, b) { return (norm(a.nom) === norm(p.contact) ? -1 : 0) - (norm(b.nom) === norm(p.contact) ? -1 : 0) || rang(a.poste) - rang(b.poste); });
+    var recus = dejaRecus(p), attente = pour(), enCours = attente && attente.id === p.id;
+    el.innerHTML = '<div class="p-section-title">Contacts LinkedIn' + (cs.length ? ' · ' + cs.length : '') + '</div>' +
+      (cs.length ? '<ul class="bsli-ct-l">' + cs.map(function (c) {
+        var princ = norm(c.nom) === norm(p.contact), ini = String(c.nom).split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase();
+        return '<li class="bsli-ct' + (princ ? ' princ' : '') + '"><span class="bsli-ct-av">' + esc(ini) + '</span><div class="bsli-ct-t"><b>' + esc(c.nom) + (princ ? ' <span class="bsli-ct-badge">Principal</span>' : '') + '</b>' +
+          (c.poste ? '<small>' + esc(c.poste) + '</small>' : '') + '</div><div class="bsli-ct-a">' +
+          (c.linkedin ? '<a class="bsli-ct-b" href="' + esc(c.linkedin) + '" target="_blank" rel="noopener noreferrer" title="Profil LinkedIn" aria-label="Profil LinkedIn de ' + esc(c.nom) + '">' + LOGO.replace('width="18" height="18"', 'width="15" height="15"') + '</a>' : '') +
+          (c.email ? '<button type="button" class="bsli-ct-b" data-ct-mail="' + esc(c.id) + '" title="Écrire un e-mail">' + ic('mail', 15) + '</button>' : '') +
+          (princ ? '' : '<button type="button" class="bsli-ct-b" data-ct-princ="' + esc(c.id) + '" title="En faire le contact principal">' + ic('star', 15) + '</button>') +
+          '<button type="button" class="bsli-ct-b" data-ct-suppr="' + esc(c.id) + '" title="Retirer ce contact">' + ic('x', 15) + '</button></div></li>';
+      }).join('') + '</ul>' : '<p class="bsli-ct-vide">Trouvez le gérant, les dirigeants et les responsables de ' + esc(p.entreprise) + ' sur LinkedIn : ils arrivent ici, et le décideur devient le contact principal.</p>') +
+      (recus.length ? '<div class="bsli-ct-recus">' + ic('user-search', 15) + '<span>' + pluriel(recus.length, 'personne', 'personnes') + ' de cette entreprise ' + (recus.length > 1 ? 'sont' : 'est') + ' déjà dans vos leads LinkedIn : ' +
+        esc(recus.slice(0, 3).map(function (l) { return l.nom; }).join(', ')) + (recus.length > 3 ? '…' : '') + '</span><button type="button" class="btn btn-secondary btn-sm" data-ct-recus>Ajouter</button></div>' : '') +
+      '<div class="bsli-ct-go"><a class="btn btn-sm bsli-in" href="' + esc(lienContacts(p, 'linkedin')) + '" target="_blank" rel="noopener noreferrer" data-ct-chercher="linkedin">' + LOGO.replace('width="18" height="18"', 'width="15" height="15"') + 'Trouver les décideurs sur LinkedIn</a>' +
+      '<a class="btn btn-ghost btn-sm" href="' + esc(lienContacts(p, 'google')) + '" target="_blank" rel="noopener noreferrer" data-ct-chercher="google">' + ic('search', 14) + 'Via Google</a></div>' +
+      (enCours ? '<p class="bsli-ct-aide on">' + ic('bookmark', 14) + '<span>Sur la page LinkedIn, cliquez sur votre favori <b>« Envoyer au CRM »</b> : les personnes de ' + esc(p.entreprise) + ' arrivent dans cette fiche. Page suivante, nouveau clic.</span></p>'
+        : '<p class="bsli-ct-aide">' + ic('info', 14) + '<span>Il faut le bouton « Envoyer au CRM » dans vos favoris. <button type="button" class="bsli-ct-lien" data-ct-installer>L’installer</button></span></p>');
+    if (el.__bsliCt) return;
+    el.__bsliCt = true;
+    el.addEventListener('click', function (ev) {
+      var t = ev.target.closest('a,button'); if (!t || !el.contains(t)) return;
+      var q = prospectDe(el.getAttribute('data-pid')); if (!q) return;
+      var id;
+      if (t.hasAttribute('data-ct-chercher')) { ecrireJson(CLE_POUR, { id: q.id, entreprise: q.entreprise, at: Date.now() }); setTimeout(function () { contactsFiche(el, prospectDe(q.id)); }, 0); return; }
+      if (t.hasAttribute('data-ct-recus')) { var n = rangerContacts(q.id, dejaRecus(q)); toast(n ? pluriel(n, 'contact ajouté', 'contacts ajoutés') + ' à la fiche.' : 'Ces contacts sont déjà sur la fiche.'); redessiner(); return; }
+      if (t.hasAttribute('data-ct-installer')) {
+        ecrireJson(CLE_ONGLET, 'linkedin');
+        if (window.__bsY) window.__bsY.set({ overlays: [] });
+        location.hash = '#/leads';
+        if (window.bsLeads && window.bsLeads.onglet) window.bsLeads.onglet('linkedin');
+        return;
+      }
+      if ((id = t.getAttribute('data-ct-princ'))) {
+        var c = contactsDe(q).filter(function (x) { return x.id === id; })[0]; if (!c) return;
+        // Le poste et le profil suivent le contact principal ; l'e-mail de l'entreprise reste s'il y en a un.
+        majContacts(q.id, function (x) { return { contact: c.nom, poste: c.poste || '', linkedin: c.linkedin || '', email: x.email || c.email || '' }; });
+        toast(c.nom + ' est le contact principal.');
+        return;
+      }
+      if ((id = t.getAttribute('data-ct-suppr'))) {
+        majContacts(q.id, function (x) { return { contacts: contactsDe(x).filter(function (c) { return c.id !== id; }) }; });
+        return;
+      }
+      if ((id = t.getAttribute('data-ct-mail'))) {
+        var m = contactsDe(q).filter(function (x) { return x.id === id; })[0];
+        if (m && window.bsMail && window.bsMail.composer) window.bsMail.composer({ a: m.email, sujet: '', texte: 'Bonjour ' + prenomDe(m.nom) + ',\n\n', prospectId: q.id });
+      }
+    });
+  }
+
   // ================================================================== recherche toute prête
   function requete(c) {
     var postes = mots(c.postes).slice(0, 6), sects = String(c.secteurs || '').split(/[,;]/).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 3);
@@ -964,10 +1131,27 @@
           : '<div class="card bsl-empty">' + LOGO.replace('width="18" height="18"', 'width="28" height="28"') + '<h2>' + (liste.length ? 'Rien dans cette liste' : 'Vos leads LinkedIn arriveront ici') + '</h2><p>' + (liste.length ? 'Choisissez un autre filtre.' : 'Lancez une recherche sur LinkedIn, puis cliquez sur le bouton « Envoyer au CRM » dans vos favoris. Chaque personne est notée selon vos critères.') + '</p></div>');
       verifier(vue.slice(0, UI.vus));
     }
-    function dessiner() { dessinerHaut(); dessinerBas(); }
-    root.innerHTML = '<section class="card bsli-etapes bsli-haut"></section><section class="bsli-liste-s bsli-bas"></section>' +
+    // Contacts reçus pour la fiche d'un prospect : ceux rangés dans la fiche, et les autres personnes de la page.
+    function dessinerPour() {
+      var z = root.querySelector('.bsli-pour'), x = UI.pour, p = x && prospectDe(x.id);
+      if (!z) return;
+      if (!p) { z.innerHTML = ''; z.hidden = true; return; }
+      var tous = leads(), parId = function (id) { return tous.filter(function (l) { return l.id === id; })[0]; };
+      var autres = x.autres.map(parId).filter(function (l) { return l && l.statut !== 'ajoute' && l.statut !== 'ecarte'; });
+      var cs = contactsDe(p);
+      z.hidden = false;
+      z.innerHTML = '<div class="bsli-pour-t">' + ic('building', 18) + '<div><h2>Contacts de ' + esc(p.entreprise) + '</h2><p>' +
+        (cs.length ? pluriel(cs.length, 'contact', 'contacts') + ' sur la fiche' + (p.contact ? ' · principal : ' + esc(p.contact) : '') + '.' : 'Personne de cette entreprise sur cette page.') +
+        ' Page suivante sur LinkedIn, puis nouveau clic sur « Envoyer au CRM » pour en trouver d’autres.</p></div></div>' +
+        (autres.length ? '<p class="bsli-pour-s">Autres personnes de la page, à ajouter si elles travaillent chez ' + esc(p.entreprise) + ' :</p><ul class="bsli-pour-l">' + autres.slice(0, 20).map(function (l) {
+          return '<li><div><b>' + esc(l.nom) + '</b><small>' + esc([l.poste, l.entreprise].filter(Boolean).join(' · ') || 'Poste non indiqué') + '</small></div><button type="button" class="btn btn-secondary btn-sm" data-pour-ajouter="' + esc(l.id) + '">' + ic('plus', 14) + 'Ajouter à la fiche</button></li>';
+        }).join('') + '</ul>' : '') +
+        '<div class="bsli-pour-a"><button type="button" class="btn btn-primary btn-sm" data-pour-ouvrir>' + ic('external-link', 14) + 'Ouvrir la fiche</button><button type="button" class="btn btn-ghost btn-sm" data-pour-fin>Terminé</button></div>';
+    }
+    function dessiner() { dessinerPour(); dessinerHaut(); dessinerBas(); }
+    root.innerHTML = '<section class="card bsli-pour" hidden></section><section class="card bsli-etapes bsli-haut"></section><section class="bsli-liste-s bsli-bas"></section>' +
       '<p class="bsl-note">' + ic('shield-check', 14) + '<span>Le CRM lit seulement les pages LinkedIn que vous ouvrez vous-même, une à une : pas de robot qui parcourt LinkedIn à votre place (LinkedIn bloque les comptes qui en utilisent). Soyons francs : les conditions de LinkedIn interdisent les outils qui copient ses pages. Le bouton reste une copie à la demande, sur votre compte et à votre rythme ; l’import de vos relations est la voie la plus sûre. Les leads non ajoutés au CRM sont effacés d’ici au bout de 30 jours. RGPD : votre message doit concerner leur métier ; au premier contact, dites que vous avez trouvé leur profil sur LinkedIn et retirez la personne de vos listes si elle le demande. Avec Claude, seuls le poste, l’entreprise et le lieu sont envoyés, jamais le nom.</span></p>';
-    UI.dessiner = dessinerBas;
+    UI.dessiner = function () { dessinerPour(); dessinerBas(); };
 
     function trouver(id) { return leads().filter(function (l) { return l.id === id; })[0]; }
     function ouvrir(id) { if (window.__bsY && id) window.__bsY.set(function (s) { return { overlays: (s.overlays || []).concat([{ key: 'bsli' + Date.now(), type: 'prospect', id: id }]) }; }); }
@@ -981,6 +1165,9 @@
       var el = ev.target.closest('a, button');
       if (!el || !root.contains(el)) return;
       var id;
+      if ((id = el.getAttribute('data-pour-ajouter'))) { var pa = trouver(id); if (pa && UI.pour) { rangerContacts(UI.pour.id, [pa]); toast(pa.nom + ' ajouté à la fiche.'); dessinerPour(); dessinerBas(); } return; }
+      if (el.hasAttribute('data-pour-ouvrir')) { if (UI.pour) ouvrir(UI.pour.id); return; }
+      if (el.hasAttribute('data-pour-fin')) { UI.pour = null; try { localStorage.removeItem(CLE_POUR); } catch (e) { /* facultatif */ } dessinerPour(); return; }
       if (el.hasAttribute('data-li-favori')) { ev.preventDefault(); dire('ok', 'Ne cliquez pas ici : faites glisser ce bouton dans votre barre de favoris, puis cliquez dessus quand vous êtes sur LinkedIn.'); return; }
       if ((id = el.getAttribute('data-li-ajouter'))) { var l = trouver(id); if (l) { UI.garde[id] = 1; var r = ajouterAuCrm(l); sauver(); toast(r.stop ? 'Cette personne a demandé à ne plus être contactée : lead écarté.' : r.doublon ? 'Déjà dans votre CRM.' : l.nom + ' ajouté au CRM.', r.stop ? 'error' : 'success'); dessinerBas(); } return; }
       if ((id = el.getAttribute('data-li-ecarter'))) { var e = trouver(id); if (e) { UI.garde[id] = 1; e.statut = 'ecarte'; sauver(); dessinerBas(); } return; }
@@ -1139,6 +1326,33 @@
     '.bsli-msg span{flex:1;min-width:0;overflow-wrap:anywhere}',
     '@media (max-width:900px){.bsli-grid{grid-template-columns:1fr 1fr}.bsli-grid>:last-child{grid-column:1/-1}}',
     '@media (max-width:560px){.bsli-grid{grid-template-columns:1fr}.bsli-etapes{padding:14px}.bsli-bouton-l,.bsli-autres{padding-left:0}.bsli-aide{margin-left:0}.bsli-go .btn{flex:1 1 auto;justify-content:center}}',
+    '.bsli-pour{padding:16px 18px;display:flex;flex-direction:column;gap:10px;border-color:rgb(10 102 194/.5);box-shadow:0 0 0 3px rgb(10 102 194/.12)}',
+    '.bsli-pour[hidden]{display:none}',
+    '.bsli-pour-t{display:flex;gap:12px;align-items:flex-start}.bsli-pour-t>svg{flex:none;color:#0a66c2;margin-top:2px}',
+    '.bsli-pour-t h2{margin:0;font-size:1em;font-weight:700}.bsli-pour-t p{margin:2px 0 0;font-size:.86em;color:var(--text-3)}',
+    '.bsli-pour-s{margin:0;font-size:.84em;color:var(--text-2)}',
+    '.bsli-pour-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}',
+    '.bsli-pour-l li{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:8px 10px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border)}',
+    '.bsli-pour-l li div{display:flex;flex-direction:column;min-width:0}.bsli-pour-l b{font-size:.9em}.bsli-pour-l small{font-size:.78em;color:var(--text-3)}',
+    '.bsli-pour-a{display:flex;gap:8px;flex-wrap:wrap}',
+    '.bsli-ct-l{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:6px}',
+    '.bsli-ct{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2)}',
+    '.bsli-ct.princ{border-color:rgb(10 102 194/.45)}',
+    '.bsli-ct-av{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:.72em;font-weight:800;color:#fff;background:#0a66c2}',
+    '.bsli-ct-t{flex:1;min-width:0;display:flex;flex-direction:column}',
+    '.bsli-ct-t b{font-size:.9em;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.bsli-ct-t small{font-size:.78em;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.bsli-ct-badge{padding:1px 7px;border-radius:999px;background:rgb(10 102 194/.14);color:#0a66c2;font-size:.72em;font-weight:700}',
+    '[data-scheme=dark] .bsli-ct-badge{color:#7cb7f0}',
+    '.bsli-ct-a{display:flex;gap:2px;flex:none}',
+    '.bsli-ct-b{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;border:0;background:none;color:var(--text-3);cursor:pointer}',
+    '.bsli-ct-b:hover{background:var(--surface);color:var(--text)}a.bsli-ct-b{color:#0a66c2}',
+    '.bsli-ct-vide{margin:0 0 10px;font-size:.86em;color:var(--text-3);line-height:1.45}',
+    '.bsli-ct-recus{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 10px;border-radius:10px;background:rgb(10 102 194/.08);font-size:.84em;color:var(--text-2)}',
+    '.bsli-ct-recus span{flex:1;min-width:0}.bsli-ct-recus svg{flex:none;color:#0a66c2}',
+    '.bsli-ct-go{display:flex;gap:8px;flex-wrap:wrap}.bsli-ct-go .btn{gap:6px}',
+    '.bsli-ct-aide{display:flex;gap:6px;align-items:flex-start;margin:8px 0 0;font-size:.8em;color:var(--text-3);line-height:1.45}.bsli-ct-aide svg{flex:none;margin-top:2px}',
+    '.bsli-ct-aide.on{color:var(--text-2)}.bsli-ct-aide.on svg{color:#0a66c2}',
+    '.bsli-ct-lien{padding:0;border:0;background:none;color:var(--accent-text,var(--accent));font:inherit;font-weight:600;cursor:pointer;text-decoration:underline}',
   ].join('\n');
   function ensureCss() {
     if (document.getElementById('bs-linkedin-css')) return;
@@ -1152,7 +1366,7 @@
   window.addEventListener('storage', function (e) { if (e.key === CLE_LEADS || e.key === null) { LEADS = null; NOTES = {}; redessiner(); } });
 
   window.bsLinkedin = {
-    monter: monter, extraire: extraire, codeBouton: codeBouton, lienRecherche: lienRecherche,
-    _interne: { leads: leads, fusionner: fusionner, recevoirCode: recevoirCode, lireRelations: lireRelations, depuisZip: depuisZip, noter: noter, cible: cible, ajouterAuCrm: ajouterAuCrm, villeDe: villeDe, envoi: envoi },
+    monter: monter, extraire: extraire, codeBouton: codeBouton, lienRecherche: lienRecherche, contactsFiche: contactsFiche, lienContacts: lienContacts,
+    _interne: { rattacher: rattacher, rangerContacts: rangerContacts, memeEntreprise: memeEntreprise, nomRecherche: nomRecherche, leads: leads, fusionner: fusionner, recevoirCode: recevoirCode, lireRelations: lireRelations, depuisZip: depuisZip, noter: noter, cible: cible, ajouterAuCrm: ajouterAuCrm, villeDe: villeDe, envoi: envoi },
   };
 })();

@@ -2368,9 +2368,11 @@ function reglement(e, o) {
   var payee = facture && d.statut === 'payee';
   var reste = payee ? 0 : r2(Math.max(0, total - regle));
   var online = facture && window.BS_PAY_LINKS && window.BS_PAY_LINKS[d.id];
+  // Facture PayPal créée depuis le compte PayPal connecté (page Paiements) : prioritaire sur le lien PayPal.me.
+  var facturePaypal = facture && !payee && window.BS_PAYPAL_LINKS && window.BS_PAYPAL_LINKS[d.id];
   var others = [
     ['Carte bancaire (Stripe)', links.stripe],
-    ['PayPal', facture ? paypalMe(links.paypal, reste) : links.paypal],
+    ['PayPal', facturePaypal ? (facturePaypal === online ? '' : facturePaypal) : facture ? paypalMe(links.paypal, reste) : links.paypal],
     ['Payoneer', links.payoneer],
   ].filter(function (x) { return x[1]; });
   if (!a.iban && !others.length && !online) return null;

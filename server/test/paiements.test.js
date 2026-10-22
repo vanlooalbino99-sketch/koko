@@ -45,7 +45,7 @@ test('formulaire à la façon de Stripe', () => {
 });
 
 test('connexion Stripe : administrateur seulement, clé vérifiée chez Stripe, chiffrée en base', async () => {
-  assert.deepEqual((await (await call(marie, 'GET', '/api/paiements/etat')).json()), { admin: false, stripe: { connecte: false } });
+  assert.deepEqual((await (await call(marie, 'GET', '/api/paiements/etat')).json()), { admin: false, stripe: { connecte: false }, paypal: { connecte: false }, mercury: { connecte: false } });
   assert.equal((await call(marie, 'PUT', '/api/paiements/stripe', { cle: CLE })).status, 403);
   let r = await call(admin, 'PUT', '/api/paiements/stripe', { cle: 'pk_live_123' });
   assert.equal(r.status, 400);

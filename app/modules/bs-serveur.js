@@ -370,7 +370,7 @@
   function ouvrirEquipe() {
     location.hash = '#/settings';
     var n = 0, t = setInterval(function () {
-      var tab = [].slice.call(document.querySelectorAll('button,a,[role=tab]')).filter(function (x) { return x.textContent.trim() === 'Équipe & compte'; })[0];
+      var tab = [].slice.call(document.querySelectorAll('button,a,[role=tab]')).filter(function (x) { return /^(Équipe & compte|Team & account)$/.test(x.textContent.trim()); })[0];
       if (tab || ++n > 20) { clearInterval(t); if (tab) tab.click(); }
     }, 50);
   }
@@ -411,6 +411,7 @@
     compte: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     organi: '<rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v5M5 17v-3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/>',
     reglages: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    langue: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
     sortie: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
   };
   function moiIc(n) { return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + MOI_IC[n] + '</svg>'; }
@@ -451,6 +452,8 @@
       '<button type="button" role="menuitem" data-moi="compte">' + moiIc('compte') + 'Mon compte</button>' +
       (!window.bsAcces || window.bsAcces.peut('messages') ? '<button type="button" role="menuitem" data-moi="organi">' + moiIc('organi') + 'Organigramme</button>' : '') +
       '<button type="button" role="menuitem" data-moi="reglages">' + moiIc('reglages') + 'Réglages</button>' +
+      (window.bsLangue ? '<button type="button" role="menuitem" data-moi="langue" translate="no" lang="' + (window.bsLangue.langue === 'en' ? 'fr' : 'en') + '">' + moiIc('langue') +
+        (window.bsLangue.langue === 'en' ? 'Passer en français' : 'Switch to English') + '</button>' : '') +
       '<div class="bs-moi-sep"></div>' +
       '<button type="button" role="menuitem" class="sortie" data-moi="sortie">' + moiIc('sortie') + 'Se déconnecter</button>';
     m.addEventListener('click', function (e) {
@@ -461,6 +464,7 @@
       else if (a === 'organi') { if (window.bsMessages) window.bsMessages.organigramme(); else ouvrirEquipe(); }
       else if (a === 'reglages') location.hash = '#/settings';
       else if (a === 'sortie') deconnexion();
+      else if (a === 'langue') window.bsLangue.choisir(window.bsLangue.langue === 'en' ? 'fr' : 'en');
     });
     document.body.appendChild(m);
     b.setAttribute('aria-expanded', 'true');
@@ -471,13 +475,13 @@
   }
   // Membres non administrateurs : les boutons de suppression ne font rien (le serveur remet de toute façon
   // ce qu'un membre retire).
-  var EFFACER = /^(supprimer|tout effacer)/i;
+  var EFFACER = /^(supprimer|tout effacer|delete|clear everything)/i;
   if (USER && USER.role !== 'admin') {
     document.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('button,a,[role=menuitem],[role=button]');
       if (!b) return;
       var label = (b.getAttribute('aria-label') || b.getAttribute('title') || b.textContent || '').trim();
-      if (!EFFACER.test(label) && !(label === 'Effacer' && !b.classList.contains('search-clear'))) return;
+      if (!EFFACER.test(label) && !((label === 'Effacer' || label === 'Clear') && !b.classList.contains('search-clear'))) return;
       e.preventDefault(); e.stopImmediatePropagation();
       flash('Suppression réservée aux administrateurs de l’équipe.');
     }, true);

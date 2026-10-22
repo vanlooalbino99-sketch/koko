@@ -1,0 +1,870 @@
+# Interface principale (app/core/app.min.js). Une ligne : texte français ⇒ texte anglais.
+À appeler ⇒ To call
+Injoignable ⇒ Unreachable
+RDV pris ⇒ Meeting booked
+Audit réalisé ⇒ Audit done
+Audit ⇒ Audit
+Proposition envoyée ⇒ Proposal sent
+Proposition ⇒ Proposal
+Client actif ⇒ Active client
+Client ⇒ Client
+Résilié ⇒ Cancelled
+Perdu / Refus ⇒ Lost / Declined
+Perdu ⇒ Lost
+Brouillon ⇒ Draft
+Envoyé ⇒ Sent
+Accepté ⇒ Accepted
+Refusé ⇒ Declined
+Expiré ⇒ Expired
+À payer ⇒ Unpaid
+Payée ⇒ Paid
+Annulée ⇒ Cancelled
+Immobilier ⇒ Real estate
+Artisans / BTP ⇒ Trades / Construction
+Santé & bien-être ⇒ Health & wellness
+Commerce / e-commerce ⇒ Retail / e-commerce
+Services B2B ⇒ B2B services
+Autre ⇒ Other
+Cold calling ⇒ Cold calling
+Réseau Orange Pro ⇒ Orange Pro network
+Terrain ⇒ Field
+Recommandation ⇒ Referral
+Partenaire ⇒ Partner
+Chaud ⇒ Hot
+Tiède ⇒ Warm
+Froid ⇒ Cold
+À rappeler plus tard ⇒ Call back later
+RDV obtenu ⇒ Meeting booked
+Client signé 🎉 ⇒ Client signed 🎉
+Client signé ⇒ Client signed
+Haute ⇒ High
+Moyenne ⇒ Medium
+Basse ⇒ Low
+1. Contrôle de l'état — 4 premières secondes ⇒ 1. State control — first 4 seconds
+Ton, rythme, posture ⇒ Tone, pace, posture
+Sourire avant de composer — ça s'entend dans la voix. ⇒ Smile before dialling — people hear it in your voice.
+Débit dynamique, assuré, jamais hésitant sur les 3 premiers mots. ⇒ Lively, confident delivery, never hesitant on the first 3 words.
+Phrase d'ouverture : « Bonjour [Prénom], [Votre nom] de Blackstart AI. » ⇒ Opening line: "Hello [Prénom], [Your name] from Blackstart AI."
+Ne jamais demander la permission de parler — affirmer, puis enchaîner. ⇒ Never ask permission to talk — state, then move on.
+2. Accroche & Rapport ⇒ 2. Hook & Rapport
+Créer la ligne droite ⇒ Build the straight line
+« J'aide les [secteur] à ne plus perdre de clients quand la ligne est occupée. » ⇒ "I help [secteur] stop losing customers when the line is busy."
+Une seule idée, pas un pitch complet — juste assez pour justifier la question suivante. ⇒ One idea, not a full pitch — just enough to justify the next question.
+Transition immédiate vers une question ouverte — ne jamais laisser un silence après l'accroche. ⇒ Move straight to an open question — never leave a silence after the hook.
+3. Renseignement — Questions ouvertes ⇒ 3. Discovery — Open questions
+Faire parler, pas vendre ⇒ Get them talking, don't sell
+« Aujourd'hui, quand un client appelle en dehors des horaires, que se passe-t-il ? » ⇒ "Today, when a customer calls outside opening hours, what happens?"
+« Vous diriez que vous ratez combien de demandes par semaine ? » ⇒ "How many requests would you say you miss each week?"
+Écouter la réponse à 100% — c'est elle qui devient votre argument de closing. ⇒ Listen to the answer 100% — it becomes your closing argument.
+4. La Boucle — traitement des objections ⇒ 4. The Loop — handling objections
+Reconnaître, isoler, revenir sur la ligne ⇒ Acknowledge, isolate, get back on the line
+Principe : jamais dévier. Chaque objection ramène vers le même point de closing. ⇒ Rule: never drift. Every objection leads back to the same closing point.
+« Je comprends. C'est justement pour ça que [contre-argument]. » — puis reposer la question de closing. ⇒ "I understand. That's exactly why [counter-argument]." — then ask the closing question again.
+« Pas le temps » → « L'audit ne prend que 20 min, gratuit. Mardi ou jeudi ? » ⇒ "No time" → "The audit only takes 20 min, free. Tuesday or Thursday?"
+« Pas de budget » → « L'audit ne coûte rien — vous déciderez après avoir vu le chiffrage. » ⇒ "No budget" → "The audit costs nothing — you'll decide after seeing the figures."
+« Envoyez une doc » → « Une doc générique ne dira pas ce que ça donne chez vous — 20 min suffisent. » ⇒ "Send me a brochure" → "A generic brochure won't show what it does for you — 20 min is enough."
+5. Les 3 Dix — avant de closer ⇒ 5. The 3 Tens — before closing
+Le prospect doit être à 10/10 sur les 3 ⇒ The prospect must be at 10/10 on all 3
+① Le produit — logique + émotion : voit-il concrètement le gain ? ⇒ ① The product — logic + emotion: do they clearly see the gain?
+② Vous — vous fait-il confiance, vous en particulier ? ⇒ ② You — do they trust you, personally?
+③ L'entreprise — croit-il en Blackstart AI comme partenaire fiable ? ⇒ ③ The company — do they believe in Blackstart AI as a reliable partner?
+Si un des 3 est en dessous de 10 → revenir en boucle avant de closer, ne jamais forcer. ⇒ If one of the 3 is below 10 → loop back before closing, never force it.
+6. Closing — prise de RDV ⇒ 6. Closing — booking the meeting
+Langage assumé, jamais hésitant ⇒ Assertive language, never hesitant
+« Je vous propose mardi 9h ou jeudi 17h pour l'audit — qu'est-ce qui vous arrange ? » ⇒ "I can offer Tuesday 9am or Thursday 5pm for the audit — which suits you?"
+Ne jamais dire « voudriez-vous » — toujours affirmer et laisser le choix entre deux options. ⇒ Never say "would you like" — always state and offer a choice between two options.
+Confirmer l'e-mail, remercier, raccrocher — ne pas sur-vendre après le oui. ⇒ Confirm the email, thank them, hang up — don't oversell after the yes.
+Premier contact ⇒ First contact
+Relance après appel ⇒ Follow-up after call
+Confirmation de RDV ⇒ Meeting confirmation
+Envoi de devis ⇒ Sending a quote
+Relance devis sans réponse ⇒ Quote follow-up (no reply)
+Envoi de facture ⇒ Sending an invoice
+Message libre ⇒ Free message
+agence immobilière ⇒ real estate agency
+électricien ⇒ electrician
+kinésithérapeute ⇒ physiotherapist
+Ignorer cette colonne ⇒ Ignore this column
+Entreprise * ⇒ Company *
+Secteur ⇒ Industry
+Contact ⇒ Contact
+Téléphone ⇒ Phone
+Email ⇒ Email
+Ville ⇒ City
+Canal ⇒ Channel
+Notes ⇒ Notes
+Paiement à 30 jours. Pénalités de retard : 3 fois le taux d'intérêt légal. Indemnité forfaitaire pour frais de recouvrement : 40 €. ⇒ Payment within 30 days. Late penalties: 3 times the legal interest rate. Fixed recovery fee: €40.
+Aujourd'hui ⇒ Today
+Aujourd’hui ⇒ Today
+Demain ⇒ Tomorrow
+Hier ⇒ Yesterday
+Il y a ⇒ Ago
+Aucune date choisie ⇒ No date selected
+Ko ⇒ KB
+Mo ⇒ MB
+Les données enregistrées sont illisibles — la sauvegarde automatique est suspendue. ⇒ Saved data is unreadable — automatic saving is paused.
+Sauvegarde impossible : stockage du navigateur plein ou bloqué. ⇒ Cannot save: browser storage is full or blocked.
+Cette rubrique n’est pas ouverte à votre compte. ⇒ This section is not open to your account.
+Annuler ⇒ Cancel
+Système ⇒ System
+IndexedDB indisponible ⇒ IndexedDB unavailable
+Stockage des fichiers indisponible dans ce navigateur. ⇒ File storage is unavailable in this browser.
+Notification ⇒ Notification
+Appels ⇒ Calls
+Contacts joints ⇒ Contacts reached
+RDV obtenus ⇒ Meetings booked
+Audits ⇒ Audits
+Clients signés ⇒ Clients signed
+En retard ⇒ Overdue
+Effacer ⇒ Clear
+Sélectionner ⇒ Select
+Fermer ⇒ Close
+Confirmer ⇒ Confirm
+Moins ⇒ Less
+Plus ⇒ More
+Prospection ⇒ Prospecting
+Agenda ⇒ Calendar
+Prospects ⇒ Prospects
+Nouveaux leads ⇒ New leads
+Pipeline ⇒ Pipeline
+Tâches ⇒ Tasks
+Ventes ⇒ Sales
+Mail ⇒ Mail
+Devis & factures ⇒ Quotes & invoices
+Clients ⇒ Clients
+Paiements ⇒ Payments
+Marketing ⇒ Marketing
+Campagnes ⇒ Campaigns
+Modèles ⇒ Templates
+Contenu ⇒ Content
+Sources & ROI ⇒ Sources & ROI
+Automatisation ⇒ Automation
+Assistants IA ⇒ AI assistants
+Automatisations ⇒ Automations
+Équipe ⇒ Team
+Messages ⇒ Messages
+Groupes ⇒ Groups
+Visio ⇒ Video call
+Entraînement ⇒ Training
+Analyse ⇒ Analytics
+Tableau de bord ⇒ Dashboard
+Rapports ⇒ Reports
+Carte clients ⇒ Client map
+Marché ⇒ Market
+Formations ⇒ Courses
+Outils ⇒ Tools
+Réglages ⇒ Settings
+Nouveau prospect (N) ⇒ New prospect (N)
+Nouveau prospect ⇒ New prospect
+Déplier le menu ⇒ Expand the menu
+Replier le menu ⇒ Collapse the menu
+Rechercher un prospect, un devis, une action… ⇒ Search a prospect, a quote, an action…
+Sauvegarde ⇒ Backup
+Rechercher ⇒ Search
+relance(s) en retard ⇒ overdue follow-up(s)
+Aucune relance en retard ⇒ No overdue follow-ups
+Passer en mode clair ⇒ Switch to light mode
+Passer en mode sombre ⇒ Switch to dark mode
+Créer ⇒ Create
+Nouveau devis ⇒ New quote
+Nouvelle facture ⇒ New invoice
+Nouvelle tâche ⇒ New task
+Planifier un créneau ⇒ Schedule a slot
+Importer des leads ⇒ Import leads
+Navigation principale ⇒ Main navigation
+Devis ⇒ Quotes
+Leads ⇒ Leads
+Menu ⇒ Menu
+Toutes les sections ⇒ All sections
+Importer ⇒ Import
+Statut ⇒ Status
+Prospect mis à jour ⇒ Prospect updated
+Prospect créé ⇒ Prospect created
+Prospect ajouté ⇒ Prospect added
+prospects supprimés ⇒ prospects deleted
+Prospect supprimé ⇒ Prospect deleted
+prospects → ⇒ prospects →
+Relance planifiée le ⇒ Follow-up scheduled on
+Relance retirée ⇒ Follow-up removed
+Appel enregistré ⇒ Call saved
+Import ⇒ Import
+lead importé ⇒ lead imported
+leads importés ⇒ leads imported
+doublon ignoré ⇒ duplicate skipped
+doublons ignorés ⇒ duplicates skipped
+Créneau planifié ⇒ Slot scheduled
+Prospect créé et créneau planifié ⇒ Prospect created and slot scheduled
+Devis mis à jour ⇒ Quote updated
+créé ⇒ created
+créé (copie) ⇒ created (copy)
+Devis supprimé ⇒ Quote deleted
+Facture mise à jour ⇒ Invoice updated
+Facture ⇒ Invoice
+émise ⇒ issued
+créée ⇒ created
+Facture supprimée ⇒ Invoice deleted
+Tâche mise à jour ⇒ Task updated
+Tâche ⇒ Task
+Tâche ajoutée ⇒ Task added
+Tâche supprimée ⇒ Task deleted
+Décideur ⇒ Decision maker
+Urgent ⇒ Urgent
+Budget validé ⇒ Budget approved
+Virement ⇒ Bank transfer
+Aucun appel en attente ⇒ No calls waiting
+Données de démonstration chargées ⇒ Demo data loaded
+Bonne nuit ⇒ Good night
+Bonjour ⇒ Good morning
+Bon après-midi ⇒ Good afternoon
+Bonsoir ⇒ Good evening
+Appeler maintenant ⇒ Call now
+Appeler ⇒ Call
+jours d'appels d'affilée ⇒ days of calls in a row
+Appels aujourd'hui ⇒ Calls today
+Appels semaine ⇒ Calls this week
+RDV semaine ⇒ Meetings this week
+Lancer la session d'appels ⇒ Start the call session
+à appeler, enchaînés automatiquement ⇒ to call, one after another automatically
+Aucun appel en attente — bravo ! ⇒ No calls waiting — well done!
+Prospect ⇒ Prospect
+Planifier ⇒ Schedule
+File d'appels ⇒ Call queue
+prévus ⇒ planned
+en retard ⇒ overdue
+Tout est à jour ⇒ All up to date
+Enchaîner ⇒ Next
+File d'appel vide ⇒ Call queue empty
+Aucun appel prévu aujourd'hui. Ajoutez de nouveaux prospects ou attendez vos prochaines relances planifiées. ⇒ No calls planned today. Add new prospects or wait for your next scheduled follow-ups.
+Voir les prospects ⇒ See prospects
+Tâches du jour ⇒ Today's tasks
+tâche ⇒ task
+à faire ⇒ to do
+Rien en attente ⇒ Nothing pending
+Ajouter ⇒ Add
+Terminer la tâche ⇒ Complete the task
+En retard · ⇒ Overdue ·
+Aucune tâche aujourd'hui ⇒ No tasks today
+Voir les ⇒ See the
+tâches ⇒ tasks
+Prochaines relances ⇒ Upcoming follow-ups
+Rien de planifié cette semaine ⇒ Nothing scheduled this week
+MRR actuel ⇒ Current MRR
+CA signé (mois) ⇒ Revenue signed (month)
+appels, ⇒ calls,
+contacts joints, ⇒ contacts reached,
+Temps au téléphone ⇒ Time on the phone
+Bienvenue sur Blackstart CRM 👋 ⇒ Welcome to Blackstart CRM 👋
+Commencez par ajouter vos premiers prospects ⇒ Start by adding your first prospects
+Ajoutez un prospect, importez une liste (CSV, copier-coller, base officielle des entreprises) ou explorez l'app avec des données de démonstration. ⇒ Add a prospect, import a list (CSV, copy-paste, official company register) or explore the app with demo data.
+Ajouter un prospect ⇒ Add a prospect
+Charger la démo ⇒ Load the demo
+Lancer la session d'appels ( ⇒ Start the call session (
+Raccourcis clavier ⇒ Keyboard shortcuts
+Aller à ⇒ Go to
+Actions rapides ⇒ Quick actions
+Navigation ⇒ Navigation
+Sans client ⇒ No client
+Actions ⇒ Actions
+Créer le prospect « ⇒ Create the prospect "
+Recherche et commandes ⇒ Search and commands
+Échap ⇒ Esc
+Aucun résultat pour « ⇒ No results for "
+Entrée ⇒ Enter
+Dans 2h ⇒ In 2h
+Demain 9h ⇒ Tomorrow 9am
+Demain 14h ⇒ Tomorrow 2pm
+Dans 3 jours ⇒ In 3 days
+Semaine pro. ⇒ Next week
+Dans 1 mois ⇒ In 1 month
+Date de relance ⇒ Follow-up date
+Heure de relance ⇒ Follow-up time
+Session terminée — ⇒ Session ended —
+enregistré ⇒ saved
+Notez ce qui se dit pendant l'appel : besoins, objections, décideur, budget… ⇒ Note what is said during the call: needs, objections, decision maker, budget…
+Dernier appel ⇒ Last call
+Appel — ⇒ Call —
+Quitter l'appel ⇒ Leave the call
+· Session ⇒ · Session
+Composer ⇒ Dial
+Pas de numéro enregistré ⇒ No number saved
+Script d'appel ⇒ Call script
+Fiche ⇒ Record
+Script ⇒ Script
+Résultat de l'appel ⇒ Call outcome
+Montant projet (€) ⇒ Project amount (€)
+Abonnement / mois (€) ⇒ Subscription / month (€)
+Prochaine relance ⇒ Next follow-up
+Détail de l'échange… ⇒ Details of the conversation…
+Le statut passera à ⇒ Status will change to
+Passer ⇒ Skip
+Terminer l'appel ⇒ End the call
+Reprendre ⇒ Resume
+Enregistrer & suivant ⇒ Save & next
+Enregistrer & terminer ⇒ Save & finish
+Enregistrer l'appel ⇒ Save the call
+Semaine du ⇒ Week of
+Vos relances et tâches planifiées — touchez un créneau libre pour planifier ⇒ Your scheduled follow-ups and tasks — tap a free slot to schedule
+À traiter en priorité ⇒ To handle first
+dans la file « Aujourd'hui » ⇒ in the "Today" queue
+Précédent ⇒ Previous
+Suivant ⇒ Next
+Jour ⇒ Day
+Semaine ⇒ Week
+Mois ⇒ Month
+Journée ⇒ All day
++ Planifier à ⇒ + Schedule at
+Planifier le ⇒ Schedule on
+Choisissez un prospect et un créneau de rappel ⇒ Choose a prospect and a call-back slot
+Planifier le créneau ⇒ Schedule the slot
+Filtrer la liste… ⇒ Filter the list…
+— Choisir un prospect — ⇒ — Choose a prospect —
++ Nouveau prospect ⇒ + New prospect
+Nom de l'entreprise ⇒ Company name
+Ex : Agence Immo du Centre ⇒ E.g. Downtown Realty
+Créneau ⇒ Slot
+Aucun prospect pour l'instant ⇒ No prospects yet
+Choisissez « + Nouveau prospect » pour en créer un. ⇒ Choose "+ New prospect" to create one.
+Changer le statut ⇒ Change status
+Supprimer ⇒ Delete
+prospects ? ⇒ prospects?
+Supprimer ce prospect ? ⇒ Delete this prospect?
+Son historique d'appels et ses tâches seront supprimés. Vous pourrez annuler juste après. ⇒ Its call history and tasks will be deleted. You can undo right after.
+Modifier ⇒ Edit
+Plus d'actions ⇒ More actions
+Planifier une relance ⇒ Schedule a follow-up
+Composer un email ⇒ Write an email
+Marquer comme résilié ⇒ Mark as cancelled
+Marquer ce client comme résilié ? ⇒ Mark this client as cancelled?
+Son abonnement ne sera plus compté dans le MRR. ⇒ Their subscription will no longer count in MRR.
+Résilier ⇒ Cancel subscription
+Supprimer le prospect ⇒ Delete the prospect
+Relance ⇒ Follow-up
+(en retard) ⇒ (overdue)
+Aucune relance — planifier ⇒ No follow-up — schedule
+Résultat ⇒ Outcome
+Projet initial ⇒ Initial project
+Abonnement mensuel ⇒ Monthly subscription
+Signé le ⇒ Signed on
+· client depuis ⇒ · client since
+· résilié le ⇒ · cancelled on
+Coordonnées ⇒ Contact details
+Site web ⇒ Website
+Créé le ⇒ Created on
+Enregistrer ⇒ Save
+Aucune note. ⇒ No notes.
+Aucune tâche. ⇒ No tasks.
+Aucun document. ⇒ No documents.
+Historique · ⇒ History ·
+Historique ⇒ History
+Aucune activité ⇒ No activity
+Les appels, changements de statut et documents apparaîtront ici. ⇒ Calls, status changes and documents will appear here.
+Modifier le prospect ⇒ Edit the prospect
+Ajoutez une entreprise à votre pipeline ⇒ Add a company to your pipeline
+Ajouter le prospect ⇒ Add the prospect
+Entreprise ⇒ Company
+Doublon possible : ⇒ Possible duplicate:
+existe déjà. ⇒ already exists.
+Ouvrir la fiche ⇒ Open the record
+Canal d'acquisition ⇒ Acquisition channel
+Priorité ⇒ Priority
+Aucune ⇒ None
+Étiquettes ⇒ Tags
+Séparées par des virgules ⇒ Separated by commas
+Décideur, Multi-sites ⇒ Decision maker, Multi-site
+Date de signature ⇒ Signature date
+Contexte, besoins identifiés… ⇒ Context, identified needs…
+Adresse ⇒ Address
+12 rue des Lilas ⇒ 12 Lilac Street
+Adresse, SIRET, site web ⇒ Address, SIRET, website
+Retirer ⇒ Remove
+Montant projet ⇒ Project amount
+Nb appels ⇒ No. of calls
+Nom ⇒ Name
+Valeur ⇒ Value
+Ajout récent ⇒ Recently added
+Nombre d'appels ⇒ Number of calls
+en cours de prospection ⇒ being prospected
+Exporter ⇒ Export
+Nouveau ⇒ New
+Tous ⇒ All
+En cours ⇒ In progress
+Entreprise, contact, ville, téléphone, étiquette… ⇒ Company, contact, city, phone, tag…
+Filtres ⇒ Filters
+Tous les secteurs ⇒ All industries
+Toutes ⇒ All
+Trier par ⇒ Sort by
+Tableau ⇒ Table
+Liste ⇒ List
+Tout sélectionner ⇒ Select all
+Secteur · Ville ⇒ Industry · City
+Compte-rendu d'appel ⇒ Call report
+Aucun résultat ⇒ No results
+Modifiez la recherche ou les filtres. ⇒ Change the search or filters.
+Réinitialiser les filtres ⇒ Reset filters
+sélectionné ⇒ selected
+Session d'appels ⇒ Call session
+Désélectionner ⇒ Deselect
+Votre base de leads et de clients ⇒ Your leads and clients database
+Aucun prospect ⇒ No prospects
+Ajoutez votre premier prospect ou importez une liste de leads. ⇒ Add your first prospect or import a list of leads.
+en cours ⇒ in progress
+opportunité ⇒ opportunity
+de valeur potentielle ⇒ of potential value
+Filtrer le pipeline… ⇒ Filter the pipeline…
+Masquer les perdus ⇒ Hide lost
+Afficher les perdus ⇒ Show lost
+Glissez-déposez une carte pour changer son statut. ⇒ Drag and drop a card to change its status.
+Déplacer ⇒ Move
+Erreur API ( ⇒ API error (
+Entreprise sans nom ⇒ Unnamed company
+Les doublons (même téléphone, ou même nom + ville) sont ignorés ⇒ Duplicates (same phone, or same name + city) are skipped
+Fichier / copier-coller ⇒ File / copy-paste
+Base officielle (Sirene) ⇒ Official register (Sirene)
+Correspondance des colonnes ⇒ Column mapping
+Recommencer ⇒ Start over
+Colonne ⇒ Column
+Associez au moins une colonne au champ « Entreprise ». ⇒ Map at least one column to the "Company" field.
+Aperçu (5 premières lignes) ⇒ Preview (first 5 rows)
+Collez une liste (export LinkedIn, Pages Jaunes Pro, fichier client) ou importez un fichier CSV. La première ligne doit contenir les en-têtes de colonnes. ⇒ Paste a list (LinkedIn export, Yellow Pages Pro, client file) or import a CSV file. The first row must contain the column headers.
+Déposez un fichier CSV ici ⇒ Drop a CSV file here
+ou collez le texte ci-dessous ⇒ or paste the text below
+Analyser ⇒ Analyse
+Recherche impossible : vérifiez votre connexion internet. ( ⇒ Search failed: check your internet connection. (
+Base officielle des entreprises françaises (data.gouv.fr / Sirene). Données réelles et vérifiées : nom, SIRET, adresse, dirigeant. Ne fournit pas de téléphone — à compléter après import. ⇒ Official French company register (data.gouv.fr / Sirene). Real, verified data: name, SIRET, address, director. No phone numbers — add them after import.
+Activité ou nom ⇒ Activity or name
+ex : plombier ⇒ e.g. plumber
+Code postal ⇒ Postcode
+Chercher ⇒ Search
+Aucun résultat pour cette recherche. ⇒ No results for this search.
+résultats · ⇒ results ·
+sélectionnés ⇒ selected
+Tout désélectionner ⇒ Deselect all
+Base Sirene ⇒ Sirene register
+Rouvrir ⇒ Reopen
+Terminer ⇒ Complete
+Sans date ⇒ No date
+À faire ⇒ To do
+Terminées ⇒ Completed
+À venir ⇒ Upcoming
+Tout est fait 🎉 ⇒ All done 🎉
+Ajoutez des tâches pour ne rien oublier : envoyer une doc, préparer un audit, relancer un devis… ⇒ Add tasks so you never forget anything: send a brochure, prepare an audit, chase a quote…
+Aucune tâche terminée ⇒ No completed tasks
+Modifier la tâche ⇒ Edit the task
+Intitulé ⇒ Title
+Ex : Envoyer la plaquette, préparer l'audit… ⇒ E.g. Send the brochure, prepare the audit…
+Prospect lié ⇒ Linked prospect
+— Aucun — ⇒ — None —
+Échéance ⇒ Due date
+Heure (rappel) ⇒ Time (reminder)
+Normale ⇒ Normal
+Détails… ⇒ Details…
+En attente ⇒ Pending
+Acceptés ⇒ Accepted
+Refusés / expirés ⇒ Declined / expired
+Payées ⇒ Paid
+Créez, envoyez et suivez vos documents commerciaux ⇒ Create, send and track your sales documents
+Devis en attente ⇒ Pending quotes
+Taux d'acceptation ⇒ Acceptance rate
+accepté ⇒ accepted
+décidé ⇒ decided
+À encaisser ⇒ To collect
+Encaissé ce mois ⇒ Collected this month
+Factures ⇒ Invoices
+Numéro ou client… ⇒ Number or client…
+Numéro ⇒ Number
+Émise le ⇒ Issued on
+Validité ⇒ Valid until
+Montant TTC ⇒ Amount incl. VAT
+Payée le ⇒ Paid on
+Aucun devis ⇒ No quotes
+Aucune facture ⇒ No invoices
+Modifiez la recherche ou le filtre. ⇒ Change the search or filter.
+Créez votre premier devis pour un prospect ou un client. ⇒ Create your first quote for a prospect or client.
+Créez une facture, ou convertissez un devis accepté en facture en un clic. ⇒ Create an invoice, or turn an accepted quote into an invoice in one click.
+Créer un devis ⇒ Create a quote
+Créer une facture ⇒ Create an invoice
+Ouvrir ⇒ Open
+Imprimer / PDF ⇒ Print / PDF
+Dupliquer ⇒ Duplicate
+Convertir en facture ⇒ Convert to invoice
+Marquer payée ⇒ Mark as paid
+Marquer à payer ⇒ Mark as unpaid
+Les numéros sont attribués automatiquement ⇒ Numbers are assigned automatically
+Total ⇒ Total
+Créer le devis ⇒ Create the quote
+Créer la facture ⇒ Create the invoice
+Prospect / client existant ⇒ Existing prospect / client
+— Client libre — ⇒ — Other client —
+Nom du client / entreprise ⇒ Client / company name
+Adresse de facturation ⇒ Billing address
+12 rue des Lilas, 75000 Paris ⇒ 12 Lilac Street, 75000 Paris
+Prestations ⇒ Services
+Désignation ⇒ Description
+Qté ⇒ Qty
+Prix unit. HT ⇒ Unit price excl. VAT
+Désignation de la prestation ⇒ Service description
+Quantité ⇒ Quantity
+Prix unitaire HT ⇒ Unit price excl. VAT
+Supprimer la ligne ⇒ Delete the line
+Ajouter une ligne ⇒ Add a line
++ Mise en place ⇒ + Setup
+Abonnement mensuel Blackstart AI ⇒ Blackstart AI monthly subscription
++ Abonnement ⇒ + Subscription
+Remise globale ⇒ Overall discount
+Date de validité ⇒ Valid until
+Date d'émission ⇒ Issue date
+Total HT ⇒ Total excl. VAT
+Remise ( ⇒ Discount (
+Total TTC ⇒ Total incl. VAT
+Notes / conditions particulières ⇒ Notes / special terms
+Modalités de paiement, délais de mise en service, remarques… ⇒ Payment terms, setup times, remarks…
+Votre entreprise ⇒ Your company
+Date ⇒ Date
+Valable jusqu'au ⇒ Valid until
+PAYÉE ⇒ PAID
+Émetteur ⇒ Issuer
+Facturé à ⇒ Billed to
+Destinataire ⇒ Recipient
+À l'attention de ⇒ For the attention of
+PU HT ⇒ Unit price excl. VAT
+Remise ⇒ Discount
+Net HT ⇒ Net excl. VAT
+Conditions ⇒ Terms
+Règlement ⇒ Payment
+Virement — IBAN ⇒ Bank transfer — IBAN
+Paiement en ligne ( ⇒ Online payment (
+Pour ⇒ For
+Bon pour accord — date et signature du client ⇒ Approved — client's date and signature
+Statut du devis ⇒ Quote status
+Voir la facture ⇒ See the invoice
+Facturer ⇒ Invoice
+Moyen de paiement ⇒ Payment method
+Carte (Stripe) ⇒ Card (Stripe)
+Chèque ⇒ Cheque
+Espèces ⇒ Cash
+Prélèvement ⇒ Direct debit
+Annuler le paiement ⇒ Cancel the payment
+Payer en ligne (carte bancaire ou PayPal) : ⇒ Pay online (card or PayPal):
+Carte bancaire : ⇒ Card:
+Virement : IBAN ⇒ Bank transfer: IBAN
+— référence ⇒ — reference
+Madame, Monsieur ⇒ Dear Sir or Madam
+votre secteur ⇒ your industry
+(ajoutez vos liens de paiement dans Réglages › Paiements) ⇒ (add your payment links in Settings › Payments)
+Email « ⇒ Email "
+Email préparé — vérifiez votre messagerie ⇒ Email prepared — check your mail app
+Objet : ⇒ Subject:
+Copié ! ⇒ Copied!
+Copier ⇒ Copy
+Envoyer depuis le CRM ⇒ Send from the CRM
+Ouvrir dans ma messagerie ⇒ Open in my mail app
+Ce prospect n'a pas d'adresse email enregistrée. Saisissez-la ci-dessous, ou copiez le message. ⇒ This prospect has no saved email address. Enter it below, or copy the message.
+Modèle ⇒ Template
+Objet ⇒ Subject
+Message ⇒ Message
+La référence du ⇒ The reference of the
+sera ajoutée en fin de message. Pensez à joindre le PDF. ⇒ will be added at the end of the message. Remember to attach the PDF.
+Modifiez librement le texte avant l'envoi. ⇒ Feel free to edit the text before sending.
+Générer le PDF à joindre ⇒ Generate the PDF to attach
+Objectif ⇒ Target
+Aucune donnée ⇒ No data
+Vue d'ensemble de votre portefeuille clients ⇒ Overview of your client portfolio
+Clients actifs ⇒ Active clients
+Panier moyen ⇒ Average deal
+MRR total ⇒ Total MRR
+Ancienneté moyenne ⇒ Average tenure
+depuis la signature ⇒ since signing
+Taux de résiliation ⇒ Churn rate
+client résilié ⇒ cancelled client
+clients résiliés ⇒ cancelled clients
+MRR par secteur ⇒ MRR by industry
+Répartition des abonnements actifs ⇒ Breakdown of active subscriptions
+Aucun client actif pour le moment ⇒ No active clients yet
+Top clients ⇒ Top clients
+Classés par abonnement mensuel ⇒ Ranked by monthly subscription
+Aucun client actif ⇒ No active clients
+Portefeuille ⇒ Portfolio
+Actifs ⇒ Active
+Résiliés ⇒ Cancelled
+Projet ⇒ Project
+Abonnement ⇒ Subscription
+Résilier ce client ? ⇒ Cancel this client?
+Réactiver le client ⇒ Reactivate the client
+· depuis le ⇒ · since
+Aucun client résilié ⇒ No cancelled clients
+Aucun client pour le moment ⇒ No clients yet
+Dès qu'un prospect sera marqué « Client signé », il apparaîtra ici avec son abonnement. ⇒ As soon as a prospect is marked "Client signed", it will appear here with its subscription.
+Liens de paiement, coordonnées bancaires et suivi des encaissements (repris automatiquement sur chaque devis et facture) ⇒ Payment links, bank details and collection tracking (added automatically to every quote and invoice)
+Encaissé au total ⇒ Collected in total
+Factures à encaisser ⇒ Invoices to collect
+en attente de règlement ⇒ awaiting payment
+Tout est encaissé ⇒ Everything collected
+· échéance ⇒ · due
+Relancer par email ⇒ Chase by email
+Aucune facture en attente ⇒ No pending invoices
+Derniers encaissements ⇒ Latest payments
+Aucun paiement enregistré ⇒ No payments recorded
+Liens de paiement ⇒ Payment links
+Copiez-les pour les envoyer à vos clients ⇒ Copy them to send to your clients
+Copié ⇒ Copied
+Virement bancaire ⇒ Bank transfer
+Affiché sur vos factures ⇒ Shown on your invoices
+Votre performance commerciale face à vos objectifs ⇒ Your sales performance against your targets
+Cette semaine ⇒ This week
+Ce mois ⇒ This month
+Appels émis ⇒ Calls made
+précédent ⇒ previous
+% de joignabilité ⇒ % reach rate
+% des contacts ⇒ % of contacts
+% des appels ⇒ % of calls
+Objectifs ⇒ Targets
+Ce mois (objectif hebdo × 4,33) ⇒ This month (weekly target × 4.33)
+Objectif appels / semaine ⇒ Calls target / week
+Objectif RDV / semaine ⇒ Meetings target / week
+Entonnoir de conversion ⇒ Conversion funnel
+en cours · taux de passage entre étapes ⇒ in progress · step-to-step conversion
+Aucun appel sur la période ⇒ No calls in this period
+Lancez une session d'appels depuis « Aujourd'hui ». ⇒ Start a call session from "Today".
+Conversion globale ⇒ Overall conversion
+Durée moyenne ⇒ Average duration
+Appels par jour ⇒ Calls per day
+MRR par client ⇒ MRR per client
+Valeur du pipeline ⇒ Pipeline value
+projets + 12 mois d'abonnement ⇒ projects + 12 months of subscription
+ROI par appel ⇒ ROI per call
+CA signé du mois / appels ⇒ Revenue signed this month / calls
+Appels par client ⇒ Calls per client
+Coût d'acquisition (mois) ⇒ Acquisition cost (month)
+résiliation ⇒ churn
+revenu récurrent annuel ⇒ annual recurring revenue
+CA nouveau (€) ⇒ New revenue (€)
+MRR cumulé (€) ⇒ Cumulative MRR (€)
+Analyse complète sur les 6 derniers mois ⇒ Full analysis over the last 6 months
+Exporter CSV ⇒ Export CSV
+Appels (6 mois) ⇒ Calls (6 months)
+RDV (6 mois) ⇒ Meetings (6 months)
+Clients (6 mois) ⇒ Clients (6 months)
+CA nouveau (6 mois) ⇒ New revenue (6 months)
+CA nouveau par mois ⇒ New revenue per month
+Montant des projets signés ⇒ Amount of signed projects
+CA nouveau ⇒ New revenue
+Pas encore de revenu enregistré ⇒ No revenue recorded yet
+MRR cumulé ⇒ Cumulative MRR
+Revenu récurrent mensuel en fin de mois ⇒ Monthly recurring revenue at month end
+Pas encore d'abonnement ⇒ No subscriptions yet
+Activité commerciale ⇒ Sales activity
+Appels par mois ⇒ Calls per month
+Résultats par mois ⇒ Results per month
+RDV obtenus et clients signés ⇒ Meetings booked and clients signed
+Régularité ⇒ Consistency
+Appels par jour · 12 dernières semaines ⇒ Calls per day · last 12 weeks
+aujourd'hui ⇒ today
+Meilleurs créneaux ⇒ Best time slots
+Taux de joignabilité par heure d'appel ⇒ Reach rate by call hour
+Joignabilité ⇒ Reach rate
+Pas assez d'appels horodatés ⇒ Not enough timestamped calls
+Les heures d'appel sont enregistrées à partir de cette version. ⇒ Call times are recorded from this version on.
+Conversion par canal ⇒ Conversion by channel
+Part des prospects devenus clients ⇒ Share of prospects who became clients
+Prospects par secteur ⇒ Prospects by industry
+Répartition du pipeline ⇒ Pipeline breakdown
+Nombre de prospects par statut ⇒ Number of prospects by status
+Résultats d'appels (mois) ⇒ Call outcomes (month)
+Aucun appel ce mois-ci ⇒ No calls this month
+Pas encore de données ⇒ No data yet
+Vos rapports apparaîtront dès vos premiers appels. ⇒ Your reports will appear after your first calls.
+Enregistrements, documents, script d'appel, modèles d'email et intégrations ⇒ Recordings, documents, call script, email templates and integrations
+Enregistreur ⇒ Recorder
+Documents ⇒ Documents
+Modèles d'email ⇒ Email templates
+Intégrations ⇒ Integrations
+Sans prospect ⇒ No prospect
+Écouter ⇒ Listen
+Télécharger ⇒ Download
+Supprimer cet enregistrement ? ⇒ Delete this recording?
+Enregistrement supprimé ⇒ Recording deleted
+Enregistrement audio non supporté par ce navigateur ⇒ Audio recording is not supported by this browser
+Enregistrement sauvegardé sur cet appareil ⇒ Recording saved on this device
+Impossible d'enregistrer le fichier ⇒ Cannot save the file
+Micro inaccessible — vérifiez les autorisations du navigateur ⇒ Microphone unavailable — check the browser permissions
+Enregistrements ⇒ Recordings
+Sur cet appareil et sur le serveur : les administrateurs peuvent les écouter ⇒ On this device and on the server: administrators can listen to them
+Conservés sur cet appareil (non envoyés en ligne) ⇒ Kept on this device (not uploaded)
+Aucun enregistrement pour le moment ⇒ No recordings yet
+Enregistrez vos appels pour les réécouter et progresser. ⇒ Record your calls to listen again and improve.
+Nouvel enregistrement ⇒ New recording
+Enregistrement en cours… ⇒ Recording…
+Prêt à enregistrer ⇒ Ready to record
+Prospect associé (optionnel) ⇒ Linked prospect (optional)
+Arrêter et sauvegarder ⇒ Stop and save
+Démarrer l'enregistrement ⇒ Start recording
+Informez toujours votre interlocuteur avant d'enregistrer une conversation. ⇒ Always tell the other person before recording a conversation.
+Impossible d'ajouter ⇒ Cannot add
+ajouté ⇒ added
+Ajouter des documents ⇒ Add documents
+Plaquettes, présentations, contrats — PDF, Word, Excel, PowerPoint, images ⇒ Brochures, presentations, contracts — PDF, Word, Excel, PowerPoint, images
+Bibliothèque ⇒ Library
+· stockés sur cet appareil ⇒ · stored on this device
+· ajouté le ⇒ · added on
+Supprimer « ⇒ Delete "
+Document supprimé ⇒ Document deleted
+Aucun document pour le moment ⇒ No documents yet
+Script d'appel enregistré ⇒ Call script saved
+Votre script s'affiche pendant chaque appel. Une ligne = un point. Utilisez [secteur] et [Prénom], remplacés automatiquement. ⇒ Your script is shown during each call. One line = one point. Use [secteur] and [Prénom], replaced automatically.
+Script par défaut ⇒ Default script
+Titre de l'étape ⇒ Step title
+Monter ⇒ Move up
+Descendre ⇒ Move down
+Supprimer l'étape ⇒ Delete the step
+Sous-titre (objectif de l'étape) ⇒ Subtitle (goal of the step)
+Un point par ligne ⇒ One point per line
+Ajouter une étape ⇒ Add a step
+Supprimer ce modèle ⇒ Delete this template
+Supprimer le modèle « ⇒ Delete the template "
+Nom du modèle ⇒ Template name
+Variables ⇒ Variables
+— enregistrement automatique. ⇒ — saved automatically.
+Choisissez un modèle ⇒ Choose a template
+modèles ⇒ templates
+Nouveau modèle ⇒ New template
+Restaurer les modèles par défaut ? ⇒ Restore the default templates?
+Vos modifications de modèles seront remplacées. ⇒ Your template changes will be replaced.
+Restaurer ⇒ Restore
+Par défaut ⇒ Default
+Simulation d'appel avec IA ⇒ AI call simulation
+Entraînez-vous face à un client virtuel généré par IA avant vos vrais appels : choisissez un scénario (secteur, objections), simulez l'appel et recevez un retour sur votre pitch. ⇒ Practise with an AI-generated virtual client before your real calls: choose a scenario (industry, objections), simulate the call and get feedback on your pitch.
+Préparer une simulation dans le CRM ⇒ Prepare a simulation in the CRM
+Téléphonie — Ringover ⇒ Telephony — Ringover
+Appelez vos prospects en un clic sans quitter le CRM : chaque appel est noté sur la fiche du prospect. ⇒ Call your prospects in one click without leaving the CRM: each call is logged on the prospect's record.
+Ouvrir le téléphone dans le CRM ⇒ Open the phone in the CRM
+Annuaire des entreprises ⇒ Company directory
+Vérifiez une entreprise (SIRET, dirigeants, finances) avant l'appel. La recherche Sirene est aussi intégrée dans « Importer des leads ». ⇒ Check a company (SIRET, directors, finances) before the call. Sirene search is also built into "Import leads".
+Ouvrir l'annuaire ⇒ Open the directory
+Paiement par carte — Stripe ⇒ Card payment — Stripe
+Encaissez vos factures par carte bancaire, Apple Pay et Google Pay : le lien de paiement s'ajoute sur la facture et dans le mail, et la facture passe en « payée » toute seule. ⇒ Collect your invoices by card, Apple Pay and Google Pay: the payment link is added to the invoice and the email, and the invoice switches to "paid" by itself.
+Connecter Stripe ⇒ Connect Stripe
+Ajoutez votre lien PayPal.me : chaque facture affiche le lien PayPal avec le montant exact à payer. ⇒ Add your PayPal.me link: every invoice shows the PayPal link with the exact amount to pay.
+Régler PayPal ⇒ Set up PayPal
+Google Agenda ⇒ Google Calendar
+Bloquez vos audits et rendez-vous clients dans votre agenda principal. ⇒ Block your audits and client meetings in your main calendar.
+Ouvrir Google Agenda ⇒ Open Google Calendar
+Apparence ⇒ Appearance
+Ambiance ⇒ Ambience
+Icônes du menu ⇒ Menu icons
+Équipe & compte ⇒ Team & account
+Notifications ⇒ Notifications
+Données ⇒ Data
+Raccourcis ⇒ Shortcuts
+Personnalisez l'application, vos informations et vos objectifs ⇒ Customise the app, your details and your targets
+Informations de l'entreprise ⇒ Company details
+Utilisées pour l'en-tête des devis et factures et la signature des emails — enregistrement automatique ⇒ Used for the header of quotes and invoices and for email signatures — saved automatically
+Votre nom (signature des emails) ⇒ Your name (email signature)
+Prénom Nom ⇒ First Last
+12 rue de la Prospection, 75000 Paris ⇒ 12 Prospect Street, 75000 Paris
+Email de contact ⇒ Contact email
+N° TVA intracommunautaire ⇒ EU VAT number
+Mentions légales (bas de facture) ⇒ Legal notice (invoice footer)
+Liens de paiement et IBAN : voir la page ⇒ Payment links and IBAN: see the page
+Objectifs commerciaux ⇒ Sales targets
+Affichés sur « Aujourd'hui », le tableau de bord et les clients ⇒ Shown on "Today", the dashboard and clients
+Appels par semaine ⇒ Calls per week
+RDV par semaine ⇒ Meetings per week
+CA signé par mois (€) ⇒ Revenue signed per month (€)
+MRR visé (€) ⇒ MRR target (€)
+Début de journée (agenda) ⇒ Day start (calendar)
+Fin de journée (agenda) ⇒ Day end (calendar)
+Thème ⇒ Theme
+Mode ⇒ Mode
+« Auto » suit le réglage de votre appareil. ⇒ "Auto" follows your device setting.
+Sombre ⇒ Dark
+Clair ⇒ Light
+Auto ⇒ Auto
+Préréglages ⇒ Presets
+Couleur d'accent ⇒ Accent colour
+Boutons, sélection, graphiques. ⇒ Buttons, selection, charts.
+Couleur personnalisée ⇒ Custom colour
+Interface ⇒ Interface
+Police ⇒ Font
+Taille du texte ⇒ Text size
+Densité ⇒ Density
+« Compacte » affiche plus de lignes à l'écran. ⇒ "Compact" shows more rows on screen.
+Confortable ⇒ Comfortable
+Compacte ⇒ Compact
+Barre de navigation ⇒ Navigation bar
+« Auto » : onglets en bas sur mobile, menu latéral sur ordinateur. ⇒ "Auto": tabs at the bottom on mobile, side menu on desktop.
+Horizontale ⇒ Horizontal
+Verticale ⇒ Vertical
+Arrondis ⇒ Corner radius
+Menu latéral replié ⇒ Collapsed side menu
+Sur ordinateur, n'affiche que les icônes. ⇒ On desktop, shows icons only.
+Réduire les animations ⇒ Reduce animations
+Interface plus sobre et plus économe. ⇒ A calmer, lighter interface.
+Notifications & sons ⇒ Notifications & sounds
+Sons ⇒ Sounds
+Carillon au démarrage, alerte quand une relance passe en retard, succès sur RDV/signature. ⇒ Chime at start-up, alert when a follow-up becomes overdue, success sound on meetings/signatures.
+Notifications du navigateur ⇒ Browser notifications
+Non prises en charge par ce navigateur. ⇒ Not supported by this browser.
+Bloquées dans les réglages du navigateur. ⇒ Blocked in the browser settings.
+Rappel à l'heure prévue pour vos relances et tâches (l'app doit rester ouverte). ⇒ Reminder at the planned time for your follow-ups and tasks (the app must stay open).
+Notifications activées ⇒ Notifications enabled
+Notifications refusées ⇒ Notifications denied
+Tester le son d'alerte ⇒ Test the alert sound
+Restaurer cette sauvegarde ? ⇒ Restore this backup?
+Sauvegarde restaurée ⇒ Backup restored
+Fichier illisible : choisissez une sauvegarde .json de Blackstart CRM ⇒ Unreadable file: choose a Blackstart CRM .json backup
+Vos données restent dans ce navigateur. Exportez-les régulièrement. ⇒ Your data stays in this browser. Export it regularly.
+Espace utilisé ⇒ Space used
+Sauvegarde téléchargée ⇒ Backup downloaded
+Exporter une sauvegarde ⇒ Export a backup
+Prospects en CSV ⇒ Prospects as CSV
+Compatible avec les données de la version précédente (v3) : elles ont été reprises automatiquement. ⇒ Compatible with data from the previous version (v3): it was imported automatically.
+Zone sensible ⇒ Danger zone
+Charger des données de démonstration ⇒ Load demo data
+Remplace vos données actuelles par un jeu d'exemple réaliste. ⇒ Replaces your current data with a realistic sample set.
+Charger la démonstration ? ⇒ Load the demo?
+Vos données actuelles seront remplacées. Exportez une sauvegarde avant si besoin. ⇒ Your current data will be replaced. Export a backup first if needed.
+Charger ⇒ Load
+Démo ⇒ Demo
+Tout effacer ⇒ Clear everything
+Supprime prospects, devis, factures et tâches. Vos réglages sont conservés. ⇒ Deletes prospects, quotes, invoices and tasks. Your settings are kept.
+Effacer toutes les données ? ⇒ Clear all data?
+Cette action est définitive. Pensez à exporter une sauvegarde avant. ⇒ This cannot be undone. Remember to export a backup first.
+Données effacées ⇒ Data cleared
+Recherche globale et commandes ⇒ Global search and commands
+Rechercher dans la page ⇒ Search in the page
+Aller à Aujourd'hui / Agenda / Prospects / Pipeline / Tâches / Devis / Tableau de bord / Rapports ⇒ Go to Today / Calendar / Prospects / Pipeline / Tasks / Quotes / Dashboard / Reports
+Aide des raccourcis ⇒ Shortcuts help
+Mode immersion : vos images en plein écran ⇒ Immersive mode: your images full screen
+Mode présentation : diaporama plein écran des graphiques ⇒ Presentation mode: full-screen slideshow of the charts
+Fermer une fenêtre ⇒ Close a window
+Blackstart CRM v4 — application autonome, vos données restent sur votre appareil. ⇒ Blackstart CRM v4 — standalone app, your data stays on your device.
+Prise en main de l'interface ⇒ Getting started with the interface
+Menu, recherche Ctrl K, bouton Créer, mode clair ou sombre. ⇒ Menu, Ctrl K search, Create button, light or dark mode.
+Ma journée et la session d'appels ⇒ My day and the call session
+Écran Aujourd'hui, file d'appels, script, résultat et relance. ⇒ Today screen, call queue, script, outcome and follow-up.
+Gérer vos prospects ⇒ Managing your prospects
+Filtres, fiche prospect, emails, création, import et export. ⇒ Filters, prospect record, emails, creation, import and export.
+Pipeline, agenda et tâches ⇒ Pipeline, calendar and tasks
+Glisser-déposer, vues jour, semaine, mois, planifier, tâches. ⇒ Drag and drop, day, week, month views, scheduling, tasks.
+Devis, factures et paiements ⇒ Quotes, invoices and payments
+Créer un devis, aperçu, PDF, facture, encaissements. ⇒ Create a quote, preview, PDF, invoice, payments.
+Clients, tableau de bord et rapports ⇒ Clients, dashboard and reports
+Portefeuille, MRR, objectifs, entonnoir, rapports. ⇒ Portfolio, MRR, targets, funnel, reports.
+Outils et réglages ⇒ Tools and settings
+Enregistreur, script, modèles, réglages et sauvegarde. ⇒ Recorder, script, templates, settings and backup.
+Vidéos pour apprendre à utiliser le CRM, module par module ⇒ Videos to learn how to use the CRM, module by module
+Vidéo introuvable ⇒ Video not found
+Module ⇒ Module
+Marquer comme vu ⇒ Mark as watched
+Module suivant ⇒ Next module
+· vu ⇒ · watched
+Aller à Aujourd'hui ⇒ Go to Today
+Aller aux Prospects ⇒ Go to Prospects
+Aller aux Devis ⇒ Go to Quotes
+Aller à l'Agenda ⇒ Go to Calendar
+Aller au Tableau de bord ⇒ Go to Dashboard
+Afficher cette aide ⇒ Show this help
+Fermer la fenêtre ⇒ Close the window
+Rappel ⇒ Reminder
+appel prévu à ⇒ call planned at
+Prévue à ⇒ Due at

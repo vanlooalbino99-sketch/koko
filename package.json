@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "langue": "node scripts/langue.mjs",
     "start": "node --experimental-sqlite --disable-warning=ExperimentalWarning server/src/index.js",
     "dev": "node --experimental-sqlite --disable-warning=ExperimentalWarning --watch-path=server/src server/src/index.js --dev",
     "test": "node --experimental-sqlite --disable-warning=ExperimentalWarning --test \"server/test/*.test.js\"",

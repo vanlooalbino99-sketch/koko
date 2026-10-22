@@ -4,7 +4,7 @@
 export const ACCES = ['today', 'agenda', 'prospects', 'leads', 'pipeline', 'tasks', 'telephone', 'mail', 'devis', 'clients', 'payments',
   'campagnes', 'modeles', 'contenu', 'sources',
   'assistants', 'automatisations',
-  'messages', 'groupes', 'visio', 'entrainement', 'dashboard', 'reports', 'carte', 'formations', 'tools',
+  'messages', 'groupes', 'visio', 'entrainement', 'dashboard', 'reports', 'carte', 'marche', 'formations', 'tools',
   'settings.company', 'settings.goals', 'settings.data'];
 
 // Valeur enregistrée → liste (null = tout). Illisible : rien d'ouvert (fermé par prudence).

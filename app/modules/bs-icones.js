@@ -53,6 +53,7 @@
     { id: 'dashboard', label: 'Tableau de bord', def: 'dashboard' },
     { id: 'reports', label: 'Rapports', def: 'lineChart' },
     { id: 'carte', label: 'Carte clients', def: 'globe' },
+    { id: 'marche', label: 'Marché', def: 'trending-up' },
     { group: 'Bas du menu' },
     { id: 'formations', label: 'Formations', def: 'play' },
     { id: 'tools', label: 'Outils', def: 'wrench' },
@@ -132,7 +133,7 @@
   // Nuancier proposé pour les icônes (le sélecteur de couleur permet n'importe quelle autre teinte).
   var NUANCIER = ['#ffffff', '#cbd5e1', '#94a3b8', '#60a5fa', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e', '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9'];
   // Couleur propre à chaque rubrique en style « Multicolore ».
-  var TEINTES = { today: '#3b82f6', agenda: '#8b5cf6', prospects: '#06b6d4', leads: '#14b8a6', pipeline: '#6366f1', tasks: '#10b981', devis: '#f59e0b', clients: '#f97316', payments: '#22c55e', messages: '#38bdf8', groupes: '#a78bfa', visio: '#fb7185', entrainement: '#8b5cf6', telephone: '#14b8a6', mail: '#ef4444', campagnes: '#f97316', modeles: '#0ea5e9', contenu: '#d946ef', sources: '#22c55e', assistants: '#8b5cf6', automatisations: '#f59e0b', dashboard: '#0ea5e9', reports: '#f43f5e', carte: '#22d3ee', formations: '#eab308', tools: '#94a3b8', settings: '#a1a1aa' };
+  var TEINTES = { today: '#3b82f6', agenda: '#8b5cf6', prospects: '#06b6d4', leads: '#14b8a6', pipeline: '#6366f1', tasks: '#10b981', devis: '#f59e0b', clients: '#f97316', payments: '#22c55e', messages: '#38bdf8', groupes: '#a78bfa', visio: '#fb7185', entrainement: '#8b5cf6', telephone: '#14b8a6', mail: '#ef4444', campagnes: '#f97316', modeles: '#0ea5e9', contenu: '#d946ef', sources: '#22c55e', assistants: '#8b5cf6', automatisations: '#f59e0b', dashboard: '#0ea5e9', reports: '#f43f5e', carte: '#22d3ee', marche: '#10b981', formations: '#eab308', tools: '#94a3b8', settings: '#a1a1aa' };
   // Packs : un jeu complet d'icônes cohérentes, appliqué en un clic (l'ordre suit celui du menu).
   var ORDRE = ['today', 'agenda', 'prospects', 'pipeline', 'tasks', 'devis', 'clients', 'payments', 'dashboard', 'reports', 'formations', 'tools', 'settings'];
   var PACKS = [
@@ -151,7 +152,7 @@
     today: 'telephone appel jour objectif fusee', agenda: 'agenda calendrier heure rendez minuteur', prospects: 'prospect cible recherche annonce', leads: 'aimant cible etoile magie recherche',
     pipeline: 'pipeline entonnoir croissance', tasks: 'tache valider liste note', devis: 'devis facture signature contrat calcul',
     clients: 'client accord couronne entreprise', payments: 'paiement argent banque epargne', dashboard: 'tableau bord statistique ecran',
-    reports: 'rapport graphique croissance analyse', carte: 'monde carte lieu voyage', formations: 'formation diplome livre savoir idee video', tools: 'outil ia automatisation magie',
+    reports: 'rapport graphique croissance analyse', carte: 'monde carte lieu voyage', marche: 'croissance hausse cible analyse', formations: 'formation diplome livre savoir idee video', tools: 'outil ia automatisation magie',
     settings: 'reglage securite cle profil',
   };
   var rev = 0;
@@ -181,7 +182,7 @@
     telephone: 'sonne', mail: 'vole', devis: 'gelee', clients: 'saute', payments: 'pivote',
     campagnes: 'secoue', modeles: 'gelee', contenu: 'feuillette', sources: 'pousse', assistants: 'brille', automatisations: 'tourne',
     messages: 'saute', groupes: 'gelee', visio: 'bat', entrainement: 'bat',
-    dashboard: 'pop', reports: 'pousse', carte: 'tourne', formations: 'bat', tools: 'penche', settings: 'tourne',
+    dashboard: 'pop', reports: 'pousse', carte: 'tourne', marche: 'pousse', formations: 'bat', tools: 'penche', settings: 'tourne',
   };
   var ANIMS = [['non', 'Désactivée'], ['survol', 'Au survol'], ['fun', 'Fun']];
   var anim = readAnim();

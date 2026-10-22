@@ -28,7 +28,7 @@
     { groupe: 'Équipe', items: [
       { id: 'messages', label: 'Messages', serveur: true }, { id: 'groupes', label: 'Groupes', serveur: true }, { id: 'visio', label: 'Visio', serveur: true }, { id: 'entrainement', label: 'Entraînement (Pitchbase)' }] },
     { groupe: 'Analyse', items: [
-      { id: 'dashboard', label: 'Tableau de bord' }, { id: 'reports', label: 'Rapports' }, { id: 'carte', label: 'Carte clients' }] },
+      { id: 'dashboard', label: 'Tableau de bord' }, { id: 'reports', label: 'Rapports' }, { id: 'carte', label: 'Carte clients' }, { id: 'marche', label: 'Marché (potentiel, nouvelles entreprises, concurrence)' }] },
     { groupe: 'Autres', items: [
       { id: 'formations', label: 'Formations', serveur: true }, { id: 'tools', label: 'Outils' }] },
     { groupe: 'Réglages', items: [
@@ -39,7 +39,7 @@
   RUBRIQUES.forEach(function (g) { g.items.forEach(function (r) { CLES.push(r.id); }); });
   // Ordre des pages du menu : la première ouverte sert d'accueil.
   var PAGES = ['today', 'agenda', 'prospects', 'leads', 'pipeline', 'tasks', 'messages', 'groupes', 'visio', 'entrainement', 'telephone', 'mail', 'devis',
-    'clients', 'payments', 'campagnes', 'modeles', 'contenu', 'sources', 'assistants', 'automatisations', 'dashboard', 'reports', 'carte', 'formations', 'tools', 'settings'];
+    'clients', 'payments', 'campagnes', 'modeles', 'contenu', 'sources', 'assistants', 'automatisations', 'dashboard', 'reports', 'carte', 'marche', 'formations', 'tools', 'settings'];
 
   function effectif(role, acces) { return role !== 'admin' && Array.isArray(acces) ? acces.slice() : null; }
   var acces = USER ? effectif(USER.role, USER.acces) : null;

@@ -579,12 +579,11 @@ input[type="date"].input, input[type="time"].input { min-width: 0; }
 .wk-dayhead { position: sticky; top: 0; z-index: 3; background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 6px; text-align: center; font-size: 0.8em; color: var(--text-3); font-weight: 600; border-left: 1px solid var(--border); cursor: pointer; }
 .wk-dayhead.today { color: var(--accent-text); }
 .wk-dayhead .d { font-size: 1.5em; color: var(--text); font-weight: 700; line-height: 1.2; }
-.wk-dayhead.today .d { color: var(--accent-text); }
+.wk-dayhead.today .d { color: var(--accent-text); display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin: 2px auto 0; border-radius: 50%; }
 .wk-corner { position: sticky; top: 0; left: 0; z-index: 4; background: var(--surface); border-bottom: 1px solid var(--border); }
 .wk-hour { position: sticky; left: 0; z-index: 2; background: var(--surface); font-size: 0.72em; color: var(--text-3); text-align: right; padding: 4px 8px 0 0; height: 56px; border-top: 1px solid var(--border); }
 .wk-cell { height: 56px; border-top: 1px solid var(--border); border-left: 1px solid var(--border); padding: 3px; display: flex; flex-direction: column; gap: 3px; cursor: pointer; transition: background-color .12s; min-width: 0; }
 .wk-cell:hover { background: var(--surface-2); }
-.wk-cell.today { background: rgb(var(--accent-rgb) / 0.04); }
 .wk-allday { min-height: 40px; height: auto; }
 .ev { display: flex; align-items: center; gap: 5px; padding: 3px 6px; border-radius: 6px; font-size: 0.74em; font-weight: 600; background: rgb(var(--t) / 0.16); color: var(--tt); border-left: 3px solid rgb(var(--t)); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: left; min-width: 0; width: 100%; }
 .ev:hover { background: rgb(var(--t) / 0.26); }
@@ -596,7 +595,7 @@ input[type="date"].input, input[type="time"].input { min-width: 0; }
 .mo-cell:hover { background: var(--surface-2); }
 .mo-cell.out { opacity: .45; }
 .mo-num { font-size: 0.8em; font-weight: 600; color: var(--text-2); width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
-.mo-cell.today .mo-num { background: var(--accent); color: var(--on-accent); }
+.mo-cell.today .mo-num { color: var(--accent-text); font-weight: 700; }
 .mo-more { font-size: 0.72em; color: var(--text-3); font-weight: 600; padding-left: 4px; }
 @media (max-width: 719px) {
   .mo-cell { min-height: 58px; padding: 4px; }
@@ -1299,8 +1298,10 @@ input[type="color"] { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 2px 8p
 /* ---------------------------------------------------------------------
    9. Agenda, appel, outils
    --------------------------------------------------------------------- */
-.wk-cell.today { background-image: linear-gradient(180deg, rgb(var(--accent-rgb) / 0.09), transparent); }
-.mo-cell.today .mo-num { box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.2), 0 4px 12px -4px rgb(var(--accent-rgb) / 1); }
+/* Jour actuel : pas de fond teinté sur la colonne, un anneau lumineux autour de la date. */
+.wk-dayhead.today .d, .mo-cell.today .mo-num { box-shadow: 0 0 0 2px rgb(var(--accent-rgb)), 0 0 12px 1px rgb(var(--accent-rgb) / 0.5); animation: bs-jour 2.8s ease-in-out infinite; }
+@keyframes bs-jour { 50% { box-shadow: 0 0 0 2px rgb(var(--accent-rgb)), 0 0 20px 4px rgb(var(--accent-rgb) / 0.75); } }
+@media (prefers-reduced-motion: reduce) { .wk-dayhead.today .d, .mo-cell.today .mo-num { animation: none; } }
 .ev { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07); }
 .when-preview { background-image: linear-gradient(135deg, rgb(var(--accent-rgb) / 0.1), transparent 70%); box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / 0.2); }
 

@@ -186,6 +186,14 @@ export const SQLITE_MIGRATIONS = [
      data BLOB NOT NULL,
      updated_at TEXT NOT NULL
    );`,
+  // v12 : réactions (emoji) sur les messages de la messagerie, une par membre et par emoji.
+  `CREATE TABLE chat_reactions (
+     message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     emoji TEXT NOT NULL,
+     created_at TEXT NOT NULL,
+     PRIMARY KEY (message_id, user_id, emoji)
+   );`,
 ];
 
 // PostgreSQL : le même schéma que SQLite après toutes ses migrations, en une fois.
@@ -380,4 +388,13 @@ export const PG_MIGRATIONS = [
      updated_at TEXT NOT NULL
    );
    ALTER TABLE chat_photos ENABLE ROW LEVEL SECURITY;`,
+  // Comme la v12 de SQLite : réactions aux messages.
+  `CREATE TABLE chat_reactions (
+     message_id BIGINT NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     emoji TEXT NOT NULL,
+     created_at TEXT NOT NULL,
+     PRIMARY KEY (message_id, user_id, emoji)
+   );
+   ALTER TABLE chat_reactions ENABLE ROW LEVEL SECURITY;`,
 ];

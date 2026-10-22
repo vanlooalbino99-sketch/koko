@@ -87,3 +87,62 @@ test('image du groupe à la création et dans les réglages, suppression d’un 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('réactions sur les messages envoyés et reçus : palette, liste complète, retrait, temps réel', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(base + '/');
+  await page.waitForSelector('input[name=email]');
+  if (await page.locator('input[name=name]').count()) await page.fill('input[name=name]', 'Albino');
+  await page.fill('input[name=email]', 'albino@exemple.fr');
+  await page.fill('input[name=password]', 'motdepasse1');
+  await page.click('button[type=submit]');
+  await page.waitForFunction(() => window.__bsStore && window.__bsStore.get().loaded);
+  await page.evaluate(() => { const s = document.getElementById('splash'); if (s) s.remove(); });
+  const h = { 'X-Requested-With': 'blackstart' };
+  const u = await page.request.post(base + '/api/users', { headers: h, data: { name: 'Marie Dupont', email: 'marie@exemple.fr', password: 'motdepasse-2', role: 'membre' } });
+  assert.equal(u.status(), 201);
+  const marie = await browser.newContext();
+  assert.equal((await marie.request.post(base + '/api/auth/login', { headers: h, data: { email: 'marie@exemple.fr', password: 'motdepasse-2' } })).status(), 200);
+
+  await page.evaluate(() => { location.hash = '#/messages'; });
+  await page.waitForSelector('.bsm-input');
+  await page.evaluate(() => window.bsMessages.etat && Object.keys(window.bsMessages.etat().convs).length);
+  // Un message reçu de Marie : on y réagit avec la palette rapide.
+  const recu = (await (await marie.request.post(base + '/api/chat/conversations/equipe/messages', { headers: h, data: { body: 'RDV confirmé avec la boulangerie' } })).json()).message;
+  const bulleRecue = page.locator('.bsm-msg', { hasText: 'RDV confirmé' });
+  await bulleRecue.waitFor();
+  await bulleRecue.hover();
+  await bulleRecue.locator('[data-reag]').click();
+  await bulleRecue.locator('.bsm-palette [data-reagir="❤️"]').click();
+  await bulleRecue.locator('.bsm-reac.on', { hasText: '❤️' }).waitFor();
+  // Marie réagit aussi : le compteur passe à 2 sans recharger.
+  await marie.request.post(base + `/api/chat/conversations/equipe/messages/${recu.id}/reactions`, { headers: h, data: { emoji: '❤️' } });
+  await bulleRecue.locator('.bsm-reac', { hasText: '2' }).waitFor();
+  assert.match(await bulleRecue.locator('.bsm-reac').getAttribute('title'), /Vous, Marie Dupont/);
+
+  // Un message envoyé : un emoji de la liste complète, puis Marie réagit (bannière pour l'auteur).
+  await page.fill('.bsm-input', 'Devis envoyé au client');
+  await page.press('.bsm-input', 'Enter');
+  const bulle = page.locator('.bsm-msg.moi', { hasText: 'Devis envoyé' });
+  await bulle.waitFor();
+  await bulle.hover();
+  await bulle.locator('[data-reag]').click();
+  await bulle.locator('[data-act="reactions-tout"]').click();
+  await bulle.locator('.bsm-palette.tout [data-reagir="🚀"]').click();
+  await bulle.locator('.bsm-reac.on', { hasText: '🚀' }).waitFor();
+  const mid = Number(await bulle.getAttribute('data-mid'));
+  await marie.request.post(base + `/api/chat/conversations/equipe/messages/${mid}/reactions`, { headers: h, data: { emoji: '👍' } });
+  await bulle.locator('.bsm-reac:not(.on)', { hasText: '👍' }).waitFor();
+  await page.getByText('Marie Dupont a réagi 👍').first().waitFor();
+  if (SHOTS) { await bulle.hover(); await bulle.locator('[data-reag]').click(); await page.waitForTimeout(400); await page.screenshot({ path: join(SHOTS, 'messages-reactions.png') }); await page.keyboard.press('Escape'); }
+  // Cliquer sa propre réaction la retire.
+  await bulle.locator('.bsm-reac', { hasText: '🚀' }).click();
+  await bulle.locator('.bsm-reac', { hasText: '🚀' }).waitFor({ state: 'detached' });
+  const msgs = (await (await page.request.get(base + '/api/chat/conversations/equipe/messages')).json()).messages;
+  assert.deepEqual(msgs.find((m) => m.id === mid).reactions.map((r) => r.emoji), ['👍']);
+  assert.deepEqual(errors, []);
+  await marie.close(); await ctx.close();
+});

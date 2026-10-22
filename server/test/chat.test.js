@@ -256,6 +256,31 @@ test('supprimer un message : son auteur ou un administrateur, pour tout le monde
   fm.close();
 });
 
+test('réactions : sur ses messages et ceux des autres, retirées au second clic, en temps réel', async () => {
+  const fp = await paul.flux();
+  const m = (await paul('POST', '/api/chat/conversations/equipe/messages', { body: 'Contrat signé !' })).body.message;
+  assert.deepEqual(m.reactions, []);
+  const url = `/api/chat/conversations/equipe/messages/${m.id}/reactions`;
+  let r = await marie('POST', url, { emoji: '🎉' });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.reactions, [{ emoji: '🎉', userIds: [ids.Marie] }]);
+  assert.deepEqual(await fp.wait('reaction'), { conversationId: 'equipe', id: m.id, reactions: [{ emoji: '🎉', userIds: [ids.Marie] }] });
+  await paul('POST', url, { emoji: '🎉' });
+  r = await paul('POST', url, { emoji: '👍🏽' });
+  assert.deepEqual(r.body.reactions, [{ emoji: '🎉', userIds: [ids.Marie, ids.Paul] }, { emoji: '👍🏽', userIds: [ids.Paul] }], 'on réagit aussi à son propre message');
+  r = await marie('POST', url, { emoji: '🎉' });
+  assert.deepEqual(r.body.reactions, [{ emoji: '🎉', userIds: [ids.Paul] }, { emoji: '👍🏽', userIds: [ids.Paul] }], 'le même emoji une seconde fois retire la réaction');
+  const liste = (await marie('GET', '/api/chat/conversations/equipe/messages')).body.messages.find((x) => x.id === m.id);
+  assert.deepEqual(liste.reactions, r.body.reactions, 'les réactions arrivent avec les messages');
+  for (const emoji of ['', 'ok', '<b>', '👍'.repeat(9), 'a👍']) assert.equal((await marie('POST', url, { emoji })).status, 400, `refusé : ${emoji}`);
+  assert.equal((await marie('POST', '/api/chat/conversations/equipe/messages/999999/reactions', { emoji: '👍' })).status, 404);
+  const g = await admin('POST', '/api/chat/groupes', { name: 'Privé', members: [] });
+  const s = await admin('POST', `/api/chat/conversations/${g.body.conversation.id}/messages`, { body: 'x' });
+  assert.equal((await paul('POST', `/api/chat/conversations/${g.body.conversation.id}/messages/${s.body.message.id}/reactions`, { emoji: '👍' })).status, 404, 'hors du groupe');
+  assert.equal((await paul('DELETE', `/api/chat/conversations/equipe/messages/${m.id}`)).status, 200, 'le message part avec ses réactions');
+  fp.close();
+});
+
 test('image d’un groupe : membres seulement, image valide, annonce, retrait', async () => {
   const g = await admin('POST', '/api/chat/groupes', { name: 'Commerciaux', members: [ids.Marie] });
   const id = g.body.conversation.id;

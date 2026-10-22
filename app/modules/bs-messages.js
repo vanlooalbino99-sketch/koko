@@ -19,7 +19,7 @@
   var S = {
     pret: false, err: '', me: null, users: [], online: [], convs: {}, msgs: {}, more: {}, chargement: {},
     actif: null, root: null, mobileListe: true, filtre: '', brouillons: {}, modal: null,
-    mode: 'messages', dernier: {}, ecrit: {}, ecritEnvoi: 0, envois: {}, emojis: false, postes: [], // rubrique affichée (messages, groupes, visio) et dernière conversation ouverte dans chacune
+    mode: 'messages', dernier: {}, ecrit: {}, ecritEnvoi: 0, envois: {}, emojis: false, reagir: null, reagirTout: false, postes: [], // rubrique affichée (messages, groupes, visio) et dernière conversation ouverte dans chacune
   };
   var es = null;
 
@@ -105,6 +105,71 @@
     if (!confirm('Supprimer ce message pour tout le monde ?')) return;
     api('DELETE', '/conversations/' + encodeURIComponent(c.id) + '/messages/' + encodeURIComponent(id)).then(function () { retirerMessage(c.id, Number(id)); })
       .catch(function (e) { carte({ titre: 'Suppression impossible', sous: e.message, icone: 'info', bouton: 'OK', action: function () {}, force: true }); });
+  }
+  // Réactions : une palette rapide (comme sur iPhone) et toute la liste d'émojis ; le même emoji une seconde fois retire la réaction.
+  var REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '🎉'];
+  function trouverMessage(cid, id) {
+    var arr = S.msgs[cid] || [];
+    for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return arr[i];
+    return null;
+  }
+  function reagir(id, emoji) {
+    var c = S.convs[S.actif]; if (!c) return;
+    var m = trouverMessage(c.id, Number(id)); if (!m) return;
+    var avant = m.reactions || [];
+    // Affichage immédiat, corrigé par la réponse du serveur.
+    var apres = avant.map(function (r) { return { emoji: r.emoji, userIds: r.userIds.slice() }; });
+    var g = apres.filter(function (r) { return r.emoji === emoji; })[0];
+    if (g && g.userIds.indexOf(S.me) >= 0) g.userIds.splice(g.userIds.indexOf(S.me), 1);
+    else if (g) g.userIds.push(S.me);
+    else apres.push({ emoji: emoji, userIds: [S.me] });
+    m.reactions = apres.filter(function (r) { return r.userIds.length; });
+    S.reagir = null; S.reagirTout = false; rendre();
+    // Une réaction d'un autre membre arrivée entre-temps (temps réel) est plus récente que cette réponse.
+    var v = m.reactionsV = (m.reactionsV || 0) + 1;
+    api('POST', '/conversations/' + encodeURIComponent(c.id) + '/messages/' + encodeURIComponent(m.id) + '/reactions', { emoji: emoji })
+      .then(function (r) { if (m.reactionsV === v) { m.reactions = r.reactions || []; rendre(); } })
+      .catch(function (e) { m.reactions = avant; rendre(); carte({ titre: 'Réaction impossible', sous: e.message, icone: 'info', bouton: 'OK', action: function () {}, force: true }); });
+  }
+  function reactionRecue(x) {
+    var m = trouverMessage(x.conversationId, x.id);
+    if (!m) return;
+    var avant = {};
+    (m.reactions || []).forEach(function (r) { avant[r.emoji] = r.userIds; });
+    m.reactions = x.reactions || [];
+    m.reactionsV = (m.reactionsV || 0) + 1;
+    // Quelqu'un réagit à l'un de vos messages : petite bannière, sans son.
+    if (m.userId === S.me) m.reactions.forEach(function (r) {
+      r.userIds.forEach(function (uid) {
+        if (uid === S.me || (avant[r.emoji] || []).indexOf(uid) >= 0) return;
+        var c = S.convs[x.conversationId];
+        carte({ titre: nomDe(uid) + ' a réagi ' + r.emoji, sous: resume(m) || 'à votre message', avatar: uid, bouton: 'Ouvrir', force: true, action: function () { if (c) aller(c.id); } });
+      });
+    });
+    rendre();
+  }
+  function reactionsHtml(m) {
+    var list = (m.reactions || []).filter(function (r) { return r.userIds && r.userIds.length; });
+    if (!list.length) return '';
+    return '<div class="bsm-reacs">' + list.map(function (r) {
+      var moi = r.userIds.indexOf(S.me) >= 0;
+      var noms = r.userIds.map(function (id) { return id === S.me ? 'Vous' : nomDe(id); }).join(', ');
+      return '<button type="button" class="bsm-reac' + (moi ? ' on' : '') + '" data-reagir="' + esc(r.emoji) + '" data-mid="' + m.id + '" title="' + esc(noms) + (moi ? ' (cliquez pour retirer)' : '') + '" aria-label="' + esc(r.emoji + ' : ' + noms) + '">' +
+        '<span>' + esc(r.emoji) + '</span>' + (r.userIds.length > 1 ? '<b>' + r.userIds.length + '</b>' : '') + '</button>';
+    }).join('') + '</div>';
+  }
+  function paletteHtml(m) {
+    if (S.reagir !== m.id) return '';
+    var miens = {};
+    (m.reactions || []).forEach(function (r) { if (r.userIds.indexOf(S.me) >= 0) miens[r.emoji] = 1; });
+    var bouton = function (e) { return '<button type="button" class="' + (miens[e] ? 'on' : '') + '" data-reagir="' + esc(e) + '" data-mid="' + m.id + '" aria-label="Réagir ' + esc(e) + '">' + esc(e) + '</button>'; };
+    if (S.reagirTout) {
+      return '<div class="bsm-palette tout" role="dialog" aria-label="Choisir une réaction">' + EMOJIS.map(function (g) {
+        return '<div class="bsm-emo-g"><span>' + esc(g[0]) + '</span><div>' + g[1].split(' ').map(bouton).join('') + '</div></div>';
+      }).join('') + '</div>';
+    }
+    return '<div class="bsm-palette" role="menu" aria-label="Réagir à ce message">' + REACTIONS.map(bouton).join('') +
+      '<button type="button" class="plus" data-act="reactions-tout" title="Plus d’émojis" aria-label="Plus d’émojis">' + ic('plus', 16) + '</button></div>';
   }
   function retirerMessage(cid, id) {
     var arr = S.msgs[cid];
@@ -314,6 +379,7 @@
     });
     es.addEventListener('message', function (e) { recu(JSON.parse(e.data)); });
     es.addEventListener('supprime', function (e) { var x = JSON.parse(e.data); retirerMessage(x.conversationId, x.id); });
+    es.addEventListener('reaction', function (e) { reactionRecue(JSON.parse(e.data)); });
     es.addEventListener('equipe', function () { charger(); });
     es.addEventListener('profil', function (e) { profil(JSON.parse(e.data)); });
     es.addEventListener('ecrit', function (e) { quelquUnEcrit(JSON.parse(e.data)); });
@@ -823,8 +889,9 @@
         var moi = m.userId === S.me;
         var suite = prev && prev.userId === m.userId && (new Date(m.at) - new Date(prev.at)) < 5 * 60000;
         html.push('<div class="bsm-msg' + (moi ? ' moi' : '') + (suite ? ' suite' : '') + '" data-mid="' + m.id + '">' + (moi ? '' : (suite ? '<span class="bsm-av-sp"></span>' : avatar(m.userId, m.author))) +
-          '<div class="bsm-bulle">' + (suite || moi || c.kind === 'direct' ? '' : '<b class="bsm-auteur" style="--h:' + teinte(m.userId) + '">' + esc(m.author) + (posteDe(m.userId) ? '<small>' + esc(posteDe(m.userId)) + '</small>' : '') + '</b>') +
-          piece(m.file) + (m.body ? '<div class="bsm-txt">' + texte(m.body) + '</div>' : '') + '<time>' + heure(m.at) + '</time></div>' +
+          '<div class="bsm-col">' + paletteHtml(m) + '<div class="bsm-bulle">' + (suite || moi || c.kind === 'direct' ? '' : '<b class="bsm-auteur" style="--h:' + teinte(m.userId) + '">' + esc(m.author) + (posteDe(m.userId) ? '<small>' + esc(posteDe(m.userId)) + '</small>' : '') + '</b>') +
+          piece(m.file) + (m.body ? '<div class="bsm-txt">' + texte(m.body) + '</div>' : '') + '<time>' + heure(m.at) + '</time></div>' + reactionsHtml(m) + '</div>' +
+          '<button type="button" class="bsm-reag' + (S.reagir === m.id ? ' on' : '') + '" data-reag="' + m.id + '" title="Réagir" aria-label="Réagir à ce message" aria-expanded="' + (S.reagir === m.id) + '">' + ic('sourire', 15) + '</button>' +
           (peutSupprimer(m) ? '<button type="button" class="bsm-suppr" data-suppr="' + m.id + '" title="Supprimer ce message" aria-label="Supprimer ce message">' + ic('trash', 15) + '</button>' : '') + '</div>');
         prev = m;
       });
@@ -1058,6 +1125,8 @@
       }
       if ((id = b.getAttribute('data-retirer'))) { modifierGroupe({ remove: [id] }, false); return; }
       if ((id = b.getAttribute('data-suppr'))) { supprimerMessage(id); return; }
+      if ((id = b.getAttribute('data-reagir'))) { reagir(b.getAttribute('data-mid'), id); return; }
+      if ((id = b.getAttribute('data-reag'))) { S.reagir = S.reagir === Number(id) ? null : Number(id); S.reagirTout = false; rendre(); return; }
       if ((id = b.getAttribute('data-visio'))) { Appel.rejoindre(id); return; }
       if ((id = b.getAttribute('data-appeler'))) {
         api('POST', '/directs', { userId: id }).then(function (r) { S.convs[r.conversation.id] = r.conversation; Appel.rejoindre(r.conversation.id); })
@@ -1067,6 +1136,7 @@
       var act = b.getAttribute('data-act');
       if (act === 'organigramme') { orgV.auto = true; S.modal = { type: 'organigramme' }; rendre(); return; }
       if (act === 'regler-equipe') { S.modal = null; location.hash = '#/settings'; if (window.bsEquipe && window.bsEquipe.ouvrirEquipe) window.bsEquipe.ouvrirEquipe(); return; }
+      if (act === 'reactions-tout') { S.reagirTout = true; rendre(); return; }
       if (act === 'emojis') { S.emojis = !S.emojis; rendre(); var ti = root.querySelector('.bsm-input'); if (ti) ti.focus(); return; }
       if (act === 'joindre') { root.querySelector('.bsm-fichier').click(); return; }
       if (act === 'retour') { S.mobileListe = true; rendre(); }
@@ -1144,6 +1214,10 @@
     // Le sélecteur d'émojis se ferme quand on clique ailleurs.
     document.addEventListener('pointerdown', function (ev) {
       if (S.emojis && !(ev.target.closest && ev.target.closest('.bsm-emojis,[data-act="emojis"]'))) { S.emojis = false; rendre(); }
+      if (S.reagir && !(ev.target.closest && ev.target.closest('.bsm-palette,[data-reag],.bsm-reac'))) { S.reagir = null; S.reagirTout = false; rendre(); }
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && S.reagir && !S.modal) { S.reagir = null; S.reagirTout = false; rendre(); }
     });
     root.addEventListener('input', function (ev) {
       var t = ev.target;
@@ -1476,6 +1550,30 @@
     '.bsm-msg:hover .bsm-suppr,.bsm-suppr:focus-visible{opacity:1}',
     '.bsm-suppr:hover{background:color-mix(in srgb,#ef4444 14%,transparent);color:#ef4444}',
     '@media (hover:none){.bsm-suppr{opacity:.55}}',
+    '.bsm-col{position:relative;display:flex;flex-direction:column;align-items:flex-start;min-width:0}',
+    '.bsm-msg.moi .bsm-col{align-items:flex-end}',
+    '.bsm-reag{align-self:center;flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;border:0;background:transparent;color:var(--text-3);cursor:pointer;opacity:0;transition:opacity .15s,background .15s,color .15s}',
+    '.bsm-msg:hover .bsm-reag,.bsm-reag:focus-visible,.bsm-reag.on{opacity:1}',
+    '.bsm-reag:hover,.bsm-reag.on{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent-text,var(--accent))}',
+    '@media (hover:none){.bsm-reag{opacity:.55}}',
+    '.bsm-reacs{display:flex;flex-wrap:wrap;gap:4px;margin-top:-6px;padding:0 8px;position:relative;z-index:1}',
+    '.bsm-reac{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:99px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:.82em;cursor:pointer;box-shadow:0 2px 6px -3px rgb(0 0 0/.35);transition:transform .12s,border-color .15s}',
+    '.bsm-reac span{font-size:1.05em;line-height:1}',
+    '.bsm-reac b{font-size:.86em;font-weight:700;color:var(--text-2)}',
+    '.bsm-reac:hover{transform:scale(1.06)}',
+    '.bsm-reac.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--surface))}',
+    '.bsm-reac.on b{color:var(--accent-text,var(--accent))}',
+    '.bsm-palette{position:absolute;bottom:calc(100% + 6px);left:0;z-index:20;display:flex;gap:2px;padding:5px;border-radius:99px;background:var(--surface);border:1px solid var(--border);box-shadow:0 14px 34px -12px rgb(0 0 0/.45);animation:bsm-pal .16s ease-out}',
+    '.bsm-msg.moi .bsm-palette{left:auto;right:0}',
+    '.bsm-palette button{width:34px;height:34px;border-radius:50%;border:0;background:transparent;font-size:1.25em;line-height:1;cursor:pointer;display:grid;place-items:center;color:var(--text-2);transition:transform .12s,background .12s}',
+    '.bsm-palette button:hover{transform:scale(1.22);background:var(--surface-2)}',
+    '.bsm-palette button.on{background:color-mix(in srgb,var(--accent) 20%,transparent)}',
+    '.bsm-palette.tout{display:block;width:min(330px,80vw);max-height:260px;overflow-y:auto;border-radius:16px;padding:8px}',
+    '.bsm-palette.tout .bsm-emo-g>span{display:block;font-size:.7em;font-weight:700;color:var(--text-3);margin:4px 4px 2px;text-transform:uppercase;letter-spacing:.04em}',
+    '.bsm-palette.tout .bsm-emo-g>div{display:flex;flex-wrap:wrap}',
+    '.bsm-palette.tout button{width:36px;height:36px}',
+    '@keyframes bsm-pal{from{opacity:0;transform:translateY(4px) scale(.92)}to{opacity:1;transform:none}}',
+    '@media (prefers-reduced-motion:reduce){.bsm-palette{animation:none}.bsm-palette button:hover,.bsm-reac:hover{transform:none}}',
     '.bsm-msg .bsm-av{width:30px;height:30px;border-radius:10px;font-size:.66em}',
     '.bsm-av-sp{width:30px;flex:none}',
     '.bsm-msg.moi{align-self:flex-end;flex-direction:row-reverse}',

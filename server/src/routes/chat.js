@@ -20,6 +20,7 @@ export const MAX_FILE = 10 * 1024 * 1024;
 const INLINE = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
   'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/webm', 'audio/ogg', 'audio/wav', 'audio/x-wav']);
 const PAGE = 50;
+const MAX_REACTIONS = 12;
 const MAX_PHOTO = 400 * 1024;
 const PHOTOS = { 'image/jpeg': [0xff, 0xd8, 0xff], 'image/png': [0x89, 0x50, 0x4e, 0x47], 'image/webp': [0x52, 0x49, 0x46, 0x46] };
 const HEARTBEAT_MS = 20000;
@@ -87,7 +88,21 @@ export function chatRoutes({ db, hub = chatHub() }) {
   const canSee = async (c, userId) => !!c && peut(await accesDe(userId), CLE[c.kind]) && (c.kind === 'equipe' || !!(await db.get('SELECT 1 AS ok FROM chat_members WHERE conversation_id = ? AND user_id = ?', c.id, userId)));
   const lastRead = async (cid, uid) => (await db.get('SELECT last_read FROM chat_reads WHERE conversation_id = ? AND user_id = ?', cid, uid))?.last_read || 0;
   const fileOf = (id) => (id ? db.get('SELECT id, name, mime, size FROM chat_files WHERE id = ?', id) : null);
-  const toMsg = async (m) => m && { id: Number(m.id), conversationId: m.conversation_id, userId: m.user_id, author: m.author, kind: m.kind, body: m.body, at: m.created_at, file: (await fileOf(m.file_id)) || null };
+  // Réactions d'un ou plusieurs messages : [{ emoji, userIds }] dans l'ordre où chaque emoji est apparu.
+  async function reactionsOf(ids) {
+    const out = new Map(ids.map((id) => [Number(id), []]));
+    if (!ids.length) return out;
+    const rows = await db.all(`SELECT message_id, user_id, emoji FROM chat_reactions WHERE message_id IN (${ids.map(() => '?').join(', ')}) ORDER BY created_at, user_id`, ...ids);
+    for (const x of rows) {
+      const list = out.get(Number(x.message_id));
+      let g = list.find((r) => r.emoji === x.emoji);
+      if (!g) list.push(g = { emoji: x.emoji, userIds: [] });
+      g.userIds.push(x.user_id);
+    }
+    return out;
+  }
+  const toMsg = async (m, reactions) => m && { id: Number(m.id), conversationId: m.conversation_id, userId: m.user_id, author: m.author, kind: m.kind, body: m.body, at: m.created_at, file: (await fileOf(m.file_id)) || null,
+    reactions: reactions ? reactions.get(Number(m.id)) || [] : (await reactionsOf([Number(m.id)])).get(Number(m.id)) };
   const callOf = (cid) => [...(hub.calls.get(cid)?.people || [])];
   const readUpTo = (cid, uid, upTo) => db.run(`INSERT INTO chat_reads (conversation_id, user_id, last_read) VALUES (?, ?, ?)
     ON CONFLICT(conversation_id, user_id) DO UPDATE SET last_read = CASE WHEN excluded.last_read > chat_reads.last_read THEN excluded.last_read ELSE chat_reads.last_read END`, cid, uid, upTo);
@@ -166,7 +181,8 @@ export function chatRoutes({ db, hub = chatHub() }) {
     if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
     const before = Number(req.query.before) || Number.MAX_SAFE_INTEGER;
     const rows = await db.all('SELECT * FROM chat_messages WHERE conversation_id = ? AND id < ? ORDER BY id DESC LIMIT ?', c.id, before, PAGE);
-    res.json({ messages: await Promise.all(rows.reverse().map(toMsg)), more: rows.length === PAGE });
+    const reactions = await reactionsOf(rows.map((m) => Number(m.id)));
+    res.json({ messages: await Promise.all(rows.reverse().map((m) => toMsg(m, reactions))), more: rows.length === PAGE });
   });
 
   // ---------------------------------------------------------------- écriture
@@ -235,6 +251,28 @@ export function chatRoutes({ db, hub = chatHub() }) {
     hub.send(ids, 'supprime', { conversationId: c.id, id: Number(m.id) });
     for (const id of ids) hub.send([id], 'conversation', await view(c, id));
     res.json({ ok: true });
+  });
+
+  // Réagir à un message (envoyé ou reçu) : le même emoji une seconde fois retire la réaction.
+  r.post('/conversations/:id/messages/:mid/reactions', async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
+    const m = await db.get('SELECT id FROM chat_messages WHERE id = ? AND conversation_id = ?', Number(req.params.mid) || 0, c.id);
+    if (!m) return res.status(404).json({ error: 'Message introuvable.' });
+    const emoji = String(req.body?.emoji ?? '').trim();
+    if (!emoji || emoji.length > 16 || !/\p{Extended_Pictographic}/u.test(emoji) || /[\p{L}\p{N}<>]/u.test(emoji.replace(/[\u{1F1E6}-\u{1F1FF}]/gu, '')))
+      return res.status(400).json({ error: 'Réaction invalide.' });
+    const mid = Number(m.id);
+    if (await db.get('SELECT 1 AS ok FROM chat_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?', mid, req.user.id, emoji)) {
+      await db.run('DELETE FROM chat_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?', mid, req.user.id, emoji);
+    } else {
+      const n = Number((await db.get('SELECT COUNT(*) AS n FROM chat_reactions WHERE message_id = ? AND user_id = ?', mid, req.user.id)).n);
+      if (n >= MAX_REACTIONS) return res.status(400).json({ error: `${MAX_REACTIONS} réactions au plus par message.` });
+      await db.run('INSERT INTO chat_reactions (message_id, user_id, emoji, created_at) VALUES (?, ?, ?, ?)', mid, req.user.id, emoji, now());
+    }
+    const reactions = (await reactionsOf([mid])).get(mid);
+    hub.send(await destinataires(c), 'reaction', { conversationId: c.id, id: mid, reactions });
+    res.json({ reactions });
   });
 
   // « En train d'écrire » : rien en base, juste un signal aux autres membres (le navigateur le renvoie toutes les 2–3 s).

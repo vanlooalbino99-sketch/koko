@@ -1,0 +1,148 @@
+# Leads LinkedIn (bs-linkedin) et quelques salutations.
+Profil LinkedIn ⇒ LinkedIn profile
+Page entreprise ⇒ Company page
+Mes relations ⇒ My connections
+Recherche Google ⇒ Google search
+Page LinkedIn ⇒ LinkedIn page
+Page collée ⇒ Pasted page
+Export LinkedIn ⇒ LinkedIn export
+contact LinkedIn ajouté ⇒ LinkedIn contact added
+contacts LinkedIn ajoutés ⇒ LinkedIn contacts added
+à la fiche de ⇒ to the record of
+Les leads LinkedIn reçus sont illisibles : renvoyez la page avec le bouton. ⇒ The LinkedIn leads received are unreadable: send the page again with the button.
+lead LinkedIn reçu ⇒ LinkedIn lead received
+leads LinkedIn reçus ⇒ LinkedIn leads received
+déjà reçus) ⇒ already received)
+Ces personnes étaient déjà dans vos leads LinkedIn. ⇒ These people were already in your LinkedIn leads.
+Ce fichier n'est pas la liste des relations LinkedIn (Connections.csv). ⇒ This file isn't the LinkedIn connections list (Connections.csv).
+Archive .zip illisible. ⇒ Unreadable .zip archive.
+Décompressez l'archive puis choisissez le fichier Connections.csv. ⇒ Unzip the archive then choose the Connections.csv file.
+Pas de fichier Connections.csv dans cette archive : demandez à LinkedIn la copie de vos « Relations ». ⇒ No Connections.csv file in this archive: ask LinkedIn for a copy of your "Connections".
+Fichier trop lourd. ⇒ File too large.
+Dirigeant de l'entreprise (Sirene) ⇒ Company director (Sirene)
+Décideur : ⇒ Decision maker:
+Responsable : ⇒ Manager:
+Pas un poste de décideur ⇒ Not a decision-making role
+Poste inconnu ⇒ Unknown position
+Secteur : ⇒ Industry:
+Autre secteur ⇒ Other industry
+Lieu inconnu ⇒ Unknown location
+Dans la zone ⇒ In the area
+Près de la zone ⇒ Near the area
+Hors zone ⇒ Outside the area
+Grande entreprise ⇒ Large company
+Entreprise vérifiée ⇒ Verified company
+À écarter : ⇒ To exclude:
+Claude n'est pas encore branché : un administrateur doit coller la clé Claude dans Équipe › Entraînement. ⇒ Claude isn't connected yet: an administrator must paste the Claude key in Team › Training.
+Claude n'a pas pu qualifier ces leads. ⇒ Claude couldn't qualify these leads.
+lead qualifié par Claude ⇒ lead qualified by Claude
+leads qualifiés par Claude ⇒ leads qualified by Claude
+Lead LinkedIn ⇒ LinkedIn lead
+Qualifié ⇒ Qualified
+Contacts LinkedIn ⇒ LinkedIn contacts
+Principal ⇒ Main
+Écrire un e-mail ⇒ Write an email
+En faire le contact principal ⇒ Make main contact
+Retirer ce contact ⇒ Remove this contact
+Trouvez le gérant, les dirigeants et les responsables de ⇒ Find the owner, directors and managers of
+sur LinkedIn : ils arrivent ici, et le décideur devient le contact principal. ⇒ on LinkedIn: they arrive here, and the decision maker becomes the main contact.
+de cette entreprise ⇒ from this company
+déjà dans vos leads LinkedIn : ⇒ already in your LinkedIn leads:
+Trouver les décideurs sur LinkedIn ⇒ Find decision makers on LinkedIn
+Via Google ⇒ Via Google
+Sur la page LinkedIn, cliquez sur votre favori ⇒ On the LinkedIn page, click your bookmark
+« Envoyer au CRM » ⇒ "Send to CRM"
+arrivent dans cette fiche. Page suivante, nouveau clic. ⇒ arrive in this record. Next page, click again.
+Il faut le bouton « Envoyer au CRM » dans vos favoris. ⇒ You need the "Send to CRM" button in your bookmarks.
+L'installer ⇒ Install it
+contact ajouté ⇒ contact added
+contacts ajoutés ⇒ contacts added
+à la fiche. ⇒ to the record.
+Ces contacts sont déjà sur la fiche. ⇒ These contacts are already on the record.
+est le contact principal. ⇒ is the main contact.
+À vérifier ⇒ To check
+Hors cible ⇒ Off target
+Poste non indiqué ⇒ Position not given
+Note de Claude ⇒ Claude's score
+Note du CRM ⇒ CRM score
+Profil ⇒ Profile
+A demandé à ne plus être contacté ⇒ Asked not to be contacted
+Cherchez vos clients idéaux sur LinkedIn ⇒ Find your ideal clients on LinkedIn
+Ces critères servent aussi à noter chaque lead. ⇒ These criteria are also used to score each lead.
+Postes visés ⇒ Target positions
+gérant, fondateur, dirigeant… ⇒ owner, founder, director…
+Métiers ou secteurs ⇒ Trades or industries
+plombier, plomberie… ⇒ plumber, plumbing…
+Lyon, Villeurbanne… (vide : toute la France) ⇒ Lyon, Villeurbanne… (empty: all of France)
+étudiant, stagiaire… ⇒ student, intern…
+Chercher sur LinkedIn ⇒ Search on LinkedIn
+Moins de critères ⇒ Fewer criteria
+Exclusions ⇒ Exclusions
+Envoyez les personnes affichées au CRM ⇒ Send the people shown to the CRM
+Le bouton s'utilise sur ordinateur. Sur téléphone, importez vos relations ou collez une page (ci-dessous). ⇒ The button works on a computer. On a phone, import your connections or paste a page (below).
+Glissez ce bouton dans la barre de favoris de votre navigateur (Ctrl+Maj+B pour l'afficher). Ensuite, sur LinkedIn, cliquez dessus : les personnes de la page arrivent ici, notées. ⇒ Drag this button to your browser's bookmarks bar (Ctrl+Shift+B to show it). Then, on LinkedIn, click it: the people on the page arrive here, scored.
+Glissez-moi dans la barre de favoris ⇒ Drag me to the bookmarks bar
+Marche sur : recherche de personnes · profil · page « Personnes » d'une entreprise · Sales Navigator · vos relations · recherche Google de profils. ⇒ Works on: people search · profile · a company's "People" page · Sales Navigator · your connections · Google profile search.
+C'est beaucoup pour une journée : faites une pause, LinkedIn surveille les comptes trop rapides. ⇒ That's a lot for one day: take a break, LinkedIn watches accounts that go too fast.
+Repères LinkedIn : environ 80 profils ouverts par jour, 100 invitations par semaine, 300 recherches par mois sur un compte gratuit. ⇒ LinkedIn guidelines: about 80 profiles opened per day, 100 invitations per week, 300 searches per month on a free account.
+Coller une page LinkedIn ⇒ Paste a LinkedIn page
+Importer mes relations LinkedIn ⇒ Import my LinkedIn connections
+Le bouton ne s'installe pas ? ⇒ The button won't install?
+Sur LinkedIn : Ctrl+A puis Ctrl+C (Cmd sur Mac) sur une page de résultats. Ici : cliquez dans la zone puis Ctrl+V. ⇒ On LinkedIn: Ctrl+A then Ctrl+C (Cmd on Mac) on a results page. Here: click in the box then Ctrl+V.
+Cliquez ici puis collez (Ctrl+V) ⇒ Click here then paste (Ctrl+V)
+Vos relations, avec leur poste et leur entreprise, depuis la copie officielle de vos données LinkedIn : Moi › Préférences › Confidentialité des données › Obtenir une copie de vos données › cochez « Relations » › Demander l'archive. LinkedIn l'envoie par e-mail, souvent en quelques minutes. Choisissez ensuite le fichier .zip ou Connections.csv. ⇒ Your connections, with their position and company, from the official copy of your LinkedIn data: Me › Settings › Data privacy › Get a copy of your data › tick "Connections" › Request archive. LinkedIn emails it, often within minutes. Then choose the .zip or Connections.csv file.
+Choisir le fichier ⇒ Choose the file
+Ouvrir la page de LinkedIn ⇒ Open the LinkedIn page
+Copier le code du bouton ⇒ Copy the button code
+Derniers reçus ⇒ Latest received
+Qualifiés ⇒ Qualified
+Tous à trier ⇒ All to sort
+Ajoutés ⇒ Added
+Écartés ⇒ Dismissed
+Triez vos leads LinkedIn ⇒ Sort your LinkedIn leads
+lead à trier ⇒ lead to sort
+leads à trier ⇒ leads to sort
+qualifié ⇒ qualified
+au CRM ⇒ in the CRM
+Aucun lead pour l'instant. ⇒ No leads yet.
+Claude qualifie… ⇒ Claude is qualifying…
+Qualifier avec Claude ⇒ Qualify with Claude
+Ajouter les qualifiés ( ⇒ Add the qualified (
+Vérification des entreprises… ⇒ Checking companies…
+Vider la liste ⇒ Clear the list
+Afficher plus ( ⇒ Show more (
+Rien dans cette liste ⇒ Nothing in this list
+Vos leads LinkedIn arriveront ici ⇒ Your LinkedIn leads will arrive here
+Choisissez un autre filtre. ⇒ Choose another filter.
+Lancez une recherche sur LinkedIn, puis cliquez sur le bouton « Envoyer au CRM » dans vos favoris. Chaque personne est notée selon vos critères. ⇒ Run a search on LinkedIn, then click the "Send to CRM" button in your bookmarks. Each person is scored on your criteria.
+Contacts de ⇒ Contacts from
+sur la fiche ⇒ on the record
+· principal : ⇒ · main:
+Personne de cette entreprise sur cette page. ⇒ Nobody from this company on this page.
+Page suivante sur LinkedIn, puis nouveau clic sur « Envoyer au CRM » pour en trouver d'autres. ⇒ Next page on LinkedIn, then click "Send to CRM" again to find more.
+Autres personnes de la page, à ajouter si elles travaillent chez ⇒ Other people on the page, to add if they work at
+Ajouter à la fiche ⇒ Add to the record
+ajouté à la fiche. ⇒ added to the record.
+Ne cliquez pas ici : faites glisser ce bouton dans votre barre de favoris, puis cliquez dessus quand vous êtes sur LinkedIn. ⇒ Don't click here: drag this button to your bookmarks bar, then click it when you're on LinkedIn.
+Cette personne a demandé à ne plus être contactée : lead écarté. ⇒ This person asked not to be contacted: lead dismissed.
+Déjà dans votre CRM. ⇒ Already in your CRM.
+ajouté au CRM. ⇒ added to the CRM.
+Invitation copiée : collez-la sur LinkedIn. ⇒ Invitation copied: paste it on LinkedIn.
+Copie impossible : sélectionnez le texte. ⇒ Cannot copy: select the text.
+lead qualifié ajouté ⇒ qualified lead added
+leads qualifiés ajoutés ⇒ qualified leads added
+au CRM. ⇒ to the CRM.
+Retirer les ⇒ Remove the
+leads LinkedIn pas encore ajoutés au CRM ? Ceux déjà ajoutés restent dans le CRM. ⇒ LinkedIn leads not yet added to the CRM? Those already added stay in the CRM.
+Code copié : créez un favori et collez-le à la place de l'adresse. ⇒ Code copied: create a bookmark and paste it in place of the address.
+Copie impossible dans ce navigateur : faites glisser le bouton. ⇒ Cannot copy in this browser: drag the button.
+Lecture du fichier… ⇒ Reading the file…
+relation importée ⇒ connection imported
+relations importées ⇒ connections imported
+déjà là) ⇒ already there)
+Fichier illisible. ⇒ Unreadable file.
+Rien de lisible dans ce qui a été collé. ⇒ Nothing readable in what was pasted.
+Aucune personne trouvée dans ce qui a été collé : copiez une page de résultats LinkedIn (Ctrl+A puis Ctrl+C). ⇒ No one found in what was pasted: copy a LinkedIn results page (Ctrl+A then Ctrl+C).
+lead ajouté ⇒ lead added
+leads ajoutés ⇒ leads added
+à trier ⇒ to sort

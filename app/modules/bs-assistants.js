@@ -142,7 +142,7 @@
     if (!CONF) { l.push({ de: 'ia', texte: 'L’assistant IA fonctionne avec la version en ligne du CRM (connexion de l’équipe).', at: Date.now(), info: true }); garder(); prevenir(); return; }
     S.envoi[id] = true; prevenir();
     var ctx = contexteComplet();
-    api('POST', '/assistants/' + encodeURIComponent(id), { messages: l.filter(function (m) { return !m.info; }).map(function (m) { return { de: m.de, texte: m.texte + resumeActions(m) }; }), contexte: ctx.texte, competence: comp ? comp.id : undefined })
+    api('POST', '/assistants/' + encodeURIComponent(id), { messages: l.filter(function (m) { return !m.info; }).map(function (m) { return { de: m.de, texte: m.texte + resumeActions(m) }; }), contexte: ctx.texte, competence: comp ? comp.id : undefined, langue: window.bsLangue ? window.bsLangue.langue : undefined })
       .then(function (b) { l.push({ de: 'ia', texte: b.texte || '…', at: Date.now(), actions: Array.isArray(b.actions) ? b.actions : [], refs: ctx.refs }); })
       .catch(function (e) {
         var t = e.code === 'SANS_CLE'

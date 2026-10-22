@@ -119,6 +119,7 @@ export function loginPage({ needsSetup, retour = '/' }) {
   #verre { position: absolute; left: -70px; top: -30px; width: calc(100% + 140px); height: 420px; opacity: 0; transition: opacity 1.4s ease; pointer-events: none;
     -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent); mask-image: radial-gradient(closest-side, #000 55%, transparent); }
   body.verre #verre { opacity: 1; }
+  .langue { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
   body.verre .panel, body.verre .chip { display: none; }
 
   @media (prefers-reduced-motion: reduce) {
@@ -175,10 +176,44 @@ export function loginPage({ needsSetup, retour = '/' }) {
       </form>
       <div class="foot">${needsSetup ? 'Vous pourrez ensuite inviter l’équipe dans Réglages › Équipe &amp; compte.' : 'Pas encore de compte ? Demandez-le à l’administrateur de l’équipe.'}</div>
     </main>
-    <div class="legal">Blackstart AI · CRM de prospection</div>
+    <div class="legal">Blackstart AI · CRM de prospection · <button type="button" class="langue" id="langue" translate="no"></button></div>
   </div>
 </div>
 <script>
+// Langue choisie dans le CRM (Mon compte › Switch to English), gardée dans ce navigateur.
+(function () {
+  var en = false;
+  try { en = localStorage.getItem('bs-langue') === 'en'; } catch (e) {}
+  var b = document.getElementById('langue');
+  b.textContent = en ? 'Français' : 'English';
+  b.addEventListener('click', function () { try { localStorage.setItem('bs-langue', en ? 'fr' : 'en'); } catch (e) {} location.reload(); });
+  if (!en) return;
+  document.documentElement.lang = 'en';
+  var D = {
+    'Créez le compte administrateur': 'Create the administrator account', 'Connexion': 'Log in',
+    'Premier lancement : ce compte gérera l’équipe, les ambiances et les sauvegardes.': 'First launch: this account will manage the team, ambiences and backups.',
+    'Connectez-vous pour retrouver les prospects, devis et relances de l’équipe.': 'Log in to find the team’s prospects, quotes and follow-ups.',
+    'Nom': 'Name', 'E-mail': 'Email', 'Mot de passe': 'Password', 'Prénom Nom': 'First Last', 'vous@entreprise.fr': 'you@company.com',
+    '8 caractères au moins': 'At least 8 characters', 'Votre prospection,': 'Your prospecting,', 'en pleine lumière.': 'in full light.',
+    'Appels, rendez-vous, devis et relances au même endroit, partagés en direct avec toute l’équipe.': 'Calls, meetings, quotes and follow-ups in one place, shared live with the whole team.',
+    'File d’appels': 'Call queue', 'Devis & factures': 'Quotes & invoices', 'Rapports': 'Reports', 'Activité de l’équipe': 'Team activity',
+    'Rendez-vous pris': 'Meeting booked', 'Session d’appels': 'Call session', 'Devis signé': 'Quote signed', 'Relance J+5': 'Follow-up day 5',
+    'Installation': 'Setup', 'Espace équipe': 'Team space', 'Créer le compte et ouvrir le CRM': 'Create the account and open the CRM', 'Se connecter': 'Log in',
+    'Vous pourrez ensuite inviter l’équipe dans Réglages › Équipe & compte.': 'You can then invite the team in Settings › Team & account.',
+    'Pas encore de compte ? Demandez-le à l’administrateur de l’équipe.': 'No account yet? Ask your team administrator.',
+    'Blackstart AI · CRM de prospection ·': 'Blackstart AI · Prospecting CRM ·', 'Connexion impossible.': 'Cannot log in.',
+    'Serveur injoignable : vérifiez votre connexion.': 'Server unreachable: check your connection.',
+    'E-mail ou mot de passe incorrect.': 'Incorrect email or password.',
+    'Trop d’essais : réessayez dans un quart d’heure.': 'Too many attempts: try again in a quarter of an hour.',
+    'Le compte administrateur existe déjà : connectez-vous.': 'The administrator account already exists: log in.',
+  };
+  var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), n;
+  while ((n = w.nextNode())) { var k = n.data.trim(); if (D[k]) n.data = n.data.replace(k, D[k]); }
+  document.querySelectorAll('[placeholder]').forEach(function (x) { var v = D[x.getAttribute('placeholder')]; if (v) x.setAttribute('placeholder', v); });
+  document.title = document.title.replace(/^(.*) — /, function (m, t) { return (D[t] || t) + ' — '; });
+  new MutationObserver(function () { var e = document.getElementById('err'); if (e && D[e.textContent]) e.textContent = D[e.textContent]; })
+    .observe(document.getElementById('err'), { childList: true });
+})();
 (function () {
   var retour = ${JSON.stringify(retour).replace(/</g, '\\u003c')};
   var img = new Image();

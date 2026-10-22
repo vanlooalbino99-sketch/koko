@@ -1,0 +1,64 @@
+# Formations (bs-formation) : catalogue, lecteur et certificat. Les scènes et la voix off restent en français.
+Bien démarrer dans le CRM ⇒ Getting started with the CRM
+Connexion, menu, recherche Ctrl K, bouton Créer, profil, thème et mobile. ⇒ Login, menu, Ctrl K search, Create button, profile, theme and mobile.
+Ma journée et la session d'appels ⇒ My day and the call session
+Écran Aujourd'hui, file d'appels, script, notes, résultat et relance. ⇒ Today screen, call queue, script, notes, outcome and follow-up.
+Prospects et fiches ⇒ Prospects and records
+Statuts, recherche, filtres, fiche prospect, création, import et export. ⇒ Statuses, search, filters, prospect record, creation, import and export.
+Trouver de nouveaux leads ⇒ Finding new leads
+Le générateur de vrais leads par secteur et par zone, et le suivi de votre niche. ⇒ The real-lead generator by industry and area, and tracking your niche.
+Glisser-déposer, vues jour, semaine, mois, planifier, rendez-vous du site, tâches. ⇒ Drag and drop, day, week, month views, scheduling, website bookings, tasks.
+Créer un devis, aperçu A4, PDF, conversion en facture, encaissements. ⇒ Create a quote, A4 preview, PDF, conversion to invoice, payments.
+Portefeuille, MRR, objectifs, entonnoir, rapports et présentation. ⇒ Portfolio, MRR, targets, funnel, reports and presentation.
+La carte clients ⇒ The client map
+Carte, globe 3D et vue réaliste : où sont vos clients et vos prospects. ⇒ Map, 3D globe and realistic view: where your clients and prospects are.
+Messages, groupes et visio ⇒ Messages, groups and video calls
+Messagerie d'équipe, émojis, pièces jointes, groupes, visio et notifications. ⇒ Team chat, emojis, attachments, groups, video calls and notifications.
+Équipe, comptes et sauvegardes ⇒ Team, accounts and backups
+Mon compte, organigramme, membres et droits, sauvegardes, suivi de la formation. ⇒ My account, org chart, members and rights, backups, course tracking.
+Enregistrements de l'équipe, sons MP3, script, modèles, apparence, ambiances et icônes. ⇒ Team recordings, MP3 sounds, script, templates, appearance, ambiences and icons.
+Le CRM de A à Z : motion design et tutos sur la vraie interface ⇒ The CRM from A to Z: motion design and tutorials on the real interface
+Le CRM expliqué en motion design, module par module ⇒ The CRM explained in motion design, module by module
+Formation complète ⇒ Full course
+Tutos rapides · ⇒ Quick tutorials ·
+Tutos rapides ⇒ Quick tutorials
+Mon certificat ⇒ My certificate
+Lecteur de la formation ⇒ Course player
+Lecture ⇒ Play
+Lecture ou pause ⇒ Play or pause
+Avancement ⇒ Progress
+Vitesse ⇒ Speed
+Sous-titres (C) ⇒ Subtitles (C)
+Voix off (V) ⇒ Voice-over (V)
+Musique (M) ⇒ Music (M)
+Musique ⇒ Music
+Sur la vraie interface du CRM ⇒ On the real CRM interface
+Voir le module complet ⇒ Watch the full module
+Tuto suivant ⇒ Next tutorial
+Chercher un tuto… ⇒ Search a tutorial…
+Chercher un tuto ⇒ Search a tutorial
+Quiz ⇒ Quiz
+· quiz ⇒ · quiz
+Suivi de l'équipe ⇒ Team tracking
+Modules vus et score aux quiz, par membre (visible par les administrateurs). ⇒ Modules watched and quiz scores, per member (visible to administrators).
+Parfait ! ⇒ Perfect!
+Bien joué ! ⇒ Well done!
+À revoir un peu ⇒ Worth another look
+Vous maîtrisez ce module. ⇒ You've mastered this module.
+Revoyez les passages utiles : la barre de progression permet de sauter à chaque chapitre. ⇒ Rewatch the useful parts: the progress bar lets you jump to each chapter.
+Revoir le module ⇒ Rewatch the module
+Quiz · question ⇒ Quiz · question
+Question suivante ⇒ Next question
+Voir mon score ⇒ See my score
+Certificat de formation ⇒ Training certificate
+décerné à ⇒ awarded to
+pour avoir suivi les ⇒ for completing the
+modules de formation · quiz : ⇒ training modules · quiz:
+Imprimer ⇒ Print
+Certificat Blackstart CRM ⇒ Blackstart CRM certificate
+Formation Blackstart CRM ⇒ Blackstart CRM course
+Prochain module : ⇒ Next module:
+Bravo, vous connaissez maintenant tout le CRM ! ⇒ Well done, you now know the whole CRM!
+Suivant : ⇒ Next:
+Formation terminée ⇒ Course completed
+Tuto ⇒ Tutorial

@@ -1,0 +1,332 @@
+# Nouveaux leads (bs-leads), paiements (bs-encaissement, bs-reglement), logo (bs-logo), Marché (bs-marche).
+Générateur de leads ⇒ Lead generator
+Plombiers & chauffagistes ⇒ Plumbers & heating engineers
+Électriciens ⇒ Electricians
+Menuisiers ⇒ Carpenters
+Serruriers & métalliers ⇒ Locksmiths & metalworkers
+Maçons ⇒ Builders
+Constructeurs de maisons ⇒ House builders
+Peintres ⇒ Painters
+Couvreurs ⇒ Roofers
+Plâtriers & plaquistes ⇒ Plasterers & drywallers
+Carreleurs ⇒ Tilers
+Paysagistes ⇒ Landscapers
+Garages automobiles ⇒ Car garages
+Agences immobilières ⇒ Real estate agencies
+Syndics & gestion locative ⇒ Property managers & lettings
+Diagnostiqueurs & contrôle technique ⇒ Property surveyors & inspections
+Cabinets dentaires ⇒ Dental practices
+Médecins généralistes ⇒ General practitioners
+Médecins spécialistes ⇒ Specialist doctors
+Kinés & rééducation ⇒ Physiotherapists & rehab
+Ostéopathes & autres soins ⇒ Osteopaths & other therapies
+Vétérinaires ⇒ Vets
+Coiffeurs ⇒ Hairdressers
+Instituts de beauté ⇒ Beauty salons
+Salles de sport ⇒ Gyms
+Pharmacies ⇒ Pharmacies
+Restaurants ⇒ Restaurants
+Restauration rapide ⇒ Fast food
+Boulangeries ⇒ Bakeries
+Hôtels ⇒ Hotels
+Fleuristes ⇒ Florists
+Opticiens ⇒ Opticians
+Boutiques de vêtements ⇒ Clothing shops
+Vente à distance (e-commerce) ⇒ Mail order (e-commerce)
+Avocats & juristes ⇒ Lawyers & legal advisers
+Conseil en gestion ⇒ Management consulting
+Agents & courtiers en assurance ⇒ Insurance agents & brokers
+Entreprises de nettoyage ⇒ Cleaning companies
+Agences de communication ⇒ Communication agencies
+Auto-écoles ⇒ Driving schools
+Services informatiques ⇒ IT services
+Toutes tailles ⇒ All sizes
+Avec salariés ⇒ With employees
+10 salariés et plus ⇒ 10 employees or more
+Commune seule ⇒ Town only
+0 salarié ⇒ 0 employees
+1 ou 2 salariés ⇒ 1 or 2 employees
+3 à 5 salariés ⇒ 3 to 5 employees
+6 à 9 salariés ⇒ 6 to 9 employees
+10 à 19 salariés ⇒ 10 to 19 employees
+20 à 49 salariés ⇒ 20 to 49 employees
+50 à 99 salariés ⇒ 50 to 99 employees
+100 à 199 salariés ⇒ 100 to 199 employees
+200 à 249 salariés ⇒ 200 to 249 employees
+250 à 499 salariés ⇒ 250 to 499 employees
+500 à 999 salariés ⇒ 500 to 999 employees
+1 000 à 1 999 salariés ⇒ 1,000 to 1,999 employees
+2 000 à 4 999 salariés ⇒ 2,000 to 4,999 employees
+5 000 à 9 999 salariés ⇒ 5,000 to 9,999 employees
+10 000 salariés et plus ⇒ 10,000 employees or more
+Trop de demandes envoyées à la base officielle : patientez quelques secondes et réessayez. ⇒ Too many requests sent to the official register: wait a few seconds and try again.
+Erreur de la base officielle ( ⇒ Official register error (
+Coordonnées trouvées sur OpenStreetMap ⇒ Contact details found on OpenStreetMap
+Téléphone et email non publiés dans les sources ouvertes : à rechercher. ⇒ Phone and email not published in open sources: to be looked up.
+Lead généré ⇒ Lead generated
+toute la France ⇒ all of France
+département ⇒ department
+Zone « ⇒ Area "
+» introuvable : essayez une ville, un code postal (69003) ou un département (69). ⇒ " not found: try a city, a postcode (69003) or a department (69).
+Entrepreneur individuel ⇒ Sole trader
+Tous les métiers du secteur ⇒ All trades in the industry
+Nouvelle entreprise ⇒ New company
+établissement ⇒ establishment
+Source ⇒ Source
+Recherche du téléphone, du site et de l'email… ⇒ Looking up phone, website and email…
+La recherche des coordonnées n'a pas abouti. ⇒ The contact details search didn't succeed.
+Les serveurs OpenStreetMap sont saturés pour l'instant. ⇒ OpenStreetMap servers are overloaded right now.
+Aucun téléphone public trouvé (OpenStreetMap, site internet). Essayez « Chercher le numéro ». ⇒ No public phone found (OpenStreetMap, website). Try "Find the number".
+Téléphone, site et email non publiés dans les sources ouvertes. ⇒ Phone, website and email not published in open sources.
+Dirigeant non publié ⇒ Director not published
+Date de création inconnue ⇒ Creation date unknown
+Chercher le numéro ⇒ Find the number
+Fiche officielle ⇒ Official record
+Ajouté au CRM ⇒ Added to the CRM
+Déjà dans votre CRM ⇒ Already in your CRM
+Écarté ⇒ Dismissed
+Ajouter au CRM ⇒ Add to the CRM
+Écarter ⇒ Dismiss
+Source des leads ⇒ Lead source
+Entreprises (Sirene) ⇒ Companies (Sirene)
+Des décideurs trouvés sur LinkedIn, notés selon vos critères, leur entreprise vérifiée dans la base officielle. ⇒ Decision makers found on LinkedIn, scored on your criteria, their company checked in the official register.
+De vraies entreprises en activité, tirées de la base officielle Sirene. Chaque lot est nouveau : jamais deux fois le même lead. ⇒ Real active companies, from the official Sirene register. Every batch is new: never the same lead twice.
+Critères ⇒ Criteria
+Métier ⇒ Trade
+Ville, code postal ou département (vide : toute la France) ⇒ City, postcode or department (empty: all of France)
+Zone ⇒ Area
+Rayon ⇒ Radius
+Recherche de nouveaux leads… ⇒ Searching for new leads…
+Générer d'autres leads ⇒ Generate more leads
+Générer des leads ⇒ Generate leads
+entreprises trouvées · ⇒ companies found ·
+lead proposé ⇒ lead suggested
+leads proposés ⇒ leads suggested
+pour cette recherche ⇒ for this search
+déjà au CRM ignoré ⇒ already in the CRM, skipped
+déjà au CRM ignorés ⇒ already in the CRM, skipped
+Ce sont les derniers leads de cette recherche. ⇒ These are the last leads for this search.
+Tous les leads de cette recherche vous ont déjà été proposés. ⇒ All the leads for this search have already been suggested to you.
+Changez de métier, élargissez la zone, ou revoyez ceux que vous n'avez pas ajoutés. ⇒ Change trade, widen the area, or review the ones you didn't add.
+Revoir les leads déjà proposés ⇒ Review leads already suggested
+coordonnées en cours… ⇒ contact details loading…
+Tout ajouter ( ⇒ Add all (
+Proposer d'autres leads ⇒ Suggest more leads
+Choisissez un secteur et une zone ⇒ Choose an industry and an area
+Puis cliquez sur « Générer des leads ». Chaque lot contient ⇒ Then click "Generate leads". Each batch contains
+entreprises que vous n'avez encore jamais vues. ⇒ companies you have never seen before.
+Puis cliquez sur « Générer des leads ». Chaque lot contient 12 entreprises que vous n'avez encore jamais vues. ⇒ Then click "Generate leads". Each batch contains 12 companies you have never seen before.
+Aucun nouveau lead trouvé pour l'instant. Essayez une zone plus large ou un autre métier. ⇒ No new leads found for now. Try a wider area or another trade.
+La base officielle ne répond pas : réessayez dans un instant. ⇒ The official register isn't responding: try again in a moment.
+Pas de connexion à la base officielle (internet indisponible ?). Réessayez. ⇒ No connection to the official register (internet down?). Try again.
+Erreur inconnue. ⇒ Unknown error.
+Sources : base Sirene de l'INSEE (API Recherche d'entreprises de l'État) pour l'identité, l'adresse et le dirigeant ; OpenStreetMap et le site internet de l'entreprise (page contact, mentions légales) pour le téléphone, le site et l'email, quand ils y sont publiés. Les emails sont rarement publics. Prospection B2B : votre offre doit concerner leur activité, et chaque contact doit pouvoir refuser d'être recontacté (RGPD). ⇒ Sources: INSEE Sirene register (government company search API) for identity, address and director; OpenStreetMap and the company's website (contact page, legal notice) for phone, website and email, when published there. Emails are rarely public. B2B prospecting: your offer must relate to their business, and every contact must be able to opt out (GDPR).
+Paiement reçu sur ⇒ Payment received on
+est marquée payée. ⇒ is marked as paid.
+paiements reçus en ligne : les factures sont marquées payées. ⇒ payments received online: the invoices are marked as paid.
+PayPal prête ⇒ PayPal ready
+de paiement prêt ⇒ payment ready
+numéro de facture trouvé ⇒ invoice number found
+nom du client ⇒ client name
+même montant ⇒ same amount
+Virement (Mercury) ⇒ Bank transfer (Mercury)
+La facture ⇒ The invoice
+est marquée payée (virement Mercury du ⇒ is marked as paid (Mercury transfer of
+Aucune facture à encaisser. ⇒ No invoices to collect.
+Copier le lien ⇒ Copy the link
+Création… ⇒ Creating…
+Carte bancaire, Apple Pay, Google Pay (et PayPal si vous l'activez dans Stripe). Le lien de paiement s'ajoute sur chaque facture et dans le mail d'envoi, et la facture passe en « payée » toute seule. ⇒ Card, Apple Pay, Google Pay (and PayPal if you enable it in Stripe). The payment link is added to every invoice and its email, and the invoice switches to "paid" by itself.
+Ouvrez votre compte sur ⇒ Open your account on
+et activez-le. ⇒ and activate it.
+Développeurs › Clés API : copiez la clé secrète (sk_live_…). ⇒ Developers › API keys: copy the secret key (sk_live_…).
+Collez-la ici. Elle est gardée chiffrée sur le serveur du CRM. ⇒ Paste it here. It is kept encrypted on the CRM server.
+Clé secrète Stripe ⇒ Stripe secret key
+Pour essayer sans encaisser, collez une clé de test (sk_test_…). ⇒ To try without collecting money, paste a test key (sk_test_…).
+Demandez à un administrateur de connecter Stripe. ⇒ Ask an administrator to connect Stripe.
+✓ connecté ⇒ ✓ connected
+Compte : ⇒ Account:
+Les factures payées en ligne passent en « payée » toutes seules. ⇒ Invoices paid online switch to "paid" by themselves.
+Créer le lien ⇒ Create the link
+Créer les ⇒ Create the
+Vérifier les paiements ⇒ Check payments
+bac à sable ⇒ sandbox
+Chaque facture a sa facture PayPal : votre client paie avec son compte PayPal ou par carte, et la facture passe en « payée » toute seule. ⇒ Each invoice has its PayPal invoice: your client pays with their PayPal account or by card, and the invoice switches to "paid" by itself.
+Créer la facture PayPal ⇒ Create the PayPal invoice
+factures PayPal ⇒ PayPal invoices
+En attendant, votre lien PayPal.me ⇒ Meanwhile, your PayPal.me link
+reçoit le montant de chaque facture (à marquer payée à la main). ⇒ receives the amount of each invoice (mark as paid by hand).
+En attendant, votre lien PayPal est affiché sur les factures. ⇒ Meanwhile, your PayPal link is shown on invoices.
+Connectez votre compte PayPal Business : chaque facture aura sa facture PayPal (payable par compte PayPal ou par carte), et le CRM verra tout seul quand elle est payée. ⇒ Connect your PayPal Business account: each invoice gets its PayPal invoice (payable by PayPal account or card), and the CRM will see by itself when it's paid.
+Connectez-vous sur ⇒ Sign in on
+avec votre compte PayPal Business. ⇒ with your PayPal Business account.
+Apps & Credentials › onglet « Live » › Create App (type Merchant). ⇒ Apps & Credentials › "Live" tab › Create App (Merchant type).
+Dans l'application, gardez « Invoicing » coché. ⇒ In the app, keep "Invoicing" ticked.
+Copiez le Client ID et le Secret, puis collez-les ici. Le secret est gardé chiffré sur le serveur du CRM. ⇒ Copy the Client ID and Secret, then paste them here. The secret is kept encrypted on the CRM server.
+Client ID PayPal ⇒ PayPal Client ID
+Secret PayPal ⇒ PayPal Secret
+Connecter PayPal ⇒ Connect PayPal
+Pour essayer sans encaisser, collez les identifiants de l'onglet « Sandbox ». ⇒ To try without collecting money, paste the credentials from the "Sandbox" tab.
+Demandez à un administrateur de connecter PayPal. ⇒ Ask an administrator to connect PayPal.
+Connectez votre compte Mercury : le CRM affiche vos soldes et les virements reçus, et vous propose la facture qui correspond pour la marquer payée d'un clic. ⇒ Connect your Mercury account: the CRM shows your balances and incoming transfers, and suggests the matching invoice to mark as paid in one click.
+Dans Mercury, ouvrez ⇒ In Mercury, open
+Paramètres › Jetons d'API ⇒ Settings › API tokens
+Créez un jeton « Read only » (lecture seule) : le CRM ne peut rien envoyer ni payer. ⇒ Create a "Read only" token: the CRM cannot send or pay anything.
+Collez-le ici. Il est gardé chiffré sur le serveur du CRM. ⇒ Paste it here. It is kept encrypted on the CRM server.
+Jeton d'API Mercury ⇒ Mercury API token
+Connecter Mercury ⇒ Connect Mercury
+Demandez à un administrateur de connecter Mercury. ⇒ Ask an administrator to connect Mercury.
+· lecture seule ⇒ · read only
+Les soldes et les virements sont visibles par les administrateurs. ⇒ Balances and transfers are visible to administrators.
+Chargement des comptes… ⇒ Loading accounts…
+· disponible ⇒ · available
+Ouvrir dans Mercury ⇒ Open in Mercury
+Virements reçus (30 jours) ⇒ Transfers received (30 days)
+Facture réglée par ce virement ⇒ Invoice paid by this transfer
+Choisir la facture… ⇒ Choose the invoice…
+Correspond à ⇒ Matches
+la facture ⇒ the invoice
+Aucun nouveau virement reçu. ⇒ No new transfers received.
+Actualisation… ⇒ Refreshing…
+Montants en dollars, tels que Mercury les affiche. ⇒ Amounts in dollars, as Mercury shows them.
+Paiement en ligne ⇒ Online payment
+Vos clients paient leurs factures par carte ou PayPal. ⇒ Your clients pay their invoices by card or PayPal.
+Banque ⇒ Bank
+Soldes et virements reçus, rapprochés de vos factures. ⇒ Balances and incoming transfers, matched to your invoices.
+Stripe est connecté ⇒ Stripe is connected
+en mode test ⇒ in test mode
+PayPal est connecté ⇒ PayPal is connected
+en bac à sable (essai) ⇒ in sandbox (test)
+Mercury est connecté : vos soldes et virements reçus s'affichent ci-dessous. ⇒ Mercury is connected: your balances and incoming transfers are shown below.
+Déconnecter Stripe ? Les liens de paiement déjà envoyés restent valables chez Stripe, mais le CRM ne suivra plus les paiements. ⇒ Disconnect Stripe? Payment links already sent stay valid at Stripe, but the CRM will no longer track payments.
+Déconnecter PayPal ? Les factures PayPal déjà envoyées restent payables chez PayPal, mais le CRM ne suivra plus les paiements. ⇒ Disconnect PayPal? PayPal invoices already sent stay payable at PayPal, but the CRM will no longer track payments.
+Déconnecter Mercury ? Le CRM n'affichera plus vos soldes ni vos virements. Pensez aussi à supprimer le jeton dans Mercury. ⇒ Disconnect Mercury? The CRM will no longer show your balances or transfers. Remember to delete the token in Mercury too.
+Paiements vérifiés sur ⇒ Payments checked on
+est déconnecté. ⇒ is disconnected.
+Carte bancaire (Stripe) ⇒ Card (Stripe)
+Déjà réglé ⇒ Already paid
+Reste à payer ⇒ Left to pay
+Référence ⇒ Reference
+Payer en ligne ⇒ Pay online
+Modes de règlement acceptés à la commande : ⇒ Payment methods accepted on order:
+Virement : scannez avec votre appli bancaire ⇒ Bank transfer: scan with your banking app
+Paiement en ligne (carte, PayPal) ⇒ Online payment (card, PayPal)
+Logo ⇒ Logo
+Image illisible. ⇒ Unreadable image.
+Image illisible : choisissez un PNG, un JPG, un WebP ou un SVG. ⇒ Unreadable image: choose a PNG, JPG, WebP or SVG.
+Choisissez une image PNG, JPG, WebP ou SVG. ⇒ Choose a PNG, JPG, WebP or SVG image.
+Logo enregistré : il apparaît en haut de vos devis et factures. ⇒ Logo saved: it appears at the top of your quotes and invoices.
+Logo des devis et factures ⇒ Logo on quotes and invoices
+Votre logo apparaît en haut de chaque devis et facture (aperçu, PDF, mail). ⇒ Your logo appears at the top of every quote and invoice (preview, PDF, email).
+Le logo Blackstart AI apparaît sur vos documents. Choisissez une autre image pour le remplacer. ⇒ The Blackstart AI logo appears on your documents. Choose another image to replace it.
+Ajoutez votre logo : il apparaîtra en haut de chaque devis et facture. ⇒ Add your logo: it will appear at the top of every quote and invoice.
+Changer le logo ⇒ Change the logo
+PNG ou SVG sur fond transparent de préférence. ⇒ Preferably a PNG or SVG with a transparent background.
+Logo retiré. ⇒ Logo removed.
+Nouvelles entreprises (BODACC) ⇒ New companies (BODACC)
+Agences de communication & publicité ⇒ Communication & advertising agencies
+Développeurs web & logiciels ⇒ Web & software developers
+Intégrateurs & conseil informatique ⇒ IT integrators & consultants
+Centres d'appels (prospection téléphonique) ⇒ Call centres (phone prospecting)
+Conseil en gestion & stratégie commerciale ⇒ Management & sales strategy consulting
+Études de marché ⇒ Market research
+Trop de demandes envoyées à la base officielle : patientez quelques secondes et relancez. ⇒ Too many requests sent to the official register: wait a few seconds and try again.
+La base officielle ne répond pas (erreur ⇒ The official register isn't responding (error
+) : réessayez dans un instant. ⇒ ): try again in a moment.
+La base officielle ne répond pas : vérifiez la connexion et réessayez. ⇒ The official register isn't responding: check your connection and try again.
+Votre marché ⇒ Your market
+Entreprises en activité dans la zone, d'après la base officielle Sirene (INSEE). ⇒ Active companies in the area, according to the official Sirene register (INSEE).
+Ville, code postal ou département : Lyon, 69003, 69 ⇒ City, postcode or department: Lyon, 69003, 69
+Vide : toute la France. ⇒ Empty: all of France.
+Analyse… ⇒ Analysing…
+Analyser le marché ⇒ Analyse the market
+Secteurs analysés ⇒ Industries analysed
+Secteurs : ⇒ Industries:
+Choisissez votre zone puis « Analyser le marché » : le CRM compte les entreprises de chaque métier, les compare à vos résultats et vous dit où prospecter en premier. ⇒ Choose your area then "Analyse the market": the CRM counts the companies in each trade, compares them with your results and tells you where to prospect first.
+déjà dans le CRM ⇒ already in the CRM
+du marché couvert ⇒ of the market covered
+taux de signature ⇒ signing rate
+calculé sur vos ⇒ calculated on your
+prospects contactés ⇒ contacted prospects
+hypothèse, à ajuster ci-dessous ⇒ assumption, adjust below
+de chiffre d'affaires possible ⇒ of possible revenue
+clients possibles sur 12 mois ⇒ possible clients over 12 months
+indiquez la valeur d'un client pour voir le chiffre d'affaires ⇒ enter a client's value to see the revenue
+Commencez par les ⇒ Start with
+entreprises dans la zone, ⇒ companies in the area,
+aucune encore dans le CRM ⇒ none in the CRM yet
+, soit environ ⇒ , about
+clients possibles. ⇒ possible clients.
+Votre secteur qui signe le mieux : ⇒ Your best-signing industry:
+des prospects contactés deviennent clients (moyenne du CRM : ⇒ of contacted prospects become clients (CRM average:
+Marché encore vierge pour vous : ⇒ Market still untouched for you:
+entreprises et aucune dans le CRM. ⇒ companies and none in the CRM.
+Le taux de signature sera calculé sur vos chiffres dès ⇒ The signing rate will be calculated from your figures from
+prospects contactés (vous en avez ⇒ contacted prospects (you have
+À retenir ⇒ Key points
+Où prospecter en priorité ⇒ Where to prospect first
+Clients possibles = entreprises pas encore dans le CRM × taux de signature (celui du secteur dès ⇒ Possible clients = companies not yet in the CRM × signing rate (the industry's from
+prospects contactés, rapproché de votre moyenne tant qu'ils sont peu nombreux). ⇒ contacted prospects, pulled toward your average while there are few).
+Entreprises ⇒ Companies
+Au CRM ⇒ In CRM
+Clients possibles ⇒ Possible clients
+CA possible ⇒ Possible revenue
+moy. CRM ⇒ CRM avg.
+hypothèse ⇒ assumption
+Prospecter ⇒ Prospect
+métiers ⇒ trades
+Taux de signature ⇒ Signing rate
+Taux de signature (hypothèse) ⇒ Signing rate (assumption)
+Valeur d'un client sur 12 mois ⇒ Value of a client over 12 months
+clients) ⇒ clients)
+ex. 1500 ⇒ e.g. 1500
+Recalculer ⇒ Recalculate
+Chiffres Sirene du ⇒ Sirene figures from
+Choisissez une zone (ville, code postal ou département) : le BODACC est lu département par département. ⇒ Choose an area (city, postcode or department): BODACC is read department by department.
+La base officielle ⇒ The official register
+Le BODACC ⇒ BODACC
+Activité ⇒ Activity
+Forme ⇒ Legal form
+Dirigeants ⇒ Directors
+Annonce ⇒ Notice
+Entreprises qui viennent de se créer ⇒ Newly created companies
+Publiées au BODACC (Bulletin officiel des annonces civiles et commerciales). Elles ont tout à mettre en place : clients, outils, site. Appelez-les dans les deux semaines. ⇒ Published in BODACC (the official French register of business notices). They have everything to set up: clients, tools, website. Call them within two weeks.
+Ville, code postal ou département ⇒ City, postcode or department
+Tout le département de la zone. ⇒ The whole department of the area.
+Recherche… ⇒ Searching…
+Voir les créations ⇒ See new companies
+Les sociétés immatriculées ces derniers jours dans votre département, à ajouter au CRM d'un clic. ⇒ Companies registered in the last few days in your department, to add to the CRM in one click.
+création ⇒ new company
+Les ⇒ The
+plus récentes. ⇒ most recent.
+Mis à jour le ⇒ Updated on
+Filtrer : restaurant, plomberie, Lyon… ⇒ Filter: restaurant, plumbing, Lyon…
+Dans le CRM ⇒ In the CRM
+Aucune création ne correspond à ce filtre. ⇒ No new company matches this filter.
+Vos concurrents dans la zone ⇒ Your competitors in the area
+Agences et prestataires en activité qui vendent la même chose que vous, d'après la base officielle Sirene. ⇒ Active agencies and providers selling the same thing as you, according to the official Sirene register.
+Voir la concurrence ⇒ See competitors
+Combien d'agences se partagent votre zone, et combien d'entreprises ciblables il reste pour chacune. ⇒ How many agencies share your area, and how many target companies are left for each.
+avec 10 salariés et plus ⇒ with 10 employees or more
+des concurrents directs ⇒ of direct competitors
+concurrents directs ⇒ direct competitors
+entreprises ciblables ⇒ target companies
+entreprises ciblables par concurrent ⇒ target companies per competitor
+marché peu disputé : foncez ⇒ little competition: go for it
+concurrence normale : misez sur une niche ⇒ normal competition: bet on a niche
+marché disputé : spécialisez-vous ⇒ crowded market: specialise
+lancez l'onglet Potentiel sur la même zone pour comparer ⇒ run the Potential tab on the same area to compare
+Par type de prestataire ⇒ By type of provider
+Type ⇒ Type
+En activité ⇒ Active
+· NAF ⇒ · NAF
+Les mieux établis ⇒ The most established
+Regardez leurs offres et leurs prix pour vous démarquer. ⇒ Look at their offers and prices to stand out.
+créée en ⇒ founded in
+Site et avis ⇒ Website and reviews
+Potentiel ⇒ Potential
+Nouvelles entreprises ⇒ New companies
+Concurrence ⇒ Competition
+Où sont vos prochains clients : taille du marché, nouvelles entreprises et concurrence, chiffres officiels à l'appui ⇒ Where your next clients are: market size, new companies and competition, backed by official figures
+est dans le CRM, à appeler aujourd'hui. ⇒ is in the CRM, to call today.
+entreprises trouvées ⇒ companies found
+entreprises dans la zone ⇒ companies in the area

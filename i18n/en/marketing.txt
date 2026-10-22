@@ -1,0 +1,267 @@
+# Marketing : Campagnes (bs-campagnes), Modèles (bs-modeles), Contenu (bs-contenu), Sources & ROI (bs-sources).
+A répondu ⇒ Replied
+Ne plus contacter ⇒ Do not contact
+Retiré de la campagne ⇒ Removed from the campaign
+Séquence terminée ⇒ Sequence finished
+Sorti ⇒ Left
+Statut changé : ⇒ Status changed:
+Pas d'email ⇒ No email
+étiquette « ⇒ tag "
+Tous les prospects ⇒ All prospects
+La rubrique Mail n'est pas ouverte à votre compte : demandez-la à un administrateur pour envoyer les campagnes. ⇒ The Mail section isn't open to your account: ask an administrator for it to send campaigns.
+Choisissez la boîte mail d'envoi. ⇒ Choose the sending mailbox.
+Campagne « ⇒ Campaign "
+» : mail ⇒ ": email
+» envoyé ⇒ " sent
+Envoi arrêté : ⇒ Sending stopped:
+Donnez un nom à la campagne. ⇒ Give the campaign a name.
+Écrivez au moins un mail. ⇒ Write at least one email.
+Chaque mail a besoin d'un objet. ⇒ Each email needs a subject.
+Inscrits ⇒ Enrolled
+Mails envoyés ⇒ Emails sent
+Réponses ⇒ Replies
+À envoyer aujourd'hui ( ⇒ To send today (
+Les mails partent un par un depuis votre boîte, avec une pause entre chaque envoi. ⇒ Emails go out one by one from your mailbox, with a pause between each.
+L'envoi des campagnes se fait avec la version équipe du CRM (serveur), depuis la rubrique Mail. ⇒ Campaigns are sent with the team version of the CRM (server), from the Mail section.
+· envoi en cours… ⇒ · sending…
+· terminé ⇒ · done
+échec ⇒ failed
+Arrêter ⇒ Stop
+Connectez d'abord une boîte mail dans la rubrique Mail (onglet « Mes boîtes »). ⇒ First connect a mailbox in the Mail section ("My mailboxes" tab).
+Ouvrir Mail ⇒ Open Mail
+Rien à envoyer aujourd'hui. Prochain envoi : ⇒ Nothing to send today. Next send:
+Rien à envoyer : créez une campagne et inscrivez des prospects. ⇒ Nothing to send: create a campaign and enrol prospects.
+· mail ⇒ · email
+… et ⇒ … and
+Boîte d'envoi ⇒ Sending mailbox
+Envoyer les ⇒ Send the
+Quelqu'un a répondu ? Cliquez sur « A répondu » avant d'envoyer : il ne recevra plus les relances. ⇒ Someone replied? Click "Replied" before sending: they won't get the follow-ups.
+Séquences de mails de prospection : le CRM prépare chaque jour les mails à envoyer et les envoie depuis votre boîte. ⇒ Prospecting email sequences: every day the CRM prepares the emails to send and sends them from your mailbox.
+Nouvelle campagne ⇒ New campaign
+Votre première campagne ⇒ Your first campaign
+3 mails déjà écrits pour votre agence : premier contact, relance à J+3, dernier message à J+7. ⇒ 3 emails already written for your agency: first contact, follow-up on day 3, last message on day 7.
+Choisissez les prospects (par exemple « À appeler » d'un secteur), relisez les mails, inscrivez-les : le CRM vous dit chaque jour quoi envoyer. Les prospects qui répondent, changent de statut ou demandent à ne plus être contactés sortent de la séquence. ⇒ Choose the prospects (for example "To call" in an industry), review the emails, enrol them: the CRM tells you what to send every day. Prospects who reply, change status or ask not to be contacted leave the sequence.
+Créer ma première campagne ⇒ Create my first campaign
+En pause ⇒ Paused
+Active ⇒ Active
+· inscription automatique ⇒ · automatic enrolment
+Mettre en pause ⇒ Pause
+encore dans la séquence ⇒ still in the sequence
+· taux de réponse ⇒ · reply rate
+Choisissez qui reçoit les mails, écrivez la séquence, relisez avec un vrai prospect. ⇒ Choose who gets the emails, write the sequence, review with a real prospect.
+Retour ⇒ Back
+1. Qui reçoit les mails ? ⇒ 1. Who gets the emails?
+Les prospects du segment, avec un email, qui ne sont pas déjà dans une autre campagne. ⇒ Prospects in the segment, with an email, who aren't already in another campaign.
+Nom de la campagne ⇒ Campaign name
+Tous les statuts ⇒ All statuses
+Toutes les villes ⇒ All cities
+Toutes les sources ⇒ All sources
+Étiquette ⇒ Tag
+Toutes les étiquettes ⇒ All tags
+Inscrire automatiquement les nouveaux prospects qui correspondent ⇒ Automatically enrol new matching prospects
+Campagne active (décochez pour la mettre en pause) ⇒ Campaign active (untick to pause it)
+à inscrire ⇒ to enrol
+déjà inscrit ⇒ already enrolled
+sans email ⇒ without email
+dans une autre campagne ⇒ in another campaign
+à ne plus contacter ⇒ do not contact
+déjà ⇒ already
+Inscrire ces ⇒ Enrol these
+Le premier mail part le jour de l'inscription. ⇒ The first email goes out on the day of enrolment.
+2. Les mails ⇒ 2. The emails
+Jusqu'à 4 mails. J+ = nombre de jours après l'inscription. ⇒ Up to 4 emails. Day + = number of days after enrolment.
+Claude écrit… ⇒ Claude is writing…
+Rédiger avec Claude ⇒ Write with Claude
+Envoi à J+ ⇒ Send on day +
+Ajouter un mail ⇒ Add an email
+Ligne de désinscription (ajoutée en bas de chaque mail) ⇒ Unsubscribe line (added at the bottom of each email)
+Maximum par jour ⇒ Maximum per day
+3. Aperçu ⇒ 3. Preview
+Les mails tels que le prospect les recevra. ⇒ The emails as the prospect will receive them.
+Inscrits ( ⇒ Enrolled (
+Remettre ⇒ Put back
+Supprimer la campagne ⇒ Delete the campaign
+inscrits · ⇒ enrolled ·
+mails envoyés · ⇒ emails sent ·
+réponses · ⇒ replies ·
+Campagne enregistrée. ⇒ Campaign saved.
+Supprimer la campagne « ⇒ Delete the campaign "
+» ? Les mails déjà envoyés restent notés sur les fiches. ⇒ "? Emails already sent stay logged on the records.
+Campagne supprimée. ⇒ Campaign deleted.
+A répondu à la campagne « ⇒ Replied to the campaign "
+Ne plus contacter (marketing) ⇒ Do not contact (marketing)
+Premier mail de prospection ⇒ First prospecting email
+Relance à J+3 ⇒ Follow-up on day 3
+Après un appel ⇒ After a call
+Compte rendu après l'audit ⇒ Report after the audit
+Relance du devis ⇒ Quote follow-up
+Invitation LinkedIn ⇒ LinkedIn invitation
+Message après l'invitation acceptée ⇒ Message after the accepted invitation
+Rappel de rendez-vous ⇒ Meeting reminder
+Après un appel sans réponse ⇒ After an unanswered call
+Demande d'avis Google ⇒ Google review request
+Parrainage ⇒ Referral
+Script : premier appel ⇒ Script: first call
+Titre ⇒ Title
+Texte ⇒ Text
+caractères ⇒ characters
+Pour quel prospect ? ⇒ For which prospect?
+Choisir un prospect… ⇒ Choose a prospect…
+Ce prospect a demandé à ne plus être contacté. ⇒ This prospect asked not to be contacted.
+Texte prêt à envoyer ⇒ Text ready to send
+Écrire le mail dans le CRM ⇒ Write the email in the CRM
+Envoyer par SMS ⇒ Send by SMS
+Ouvrir WhatsApp ⇒ Open WhatsApp
+Copier et ouvrir LinkedIn ⇒ Copy and open LinkedIn
+Pas de numéro ⇒ No number
+Pas d'email sur la fiche de ce prospect. ⇒ No email on this prospect's record.
+Pas de numéro sur la fiche de ce prospect. ⇒ No number on this prospect's record.
+Vos messages prêts à l'emploi : choisissez un prospect, le texte se remplit tout seul. ⇒ Your ready-to-use messages: choose a prospect and the text fills itself in.
+Rechercher un modèle ⇒ Search a template
+Aucun modèle ici pour le moment. ⇒ No templates here yet.
+Utiliser ⇒ Use
+Donnez un titre et un texte au modèle. ⇒ Give the template a title and text.
+Modèle enregistré. ⇒ Template saved.
+Supprimer ce modèle ? ⇒ Delete this template?
+Texte copié. ⇒ Text copied.
+Copie impossible : sélectionnez le texte et copiez-le. ⇒ Cannot copy: select the text and copy it.
+Email préparé ⇒ Email prepared
+SMS préparé ⇒ SMS prepared
+Message WhatsApp préparé ⇒ WhatsApp message prepared
+Message LinkedIn préparé ⇒ LinkedIn message prepared
+Message copié : collez-le dans LinkedIn (Ctrl + V). ⇒ Message copied: paste it into LinkedIn (Ctrl + V).
+Idée ⇒ Idea
+À rédiger ⇒ To write
+Prêt ⇒ Ready
+Publié ⇒ Published
+Conseil ⇒ Tip
+Les 3 signes que vous perdez des clients sans le savoir ⇒ 3 signs you're losing clients without knowing it
+Appels manqués, devis jamais relancés, demandes notées sur un carnet : un exemple concret pour chaque signe. ⇒ Missed calls, quotes never chased, requests jotted in a notebook: a concrete example for each sign.
+Cas client ⇒ Case study
+Avant / après : d'Excel à un CRM simple ⇒ Before / after: from Excel to a simple CRM
+Raconter un client (sans le nommer si besoin) : la situation, ce qui a changé, un chiffre. ⇒ Tell a client's story (anonymously if needed): the situation, what changed, a figure.
+Chiffres ⇒ Figures
+Combien vous coûte un client perdu ? ⇒ How much does a lost client cost you?
+Le calcul en 30 secondes : panier moyen × clients perdus par mois × 12. ⇒ The 30-second maths: average deal × clients lost per month × 12.
+Coulisses ⇒ Behind the scenes
+Ma routine de prospection du lundi matin ⇒ My Monday-morning prospecting routine
+Les 3 blocs de la matinée, l'outil utilisé, le nombre d'appels. ⇒ The 3 blocks of the morning, the tool used, the number of calls.
+Le message de relance qui obtient le plus de réponses ⇒ The follow-up message that gets the most replies
+Partager le message exact, et pourquoi il marche (court, une seule question). ⇒ Share the exact message, and why it works (short, a single question).
+Opinion ⇒ Opinion
+Un artisan n'a pas besoin d'un logiciel compliqué ⇒ A tradesperson doesn't need complicated software
+Prendre position : simple et utilisé tous les jours vaut mieux que complet et abandonné. ⇒ Take a stand: simple and used every day beats complete and abandoned.
+Sondage ⇒ Poll
+Comment suivez-vous vos devis aujourd'hui ? ⇒ How do you track your quotes today?
+Sondage LinkedIn : carnet, Excel, logiciel, rien. Répondre à chaque commentaire. ⇒ LinkedIn poll: notebook, Excel, software, nothing. Reply to every comment.
+Les 5 erreurs de relance les plus courantes ⇒ The 5 most common follow-up mistakes
+Relancer trop tard, sans valeur, sans date proposée, par le mauvais canal, jamais. ⇒ Following up too late, with no value, with no date offered, on the wrong channel, never.
+Ce qu'un CRM change pour une agence immobilière ⇒ What a CRM changes for a real estate agency
+Mandats, visites, relances acquéreurs : 3 situations du quotidien. ⇒ Listings, viewings, buyer follow-ups: 3 everyday situations.
+Preuve ⇒ Proof
+Le témoignage d'un client en 3 phrases ⇒ A client testimonial in 3 sentences
+Une citation, une photo ou le logo (avec accord), le résultat obtenu. ⇒ A quote, a photo or the logo (with consent), the result achieved.
+Combien de leads par mois pour un artisan ? ⇒ How many leads a month for a tradesperson?
+Vos chiffres réels (ou une fourchette honnête) et ce qui les fait varier. ⇒ Your real figures (or an honest range) and what makes them vary.
+Personnel ⇒ Personal
+Pourquoi j'ai lancé mon agence ⇒ Why I started my agency
+Votre parcours en relation client et en vente, le déclic, la mission. ⇒ Your background in customer relations and sales, the trigger, the mission.
+Ressource ⇒ Resource
+La checklist pour ne plus oublier un rappel client ⇒ The checklist to never forget a client call-back
+Le bouche-à-oreille ne suffit plus ⇒ Word of mouth is no longer enough
+Pourquoi compter seulement sur lui rend une entreprise fragile. ⇒ Why relying on it alone makes a business fragile.
+Démonstration ⇒ Demo
+Une journée type avec un CRM bien rangé ⇒ A typical day with a well-organised CRM
+Une capture d'écran commentée : les rappels du jour, le pipeline, les devis. ⇒ An annotated screenshot: today's call-backs, the pipeline, the quotes.
+3 questions à poser avant d'acheter un logiciel ⇒ 3 questions to ask before buying software
+Qui va l'utiliser ? Combien de temps pour démarrer ? Que se passe-t-il si j'arrête ? ⇒ Who will use it? How long to get started? What happens if I stop?
+Leçons ⇒ Lessons
+Ce que m'ont appris 100 appels de prospection ⇒ What 100 prospecting calls taught me
+3 leçons concrètes, une anecdote, une phrase qui marche. ⇒ 3 concrete lessons, an anecdote, a line that works.
+Le délai idéal pour répondre à une demande de devis ⇒ The ideal time to answer a quote request
+Répondre dans l'heure multiplie les chances : expliquer et donner une astuce. ⇒ Answering within the hour multiplies the chances: explain and give a tip.
+Actualité ⇒ News
+Bienvenue à notre nouveau client ⇒ Welcome to our new client
+Annoncer un nouveau client (avec son accord) et ce que vous allez faire ensemble. ⇒ Announce a new client (with their consent) and what you'll do together.
+Vidéo ⇒ Video
+Tuto : relancer un devis en 2 clics ⇒ Tutorial: chase a quote in 2 clicks
+Une vidéo d'écran de 30 secondes, sous-titrée. ⇒ A 30-second screen video, with subtitles.
+Débat ⇒ Debate
+« Je n'ai pas le temps de prospecter » ⇒ "I don't have time to prospect"
+Mythe ou réalité ? Ouvrir le débat et donner votre méthode en 20 minutes par jour. ⇒ Myth or reality? Open the debate and share your 20-minutes-a-day method.
+Les outils gratuits que j'utilise chaque semaine ⇒ The free tools I use every week
+4 ou 5 outils, à quoi ils servent, un lien vers chacun en commentaire. ⇒ 4 or 5 tools, what they're for, a link to each in the comments.
+Méthode ⇒ Method
+Comment trouver des clients sans payer de publicité ⇒ How to find clients without paying for ads
+Votre méthode : fichier ciblé, appel, mail, relance, recommandation. ⇒ Your method: targeted list, call, email, follow-up, referral.
+Offre ⇒ Offer
+Ce mois-ci : un audit gratuit de 20 minutes ⇒ This month: a free 20-minute audit
+Présenter l'audit, à qui il s'adresse, comment réserver. Pas plus d'une fois par mois. ⇒ Present the audit, who it's for, how to book. No more than once a month.
+Transparence ⇒ Transparency
+Le bilan du mois : ce qui a marché, ce qui n'a pas marché ⇒ The month in review: what worked, what didn't
+Lun ⇒ Mon
+Mar ⇒ Tue
+Mer ⇒ Wed
+Jeu ⇒ Thu
+Ven ⇒ Fri
+Sam ⇒ Sat
+Dim ⇒ Sun
+Sans titre ⇒ Untitled
+Aucune publication ce mois-ci. ⇒ No posts this month.
+Modifier la publication ⇒ Edit the post
+Nouvelle publication ⇒ New post
+Réseau ⇒ Network
+Sujet ⇒ Topic
+Copier et ouvrir ⇒ Copy and open
+Marquer publié ⇒ Mark as published
+Banque d'idées ( ⇒ Idea bank (
+Banque d'idées ⇒ Idea bank
+Des sujets qui marchent pour une agence CRM et génération de leads. « Planifier » les place sur le prochain mardi ou jeudi libre. ⇒ Topics that work for a CRM and lead generation agency. "Schedule" puts them on the next free Tuesday or Thursday.
+Prévu le ⇒ Planned on
+Planifiez vos publications : LinkedIn d'abord, puis Facebook, Instagram et Google Business. ⇒ Plan your posts: LinkedIn first, then Facebook, Instagram and Google Business.
+Prévues ce mois ⇒ Planned this month
+Prêtes ⇒ Ready
+Publiées ce mois ⇒ Published this month
+Rythme (4 sem.) ⇒ Pace (4 wks)
+/ sem. ⇒ / wk
+Mois précédent ⇒ Previous month
+Mois suivant ⇒ Next month
+Conseil : 2 à 3 publications LinkedIn par semaine, le mardi et le jeudi matin, et une réponse à chaque commentaire dans l'heure. ⇒ Tip: 2 to 3 LinkedIn posts a week, on Tuesday and Thursday mornings, and a reply to every comment within the hour.
+» est prévu le ⇒ " is planned on
+Publication enregistrée. ⇒ Post saved.
+Bravo, publication marquée comme publiée. ⇒ Well done, post marked as published.
+Supprimer cette publication ? ⇒ Delete this post?
+s'ouvre dans un nouvel onglet ⇒ opens in a new tab
+avec le texte déjà rempli ⇒ with the text already filled in
+Site internet ⇒ Website
+Cette année ⇒ This year
+Depuis le début ⇒ All time
+Non renseignée ⇒ Not set
+leads, ⇒ leads,
+leads créés ⇒ leads created
+D'où viennent vos clients, combien ils coûtent et combien ils rapportent. ⇒ Where your clients come from, what they cost and what they bring in.
+des prospects ⇒ of prospects
+Encaissé (HT) ⇒ Collected (excl. VAT)
+factures payées ⇒ invoices paid
+Meilleure source sur la période : ⇒ Best source over the period:
+des prospects deviennent clients ⇒ of prospects become clients
+, pour ⇒ , for
+par client ⇒ per client
+Par source ⇒ By source
+La source est celle de la fiche du prospect. Dépense = budget mensuel × ⇒ The source is the one on the prospect's record. Spend = monthly budget ×
+Conversion ⇒ Conversion
+Encaissé ⇒ Collected
+Abonnements ⇒ Subscriptions
+Dépense ⇒ Spend
+Coût / prospect ⇒ Cost / prospect
+Coût / client ⇒ Cost / client
+Prospects des 6 derniers mois ⇒ Prospects from the last 6 months
+Budget mensuel par source ⇒ Monthly budget by source
+Ce que vous dépensez chaque mois (publicité, abonnement, fichier, temps passé si vous le chiffrez). Enregistré pour toute l'équipe. ⇒ What you spend each month (ads, subscriptions, lists, time spent if you cost it). Saved for the whole team.
+Astuce : renseignez la source sur chaque fiche prospect (champ « Source ») pour des chiffres justes. ⇒ Tip: fill in the source on each prospect record ("Source" field) for accurate figures.
+Budget « ⇒ Budget "
+» enregistré : ⇒ " saved:
+par mois. ⇒ per month.
+votre entreprise ⇒ your company
+votre ville ⇒ your city
+Claude n'a pas pu rédiger le texte (erreur ⇒ Claude couldn't write the text (error

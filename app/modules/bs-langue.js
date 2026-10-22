@@ -24,6 +24,7 @@
 
   function brut(s) {
     if (!D) return null;
+    s = s.replace(/[’‘]/g, "'");
     var v = D[s];
     if (typeof v === 'string') return v;
     // Ponctuation à la française : « Statut : » → « Status: », « Chargement… »
@@ -33,6 +34,13 @@
     if (m && m[1] && typeof D[m[1]] === 'string') return D[m[1]] + m[2];
     m = /^([·•—–\-+(]\s*)(.+?)(\s*[)·•])?$/.exec(s);
     if (m && typeof D[m[2]] === 'string') return m[1] + D[m[2]] + (m[3] || '');
+    // Morceaux séparés par « · » ou « — » : chacun traduit à part (noms et nombres gardés).
+    var sep = / · | — | : /.exec(s) && s.split(/( · | — | : )/);
+    if (sep && sep.length > 1) {
+      var fait = false;
+      for (var k = 0; k < sep.length; k += 2) { var y = sep[k] && brut(sep[k]); if (y != null) { sep[k] = y; fait = true; } }
+      if (fait) return sep.map(function (x) { return x === ' : ' ? ': ' : x; }).join('');
+    }
     for (var i = 0; i < MOTIFS.length; i++) {
       var x = MOTIFS[i][0].exec(s);
       if (x) { var r = MOTIFS[i][1].apply(null, x); if (r != null) return r; }
@@ -45,7 +53,7 @@
     s = String(s);
     var a = /^\s*/.exec(s)[0], z = /\s*$/.exec(s)[0];
     var c = s.slice(a.length, s.length - z.length);
-    if (!c || !/[A-Za-zÀ-ÿ]/.test(c)) return s;
+    if (!c || !/[A-Za-zÀ-ÿ]/.test(c) || c.indexOf('{{') >= 0) return s; // modèles de messages : texte de l'utilisateur
     var r = brut(c.replace(/\s+/g, ' '));
     return r == null ? s : a + r + z;
   }
@@ -61,6 +69,29 @@
   motif(/^(.+?)\s*(\(\d[^)]*\)|\d[\d\s  .,]*)$/, function (_, debut, n) {
     var r = brut(debut); return r == null ? null : r + ' ' + n;
   });
+  motif(/^(Bonjour|Bonsoir|Bon après-midi|Bonne nuit) ([^,.!?:;]{1,40})$/, function (_, b, x) { return D[b] + ' ' + x; });
+  motif(/^Assistant IA - (.+)$/, function (_, x) { return 'AI assistant - ' + x; });
+  motif(/^Sélectionner (.+)$/, function (_, x) { return 'Select ' + x; });
+  motif(/^Appeler (.+)$/, function (_, x) { return 'Call ' + x; });
+  motif(/^Planifier le (\S+) à (\S+)$/, function (_, d, h) { return 'Schedule on ' + d + ' at ' + h; });
+  motif(/^(\d+) sur (\d+) jours$/, function (_, a, b) { return a + ' of ' + b + ' days'; });
+  motif(/^(\d+) accepté sur (\d+) décidés?$/, function (_, a, b) { return a + ' accepted out of ' + b + ' decided'; });
+  motif(/^Votre question à (.+)$/, function (_, x) { return 'Your question to ' + x; });
+  motif(/^Écrire à (.+?)(…)?$/, function (_, x, e) { return 'Write to ' + t(x) + (e || ''); });
+  motif(/^Relancer le devis (\S+)$/, function (_, x) { return 'Chase quote ' + x; });
+  motif(/^Relancer la facture (\S+)$/, function (_, x) { return 'Chase invoice ' + x; });
+  motif(/^Créée par l'automatisation « (.+) »\.?$/, function (_, x) { var r = brut(x); return 'Created by the automation "' + (r == null ? x : r) + '".'; });
+  motif(/^(Facture|Devis) (\S+) (en retard de|sans réponse depuis) (\d+) jours$/, function (_, k, n, q, j) {
+    return (k === 'Facture' ? 'Invoice ' : 'Quote ') + n + (q === 'en retard de' ? ' overdue by ' : ' unanswered for ') + j + ' days';
+  });
+  motif(/^Client sans contact depuis (\d+) jours$/, function (_, j) { return 'Client without contact for ' + j + ' days'; });
+  motif(/^, (\S+ %) des prospects deviennent clients\.$/, function (_, x) { return ', ' + x + ' of prospects become clients.'; });
+  motif(/^La source est celle de la fiche du prospect\. Dépense = budget mensuel × (\S+) mois\.$/, function (_, x) { return "The source is the one on the prospect's record. Spend = monthly budget × " + x + ' months.'; });
+  motif(/^(Tendances?) (.+)$/, function (_, k, x) { return (k === 'Tendance' ? 'Trend ' : 'Trends ') + x.replace(/période/g, 'period').replace(/\bRDV\b/g, 'Meetings'); });
+  motif(/^Semaine du (.+)$/, function (_, x) { return 'Week of ' + x; });
+  motif(/^(\S+) sur (\S+)$/, function (_, a, b) { return /\d/.test(a) && /\d/.test(b) ? a + ' of ' + b : null; });
+  motif(/^Module (\d+) sur (\d+)$/, function (_, a, b) { return 'Module ' + a + ' of ' + b; });
+  motif(/^depuis le (.+)$/, function (_, x) { return 'since ' + x; });
   motif(/^Il y a (\d+) (min|minutes?|h|heures?|jours?|semaines?|mois|ans?)$/, function (_, n, u) {
     var U = { min: 'min', minute: 'minute', minutes: 'minutes', h: 'h', heure: 'hour', heures: 'hours', jour: 'day', jours: 'days', semaine: 'week', semaines: 'weeks', mois: n > 1 ? 'months' : 'month', an: 'year', ans: 'years' };
     return n + ' ' + U[u] + ' ago';

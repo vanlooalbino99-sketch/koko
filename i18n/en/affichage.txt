@@ -1,0 +1,254 @@
+# Assistants IA (bs-assistants), carte (bs-carte), présentation (bs-anim), ambiance (bs-ambiance, bs-galerie, bs-orbite).
+Le serveur ne répond pas : réessayez. ⇒ The server isn't responding: try again.
+L'assistant IA fonctionne avec la version en ligne du CRM (connexion de l'équipe). ⇒ The AI assistant works with the online version of the CRM (team login).
+Claude n'est pas encore branché. Collez votre clé Claude dans Entraînement (réglage « Claude »), puis reposez votre question. ⇒ Claude isn't connected yet. Paste your Claude key in Training ("Claude" setting), then ask your question again.
+Claude n'est pas encore branché : demandez à un administrateur de coller la clé Claude dans Entraînement. ⇒ Claude isn't connected yet: ask an administrator to paste the Claude key in Training.
+script d'appel ⇒ call script
+sans titre ⇒ untitled
+Date à choisir ⇒ Date to choose
+Note sur ⇒ Note on
+E-mail à ⇒ Email to
+de message ⇒ of message
+Le CRM n'est pas prêt. ⇒ The CRM isn't ready.
+Prospect introuvable. ⇒ Prospect not found.
+Proposée par ⇒ Suggested by
+Date de relance manquante. ⇒ Follow-up date missing.
+Statut inconnu. ⇒ Unknown status.
+La rubrique Mail n'est pas disponible. ⇒ The Mail section isn't available.
+La rubrique Modèles n'est pas disponible. ⇒ The Templates section isn't available.
+Assistant IA ⇒ AI assistant
+appliquée ⇒ applied
+Fait ⇒ Done
+Ouvrir dans Mail ⇒ Open in Mail
+Appliquer ⇒ Apply
+Tout appliquer ( ⇒ Apply all (
+Trouver des prospects qualifiés ⇒ Find qualified prospects
+Rédiger des messages personnalisés ⇒ Write personalised messages
+Lancer des campagnes d'emailing ⇒ Launch email campaigns
+Suivre vos réponses et rendez-vous ⇒ Track your replies and meetings
+Automatiser toute votre prospection ⇒ Automate all your prospecting
+Assistant IA - ⇒ AI assistant -
+Aucun assistant IA n'est ouvert à votre compte : demandez l'accès à un administrateur. ⇒ No AI assistant is open to your account: ask an administrator for access.
+L'assistant IA fonctionne avec la version en ligne du CRM. ⇒ The AI assistant works with the online version of the CRM.
+Bonjour ! Je suis ⇒ Hello! I'm
+votre assistant IA. ⇒ your AI assistant.
+Je peux vous aider à : ⇒ I can help you:
+compétences ⇒ skills
+Compétences ⇒ Skills
+Toute l'équipe IA ⇒ The whole AI team
+Votre assistant intelligent pour une prospection plus efficace. ⇒ Your smart assistant for more effective prospecting.
+Changer d'assistant ⇒ Switch assistant
+Posez votre question... ⇒ Ask your question...
+Masquer les compétences ⇒ Hide skills
+Nouvelle conversation ⇒ New conversation
+Administrateurs + ⇒ Administrators +
+Administrateurs seulement ⇒ Administrators only
+Les assistants IA fonctionnent avec la version en ligne du CRM. ⇒ AI assistants work with the online version of the CRM.
+Gérer l'accès ⇒ Manage access
+Pour que les assistants répondent, collez une fois votre clé Claude dans Entraînement (réglage « Claude »). ⇒ For the assistants to answer, paste your Claude key once in Training ("Claude" setting).
+Les assistants répondront dès qu'un administrateur aura branché Claude. ⇒ The assistants will answer as soon as an administrator connects Claude.
+Ouvrir Entraînement ⇒ Open Training
+Chargement de l'équipe… ⇒ Loading the team…
+Chaque membre, y compris les futurs, a accès à cet assistant. ⇒ Every member, including future ones, has access to this assistant.
+Administrateur : toujours accès ⇒ Administrator: always has access
+Accès à ⇒ Access to
+Choisissez qui peut utiliser cet assistant. Les administrateurs ont toujours accès à toute l'équipe IA. ⇒ Choose who can use this assistant. Administrators always have access to the whole AI team.
+Impossible de charger l'équipe : réessayez. ⇒ Cannot load the team: try again.
+Accès enregistré ⇒ Access saved
+Bonjour ! Je suis Albino 2.0, votre assistant IA. ⇒ Hello! I'm Albino 2.0, your AI assistant.
+Note ⇒ Note
+Siège ⇒ Head office
+Action ⇒ Action
+· siège ⇒ · head office
+Activité récente ⇒ Recent activity
+s'allume sur la carte ⇒ lights up on the map
+Les appels, emails et rendez-vous s'afficheront ici et s'allumeront sur la carte. ⇒ Calls, emails and meetings will show here and light up on the map.
+fiches localisées ⇒ records located
+abonnements / mois ⇒ subscriptions / month
+en négociation ⇒ in negotiation
+Votre territoire en direct : qui, où, combien, et ce qui bouge en ce moment ⇒ Your territory live: who, where, how much, and what's moving right now
+Trouver un client ou une ville… ⇒ Find a client or a city…
+Trouver un client ou une ville ⇒ Find a client or a city
+Carte des clients : glissez pour déplacer, molette pour zoomer ⇒ Client map: drag to move, scroll to zoom
+Planète des clients : glissez pour la faire tourner ⇒ Client planet: drag to spin it
+Type de vue ⇒ View type
+En direct ⇒ Live
+Carte ⇒ Map
+Carte vectorielle ⇒ Vector map
+Réaliste ⇒ Realistic
+Mode réaliste : vue satellite avec routes et noms ⇒ Realistic mode: satellite view with roads and names
+Globe 3D ⇒ 3D globe
+Visite guidée ⇒ Guided tour
+Recentrer sur mes fiches ⇒ Recentre on my records
+Recentrer ⇒ Recentre
+Vue du monde ⇒ World view
+Teinte des départements selon le nombre de fiches ⇒ Departments shaded by number of records
+Fiches par département ⇒ Records by department
+Glissez pour tourner · molette pour zoomer · clic sur une ville ⇒ Drag to spin · scroll to zoom · click a city
+Top villes ⇒ Top cities
+clients · prospects ⇒ clients · prospects
+Aucune fiche localisée pour l'instant. Renseignez la ville de vos prospects. ⇒ No records located yet. Fill in your prospects' city.
+Non localisées ( ⇒ Not located (
+Ville absente ou inconnue de l'annuaire intégré : ⇒ City missing or unknown to the built-in directory:
+Chercher sur OpenStreetMap ⇒ Search on OpenStreetMap
+Envoie seulement le nom de la ville (ou l'adresse) au service public OpenStreetMap, une à la fois. Résultat gardé dans ce navigateur. ⇒ Sends only the city name (or address) to the public OpenStreetMap service, one at a time. Result kept in this browser.
+Cliquez pour zoomer ⇒ Click to zoom
+en jeu ⇒ at stake
+Priorité haute ⇒ High priority
+par mois ⇒ per month
+Visite · ⇒ Tour ·
+Ville sélectionnée ⇒ Selected city
+Arrêter la visite ⇒ Stop the tour
+Rien de plus à chercher : complétez la ville des fiches restantes. ⇒ Nothing more to search: fill in the city of the remaining records.
+Recherche de ⇒ Searching for
+Quitter le plein écran (Échap) ⇒ Exit full screen (Esc)
+Plein écran ⇒ Full screen
+Mode présentation : diaporama plein écran (touche P) ⇒ Presentation mode: full-screen slideshow (P key)
+Présenter ⇒ Present
+Meilleur jour ⇒ Best day
+Dernier jour vs veille ⇒ Last day vs day before
+par jour ⇒ per day
+Meilleure semaine ⇒ Best week
+Dernière semaine vs précédente ⇒ Last week vs previous
+par semaine ⇒ per week
+Meilleur mois ⇒ Best month
+Dernier mois vs précédent ⇒ Last month vs previous
+En tête ⇒ Leading
+Le plus faible ⇒ Lowest
+sur la période ⇒ over the period
+Depuis ⇒ Since
+Plus haut ⇒ Highest
+Record ⇒ Record
+Niveau le plus haut atteint ⇒ Highest level reached
+En 2e position ⇒ In 2nd place
+Progression ⇒ Progress
+Mode présentation ⇒ Presentation mode
+Précédente (←) ⇒ Previous (←)
+Pause (Espace) ⇒ Pause (Space)
+Suivante (→) ⇒ Next (→)
+Plein écran (F) ⇒ Full screen (F)
+Quitter (Échap) ⇒ Exit (Esc)
+· Présentation ⇒ · Presentation
+→ diapositive suivante · Espace pause · Échap quitter ⇒ → next slide · Space pause · Esc exit
+Les chiffres clés ⇒ Key figures
+En résumé ⇒ In summary
+Copier le résumé ⇒ Copy the summary
+Revoir la présentation ⇒ Watch the presentation again
+Lecture (Espace) ⇒ Play (Space)
+Résumé copié ✓ ⇒ Summary copied ✓
+Stockage du navigateur indisponible. ⇒ Browser storage unavailable.
+Écriture impossible (stockage plein ?). ⇒ Cannot write (storage full?).
+Conversion impossible. ⇒ Cannot convert.
+format non lisible par le navigateur (HEIC ?). Enregistrez-la en JPG ou PNG. ⇒ format the browser can't read (HEIC?). Save it as JPG or PNG.
+Fichier ⇒ File
+image vide. ⇒ empty image.
+Image ⇒ Image
+Maximum ⇒ Maximum
+images : ⇒ images:
+ignorée(s). ⇒ skipped.
+Préparation de « ⇒ Preparing "
+Mode immersion (touche I) ⇒ Immersive mode (I key)
+Immersion ⇒ Immersive
+Chaque appel est une graine : certaines poussent aujourd'hui, d'autres dans trois mois. ⇒ Every call is a seed: some grow today, others in three months.
+Le prochain « oui » est peut-être au bout du prochain numéro. ⇒ The next "yes" might be at the end of the next number.
+Un « non » aujourd'hui, c'est souvent un « pas encore ». ⇒ A "no" today is often a "not yet".
+Ton pipeline d'aujourd'hui, c'est ton chiffre d'affaires de demain. ⇒ Today's pipeline is tomorrow's revenue.
+Relancer, ce n'est pas déranger : c'est tenir parole. ⇒ Following up isn't bothering: it's keeping your word.
+Respire, souris, compose. Au téléphone, le sourire s'entend. ⇒ Breathe, smile, dial. On the phone, people hear a smile.
+Écoute plus que tu ne parles : le client te dira comment l'aider. ⇒ Listen more than you talk: the client will tell you how to help.
+Petites actions chaque jour, grands résultats chaque trimestre. ⇒ Small actions every day, big results every quarter.
+Concentre-toi sur la prochaine action, pas sur toute la montagne. ⇒ Focus on the next action, not the whole mountain.
+Un bon devis part le jour même. ⇒ A good quote goes out the same day.
+La régularité bat le talent quand le talent ne décroche pas. ⇒ Consistency beats talent when talent doesn't pick up the phone.
+Tu ne vends pas un produit, tu règles un problème. ⇒ You're not selling a product, you're solving a problem.
+Prochain RDV ⇒ Next meeting
+RDV aujourd'hui ⇒ Meetings today
+à passer ⇒ to make
+du jour ⇒ today
+Rien d'urgent : journée libre pour prospecter ⇒ Nothing urgent: a free day for prospecting
+Ajoutez d'abord une image dans Réglages › Ambiance. ⇒ First add an image in Settings › Ambience.
+Mode immersion ⇒ Immersive mode
+Image précédente (←) ⇒ Previous image (←)
+Image suivante (→) ⇒ Next image (→)
+← → changer d'image · Espace pause · F plein écran · Échap quitter ⇒ ← → change image · Space pause · F full screen · Esc exit
+Reprendre (Espace) ⇒ Resume (Space)
+Session en cours : on enchaîne ! ⇒ Session in progress: keep going!
+Session d'appels terminée. Bravo ! Prends 5 minutes, puis on repart. ⇒ Call session finished. Well done! Take 5 minutes, then off we go again.
+Aurore boréale ⇒ Northern lights
+Paysages ⇒ Landscapes
+Crépuscule sur les crêtes ⇒ Dusk over the ridges
+Ville de nuit ⇒ City at night
+Horizon marin ⇒ Sea horizon
+Abstrait ⇒ Abstract
+Création de « ⇒ Creating "
+ajoutée ⇒ added
+Intelligence artificielle ⇒ Artificial intelligence
+Création de l'aperçu… ⇒ Creating the preview…
+Une autre version de cette ambiance ⇒ Another version of this ambience
+Enregistrées sur le serveur et partagées avec toute l'équipe. ⇒ Saved on the server and shared with the whole team.
+Enregistrées dans ce navigateur, sur cet ordinateur. ⇒ Saved in this browser, on this computer.
+Seul un administrateur peut modifier l'ambiance de l'équipe. Vous pouvez la désactiver pour vous ci-dessous. ⇒ Only an administrator can change the team's ambience. You can turn it off for yourself below.
+Glissez vos images ici ⇒ Drop your images here
+ou collez-les avec Ctrl+V. JPG, PNG ou WebP, redimensionnées automatiquement (2560 px) pour rester fluides. ⇒ or paste them with Ctrl+V. JPG, PNG or WebP, resized automatically (2560 px) to stay smooth.
+Choisir des images ⇒ Choose images
+Mode immersion (I) ⇒ Immersive mode (I)
+À l'écran ⇒ On screen
+Épinglée ⇒ Pinned
+Afficher maintenant ⇒ Show now
+Désépingler ⇒ Unpin
+Épingler (toujours celle-ci) ⇒ Pin (always this one)
+Aucune image pour l'instant. Ajoutez vos photos, ou choisissez des ambiances créées pour vous dans la galerie ci-dessous (« Surprends-moi » en ajoute 4 au hasard). ⇒ No images yet. Add your photos, or pick ambiences made for you in the gallery below ("Surprise me" adds 4 at random).
+Patientez… ⇒ Please wait…
+Aperçu de lisibilité ⇒ Readability preview
+Vos textes restent nets sur l'image grâce au voile et au verre dépoli. ⇒ Your text stays sharp on the image thanks to the veil and frosted glass.
+Vos images d'ambiance ⇒ Your ambience images
+Elles s'affichent en fond, sur la bannière d'« Aujourd'hui » et à l'ouverture du CRM. ⇒ They show in the background, on the "Today" banner and when the CRM opens.
+Galerie d'ambiances ⇒ Ambience gallery
+Où les afficher ⇒ Where to show them
+Fond animé en verre 3D ⇒ Animated 3D glass background
+Forme en verre ⇒ Glass shape
+Celle qui tourne dans le fond animé. ⇒ The one spinning in the animated background.
+Fond de l'application ⇒ App background
+Image plein écran derrière toutes les pages, blocs en verre dépoli ⇒ Full-screen image behind all pages, frosted-glass panels
+Bannière « Aujourd'hui » ⇒ "Today" banner
+L'image apparaît dans le bandeau d'accueil, avec un bouton « Immersion » ⇒ The image appears in the welcome banner, with an "Immersive" button
+Écran d'ouverture ⇒ Splash screen
+L'image accueille le chargement du CRM. ⇒ The image greets you while the CRM loads.
+Page de connexion ⇒ Login page
+Fond de la page de connexion (visible sans compte : n'y mettez pas d'image confidentielle). ⇒ Login page background (visible without an account: don't use a confidential image).
+Disponible dans la version équipe (serveur). ⇒ Available in the team version (server).
+Pour vous seulement, sans changer l'ambiance de l'équipe. ⇒ For you only, without changing the team's ambience.
+Rythme et lisibilité ⇒ Pace and readability
+Choix de l'image ⇒ Image choice
+Diaporama en fondu, une image différente chaque jour, ou toujours l'image épinglée. ⇒ Fading slideshow, a different image each day, or always the pinned image.
+Diaporama ⇒ Slideshow
+Une par jour ⇒ One per day
+Changement d'image ⇒ Image change
+Toutes les… ⇒ Every…
+Voile de lisibilité ⇒ Readability veil
+Plus fort = textes plus contrastés, image plus discrète. ⇒ Stronger = more contrasted text, subtler image.
+Flou du fond ⇒ Background blur
+Adoucit l'image derrière les pages. ⇒ Softens the image behind the pages.
+Images animées ⇒ Animated images
+Mouvement de caméra et lumières vivantes (étoiles filantes, flux de données, reflets, poussières dorées) sur le fond et la bannière. Le mode immersion est toujours animé. ⇒ Camera movement and living lights (shooting stars, data streams, reflections, golden dust) on the background and banner. Immersive mode is always animated.
+Supprimer l'image « ⇒ Delete the image "
+Surprends-moi ⇒ Surprise me
+Réseau neuronal ⇒ Neural network
+Cerveau de lumière ⇒ Brain of light
+Puce centrale ⇒ Central chip
+Globe connecté ⇒ Connected globe
+Flux de données ⇒ Data stream
+Horizon holographique ⇒ Holographic horizon
+Cœur quantique ⇒ Quantum core
+Constellation de données ⇒ Data constellation
+Lac miroir ⇒ Mirror lake
+Dunes dorées ⇒ Golden dunes
+Étincelle ⇒ Spark
+Prisme ⇒ Prism
+Fleur ⇒ Flower
+Étoile ⇒ Star
+Croissance ⇒ Growth
+Galet ⇒ Pebble
+Logo Blackstart ⇒ Blackstart logo
+Anneaux seuls, sans forme ⇒ Rings only, no shape
+Fond en verre 3D indisponible : ⇒ 3D glass background unavailable:

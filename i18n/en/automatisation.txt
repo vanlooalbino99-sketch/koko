@@ -1,0 +1,256 @@
+# Automatisations (bs-automatisations), Entraînement (bs-entrainement), niche (bs-niche), tendances (bs-tendance).
+Nouveau lead → appel le jour même ⇒ New lead → call the same day
+Chaque prospect ajouté (site internet, générateur de leads, LinkedIn, import) sans relance prévue entre dans la file d'appels du jour. ⇒ Every prospect added (website, lead generator, LinkedIn, import) with no planned follow-up joins today's call queue.
+Mis dans la file d'appels du jour ⇒ Put in today's call queue
+Prospect oublié → retour dans la file d'appels ⇒ Forgotten prospect → back in the call queue
+jours sans activité ⇒ days without activity
+Un prospect en cours sans relance prévue et sans activité depuis ce délai revient dans la file d'appels du jour. ⇒ An open prospect with no planned follow-up and no activity for this long goes back into today's call queue.
+Sans nouvelles depuis ⇒ No news for
+jours : remis dans la file d'appels ⇒ days: put back in the call queue
+Injoignable plusieurs fois → prospect froid, rappel dans 30 jours ⇒ Unreachable several times → cold prospect, call back in 30 days
+appels sans réponse de suite ⇒ unanswered calls in a row
+Après ce nombre d'appels sans réponse d'affilée, le prospect passe en « Froid » et sera rappelé dans 30 jours, pour laisser la place aux autres. ⇒ After this many unanswered calls in a row, the prospect becomes "Cold" and will be called back in 30 days, to make room for others.
+appels sans réponse : passé en froid, rappel le ⇒ unanswered calls: moved to cold, call back on
+RDV pris → tâche « Préparer le rendez-vous » ⇒ Meeting booked → "Prepare the meeting" task
+Dès qu'un rendez-vous est obtenu, une tâche de préparation est créée pour le jour du rendez-vous (ou demain s'il n'est pas daté). ⇒ As soon as a meeting is booked, a preparation task is created for the meeting day (or tomorrow if it has no date).
+Préparer le rendez-vous : ⇒ Prepare the meeting:
+Tâche « Préparer le rendez-vous » le ⇒ "Prepare the meeting" task on
+Proposition envoyée → relance programmée ⇒ Proposal sent → follow-up scheduled
+jours après l'envoi ⇒ days after sending
+Quand une proposition part, la relance du prospect est programmée automatiquement, avec une tâche pour la faire. ⇒ When a proposal goes out, the prospect's follow-up is scheduled automatically, with a task to do it.
+Relancer la proposition : ⇒ Follow up on the proposal:
+Relance de la proposition programmée le ⇒ Proposal follow-up scheduled on
+Devis sans réponse → tâche de relance ⇒ Unanswered quote → follow-up task
+Un devis envoyé, ni accepté ni refusé après ce délai, crée une tâche de relance (une fois par devis). ⇒ A sent quote, neither accepted nor declined after this long, creates a follow-up task (once per quote).
+Relancer le devis ⇒ Chase the quote
+sans réponse depuis ⇒ unanswered for
+jours : tâche de relance ⇒ days: follow-up task
+Clients & production ⇒ Clients & delivery
+Client signé → check-list de mise en route ⇒ Client signed → onboarding checklist
+À la signature, les étapes de mise en route sont créées en tâches datées : lancement, accès, paramétrage, formation, mise en service, point de satisfaction. ⇒ On signing, the onboarding steps are created as dated tasks: kick-off, access, setup, training, go-live, satisfaction check.
+Réunion de lancement ⇒ Kick-off meeting
+Collecter les accès et les données ⇒ Collect access and data
+Paramétrer le CRM et les automatisations ⇒ Set up the CRM and automations
+Former l'équipe du client ⇒ Train the client's team
+Recette et mise en service ⇒ Acceptance and go-live
+Point de satisfaction (et demande d'avis) ⇒ Satisfaction check (and review request)
+Check-list de mise en route créée (6 tâches) ⇒ Onboarding checklist created (6 tasks)
+Client sans nouvelles → prendre des nouvelles ⇒ Client with no news → check in
+jours sans contact ⇒ days without contact
+Un client actif sans contact depuis ce délai crée une tâche pour prendre de ses nouvelles : moins de résiliations, plus de recommandations. ⇒ An active client with no contact for this long creates a task to check in: fewer cancellations, more referrals.
+Prendre des nouvelles : ⇒ Check in:
+Client sans contact depuis ⇒ Client without contact for
+jours : tâche créée ⇒ days: task created
+Facturation ⇒ Billing
+Facture en retard → tâche de relance chaque semaine ⇒ Overdue invoice → follow-up task every week
+Une facture à payer dont l'échéance est passée crée une tâche de relance, une fois par semaine jusqu'au paiement. ⇒ An unpaid invoice past its due date creates a follow-up task, once a week until it's paid.
+Relancer la facture ⇒ Chase the invoice
+en retard de ⇒ overdue by
+Créée par l'automatisation « ⇒ Created by the automation "
+à l'instant ⇒ just now
+Le CRM fait le travail répétitif pour toute l'équipe : chaque règle active s'applique toute seule et note ce qu'elle a fait. ⇒ The CRM does the repetitive work for the whole team: each active rule applies by itself and logs what it did.
+règles actives ⇒ active rules
+actions automatiques cette semaine ⇒ automatic actions this week
+de travail évité cette semaine ⇒ of work saved this week
+Seuls les administrateurs peuvent changer les règles. ⇒ Only administrators can change the rules.
+Délai ⇒ Delay
+fois · dernière ⇒ times · last
+Pas encore utilisée ⇒ Not used yet
+Désactiver ⇒ Turn off
+Activer ⇒ Turn on
+Avec l'IA ⇒ With AI
+Briefing du matin par votre assistant IA ⇒ Morning briefing by your AI assistant
+Chaque jour, à la première ouverture du CRM, l'assistant prépare votre journée : appels par priorité, relances et tâches à appliquer d'un clic. Réglage personnel ; il faut que Claude soit branché. ⇒ Every day, when you first open the CRM, the assistant prepares your day: calls by priority, follow-ups and tasks to apply in one click. Personal setting; Claude must be connected.
+Le briefing s'affiche dans l'assistant de la page Aujourd'hui. ⇒ The briefing shows in the assistant on the Today page.
+Briefing du matin ⇒ Morning briefing
+Employés IA ⇒ AI employees
+48 compétences métier en un clic : préparer la journée, revue du pipeline, relancer les impayés, planifier un nouveau client… ⇒ 48 business skills in one click: plan the day, review the pipeline, chase unpaid invoices, onboard a new client…
+Séquences d'e-mails ⇒ Email sequences
+Les relances par e-mail à J+3, J+7… se règlent dans Campagnes. ⇒ Email follow-ups on day 3, day 7… are set in Campaigns.
+Les actions faites par les automatisations apparaîtront ici. ⇒ Actions taken by automations will appear here.
+Facile ⇒ Easy
+Curieux et poli, il pose des questions mais finit par écouter. ⇒ Curious and polite, asks questions but ends up listening.
+Pressé et un peu méfiant : il veut savoir vite pourquoi je l'appelle. ⇒ In a hurry and a bit wary: wants to know quickly why you're calling.
+Difficile ⇒ Hard
+Fermé, il cherche à raccrocher et enchaîne les objections. ⇒ Closed off, tries to hang up and stacks objections.
+Obtenir un rendez-vous pour un audit gratuit de 20 minutes (proposer deux créneaux). ⇒ Book a meeting for a free 20-minute audit (offer two slots).
+Relancer la proposition envoyée et obtenir une décision ou une date de signature. ⇒ Follow up on the sent proposal and get a decision or a signing date.
+Conclure : faire valider la proposition et fixer le démarrage. ⇒ Close: get the proposal approved and set the start date.
+Rattraper un prospect qui n'avait pas répondu et obtenir un rendez-vous. ⇒ Win back a prospect who hadn't answered and book a meeting.
+Obtenir un rendez-vous ⇒ Book a meeting
+Relancer une proposition ⇒ Follow up on a proposal
+Conclure la vente ⇒ Close the sale
+Rattraper un injoignable ⇒ Win back an unreachable prospect
+« Je n'ai pas le temps » ⇒ "I don't have time"
+« On n'a pas de budget pour ça » ⇒ "We don't have a budget for that"
+« Envoyez-moi une documentation » ⇒ "Send me some documentation"
+« On a déjà quelqu'un / un logiciel pour ça » ⇒ "We already have someone / software for that"
+« Rappelez-moi plus tard » ⇒ "Call me back later"
+Micro indisponible ou refusé : répondez au clavier (ou autorisez le micro pour ce site puis recommencez). ⇒ Microphone unavailable or denied: answer with the keyboard (or allow the microphone for this site and start again).
+Vous avez proposé un rendez-vous ou un créneau. ⇒ You offered a meeting or a time slot.
+Demandez un rendez-vous précis : proposez deux créneaux (« mardi 10 h ou jeudi 14 h ? »). ⇒ Ask for a specific meeting: offer two slots ("Tuesday 10am or Thursday 2pm?").
+Vous posez des questions pour comprendre le besoin. ⇒ You ask questions to understand the need.
+Posez au moins deux questions de découverte (comment ils trouvent leurs clients, ce qui leur fait perdre du temps…). ⇒ Ask at least two discovery questions (how they find clients, what wastes their time…).
+Vous vous présentez dès le début. ⇒ You introduce yourself right at the start.
+Présentez-vous en une phrase au début : prénom, société, raison de l'appel. ⇒ Introduce yourself in one sentence at the start: first name, company, reason for the call.
+Vous personnalisez avec le nom du prospect. ⇒ You personalise with the prospect's name.
+Vos réponses sont très courtes : face à une objection, reconnaissez-la puis rebondissez avec un bénéfice concret. ⇒ Your answers are very short: when facing an objection, acknowledge it then bounce back with a concrete benefit.
+Vos répliques sont longues : visez 2 ou 3 phrases, puis laissez parler le prospect. ⇒ Your lines are long: aim for 2 or 3 sentences, then let the prospect talk.
+L'appel a été très court : tenez jusqu'à la demande de rendez-vous. ⇒ The call was very short: hold on until you ask for the meeting.
+Vous êtes allé au bout de l'appel. ⇒ You carried the call through to the end.
+Appel mené jusqu'à la proposition de rendez-vous. ⇒ Call led all the way to the meeting offer.
+Il manque une demande d'engagement claire. ⇒ A clear commitment request is missing.
+Votre navigateur ne reconnaît pas la voix : répondez au clavier (Chrome, Edge et Safari le permettent). ⇒ Your browser doesn't recognise speech: answer with the keyboard (Chrome, Edge and Safari support it).
+Claude n'est pas branché : le prospect continue sans IA. ⇒ Claude isn't connected: the prospect continues without AI.
+Claude n'a pas pu répondre. ⇒ Claude couldn't answer.
+Claude n'a pas pu noter l'appel ( ⇒ Claude couldn't score the call (
+) : voici une note estimée. ⇒ ): here is an estimated score.
+Prospect type ⇒ Typical prospect
+avec Claude ⇒ with Claude
+sans IA ⇒ without AI
+sur ce prospect : ⇒ on this prospect:
+, objectif atteint ⇒ , goal reached
+Parlez : votre réponse s'affiche ici, elle part toute seule quand vous vous arrêtez. ⇒ Speak: your answer shows here and is sent by itself when you stop.
+Le prospect parle… ⇒ The prospect is speaking…
+À vous ⇒ Your turn
+Le prospect réfléchit… ⇒ The prospect is thinking…
+Claude note votre appel… ⇒ Claude is scoring your call…
+Problème ⇒ Problem
+Terminé ⇒ Finished
+À vous : parlez ⇒ Your turn: speak
+Micro ouvert ⇒ Microphone on
+Ouvrir le micro ⇒ Turn the microphone on
+Répondre au clavier ⇒ Answer with the keyboard
+Répondre à la voix ⇒ Answer by voice
+Claude est branché : lancez votre premier appel. ⇒ Claude is connected: start your first call.
+Retirer la clé Claude ? Le simulateur repassera en mode sans IA pour toute l'équipe. ⇒ Remove the Claude key? The simulator will go back to no-AI mode for the whole team.
+Clé Claude retirée. ⇒ Claude key removed.
+Entraînement Pitchbase sur ce prospect ( ⇒ Pitchbase training on this prospect (
+Fiche copiée. Dans Pitchbase, créez un scénario et collez-la (Ctrl + V) dans la description du prospect. ⇒ Record copied. In Pitchbase, create a scenario and paste it (Ctrl + V) into the prospect description.
+Copiez la fiche, puis collez-la dans Pitchbase. ⇒ Copy the record, then paste it into Pitchbase.
+Fiche copiée. ⇒ Record copied.
+Copiez la fiche. ⇒ Copy the record.
+Pitchbase s'est ouvert dans une fenêtre à côté du CRM : créez un scénario et collez la fiche (Ctrl + V) dans la description du prospect. ⇒ Pitchbase opened in a window next to the CRM: create a scenario and paste the record (Ctrl + V) into the prospect description.
+Votre navigateur a bloqué la fenêtre Pitchbase : autorisez les fenêtres pour ce site, ou utilisez le bouton « Ouvrir Pitchbase ». ⇒ Your browser blocked the Pitchbase window: allow pop-ups for this site, or use the "Open Pitchbase" button.
+Appel simulé avec Claude ⇒ Simulated call with Claude
+Appel simulé sans IA ⇒ Simulated call without AI
+Votre réponse au prospect… ⇒ Your answer to the prospect…
+Votre réponse ⇒ Your answer
+Raccrocher et voir ma note ⇒ Hang up and see my score
+Votre note ⇒ Your score
+notée par Claude ⇒ scored by Claude
+note estimée sans IA ⇒ estimated score without AI
+Objectif atteint ⇒ Goal reached
+Objectif pas encore atteint ⇒ Goal not reached yet
+Points forts ⇒ Strengths
+À améliorer en priorité ⇒ To improve first
+Objections ⇒ Objections
+À essayer au prochain appel : ⇒ To try on the next call:
+Revoir l'appel ⇒ Review the call
+pour de vrai ⇒ for real
+Copier le compte rendu ⇒ Copy the report
+Nouvelle clé sk-ant-… ⇒ New key sk-ant-…
+Clé Claude ⇒ Claude key
+Remplacer ⇒ Replace
+Retirer la clé ⇒ Remove the key
+Mode sans IA : le prospect enchaîne les objections du script. Pour un vrai prospect qui vous répond, demandez à un administrateur de brancher Claude ici. ⇒ No-AI mode: the prospect runs through the script's objections. For a real prospect who answers you, ask an administrator to connect Claude here.
+Brancher Claude (une fois pour toute l'équipe) ⇒ Connect Claude (once for the whole team)
+Créez un compte sur ⇒ Create an account on
+et ajoutez du crédit (rubrique Billing ; 5 $ suffisent pour commencer). ⇒ and add credit (Billing section; $5 is enough to start).
+Rubrique API Keys : « Create Key », puis copiez la clé (elle commence par sk-ant-). ⇒ API Keys section: "Create Key", then copy the key (it starts with sk-ant-).
+Brancher Claude ⇒ Connect Claude
+Comptez environ 15 à 20 centimes par simulation de 5 minutes. En attendant, le simulateur marche sans IA. ⇒ Expect about 15 to 20 cents per 5-minute simulation. Meanwhile, the simulator works without AI.
+Simulateur d'appel avec Claude ⇒ Call simulator with Claude
+Simulateur d'appel ⇒ Call simulator
+Claude joue votre prospect au téléphone. Parlez-lui comme pour de vrai, puis recevez votre note. ⇒ Claude plays your prospect on the phone. Talk to it as if it were real, then get your score.
+Entraînez-vous à voix haute face à un prospect qui vous fait les objections de votre script. ⇒ Practise out loud with a prospect who raises your script's objections.
+Prospect à appeler ⇒ Prospect to call
+Un prospect type (sans fiche) ⇒ A typical prospect (no record)
+Difficulté ⇒ Difficulty
+Objectif de l'appel ⇒ Call goal
+Ce que vous vendez ⇒ What you sell
+Voir ou modifier la fiche du prospect ⇒ See or edit the prospect record
+Fiche du prospect ⇒ Prospect record
+Refaire la fiche ⇒ Rebuild the record
+Démarrer l'appel ⇒ Start the call
+Façon de répondre ⇒ How to answer
+À la voix ⇒ By voice
+Au clavier ⇒ With the keyboard
+Autorisez le micro quand le navigateur le demande. Mettez le son. ⇒ Allow the microphone when the browser asks. Turn the sound on.
+Ce navigateur ne reconnaît pas la voix : utilisez Chrome, Edge ou Safari, ou répondez au clavier. ⇒ This browser doesn't recognise speech: use Chrome, Edge or Safari, or answer with the keyboard.
+Le prospect parle quand même à voix haute : mettez le son. ⇒ The prospect still speaks out loud: turn the sound on.
+Prêt ? Appelez ⇒ Ready? Call
+Votre simulation, sans quitter le CRM. ⇒ Your simulation, without leaving the CRM.
+Ouvrir dans une fenêtre ⇒ Open in a window
+Avec Pitchbase ⇒ With Pitchbase
+Pitchbase s'ouvre dans une fenêtre à côté du CRM (il refuse d'être affiché dans un autre site). ⇒ Pitchbase opens in a window next to the CRM (it refuses to be shown inside another site).
+Ouvrir Pitchbase ⇒ Open Pitchbase
+Il faut un compte Pitchbase (essai gratuit, puis abonnement par personne). Le CRM copie la fiche du prospect ci-dessus : collez-la dans un scénario Pitchbase. ⇒ You need a Pitchbase account (free trial, then a per-person subscription). The CRM copies the prospect record above: paste it into a Pitchbase scenario.
+Copier la fiche et ouvrir Pitchbase ⇒ Copy the record and open Pitchbase
+Copier la fiche ⇒ Copy the record
+Derniers entraînements ⇒ Recent practice sessions
+Sur cet appareil. ⇒ On this device.
+Sans IA ⇒ No AI
+Rejouer ⇒ Replay
+Simulez l'appel face à un prospect joué par l'IA, à la voix, puis appelez pour de vrai. ⇒ Simulate the call with a prospect played by AI, by voice, then call for real.
+Note : ⇒ Score:
+Points forts : ⇒ Strengths:
+À améliorer : ⇒ To improve:
+À essayer : « ⇒ To try: "
+Transcription : ⇒ Transcript:
+Fiche copiée : collez-la dans Pitchbase (Ctrl + V). ⇒ Record copied: paste it into Pitchbase (Ctrl + V).
+Copie impossible : ouvrez la fiche ci-dessus, sélectionnez le texte et copiez-le. ⇒ Cannot copy: open the record above, select the text and copy it.
+Compte rendu copié ⇒ Report copied
+Copie impossible ⇒ Cannot copy
+Tout ⇒ All
+Contactés ⇒ Contacted
+% de l'étape précédente ⇒ % of the previous step
+Ma niche ⇒ My niche
+Hors niche ( ⇒ Outside niche (
+Cible ⇒ Target
+Secteurs ⇒ Industries
+Métiers ⇒ Trades
+Villes, codes postaux ou départements : Lyon, 69, 38 ⇒ Cities, postcodes or departments: Lyon, 69, 38
+Taille des entreprises ⇒ Company size
+Utilisée par le générateur de leads. ⇒ Used by the lead generator.
+Enregistrer mon client idéal ⇒ Save my ideal client
+Meilleure conversion : ⇒ Best conversion:
+prospects ( ⇒ prospects (
+Ce secteur n'est pas dans votre client idéal. ⇒ This industry isn't in your ideal client.
+Votre niche convertit mieux que le reste : ⇒ Your niche converts better than the rest:
+% contre ⇒ % vs
+Votre niche convertit moins bien que le reste : ⇒ Your niche converts worse than the rest:
+%. À surveiller. ⇒ %. Keep an eye on it.
+Votre niche convertit comme le reste ( ⇒ Your niche converts like the rest (
+prospect de la niche reste ⇒ niche prospect left
+prospects de la niche restent ⇒ niche prospects left
+à contacter. ⇒ to contact.
+Encore peu de fiches dans votre niche ( ⇒ Still few records in your niche (
+) : les taux deviendront parlants à partir de ⇒ ): rates become meaningful from
+Aucune fiche ne correspond encore à votre client idéal sur cette période. ⇒ No record matches your ideal client in this period yet.
+Suivi de ma niche ⇒ My niche tracking
+Votre client idéal et ses résultats, comparés au reste de vos prospects ⇒ Your ideal client and its results, compared with the rest of your prospects
+Client idéal ⇒ Ideal client
+Pas encore défini : choisissez vos secteurs, métiers et zone pour suivre votre niche. ⇒ Not defined yet: choose your industries, trades and area to track your niche.
+Définir mon client idéal ⇒ Define my ideal client
+Générer des leads dans ma niche ⇒ Generate leads in my niche
+Prospects dans la niche ⇒ Prospects in the niche
+% de vos prospects ⇒ % of your prospects
+générés ⇒ generated
+% de la niche ⇒ % of the niche
+% des contactés ⇒ % of contacted
+Parcours de la niche ⇒ Niche journey
+Aucune fiche de votre niche sur cette période. ⇒ No record from your niche in this period.
+Ce que disent les chiffres ⇒ What the figures say
+Pas encore assez de données. ⇒ Not enough data yet.
+Abonnements de la niche : ⇒ Niche subscriptions:
+/ mois ⇒ / month
+Par secteur ⇒ By industry
+Par métier ⇒ By trade
+Le suivi par métier se remplit avec les leads ajoutés depuis « Nouveaux leads » (étiquette du métier sur la fiche). ⇒ Trade tracking fills up with leads added from "New leads" (trade tag on the record).
+créneau ⇒ slot
+période ⇒ period
+Tendance ⇒ Trend
+Tendances ⇒ Trends
+Zone teintée : marge d'incertitude de la tendance (± une erreur type). ⇒ Shaded area: the trend's margin of uncertainty (± one standard error).
+→ stable ⇒ → steady

@@ -1,0 +1,329 @@
+# Messagerie et visio (bs-messages), Mail (bs-mail), Téléphone Ringover (bs-telephone), enregistrements (bs-enregistrements).
+Smileys ⇒ Smileys
+Gestes ⇒ Gestures
+Cœurs ⇒ Hearts
+Travail ⇒ Work
+Fête ⇒ Party
+Erreur du serveur. ⇒ Server error.
+Ancien membre ⇒ Former member
+En ligne ⇒ Online
+Hors ligne ⇒ Offline
+Choisissez une image (JPEG, PNG…). ⇒ Choose an image (JPEG, PNG…).
+Supprimer ce message pour tout le monde ? ⇒ Delete this message for everyone?
+Suppression impossible ⇒ Cannot delete
+Réaction impossible ⇒ Cannot react
+a réagi ⇒ reacted
+à votre message ⇒ to your message
+Vous ⇒ You
+Choisir une réaction ⇒ Choose a reaction
+Réagir à ce message ⇒ React to this message
+Réagir ⇒ React
+Plus d'émojis ⇒ More emojis
+Pas d'aperçu pour ce type de fichier. ⇒ No preview for this file type.
+Fermer (Échap) ⇒ Close (Esc)
+Pièce jointe précédente ⇒ Previous attachment
+Pièce jointe suivante ⇒ Next attachment
+Pièce jointe ⇒ Attachment
+Fichier trop lourd ⇒ File too large
+dépasse 10 Mo. ⇒ is over 10 MB.
+Envoi impossible. ⇒ Cannot send.
+Envoi impossible ⇒ Cannot send
+Nouveau groupe : ⇒ New group:
+Vous faites maintenant partie de ce groupe. ⇒ You are now part of this group.
+a lancé une visio ⇒ started a video call
+Rejoindre ⇒ Join
+vous appelle en visio ⇒ is video calling you
+personnes écrivent ⇒ people are typing
+écrivent ⇒ are typing
+écrit ⇒ is typing
+Message envoyé · À ⇒ Message sent · To
+Distribué ⇒ Delivered
+Refuser ⇒ Decline
+Carillon ⇒ Chime
+Aurore ⇒ Dawn
+Marimba ⇒ Marimba
+Téléphone classique ⇒ Classic phone
+Pulsation ⇒ Pulse
+Bulles ⇒ Bubbles
+Cristal ⇒ Crystal
+Aucun son (notification seule) ⇒ No sound (notification only)
+Visio entrante ⇒ Incoming video call
+Message reçu ⇒ Message received
+Message envoyé ⇒ Message sent
+Son inconnu. ⇒ Unknown sound.
+Aucun fichier choisi. ⇒ No file chosen.
+Fichier trop lourd : 3 Mo au plus (un son de quelques secondes suffit). ⇒ File too large: 3 MB max (a sound of a few seconds is enough).
+Choisissez un fichier son (MP3, M4A, WAV ou OGG). ⇒ Choose a sound file (MP3, M4A, WAV or OGG).
+Ce fichier ne se lit pas comme un son. Essayez un MP3. ⇒ This file doesn't play as a sound. Try an MP3.
+Suppression impossible. ⇒ Cannot delete.
+· cliquez pour rejoindre ⇒ · click to join
+Discutez et faites vos réunions en visio avec l'équipe, sans quitter le CRM. ⇒ Chat and hold video meetings with the team, without leaving the CRM.
+Disponible dans la version équipe ⇒ Available in the team version
+La messagerie et la visio relient les membres d'une même équipe : elles fonctionnent quand le CRM est ouvert depuis le serveur de l'équipe, avec un compte. ⇒ Messaging and video calls connect members of the same team: they work when the CRM is opened from the team's server, with an account.
+Réessayer ⇒ Try again
+Chargement des conversations… ⇒ Loading conversations…
+Vous : ⇒ You:
+Démarrez la conversation ⇒ Start the conversation
+Aucun message ⇒ No messages
+Visio en cours ⇒ Video call in progress
+en ligne ⇒ online
+Personne en ligne ⇒ Nobody online
+Nouveau groupe ⇒ New group
+Nouveau message ⇒ New message
+Organigramme de l'équipe ⇒ Team org chart
+Rechercher un groupe ⇒ Search a group
+Rechercher une conversation ⇒ Search a conversation
+Vos groupes ⇒ Your groups
+Messages directs ⇒ Direct messages
+Aucun résultat. ⇒ No results.
+Aucun groupe pour l'instant. ⇒ No groups yet.
+Aucune conversation. ⇒ No conversations.
+Retour aux conversations ⇒ Back to conversations
+Retour à la visio ⇒ Back to the video call
+Rejoindre la visio ( ⇒ Join the video call (
+Réglages du groupe ⇒ Group settings
+Début de votre conversation avec ⇒ Start of your conversation with
+Écrivez le premier message, ou lancez une visio pour une réunion. ⇒ Write the first message, or start a video call for a meeting.
+Messages précédents ⇒ Earlier messages
+Supprimer ce message ⇒ Delete this message
+Joindre un fichier (10 Mo au plus) ⇒ Attach a file (10 MB max)
+Joindre un fichier ⇒ Attach a file
+Émojis ⇒ Emojis
+Envoyer ⇒ Send
+Entrée pour envoyer · Maj + Entrée pour aller à la ligne · glissez un fichier ou collez une image pour l'envoyer ⇒ Enter to send · Shift + Enter for a new line · drop a file or paste an image to send it
+Créez votre premier groupe ⇒ Create your first group
+Un espace pour une partie de l'équipe : les commerciaux, un client, un projet. Messages et visio réservés à ses membres. ⇒ A space for part of the team: the sales reps, a client, a project. Messages and video calls for its members only.
+En cours · ⇒ In progress ·
+Lancer ⇒ Start
+Réunions en vidéo avec l'équipe, sans quitter le CRM : micro, caméra et partage d'écran. ⇒ Video meetings with the team, without leaving the CRM: microphone, camera and screen sharing.
+Lancer une réunion ⇒ Start a meeting
+Pour réunir une partie de l'équipe ⇒ To bring part of the team together
+Appeler un membre ⇒ Call a member
+La visio relie directement les navigateurs des participants : idéale jusqu'à 5 ou 6 personnes. Autorisez la caméra et le micro quand le navigateur le demande. ⇒ Video calls connect the participants' browsers directly: ideal for up to 5 or 6 people. Allow the camera and microphone when the browser asks.
+Invitez des membres dans Réglages › Équipe & compte pour faire vos réunions ici. ⇒ Invite members in Settings › Team & account to hold your meetings here.
+Image du groupe ⇒ Group image
+Une photo ou un logo, recadré au carré. ⇒ A photo or a logo, cropped square.
+Changer l'image ⇒ Change the image
+Choisir une image ⇒ Choose an image
+déjà membre ⇒ already a member
+Un espace de discussion pour une partie de l'équipe : commerciaux, un client, un projet… ⇒ A discussion space for part of the team: sales reps, a client, a project…
+Ex. Commerciaux, Projet Dupont ⇒ E.g. Sales reps, Dupont project
+Nom du groupe ⇒ Group name
+Membres ⇒ Members
+Créer le groupe ⇒ Create the group
+Choisissez la personne à qui écrire. ⇒ Choose who to write to.
+créateur ⇒ creator
+Ajouter des membres ⇒ Add members
+Quitter le groupe ⇒ Leave the group
+Qui fait quoi dans l'équipe, et qui dépend de qui. ⇒ Who does what in the team, and who reports to whom.
+Zoom de l'organigramme ⇒ Org chart zoom
+Dézoomer ⇒ Zoom out
+Voir toute l'équipe ⇒ See the whole team
+Zoomer ⇒ Zoom in
+Tout voir ⇒ See all
+Glissez pour vous déplacer · Ctrl + molette pour zoomer · cliquez sur un membre pour lui écrire ⇒ Drag to move · Ctrl + wheel to zoom · click a member to message them
+Poste à définir ⇒ Position to be defined
+Quitter ce groupe ? Vous ne verrez plus ses messages. ⇒ Leave this group? You will no longer see its messages.
+Quitter la visio en cours pour rejoindre celle-ci ? ⇒ Leave the current video call to join this one?
+Connexion à la caméra et au micro… ⇒ Connecting to camera and microphone…
+Visio impossible ⇒ Video call unavailable
+Ce navigateur ne permet pas la visio (connexion HTTPS requise). ⇒ This browser doesn't support video calls (HTTPS connection required).
+Micro indisponible ⇒ Microphone unavailable
+Autorisez le micro dans votre navigateur, puis rejoignez à nouveau la visio. ⇒ Allow the microphone in your browser, then join the video call again.
+Caméra indisponible ⇒ Camera unavailable
+Aucune caméra autorisée : les autres vous entendent sans vous voir. ⇒ No camera allowed: others hear you without seeing you.
+Partage d'écran indisponible ⇒ Screen sharing unavailable
+Ce navigateur ou cet appareil ne permet pas de partager l'écran. ⇒ This browser or device can't share the screen.
+Connexion impossible avec ce réseau ⇒ Cannot connect on this network
+Agrandir ⇒ Expand
+Ouvrir la discussion ⇒ Open the chat
+Réduire et continuer dans le CRM ⇒ Minimise and keep using the CRM
+Couper le micro ⇒ Mute
+Activer le micro ⇒ Unmute
+Couper la caméra ⇒ Turn camera off
+Activer la caméra ⇒ Turn camera on
+Arrêter le partage ⇒ Stop sharing
+Partager l'écran ⇒ Share screen
+Quitter la visio ⇒ Leave the video call
+Vous êtes seul pour l'instant : les membres de « ⇒ You're alone for now: members of "
+» sont prévenus et peuvent rejoindre. ⇒ " have been notified and can join.
+Envoi trop lourd. ⇒ Too large to send.
+Se connecter avec Google ⇒ Sign in with Google
+Mail pro ⇒ Business mail
+Le mot de passe de la boîte, choisi dans hPanel › Emails. ⇒ The mailbox password, set in hPanel › Emails.
+Le mot de passe de la boîte, choisi dans l'espace client OVHcloud › Emails. ⇒ The mailbox password, set in the OVHcloud control panel › Emails.
+Le mot de passe de la boîte mail IONOS. ⇒ The IONOS mailbox password.
+Si la validation en 2 étapes est active, créez un mot de passe d'application dans Zoho › Sécurité. ⇒ If 2-step verification is on, create an app password in Zoho › Security.
+Yahoo demande un « mot de passe d'application » : Sécurité du compte › Générer un mot de passe d'application. ⇒ Yahoo requires an "app password": Account security › Generate app password.
+Apple demande un « mot de passe pour app » : compte Apple › Connexion et sécurité › Mots de passe pour app. ⇒ Apple requires an "app-specific password": Apple account › Sign-in and security › App-specific passwords.
+Le mot de passe de la boîte mail Gandi. ⇒ The Gandi mailbox password.
+Autre mail pro ⇒ Other business mail
+Serveur SMTP ⇒ SMTP server
+Les réglages SMTP sont dans l'aide de votre hébergeur (souvent smtp.votredomaine.fr, port 465). ⇒ SMTP settings are in your host's help pages (often smtp.yourdomain.com, port 465).
+Outil PDF indisponible : rechargez la page. ⇒ PDF tool unavailable: reload the page.
+Document introuvable. ⇒ Document not found.
+Mise en page des devis indisponible. ⇒ Quote layout unavailable.
+Fichier illisible : ⇒ Unreadable file:
+Gmail · connecté avec Google ⇒ Gmail · connected with Google
+Signature ⇒ Signature
+Déconnecter ⇒ Disconnect
+Enregistrer la signature ⇒ Save the signature
+Connecter ⇒ Connect
+Adresse mail ⇒ Email address
+Mot de passe d'application ⇒ App password
+Mot de passe de la boîte ⇒ Mailbox password
+Nom affiché chez le destinataire ⇒ Name shown to the recipient
+Serveur d'envoi (SMTP) ⇒ Outgoing server (SMTP)
+Port ⇒ Port
+Identifiant (si différent de l'adresse) ⇒ Username (if different from the address)
+Créer le mot de passe › ⇒ Create the password ›
+Vérification… ⇒ Checking…
+Connecter la boîte ⇒ Connect the mailbox
+Mes boîtes mail ⇒ My mailboxes
+Les mails partent de votre propre adresse : ils arrivent comme si vous les envoyiez depuis votre messagerie. ⇒ Emails go out from your own address: they arrive as if you'd sent them from your mail app.
+Aucune boîte connectée pour l'instant. Choisissez votre messagerie ci-dessous. ⇒ No mailbox connected yet. Choose your mail provider below.
+Connecter une boîte mail ⇒ Connect a mailbox
+Cliquez sur votre messagerie. ⇒ Click your mail provider.
+Relais d'envoi ⇒ Sending relay
+Pour Hostinger, OVHcloud, IONOS et les autres mails pro (Gmail n'en a pas besoin). ⇒ For Hostinger, OVHcloud, IONOS and other business mail (Gmail doesn't need it).
+Relais installé ⇒ Relay installed
+sur le compte Cloudflare « ⇒ on the Cloudflare account "
+Réinstaller le relais ⇒ Reinstall the relay
+Un administrateur doit installer le relais gratuit (une seule fois pour toute l'équipe). ⇒ An administrator must install the free relay (once for the whole team).
+Créez un compte gratuit sur ⇒ Create a free account on
+et confirmez votre adresse mail. ⇒ and confirm your email address.
+Ouvrez ⇒ Open
+Jetons d'API ⇒ API tokens
+› « Créer un jeton » › modèle « Modifier Cloudflare Workers » › « Utiliser le modèle ». ⇒ › "Create token" › "Edit Cloudflare Workers" template › "Use template".
+En bas : « Continuer vers le résumé » › « Créer le jeton », puis copiez-le et collez-le ci-dessous. ⇒ At the bottom: "Continue to summary" › "Create token", then copy it and paste it below.
+Gratuit, une seule fois pour toute l'équipe. ⇒ Free, once for the whole team.
+Le CRM installe lui-même un petit relais sur votre compte Cloudflare ; vos mails partent ensuite de votre adresse pro. ⇒ The CRM installs a small relay on your Cloudflare account by itself; your emails then go out from your business address.
+Collez le jeton ici ⇒ Paste the token here
+Jeton Cloudflare ⇒ Cloudflare token
+Installation… ⇒ Installing…
+Installer le relais ⇒ Install the relay
+Connecter Gmail ⇒ Connect Gmail
+Google vous demande de choisir votre compte puis d'autoriser le CRM à envoyer des mails en votre nom. ⇒ Google asks you to choose your account, then to allow the CRM to send emails on your behalf.
+S'il affiche « Google n'a pas validé cette application », cliquez sur « Paramètres avancés » puis « Accéder à Blackstart CRM ». ⇒ If it shows "Google hasn't verified this app", click "Advanced" then "Go to Blackstart CRM".
+Changer la clé Google ⇒ Change the Google key
+Un administrateur doit d'abord brancher la clé Google du CRM (une seule fois pour toute l'équipe), dans Mail › Mes boîtes › Gmail. ⇒ An administrator must first set up the CRM's Google key (once for the whole team), in Mail › My mailboxes › Gmail.
+avec votre compte Google et créez un projet nommé « Blackstart CRM ». ⇒ with your Google account and create a project named "Blackstart CRM".
+Activez l'API Gmail : ⇒ Enable the Gmail API:
+page Gmail API ⇒ Gmail API page
+› bouton « Activer ». ⇒ › "Enable" button.
+› « Commencer » : nom de l'application « Blackstart CRM », votre adresse mail, audience « Externe », puis « Créer ». ⇒ › "Get started": app name "Blackstart CRM", your email address, audience "External", then "Create".
+Dans ⇒ In
+Audience ⇒ Audience
+, cliquez sur « Publier l'application » (sinon la connexion se coupe au bout de 7 jours). ⇒ , click "Publish app" (otherwise the connection drops after 7 days).
+› « Créer un client » : type « Application Web », puis dans « URI de redirection autorisés » ajoutez cette adresse : ⇒ › "Create client": type "Web application", then under "Authorised redirect URIs" add this address:
+Cliquez sur « Créer », puis collez ci-dessous l'ID client et le code secret affichés. ⇒ Click "Create", then paste the client ID and client secret shown below.
+Une seule fois pour toute l'équipe : ⇒ Once for the whole team:
+créez la clé Google du CRM (environ 10 minutes, gratuit). ⇒ create the CRM's Google key (about 10 minutes, free).
+ID client ⇒ Client ID
+Code secret du client ⇒ Client secret
+Enregistrer la clé Google ⇒ Save the Google key
+Connectez d'abord une boîte mail (onglet « Mes boîtes »). ⇒ First connect a mailbox ("My mailboxes" tab).
+De ⇒ From
+À ⇒ To
+client@entreprise.fr (plusieurs : séparez par une virgule) ⇒ client@company.com (several: separate with a comma)
+Cc ⇒ Cc
+Copie (facultatif) ⇒ Copy (optional)
+Joindre un devis ou une facture (PDF)… ⇒ Attach a quote or an invoice (PDF)…
+sur 20 Mo ⇒ of 20 MB
+Envoi… ⇒ Sending…
+Aucun mail envoyé depuis le CRM pour l'instant. ⇒ No emails sent from the CRM yet.
+Échec ⇒ Failed
+pièce ⇒ attachment
+Réutiliser ce mail ⇒ Reuse this email
+Nouveau mail ⇒ New email
+Écrire ⇒ Write
+Gmail marche. ⇒ Gmail works.
+, l'envoi attend que l'hébergement du CRM l'autorise (relais ou offre Pro). ⇒ , sending waits until the CRM hosting allows it (relay or Pro plan).
+Envoyez vos mails, devis et factures depuis votre propre adresse, sans quitter le CRM. ⇒ Send your emails, quotes and invoices from your own address, without leaving the CRM.
+Ouvrir la page Google ⇒ Open the Google page
+Pièces jointes trop lourdes : 20 Mo au plus au total. ⇒ Attachments too large: 20 MB max in total.
+Préparation du PDF… ⇒ Preparing the PDF…
+Copié ✓ ⇒ Copied ✓
+Copiez cette adresse : ⇒ Copy this address:
+Mail repris : ajoutez les pièces jointes si besoin. ⇒ Email reused: add attachments if needed.
+du CRM ? ⇒ from the CRM?
+est déconnectée. ⇒ is disconnected.
+est connectée : vous pouvez envoyer vos mails. ⇒ is connected: you can send your emails.
+est enregistrée. ⇒ is saved.
+) : vos boîtes pro peuvent envoyer leurs mails. ⇒ ): your business mailboxes can send their emails.
+Relais installé sur Cloudflare ( ⇒ Relay installed on Cloudflare (
+Clé Google enregistrée : cliquez sur « Se connecter avec Google ». ⇒ Google key saved: click "Sign in with Google".
+Signature enregistrée : elle s'ajoute à la fin de vos mails. ⇒ Signature saved: it's added at the end of your emails.
+Indiquez le destinataire. ⇒ Enter the recipient.
+Ajoutez un objet au mail. ⇒ Add a subject to the email.
+Mail envoyé à ⇒ Email sent to
+» envoyé depuis le CRM ⇒ " sent from the CRM
+Gmail est connecté : vous pouvez envoyer vos mails depuis le CRM. ⇒ Gmail is connected: you can send your emails from the CRM.
+Connexion à Google annulée. ⇒ Google sign-in cancelled.
+La connexion a pris trop de temps : recommencez. ⇒ Sign-in took too long: try again.
+Google a refusé la connexion : vérifiez la clé Google (ID client, code secret et adresse de redirection), puis recommencez. ⇒ Google refused the sign-in: check the Google key (client ID, client secret and redirect address), then try again.
+Sur la page Google, laissez cochée l'autorisation d'envoyer des e-mails, puis recommencez. ⇒ On the Google page, keep the permission to send emails ticked, then try again.
+La clé Google du CRM n'est pas encore renseignée. ⇒ The CRM's Google key hasn't been entered yet.
+Disponible dans la version équipe (serveur Blackstart) : connectez vos boîtes mail et envoyez devis et factures sans quitter le CRM. ⇒ Available in the team version (Blackstart server): connect your mailboxes and send quotes and invoices without leaving the CRM.
+France (+33) ⇒ France (+33)
+Belgique (+32) ⇒ Belgium (+32)
+Suisse (+41) ⇒ Switzerland (+41)
+Maroc (+212) ⇒ Morocco (+212)
+Tunisie (+216) ⇒ Tunisia (+216)
+Algérie (+213) ⇒ Algeria (+213)
+Sénégal (+221) ⇒ Senegal (+221)
+Côte d'Ivoire (+225) ⇒ Ivory Coast (+225)
+Maurice (+230) ⇒ Mauritius (+230)
+Téléphone Ringover ⇒ Ringover phone
+Ouvrir le téléphone Ringover ⇒ Open the Ringover phone
+Rubrique Téléphone ⇒ Phone section
+Réduire ⇒ Minimise
+Appel de ⇒ Call from
+Appel vers ⇒ Call to
+voir la fiche ⇒ see the record
+Appel Ringover ⇒ Ringover call
+manqué ⇒ missed
+sans réponse ⇒ no answer
+Appelez vos prospects avec Ringover sans quitter le CRM : chaque appel est noté sur la fiche. ⇒ Call your prospects with Ringover without leaving the CRM: each call is logged on the record.
+Ringover dans le CRM ⇒ Ringover in the CRM
+Votre ligne Ringover, directement dans le CRM. ⇒ Your Ringover line, right inside the CRM.
+Le téléphone Ringover s'ouvre dans une fenêtre du CRM et reste ouvert quand vous changez de page. ⇒ The Ringover phone opens in a CRM window and stays open when you change page.
+Un clic sur le numéro d'un prospect lance l'appel avec votre ligne Ringover. ⇒ One click on a prospect's number calls with your Ringover line.
+Chaque appel (sortant, entrant, durée, sans réponse) est noté sur la fiche du prospect. ⇒ Every call (outgoing, incoming, duration, unanswered) is logged on the prospect's record.
+Quand un prospect vous appelle, son nom s'affiche avec un lien vers sa fiche. ⇒ When a prospect calls you, their name shows with a link to their record.
+Il faut un compte Ringover. Vous vous connectez une seule fois dans la fenêtre Ringover, sur chaque ordinateur ou téléphone. ⇒ You need a Ringover account. You sign in once in the Ringover window, on each computer or phone.
+Activer Ringover sur cet appareil ⇒ Enable Ringover on this device
+Découvrir Ringover ⇒ Discover Ringover
+Connecté à Ringover ⇒ Connected to Ringover
+Connectez-vous dans la fenêtre Ringover ⇒ Sign in in the Ringover window
+Ouverture de Ringover… ⇒ Opening Ringover…
+Ouvrir le téléphone ⇒ Open the phone
+Historique Ringover ⇒ Ringover history
+Numéro ou nom d'un prospect ⇒ A prospect's number or name
+Première fois : ouvrez le téléphone et connectez-vous avec votre compte Ringover. Si la fenêtre reste blanche, autorisez le micro et les cookies pour ringover.com dans votre navigateur, puis cliquez sur « Recharger ». ⇒ First time: open the phone and sign in with your Ringover account. If the window stays blank, allow the microphone and cookies for ringover.com in your browser, then click "Reload".
+Derniers appels depuis le CRM ⇒ Latest calls from the CRM
+Sur cet appareil. Les appels avec un prospect sont aussi notés sur sa fiche. ⇒ On this device. Calls with a prospect are also logged on their record.
+Entrant ⇒ Incoming
+Sortant ⇒ Outgoing
+Rappeler ⇒ Call back
+Aucun appel pour l'instant. Cliquez sur le numéro d'un prospect pour l'appeler. ⇒ No calls yet. Click a prospect's number to call them.
+Réglages sur cet appareil ⇒ Settings on this device
+Un clic sur un numéro du CRM appelle avec Ringover ⇒ Clicking a number in the CRM calls with Ringover
+Numéros écrits sans indicatif : ⇒ Numbers written without a country code:
+Recharger Ringover ⇒ Reload Ringover
+Désactiver sur cet appareil ⇒ Disable on this device
+Toute l'équipe ⇒ The whole team
+Enregistrements de l'équipe (serveur) ⇒ Team recordings (server)
+Envoyés au serveur ⇒ Sent to the server
+Les enregistrements faits par chaque membre arrivent ici tout seuls. ⇒ Recordings made by each member arrive here automatically.
+Vos nouveaux enregistrements partent aussi sur le serveur : les administrateurs de l'équipe peuvent les écouter. ⇒ Your new recordings also go to the server: team administrators can listen to them.
+de cet appareil pas encore sur le serveur. ⇒ from this device not on the server yet.
+Les envoyer ⇒ Send them
+Aucun enregistrement sur le serveur ⇒ No recordings on the server
+pour ce membre ⇒ for this member
+Envoi en cours… ⇒ Sending…
+envoyé ⇒ sent
+au serveur. ⇒ to the server.
+Supprimer cet enregistrement du serveur ? (La copie sur l'appareil de son auteur reste.) ⇒ Delete this recording from the server? (The copy on its author's device stays.)
+Enregistrement supprimé du serveur. ⇒ Recording deleted from the server.
+Aucun enregistrement sur le serveur. ⇒ No recordings on the server.

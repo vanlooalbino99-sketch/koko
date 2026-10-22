@@ -1,0 +1,121 @@
+# Équipe IA (server/src/assistants.js : noms, rôles et compétences affichés).
+3 à 4 e-mails de prospection écrits avec la méthode PAS. ⇒ 3 to 4 prospecting emails written with the PAS method.
+Accroche, questions de découverte, objections probables et objectif de l'appel. ⇒ Hook, discovery questions, likely objections and the call goal.
+Accueillir un client ⇒ Welcome a client
+Acomptes, délais légaux et paiement en ligne pour encaisser plus vite. ⇒ Deposits, legal deadlines and online payment to get paid faster.
+Affaires à risque, prochaines étapes et couverture de l'objectif. ⇒ Deals at risk, next steps and target coverage.
+Appels, e-mails et LinkedIn sur 3 semaines, touche par touche. ⇒ Calls, emails and LinkedIn over 3 weeks, touch by touch.
+Assistant CEO ⇒ CEO assistant
+Assistant de l'équipe ⇒ Team assistant
+Avis et recommandations ⇒ Reviews and referrals
+Bilan trimestriel ⇒ Quarterly review
+Bras droit du dirigeant ⇒ The founder's right hand
+Budget et point mort ⇒ Budget and break-even
+Budget, décideur, besoin, délai : ce qui manque sur chaque affaire. ⇒ Budget, decision maker, need, timeline: what's missing on each deal.
+Cahier des charges ⇒ Requirements
+Calendrier LinkedIn ⇒ LinkedIn calendar
+Campagnes et contenu ⇒ Campaigns and content
+Ce qui a marché, ce qui a bloqué et la phrase à changer. ⇒ What worked, what got stuck and the line to change.
+Ce qui va signer : sûr, probable, possible, en euros. ⇒ What will sign: certain, likely, possible, in euros.
+Changements et retards ⇒ Changes and delays
+Charges du mois, point mort et ce qui reste à signer. ⇒ Monthly costs, break-even and what's left to sign.
+Chasseur de leads ⇒ Lead hunter
+Chiffres contre objectifs, blocages et décisions de la semaine. ⇒ Figures vs targets, blockers and decisions for the week.
+Coach au quotidien ⇒ Everyday coach
+Coacher un commercial ⇒ Coach a sales rep
+Conditions de paiement ⇒ Payment terms
+Coût réel, marge et prix plancher d'une offre. ⇒ True cost, margin and floor price of an offer.
+Demander un avis ou un parrainage au bon moment. ⇒ Ask for a review or a referral at the right moment.
+Des e-mails de relance courts qui obtiennent une réponse. ⇒ Short follow-up emails that get a reply.
+Des messages vocaux de 20 secondes qui font rappeler. ⇒ 20-second voicemails that get a call back.
+Des recherches booléennes prêtes à coller dans LinkedIn. ⇒ Boolean searches ready to paste into LinkedIn.
+Directeur commercial ⇒ Sales director
+Directeur de production ⇒ Delivery director
+Directeur financier ⇒ Finance director
+Directeur marketing ⇒ Marketing director
+Du chiffre d'affaires visé au nombre d'appels par jour. ⇒ From the revenue target to the number of calls per day.
+Débriefer un appel ⇒ Debrief a call
+Déléguer et recruter ⇒ Delegate and hire
+E-mail de bienvenue, plan à 30-60-90 jours et premier résultat rapide. ⇒ Welcome email, 30-60-90-day plan and a quick first win.
+Encaissements, dépenses et solde sur 3 mois. ⇒ Income, expenses and balance over 3 months.
+Fixer mes 3 priorités ⇒ Set my 3 priorities
+Fixer mes prix ⇒ Set my prices
+Formation et adoption ⇒ Training and adoption
+Génération de leads ⇒ Lead generation
+Invitation LinkedIn et premier e-mail qui ne font pas fuir. ⇒ LinkedIn invitation and first email that don't scare people off.
+La check-list de tests avant de livrer. ⇒ The test checklist before delivery.
+La réponse mot pour mot à « trop cher », « pas le temps », « on a déjà un outil »… ⇒ The word-for-word answer to "too expensive", "no time", "we already have a tool"…
+Le maillon faible de l'entonnoir et un plan d'entraînement. ⇒ The funnel's weak link and a training plan.
+Les 3 résultats qui comptent cette semaine, datés et mesurables. ⇒ The 3 results that matter this week, dated and measurable.
+Les besoins du client transformés en cahier des charges clair. ⇒ The client's needs turned into clear requirements.
+Les options, leurs risques et une recommandation nette. ⇒ The options, their risks and a clear recommendation.
+Les posts de la semaine sur 4 piliers, accroches comprises. ⇒ The week's posts across 4 pillars, hooks included.
+Livraison des projets clients ⇒ Client project delivery
+MRR, nouveaux abonnements, résiliations et panier moyen. ⇒ MRR, new subscriptions, cancellations and average deal.
+Message sur répondeur ⇒ Voicemail message
+Messages d'approche ⇒ Outreach messages
+Noter et qualifier ⇒ Score and qualify
+Objectifs à rebours ⇒ Targets worked backwards
+Ordre du jour, questions et accès à demander au client. ⇒ Agenda, questions and access to request from the client.
+Ordre d'appel, blocs de prospection et relances datées pour aujourd'hui. ⇒ Call order, prospecting blocks and dated follow-ups for today.
+Où et comment trouver 100 leads de la cible cette semaine. ⇒ Where and how to find 100 target leads this week.
+Phrase d'accroche, promesse et preuves de l'offre. ⇒ Hook line, promise and proof for the offer.
+Plan de formation par rôle et suivi de l'utilisation à 30 jours. ⇒ Training plan by role and usage tracking at 30 days.
+Plan de recherche ⇒ Search plan
+Planifier ma journée ⇒ Plan my day
+Planning de livraison ⇒ Delivery schedule
+Point hebdomadaire ⇒ Weekly check-in
+Prendre une décision ⇒ Make a decision
+Prix à la valeur, offre en 3 niveaux et marge de chacun. ⇒ Value-based pricing, a 3-tier offer and each tier's margin.
+Profil client idéal ⇒ Ideal client profile
+Proposition de valeur ⇒ Value proposition
+Prospecter dans les règles ⇒ Prospect by the rules
+Préparer un appel ⇒ Prepare a call
+Prévision de trésorerie ⇒ Cash-flow forecast
+Prévision du mois ⇒ Monthly forecast
+Qualifier les affaires ⇒ Qualify deals
+Que dire et quoi proposer à un client qui veut partir. ⇒ What to say and offer to a client who wants to leave.
+Quelle source de leads rapporte vraiment. ⇒ Which lead source really pays off.
+Quoi confier en premier, à qui, et quand recruter. ⇒ What to hand off first, to whom, and when to hire.
+Quoi proposer en plus, à qui et quand. ⇒ What to offer on top, to whom and when.
+RGPD en B2B : e-mail, téléphone, conservation des données. ⇒ GDPR in B2B: email, phone, data retention.
+Recherche LinkedIn ⇒ LinkedIn search
+Relancer les impayés ⇒ Chase unpaid invoices
+Relances graduées, polies puis fermes, avec les bonnes mentions. ⇒ Graduated reminders, polite then firm, with the right legal wording.
+Rentabilité d'une offre ⇒ Profitability of an offer
+Responsable clients ⇒ Client success manager
+Retenir un client ⇒ Retain a client
+Revenu récurrent ⇒ Recurring revenue
+Revue du pipeline ⇒ Pipeline review
+Répondre aux demandes hors périmètre et prévenir les retards. ⇒ Handle out-of-scope requests and prevent delays.
+Répondre à une objection ⇒ Answer an objection
+Résultats obtenus, prochains objectifs et recommandations. ⇒ Results achieved, next goals and recommendations.
+Score de santé ⇒ Health score
+Script complet : ouverture, découverte, pitch, prise de rendez-vous. ⇒ Full script: opening, discovery, pitch, booking the meeting.
+Script d'appel à froid ⇒ Cold call script
+Secteur, taille, zone, décideur et signaux d'achat. ⇒ Industry, size, area, decision maker and buying signals.
+Sources et ROI ⇒ Sources and ROI
+Suivi et fidélisation ⇒ Follow-up and retention
+Séquence d'e-mails ⇒ Email sequence
+Séquence multicanale ⇒ Multichannel sequence
+Tester objets et accroches pour obtenir plus de réponses. ⇒ Test subject lines and hooks to get more replies.
+Tests A/B ⇒ A/B tests
+Transformer un client satisfait en preuve qui vend. ⇒ Turn a happy client into proof that sells.
+Trésorerie et facturation ⇒ Cash flow and billing
+Une grille de score sur 100 avant d'appeler. ⇒ A scoring grid out of 100 before calling.
+VP Sales ⇒ VP Sales
+Vente additionnelle ⇒ Upselling
+Vert, orange, rouge : qui va bien, qui risque de partir. ⇒ Green, amber, red: who's fine, who might leave.
+Écrire mes relances ⇒ Write my follow-ups
+Étapes, jalons et responsables d'un projet CRM, du lancement au suivi. ⇒ Steps, milestones and owners of a CRM project, from kick-off to follow-up.
+Étude de cas client ⇒ Client case study
+Aide chaque membre à organiser sa journée, préparer ses appels, répondre aux objections et écrire ses relances. ⇒ Helps each member organise their day, prepare calls, answer objections and write follow-ups.
+Priorités de la semaine, décisions à prendre, objectifs, prix, délégation et point hebdomadaire. ⇒ Weekly priorities, decisions to make, targets, pricing, delegation and weekly check-in.
+Revue du pipeline, prévisions, qualification, scripts, séquences et coaching des commerciaux. ⇒ Pipeline review, forecasts, qualification, scripts, sequences and sales coaching.
+Cahier des charges, planning de livraison, lancement, recette, formation et gestion des changements. ⇒ Requirements, delivery schedule, kick-off, acceptance, training and change management.
+Définit la cible, trouve où chercher les bons prospects, les note et écrit les premiers messages. ⇒ Defines the target, finds where to look for the right prospects, scores them and writes the first messages.
+Séquences d'e-mails, posts LinkedIn, proposition de valeur, études de cas et retour sur investissement. ⇒ Email sequences, LinkedIn posts, value proposition, case studies and return on investment.
+Trésorerie, impayés, revenu récurrent, rentabilité, budget et conditions de paiement. ⇒ Cash flow, unpaid invoices, recurring revenue, profitability, budget and payment terms.
+Accueil des nouveaux clients, score de santé, prévention des départs, bilans, avis et ventes additionnelles. ⇒ New client onboarding, health score, churn prevention, reviews, testimonials and upselling.
+6 compétences ⇒ 6 skills
+Méthode ⇒ Method

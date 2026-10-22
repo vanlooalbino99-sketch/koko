@@ -1,0 +1,257 @@
+# Aujourd'hui (bs-aujourdhui), compte et équipe (bs-serveur), accès (bs-acces), icônes du menu (bs-icones).
+À contacter ⇒ To contact
+Non intéressés ⇒ Not interested
+À l'instant ⇒ Just now
+Nouveaux prospects ⇒ New prospects
+Prospects ajoutés aujourd'hui ⇒ Prospects added today
+Messages envoyés ⇒ Messages sent
+Appels passés et e-mails envoyés aujourd'hui ⇒ Calls made and emails sent today
+Réponses reçues ⇒ Replies received
+Appels où le contact a décroché aujourd'hui ⇒ Calls answered today
+Rendez-vous planifiés ⇒ Meetings scheduled
+Rendez-vous obtenus aujourd'hui ⇒ Meetings booked today
+vs. hier ⇒ vs. yesterday
+Envoyer un e-mail ⇒ Send an email
+Pas d'e-mail sur la fiche ⇒ No email on the record
+Estimation automatique : étape, chaleur, coordonnées et activité récente ⇒ Automatic estimate: stage, warmth, contact details and recent activity
+Score IA ⇒ AI score
+Dernière action ⇒ Last action
+Aucun prospect ne correspond. ⇒ No matching prospects.
+Appeler la sélection ⇒ Call the selection
+Page précédente ⇒ Previous page
+Page suivante ⇒ Next page
+Chaleur ⇒ Warmth
+Effacer les filtres ⇒ Clear filters
+réponse ⇒ reply
+Performance de la prospection ⇒ Prospecting performance
+Période ⇒ Period
+Appels et e-mails par jour sur 7 jours ⇒ Calls and emails per day over 7 days
+de leads générés ⇒ leads generated
+de taux de réponse ⇒ reply rate
+% des appels décrochés ⇒ % of calls answered
+des appels décrochés ⇒ of calls answered
+Nouveau rendez-vous planifié ⇒ New meeting scheduled
+Réponse reçue ⇒ Reply received
+Appel sans réponse ⇒ Unanswered call
+Appel passé ⇒ Call made
+E-mail envoyé ⇒ Email sent
+Statut modifié ⇒ Status changed
+Tâche planifiée ⇒ Task scheduled
+Relance planifiée ⇒ Follow-up scheduled
+Note ajoutée ⇒ Note added
+Appel ⇒ Call
+Dernières activités ⇒ Latest activity
+Les appels, e-mails et rendez-vous apparaîtront ici. ⇒ Calls, emails and meetings will appear here.
+Voici un aperçu de votre prospection aujourd'hui. ⇒ Here is an overview of your prospecting today.
+Mes prospects ⇒ My prospects
+Liste des prospects qualifiés pour votre campagne. ⇒ List of qualified prospects for your campaign.
+Session d'appels : enchaîner les appels prévus aujourd'hui ⇒ Call session: run through today's planned calls
+Ajouter des prospects ⇒ Add prospects
+Rechercher un prospect... ⇒ Search a prospect...
+Rechercher un prospect ⇒ Search a prospect
+7 derniers jours ⇒ Last 7 days
+30 derniers jours ⇒ Last 30 days
+90 derniers jours ⇒ Last 90 days
+Session expirée. ⇒ Session expired.
+Erreur ⇒ Error
+Seul un administrateur peut supprimer : ⇒ Only an administrator can delete:
+éléments ont été remis. ⇒ items were restored.
+l'élément a été remis. ⇒ the item was restored.
+Données mises à jour par ⇒ Data updated by
+Synchronisé ⇒ Synced
+Enregistrement… ⇒ Saving…
+Hors connexion : vos modifications partiront dès le retour du réseau ⇒ Offline: your changes will be sent as soon as the network is back
+Échec de l'enregistrement, nouvel essai en cours ⇒ Saving failed, retrying
+Session expirée : reconnexion… ⇒ Session expired: reconnecting…
+Cette image ne peut pas être lue : essayez une photo JPEG ou PNG. ⇒ This image can't be read: try a JPEG or PNG photo.
+Administrateur ⇒ Administrator
+Membre ⇒ Member
+Mon compte ⇒ My account
+Organigramme ⇒ Org chart
+Se déconnecter ⇒ Log out
+Suppression réservée aux administrateurs de l'équipe. ⇒ Only team administrators can delete.
+Version autonome ⇒ Standalone version
+Vos données sont enregistrées dans ce navigateur, sur cet appareil. ⇒ Your data is saved in this browser, on this device.
+version équipe ⇒ team version
+Tout (admin) ⇒ Everything (admin)
+Tout le CRM ⇒ The whole CRM
+Accès de ⇒ Access for
+Tout le CRM (y compris les prochaines rubriques) ⇒ The whole CRM (including future sections)
+Seulement les rubriques cochées ⇒ Only the ticked sections
+Toujours ouvert ⇒ Always open
+Mon compte, mot de passe, apparence, notifications, sons ⇒ My account, password, appearance, notifications, sounds
+Ce membre ne verra que Réglages. ⇒ This member will only see Settings.
+Tout cocher ⇒ Tick all
+Tout décocher ⇒ Untick all
+Enregistrer l'accès ⇒ Save access
+Les rubriques décochées disparaissent de son menu, de la recherche et des raccourcis, sur ordinateur et téléphone, tout de suite. ⇒ Unticked sections disappear from their menu, search and shortcuts, on computer and phone, right away.
+Messages, groupes, visio, formations et générateur de leads sont aussi refusés par le serveur. Les fiches (prospects, devis, factures, tâches) restent un seul dossier partagé : ⇒ Messages, groups, video calls, courses and the lead generator are also blocked by the server. Records (prospects, quotes, invoices, tasks) remain one shared folder:
+ne mettez pas dans le CRM une information qu'un membre ne doit jamais voir. ⇒ don't put in the CRM anything a member must never see.
+Connecté à la version équipe ⇒ Connected to the team version
+Changer la photo ⇒ Change photo
+Ajouter une photo ⇒ Add a photo
+Mot de passe actuel ⇒ Current password
+Nouveau mot de passe ⇒ New password
+Changer le mot de passe ⇒ Change password
+Synchronisation ⇒ Sync
+Les données du CRM sont enregistrées sur le serveur et partagées avec l'équipe. ⇒ CRM data is saved on the server and shared with the team.
+Version ⇒ Version
+· vérifiée le ⇒ · checked on
+Synchroniser maintenant ⇒ Sync now
+— À définir ⇒ — To be defined
+— Personne ⇒ — Nobody
+Poste ⇒ Position
+Responsable ⇒ Manager
+Rôle ⇒ Role
+Accès ⇒ Access
+Dernière connexion ⇒ Last login
+Chargement… ⇒ Loading…
+Voir l'organigramme ⇒ See the org chart
+Postes de l'équipe ⇒ Team positions
+Un poste par ligne, du plus haut au plus bas : cet ordre range aussi l'organigramme. ⇒ One position per line, from top to bottom: this order also arranges the org chart.
+Enregistrer les postes ⇒ Save positions
+Ajouter un membre ⇒ Add a member
+Mot de passe provisoire ⇒ Temporary password
+Ajouter à l'équipe ⇒ Add to the team
+Sauvegardes ⇒ Backups
+Par ⇒ By
+Taille ⇒ Size
+Aucune sauvegarde pour l'instant. ⇒ No backups yet.
+Actualiser ⇒ Refresh
+Seul un administrateur ajoute ou retire des membres de l'équipe, leur attribue un poste et choisit les rubriques ouvertes à chacun. ⇒ Only an administrator adds or removes team members, assigns their position and chooses which sections each one can open.
+Vos propres sons ⇒ Your own sounds
+Choisissez un MP3 sur votre ordinateur. Vos sons vous suivent sur tous vos appareils (3 Mo au plus). ⇒ Choose an MP3 on your computer. Your sounds follow you on all your devices (3 MB max).
+Son du CRM ⇒ CRM sound
+▶ Écouter ⇒ ▶ Listen
+Changer ⇒ Change
+Choisir un MP3 ⇒ Choose an MP3
+Sons du CRM ⇒ CRM sounds
+Les sons des visios et des messages. La sonnerie et le volume ci-dessous sont propres à cet appareil. ⇒ Sounds for video calls and messages. The ringtone and volume below apply to this device only.
+Volume ⇒ Volume
+Faible ⇒ Low
+Normal ⇒ Normal
+Fort ⇒ Loud
+Mot de passe changé. ⇒ Password changed.
+Postes enregistrés. ⇒ Positions saved.
+peut se connecter avec ⇒ can log in with
+et le mot de passe « ⇒ and the password "
+Poste mis à jour. ⇒ Position updated.
+Responsable mis à jour. ⇒ Manager updated.
+Envoi de « ⇒ Sending "
+Son enregistré : « ⇒ Sound saved: "
+Rôle mis à jour. ⇒ Role updated.
+ce membre ⇒ this member
+mis à jour : il s'applique tout de suite sur ses écrans. ⇒ updated: it applies right away on their screens.
+Son du CRM rétabli. ⇒ CRM sound restored.
+Donner un nouveau mot de passe à ⇒ Give a new password to
+? Ses sessions ouvertes seront fermées. ⇒ ? Their open sessions will be closed.
+Nouveau mot de passe de ⇒ New password for
+» (à lui transmettre). ⇒ " (pass it on to them).
+de l'équipe ? Son compte sera supprimé (les données du CRM restent). ⇒ from the team? Their account will be deleted (CRM data stays).
+Membre retiré. ⇒ Member removed.
+Restaurer la version ⇒ Restore version
+pour toute l'équipe ? ⇒ for the whole team?
+restaurée. ⇒ restored.
+Téléphone (Ringover) ⇒ Phone (Ringover)
+Campagnes (séquences de mails) ⇒ Campaigns (email sequences)
+Modèles de messages ⇒ Message templates
+Contenu (publications) ⇒ Content (posts)
+Entraînement (Pitchbase) ⇒ Training (Pitchbase)
+Marché (potentiel, nouvelles entreprises, concurrence) ⇒ Market (potential, new companies, competitors)
+Autres ⇒ Others
+Données (sauvegarde, restauration) ⇒ Data (backup, restore)
+Bas du menu ⇒ Bottom of the menu
+Éducation & savoir ⇒ Education & knowledge
+Business & finance ⇒ Business & finance
+Graphiques & analyse ⇒ Charts & analytics
+Communication ⇒ Communication
+Personnes & équipe ⇒ People & team
+Temps & agenda ⇒ Time & calendar
+IA & technologie ⇒ AI & technology
+Fichiers & documents ⇒ Files & documents
+Outils & réglages ⇒ Tools & settings
+Lieux & voyages ⇒ Places & travel
+Transport ⇒ Transport
+Sécurité ⇒ Security
+Médias & photo ⇒ Media & photo
+Nature & météo ⇒ Nature & weather
+Santé & sport ⇒ Health & sport
+Loisirs & cuisine ⇒ Leisure & food
+Divers ⇒ Misc
+Origine ⇒ Original
+Les icônes livrées avec le CRM ⇒ The icons that come with the CRM
+Moderne ⇒ Modern
+Lignes nettes, esprit produit tech ⇒ Clean lines, tech-product feel
+Classique et rassurant pour la vente ⇒ Classic and reassuring for sales
+Énergie ⇒ Energy
+Dynamique et motivant pour l'équipe ⇒ Lively and motivating for the team
+Épuré ⇒ Minimal
+Formes simples, lecture immédiate ⇒ Simple shapes, instantly readable
+Désactivée ⇒ Off
+Au survol ⇒ On hover
+Fun ⇒ Fun
+Aucune icône pour « ⇒ No icon for "
+». Essayez un autre mot : formation, argent, équipe, fusée… ⇒ ". Try another word: training, money, team, rocket…
+icône ⇒ icon
+Le choix est partagé avec toute l'équipe. ⇒ The choice is shared with the whole team.
+Le choix est enregistré dans ce navigateur. ⇒ The choice is saved in this browser.
+Rubriques du menu ⇒ Menu sections
+modifiée ⇒ changed
+Idées pour « ⇒ Ideas for "
+Icône de « ⇒ Icon for "
+Icône choisie ⇒ Chosen icon
+Icône d'origine ⇒ Original icon
+Remettre l'icône d'origine ⇒ Restore the original icon
+Rechercher : formation, argent, équipe, fusée… ⇒ Search: training, money, team, rocket…
+Rechercher une icône ⇒ Search an icon
+Cliquez sur une icône : le menu change tout de suite. ⇒ Click an icon: the menu changes right away.
+Tout remettre d'origine ( ⇒ Restore everything (
+Seul un administrateur peut changer les icônes du menu de l'équipe. ⇒ Only an administrator can change the team's menu icons.
+Donnez à chaque rubrique l'icône qui lui parle, parmi ⇒ Give each section the icon that suits it, from
+icônes classées par thème. ⇒ icons sorted by theme.
+Packs d'icônes ⇒ Icon packs
+Actif ⇒ Active
+Autre couleur… ⇒ Other colour…
+Choisir une autre couleur ⇒ Choose another colour
+Trait ⇒ Stroke
+Fin ⇒ Thin
+Gras ⇒ Bold
+Couleur ⇒ Colour
+Neutre ⇒ Neutral
+Accent ⇒ Accent
+Multicolore ⇒ Multicolour
+Personnalisée ⇒ Custom
+Teinte du menu ⇒ Menu tint
+Effacer les couleurs par rubrique ( ⇒ Clear colours per section (
+Animation des icônes ⇒ Icon animation
+Animation ⇒ Animation
+Votre appareil ou le réglage « Réduire les animations » (Apparence) coupe les animations : désactivez-le pour les voir. ⇒ Your device or the "Reduce animations" setting (Appearance) turns animations off: disable it to see them.
+Une vague parcourt le menu de temps en temps, et chaque icône fait son geste quand vous la survolez. Réglage personnel, gardé dans ce navigateur. ⇒ A wave runs through the menu now and then, and each icon makes its move when you hover it. Personal setting, kept in this browser.
+Chaque icône fait son geste quand vous la survolez ou ouvrez la rubrique. Réglage personnel, gardé dans ce navigateur. ⇒ Each icon makes its move when you hover it or open the section. Personal setting, kept in this browser.
+Faites bouger les icônes : le téléphone sonne, l'enveloppe s'envole, la pièce tourne… Réglage personnel, gardé dans ce navigateur. ⇒ Make the icons move: the phone rings, the envelope flies off, the coin spins… Personal setting, kept in this browser.
+Couleur de l'icône ⇒ Icon colour
+Couleur automatique ⇒ Automatic colour
+Automatique : suit le style du menu. ⇒ Automatic: follows the menu style.
+Effacer les couleurs choisies rubrique par rubrique ? ⇒ Clear the colours chosen section by section?
+Remettre toutes les icônes du menu d'origine ? ⇒ Restore all original menu icons?
+Blackstart AI — CRM ⇒ Blackstart AI — CRM
+Mes boîtes ⇒ My mailboxes
+Envoyés ⇒ Sent
+opportunités en cours ⇒ opportunities in progress
+tâches à faire ⇒ tasks to do
+factures en attente de règlement ⇒ invoices awaiting payment
+facture en attente de règlement ⇒ invoice awaiting payment
+À envoyer aujourd'hui ⇒ To send today
+Votre équipe IA : chacun a son rôle et 6 compétences métier, avec la méthode d'un expert. Posez une question ou lancez une compétence ; les actions proposées s'appliquent quand vous cliquez sur « Appliquer ». ⇒ Your AI team: each one has a role and 6 business skills, with an expert's method. Ask a question or run a skill; suggested actions apply when you click "Apply".
+fois ⇒ times
+dernière ⇒ last
+vs semaine précédent ⇒ vs previous week
+vs semaine précédente ⇒ vs previous week
+vs mois précédent ⇒ vs previous month
+de joignabilité ⇒ reach rate
+des contacts ⇒ of contacts
+des appels ⇒ of calls
+Semaine en cours ⇒ Current week
+Mois en cours ⇒ Current month
+taux de passage entre étapes ⇒ step-to-step conversion
+Prendre des nouvelles ⇒ Check in

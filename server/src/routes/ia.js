@@ -296,7 +296,9 @@ export function iaRoutes({ db, dataDir, creer = (apiKey) => new Anthropic({ apiK
     const c = await client(res); if (!c || !quota(req, res)) return;
     const qui = texte(req.user.name, 80) + (req.user.role === 'admin' ? ' (administrateur)' : ' (membre de l’équipe)');
     const comp = competenceDe(a, typeof b.competence === 'string' ? b.competence : '');
-    const system = consignes(a, comp && comp.id) + '\n\nTu parles avec : ' + qui + '.' + (ctx ? '\n\nÉtat du CRM aujourd’hui :\n' + ctx : '');
+    const system = consignes(a, comp && comp.id) + '\n\nTu parles avec : ' + qui + '.' + (ctx ? '\n\nÉtat du CRM aujourd’hui :\n' + ctx : '')
+      // Interface en anglais : l'assistant répond en anglais (les données du CRM restent en français).
+      + (b.langue === 'en' ? '\n\nRéponds en anglais (English) : le membre utilise le CRM en anglais.' : '');
     try {
       // Une compétence lancée demande plus de réflexion qu'une question rapide.
       const rep = await demander(c, { max_tokens: 16000, output_config: { effort: comp ? 'medium' : 'low', format: { type: 'json_schema', schema: REPONSE } }, system, messages: msgs });

@@ -13,9 +13,12 @@ for (const f of readdirSync(DIR).filter((x) => x.endsWith('.txt')).sort()) {
     if (!ligne.trim() || ligne.startsWith('#')) return;
     const p = ligne.split(' ⇒ ');
     if (p.length !== 2 || !p[0].trim() || !p[1].trim()) { erreurs.push(`${f}:${i + 1} ${ligne}`); return; }
-    const fr = p[0].replace(/\s+/g, ' ').trim(), en = p[1].trim();
+    const fr = p[0].replace(/[’‘]/g, "'").replace(/\s+/g, ' ').trim(), en = p[1].trim();
     if (dico[fr] !== undefined && dico[fr] !== en) erreurs.push(`${f}:${i + 1} deux traductions pour « ${fr} »`);
     dico[fr] = en;
+    // « Statut : » sert aussi sans ses deux-points (morceaux séparés par « : »).
+    const sans = fr.replace(/\s*:$/, '');
+    if (sans !== fr && sans && dico[sans] === undefined) dico[sans] = en.replace(/\s*:$/, '');
   });
 }
 if (erreurs.length) { console.error(erreurs.join('\n')); process.exit(1); }

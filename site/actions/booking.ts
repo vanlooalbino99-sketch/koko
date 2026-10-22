@@ -1,7 +1,7 @@
 'use server';
 
 import { bookingSchema, fieldErrors, isBot, labelOf, SERVICE_OPTIONS } from '@/lib/validation';
-import { bookedSlots, CrmError, pushLead } from '@/lib/crm';
+import { bookedSlots, CrmError, DELAI_LONG, pushLead } from '@/lib/crm';
 import { agencyNotification, agencyRecipients, bookingConfirmation, emailConfigured, sendMail } from '@/lib/email';
 import { bookingIcs } from '@/lib/ics';
 import { rateLimited } from '@/lib/rate-limit';
@@ -29,7 +29,7 @@ export async function submitBooking(input: unknown, rawRequestId?: string): Prom
 
   let crmNote = 'Ajouté au CRM : RDV dans l’agenda et tâche de rappel.';
   try {
-    const taken = (await bookedSlots(d.date, d.date)).map((s) => s.heure);
+    const taken = (await bookedSlots(d.date, d.date, DELAI_LONG)).map((s) => s.heure);
     if (!isSlotAvailable(d.date, d.heure, taken)) return { ok: false, error: TAKEN, fieldErrors: { heure: TAKEN } };
     const r = await pushLead({
       type: 'rdv', requestId, nom: nomComplet, prenom: d.prenom, nomFamille: d.nom, entreprise: d.entreprise, email: d.email, telephone: d.telephone,

@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Library, PlusCircle, Settings } from 'lucide-react';
+import { History, LayoutDashboard, Library, PlusCircle, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const ICONS = { dashboard: LayoutDashboard, scenarios: Library, new: PlusCircle, settings: Settings };
+const ICONS = { dashboard: LayoutDashboard, scenarios: Library, history: History, new: PlusCircle, settings: Settings };
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };
 export type NavGroup = { title: string; items: NavItem[] };
 

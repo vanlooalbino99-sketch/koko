@@ -12,6 +12,8 @@ import { can, type Skill } from '@/lib/domain';
 import { format, formatDate } from '@/lib/i18n';
 import { recommendScenarios } from '@/lib/scenarios/service';
 import { getI18n, requireOnboarded } from '@/lib/server/context';
+import { syncPendingSimulations } from '@/lib/simulations/service';
+import { voiceProviderFromEnv } from '@/lib/voice/provider';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -35,6 +37,9 @@ export default async function DashboardPage() {
   const { auth, profile } = await requireOnboarded();
   const { t, locale } = await getI18n();
   const db = await getDb();
+  const provider = voiceProviderFromEnv();
+  // Appels restés sans transcription (onglet fermé pendant l'appel) : rattrapés avant d'afficher les chiffres.
+  if (provider) await syncPendingSimulations(db, provider, auth).catch(() => undefined);
   const [data, picks] = await Promise.all([getDashboard(db, auth), recommendScenarios(db, auth, profile, locale)]);
   const d = t.dashboard;
   const firstName = auth.user.name.split(' ')[0];
@@ -163,12 +168,18 @@ export default async function DashboardPage() {
         <CardHeader>
           <div>
             <CardTitle>{d.recentTitle}</CardTitle>
-            <CardDescription className="mt-1">{d.voiceSoon}</CardDescription>
+            <CardDescription className="mt-1">{provider ? d.voiceReady : d.voiceSoon}</CardDescription>
           </div>
-          {can(auth.role, 'scenario:create') && (
+          {data.recent.length > 0 ? (
             <Button asChild variant="outline" size="sm">
-              <Link href="/scenarios/new">{d.createScenario}</Link>
+              <Link href="/simulations">{d.seeHistory}</Link>
             </Button>
+          ) : (
+            can(auth.role, 'scenario:create') && (
+              <Button asChild variant="outline" size="sm">
+                <Link href="/scenarios/new">{d.createScenario}</Link>
+              </Button>
+            )
           )}
         </CardHeader>
         {data.recent.length === 0 ? (
@@ -179,7 +190,11 @@ export default async function DashboardPage() {
               <tbody>
                 {data.recent.map((s) => (
                   <tr key={s.id} className="border-t border-border">
-                    <td className="py-3 pr-4">{s.title}</td>
+                    <td className="py-3 pr-4">
+                      <Link href={`/simulations/${s.id}`} className="hover:text-primary">
+                        {s.title}
+                      </Link>
+                    </td>
                     <td className="py-3 pr-4 text-muted-foreground">{formatDate(s.createdAt, locale)}</td>
                     <td className="py-3 pr-4 text-muted-foreground">{t.enums.status[s.status as 'completed']}</td>
                     <td className="py-3 text-right tabular-nums">{s.overallScore ?? '—'}</td>

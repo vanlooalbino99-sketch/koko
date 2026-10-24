@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Archive, EyeOff, Lock, Mic, Pencil } from 'lucide-react';
+import { ArrowLeft, Archive, EyeOff, Lock, Mic, Pencil, Phone } from 'lucide-react';
 import { archiveScenarioAction } from '@/app/actions/scenarios';
 import { DifficultyBadge } from '@/components/scenarios/scenario-card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { SKILLS, type DecisionPower, type Family, type Personality } from '@/lib
 import { format } from '@/lib/i18n';
 import { getScenario } from '@/lib/scenarios/service';
 import { getI18n, requireOnboarded } from '@/lib/server/context';
+import { voiceProviderFromEnv } from '@/lib/voice/provider';
 import { ConfirmButton } from './confirm-button';
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string }> };
@@ -54,6 +55,7 @@ export default async function ScenarioPage({ params, searchParams }: Props) {
   const { scenario, content } = detail;
   const saved = (await searchParams).saved;
   const weights = content.skillWeights as Record<string, number | undefined>;
+  const voiceReady = voiceProviderFromEnv() !== null;
 
   return (
     <div className="grid gap-6">
@@ -148,7 +150,14 @@ export default async function ScenarioPage({ params, searchParams }: Props) {
               </span>
               <CardTitle>{s.startTitle}</CardTitle>
             </div>
-            <p className="text-sm text-muted-foreground">{s.startText}</p>
+            <p className="text-sm text-muted-foreground">{voiceReady ? s.startText : t.call.notConfigured}</p>
+            {voiceReady && scenario.status === 'active' && (
+              <Button asChild size="lg">
+                <Link href={`/scenarios/${scenario.id}/call`}>
+                  <Phone /> {t.call.start}
+                </Link>
+              </Button>
+            )}
           </Card>
           <Card className="grid gap-4">
             <CardTitle>{s.prospect}</CardTitle>

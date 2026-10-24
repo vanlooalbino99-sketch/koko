@@ -169,6 +169,28 @@ export const scenarioVersions = pgTable(
   (t) => [uniqueIndex('scenario_versions_key').on(t.scenarioId, t.version)],
 );
 
+// Un prospect vocal ElevenLabs par version de scénario, créé côté serveur à la première simulation.
+// config_hash change quand le modèle de consigne évolue : l'agent est alors recréé.
+export const voiceAgents = pgTable('voice_agents', {
+  scenarioVersionId: uuid('scenario_version_id')
+    .primaryKey()
+    .references(() => scenarioVersions.id, { onDelete: 'restrict' }),
+  agentId: text('agent_id').notNull().unique(),
+  configHash: text('config_hash').notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+// Une réplique de la transcription, normalisée depuis la réponse d'ElevenLabs.
+export type TranscriptTurn = {
+  role: 'seller' | 'prospect';
+  text: string;
+  // Secondes depuis le début de l'appel.
+  at: number;
+  // Réplique du prospect coupée par le vendeur.
+  interrupted?: boolean;
+};
+
 export const simulations = pgTable(
   'simulations',
   {
@@ -183,11 +205,21 @@ export const simulations = pgTable(
     scenarioVersionId: uuid('scenario_version_id')
       .notNull()
       .references(() => scenarioVersions.id, { onDelete: 'restrict' }),
+    // created → connecting → in_progress → processing (transcription en cours chez ElevenLabs) → completed.
     status: text('status').notNull().default('created'),
     providerConversationId: text('provider_conversation_id'),
+    // Agent ElevenLabs utilisé pour cet appel (il peut être recréé ensuite si la consigne évolue).
+    providerAgentId: text('provider_agent_id'),
     startedAt: timestamp('started_at', { withTimezone: true }),
     endedAt: timestamp('ended_at', { withTimezone: true }),
     durationSeconds: integer('duration_seconds'),
+    // Qui a mis fin à l'appel : user (vendeur), agent (prospect), error, timeout.
+    endReason: text('end_reason'),
+    transcript: jsonb('transcript').$type<TranscriptTurn[]>(),
+    // Coût facturé par ElevenLabs pour cet appel (crédits ElevenLabs), pour le suivi des coûts.
+    providerCost: integer('provider_cost'),
+    errorMessage: text('error_message'),
+    lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
     overallScore: integer('overall_score'),
     createdAt: createdAt(),
   },
@@ -196,8 +228,9 @@ export const simulations = pgTable(
     uniqueIndex('simulations_provider_key').on(t.providerConversationId),
     check(
       'simulations_status_check',
-      sql`${t.status} in ('created', 'connecting', 'in_progress', 'completed', 'failed', 'cancelled')`,
+      sql`${t.status} in ('created', 'connecting', 'in_progress', 'processing', 'completed', 'failed', 'cancelled')`,
     ),
+    check('simulations_end_reason_check', sql`${t.endReason} is null or ${t.endReason} in ('user', 'agent', 'error', 'timeout')`),
     check('simulations_score_check', sql`${t.overallScore} is null or ${t.overallScore} between 0 and 100`),
     check('simulations_duration_check', sql`${t.durationSeconds} is null or ${t.durationSeconds} >= 0`),
   ],
@@ -225,4 +258,5 @@ export type Membership = typeof memberships.$inferSelect;
 export type Scenario = typeof scenarios.$inferSelect;
 export type ScenarioVersion = typeof scenarioVersions.$inferSelect;
 export type Simulation = typeof simulations.$inferSelect;
+export type VoiceAgent = typeof voiceAgents.$inferSelect;
 export type UserProfile = typeof userProfiles.$inferSelect;

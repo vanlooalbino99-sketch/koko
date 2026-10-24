@@ -25,6 +25,7 @@ export function AppShell({ auth, t, locale, children }: { auth: AuthContext; t: 
       items: [
         { href: '/dashboard', label: t.nav.dashboard, icon: 'dashboard' },
         { href: '/scenarios', label: t.nav.scenarios, icon: 'scenarios' },
+        { href: '/simulations', label: t.nav.history, icon: 'history' },
         ...(can(auth.role, 'scenario:create') ? [{ href: '/scenarios/new', label: t.nav.newScenario, icon: 'new' as const }] : []),
       ],
     },

@@ -4,6 +4,7 @@ import { Brand } from '@/components/brand';
 import { LanguageSwitch } from '@/components/shell/language-switch';
 import { Button } from '@/components/ui/button';
 import { getAuth, getI18n } from '@/lib/server/context';
+import { voiceProviderFromEnv } from '@/lib/voice/provider';
 
 const FEATURE_ICONS = [BrainCircuit, MessageSquareQuote, Target];
 
@@ -83,7 +84,7 @@ export default async function LandingPage() {
               </li>
             ))}
           </ol>
-          <p className="mt-8 rounded-xl border border-warning/25 bg-warning/5 px-4 py-3 text-sm text-muted-foreground">{l.status}</p>
+          <p className="mt-8 rounded-xl border border-warning/25 bg-warning/5 px-4 py-3 text-sm text-muted-foreground">{voiceProviderFromEnv() ? l.statusVoice : l.status}</p>
         </section>
       </main>
 

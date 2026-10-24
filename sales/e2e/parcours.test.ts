@@ -4,6 +4,7 @@
 // Prérequis : npm run build. BS_SHOTS=dossier pour enregistrer des captures d'écran.
 import assert from 'node:assert/strict';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { createServer, type Server } from 'node:http';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -15,6 +16,12 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const SHOTS = process.env.BS_SHOTS;
 const dataDir = mkdtempSync(join(tmpdir(), 'bs-sales-e2e-'));
 let server: ChildProcess;
+
+// Faux ElevenLabs : l'application lui parle comme à la vraie API (création d'agent, jeton, conversation).
+// La connexion audio du navigateur, elle, part vers ElevenLabs avec un faux jeton et échoue : on teste ce cas.
+const MOCK_PORT = PORT + 1;
+const mockCalls: { method: string; url: string; key?: string; body: string }[] = [];
+let mock: Server;
 let browser: Browser;
 // Dernière page ouverte : capturée à la fin pour comprendre un échec.
 let lastPage: Page | undefined;
@@ -39,15 +46,39 @@ async function shot(page: Page, name: string) {
 }
 
 before(async () => {
+  mock = createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk) => (body += chunk));
+    req.on('end', () => {
+      mockCalls.push({ method: req.method ?? '', url: req.url ?? '', key: req.headers['xi-api-key'] as string, body });
+      res.setHeader('content-type', 'application/json');
+      if (req.url?.startsWith('/v1/convai/agents/create')) return res.end(JSON.stringify({ agent_id: `agent_e2e_${mockCalls.length}` }));
+      if (req.url?.startsWith('/v1/convai/conversation/token')) {
+        return res.end(JSON.stringify({ token: 'jeton-de-test', conversation_id: `conv_e2e_${mockCalls.length}` }));
+      }
+      res.statusCode = 404;
+      res.end('{}');
+    });
+  });
+  await new Promise<void>((resolve) => mock.listen(MOCK_PORT, '127.0.0.1', resolve));
   // Groupe de processus à part : on arrête le serveur et ses enfants d'un coup à la fin.
   server = spawn('node_modules/.bin/next', ['start', '-p', String(PORT), '-H', '127.0.0.1'], {
-    env: { ...process.env, PGLITE_DIR: dataDir, ALLOW_LOCAL_DB: '1', INSECURE_COOKIES: '1', DATABASE_URL: '' },
+    env: {
+      ...process.env,
+      PGLITE_DIR: dataDir,
+      ALLOW_LOCAL_DB: '1',
+      INSECURE_COOKIES: '1',
+      DATABASE_URL: '',
+      ELEVENLABS_API_KEY: 'cle-de-test',
+      ELEVENLABS_API_BASE: `http://127.0.0.1:${MOCK_PORT}`,
+    },
     stdio: ['ignore', 'ignore', 'pipe'],
     detached: true,
   });
   server.stderr?.on('data', (d) => process.stderr.write(d));
   await waitForHealth();
-  browser = await chromium.launch();
+  // Micro simulé par Chromium : l'autorisation est accordée sans fenêtre.
+  browser = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
 });
 
 after(async () => {
@@ -56,6 +87,7 @@ after(async () => {
   }
   await browser?.close();
   if (server?.pid) process.kill(-server.pid, 'SIGTERM');
+  mock?.close();
   rmSync(dataDir, { recursive: true, force: true });
 });
 
@@ -197,6 +229,58 @@ test('parcours complet d\'un nouvel utilisateur', async () => {
   await shot(m, '08-mobile-dashboard');
   await mobile.close();
 
+  assert.deepEqual(errors, [], 'aucune erreur JavaScript');
+  await context.close();
+});
+
+test('appel vocal : prospect créé côté serveur, échec de connexion géré, session enregistrée', async () => {
+  const context = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1280, height: 860 }, permissions: ['microphone'] });
+  context.setDefaultTimeout(20_000);
+  const page = await context.newPage();
+  lastPage = page;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await signUp(page, 'Claire Appel', `claire.${Date.now()}@example.com`);
+  await onboard(page);
+
+  await page.goto(`${BASE}/scenarios?language=fr`);
+  await page.getByRole('link', { name: /plombier/ }).click();
+  await page.getByRole('link', { name: "Démarrer l'appel" }).click();
+  await page.waitForURL(/\/call$/);
+  await assert.doesNotReject(page.getByText('30 min de voix restantes ce mois-ci').waitFor());
+  // La consigne du prospect (faits cachés) ne quitte jamais le serveur.
+  assert.equal((await page.content()).includes("dizaine d'appels"), false);
+  await shot(page, '09-appel-brief');
+
+  const before = mockCalls.length;
+  await page.getByRole('button', { name: "Démarrer l'appel" }).click();
+  await assert.doesNotReject(page.getByText('La connexion audio a été coupée.').waitFor({ timeout: 60_000 }));
+  await assert.doesNotReject(page.getByRole('button', { name: "Démarrer l'appel" }).waitFor());
+  await shot(page, '10-appel-echec');
+
+  const calls = mockCalls.slice(before);
+  assert.ok(calls.every((c) => c.key === 'cle-de-test'), 'la clé est envoyée par le serveur');
+  const create = calls.find((c) => c.url.startsWith('/v1/convai/agents/create'));
+  assert.ok(create, 'un prospect vocal est créé');
+  const payload = JSON.parse(create.body);
+  assert.equal(payload.conversation_config.agent.language, 'fr');
+  assert.equal(payload.platform_settings.auth.enable_auth, true);
+  assert.match(payload.conversation_config.agent.prompt.prompt, /dizaine d'appels/, 'les faits cachés sont dans la consigne serveur');
+  const token = calls.find((c) => c.url.startsWith('/v1/convai/conversation/token'));
+  assert.ok(token);
+  const participant = new URL(token.url, 'http://x').searchParams.get('participant_name');
+  assert.match(participant ?? '', /^[0-9a-f-]{36}$/, 'aucun nom ni e-mail envoyé à ElevenLabs');
+
+  // L'appel raté apparaît dans l'historique, en échec, sans minute décomptée.
+  await page.goto(`${BASE}/simulations`);
+  await assert.doesNotReject(page.getByRole('link', { name: /plombier/ }).waitFor());
+  await assert.doesNotReject(page.getByText('Échouée', { exact: true }).waitFor());
+  await page.getByRole('link', { name: /plombier/ }).click();
+  await assert.doesNotReject(page.getByText("L'appel n'a pas pu être enregistré. Aucune minute n'a été décomptée.").waitFor());
+  await page.goto(`${BASE}/scenarios?language=fr`);
+  await page.getByRole('link', { name: /plombier/ }).click();
+  await page.getByRole('link', { name: "Démarrer l'appel" }).click();
+  await assert.doesNotReject(page.getByText('30 min de voix restantes ce mois-ci').waitFor());
   assert.deepEqual(errors, [], 'aucune erreur JavaScript');
   await context.close();
 });

@@ -83,6 +83,25 @@ export async function getScenario(db: Db, auth: AuthContext, id: string): Promis
   };
 }
 
+// Version jouable d'un scénario actif, avec son contenu complet : réservé au serveur, qui en fait la
+// consigne du prospect vocal. Ce contenu n'est jamais renvoyé au navigateur.
+export type PlayableVersion = { scenario: Scenario; versionId: string; versionNumber: number; content: ScenarioContent };
+
+export async function getPlayableVersion(db: Db, auth: AuthContext, scenarioId: string): Promise<PlayableVersion | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(scenarioId)) return null;
+  const [row] = await db
+    .select({ scenario: scenarios, versionId: scenarioVersions.id, content: scenarioVersions.content })
+    .from(scenarios)
+    .innerJoin(
+      scenarioVersions,
+      and(eq(scenarioVersions.scenarioId, scenarios.id), eq(scenarioVersions.version, scenarios.currentVersion)),
+    )
+    .where(and(eq(scenarios.id, scenarioId), eq(scenarios.status, 'active'), visibleTo(auth)))
+    .limit(1);
+  if (!row) return null;
+  return { scenario: row.scenario, versionId: row.versionId, versionNumber: row.scenario.currentVersion, content: row.content };
+}
+
 export async function createScenario(db: Db, auth: AuthContext, input: ScenarioInput): Promise<string> {
   if (!can(auth.role, 'scenario:create')) throw new ForbiddenError();
   const { meta, content } = ScenarioInputSchema.parse(input);

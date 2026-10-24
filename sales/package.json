@@ -1,0 +1,53 @@
+{
+  "name": "blackstart-sales-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Blackstart AI Sales Intelligence : entraînement commercial vocal avec prospects IA, analyse Claude et suivi de progression",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/migrate.ts && next start",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/migrate.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types --disable-warning=ExperimentalWarning \"tests/*.test.ts\"",
+    "test:e2e": "node --test --experimental-strip-types --disable-warning=ExperimentalWarning \"e2e/*.test.ts\""
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.11",
+    "@radix-ui/react-label": "^2.1.17",
+    "@radix-ui/react-slot": "^1.5.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.4",
+    "geist": "^1.8.2",
+    "lucide-react": "^1.61.0",
+    "next": "^15.5.28",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "server-only": "^0.0.1",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.28",
+    "playwright": "^1.56.1",
+    "postcss": "^8.5.31",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3"
+  }
+}

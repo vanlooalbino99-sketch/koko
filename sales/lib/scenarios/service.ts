@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, isNull, or, sql, type SQL } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { audit } from '../audit.ts';
 import type { AuthContext } from '../auth/service.ts';
 import type { Db } from '../db/client.ts';
@@ -81,6 +81,17 @@ export async function getScenario(db: Db, auth: AuthContext, id: string): Promis
     content: showsHidden ? row.content : publicContent(row.content),
     showsHidden,
   };
+}
+
+// Scénarios recommandés par une analyse, dans l'ordre donné, en ne gardant que ceux encore visibles et actifs.
+export async function listScenariosByIds(db: Db, auth: AuthContext, ids: string[]): Promise<Scenario[]> {
+  const valid = ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+  if (!valid.length) return [];
+  const rows = await db
+    .select()
+    .from(scenarios)
+    .where(and(inArray(scenarios.id, valid), eq(scenarios.status, 'active'), visibleTo(auth)));
+  return valid.flatMap((id) => rows.filter((r) => r.id === id));
 }
 
 // Version jouable d'un scénario actif, avec son contenu complet : réservé au serveur, qui en fait la

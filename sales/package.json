@@ -19,6 +19,7 @@
     "node": ">=22.18"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.133.0",
     "@electric-sql/pglite": "^0.5.11",
     "@elevenlabs/react": "1.17.0",
     "@radix-ui/react-label": "^2.1.17",

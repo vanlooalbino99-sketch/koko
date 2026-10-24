@@ -236,6 +236,27 @@ export const simulations = pgTable(
   ],
 );
 
+// Analyse d'un appel par Claude : une par simulation terminée. result suit AnalysisResult (lib/analysis).
+export const simulationAnalyses = pgTable(
+  'simulation_analyses',
+  {
+    simulationId: uuid('simulation_id')
+      .primaryKey()
+      .references(() => simulations.id, { onDelete: 'cascade' }),
+    // running → completed | failed ; insufficient : appel trop court, Claude n'est pas appelé.
+    status: text('status').notNull(),
+    model: text('model'),
+    result: jsonb('result').$type<unknown>(),
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
+    error: text('error'),
+    attempts: integer('attempts').notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [check('simulation_analyses_status_check', sql`${t.status} in ('running', 'completed', 'failed', 'insufficient')`)],
+);
+
 export const auditLog = pgTable(
   'audit_log',
   {
@@ -259,4 +280,5 @@ export type Scenario = typeof scenarios.$inferSelect;
 export type ScenarioVersion = typeof scenarioVersions.$inferSelect;
 export type Simulation = typeof simulations.$inferSelect;
 export type VoiceAgent = typeof voiceAgents.$inferSelect;
+export type SimulationAnalysis = typeof simulationAnalyses.$inferSelect;
 export type UserProfile = typeof userProfiles.$inferSelect;

@@ -30,6 +30,14 @@ export type AuthContext = {
   role: Role;
 };
 
+// Comptes de l'éditeur (page des coûts de la plateforme) : PLATFORM_ADMIN_EMAILS, séparés par des virgules.
+function platformAdminEmails(): string[] {
+  return (process.env.PLATFORM_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
@@ -120,7 +128,11 @@ export async function getAuthContext(db: Db, token: string | undefined): Promise
   if (!row) return null;
   return {
     sessionId: row.sessionId,
-    user: { ...row.user, locale: isOneOf(LOCALES, row.user.locale) ? row.user.locale : 'fr' },
+    user: {
+      ...row.user,
+      locale: isOneOf(LOCALES, row.user.locale) ? row.user.locale : 'fr',
+      isPlatformAdmin: row.user.isPlatformAdmin || platformAdminEmails().includes(row.user.email),
+    },
     organization: row.organization,
     role: row.role as Role,
   };

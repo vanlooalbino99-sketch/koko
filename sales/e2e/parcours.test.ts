@@ -350,7 +350,7 @@ test('appel vocal : prospect créé côté serveur, échec de connexion géré, 
   await page.getByRole('link', { name: /plombier/ }).click();
   await page.getByRole('link', { name: "Démarrer l'appel" }).click();
   await page.waitForURL(/\/call$/);
-  await assert.doesNotReject(page.getByText('30 min de voix restantes ce mois-ci').waitFor());
+  await assert.doesNotReject(page.getByText('15 min de voix restantes ce mois-ci').waitFor());
   // La consigne du prospect (faits cachés) ne quitte jamais le serveur.
   assert.equal((await page.content()).includes("dizaine d'appels"), false);
   await shot(page, '09-appel-brief');
@@ -383,7 +383,7 @@ test('appel vocal : prospect créé côté serveur, échec de connexion géré, 
   await page.goto(`${BASE}/scenarios?language=fr`);
   await page.getByRole('link', { name: /plombier/ }).click();
   await page.getByRole('link', { name: "Démarrer l'appel" }).click();
-  await assert.doesNotReject(page.getByText('30 min de voix restantes ce mois-ci').waitFor());
+  await assert.doesNotReject(page.getByText('15 min de voix restantes ce mois-ci').waitFor());
   assert.deepEqual(errors, [], 'aucune erreur JavaScript');
   await context.close();
 });
@@ -442,6 +442,19 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   assert.equal(mockCalls.filter((c) => c.url.startsWith('/v1/messages')).length, claude.length);
   await page.goto(`${BASE}/simulations`);
   await assert.doesNotReject(page.getByRole('cell', { name: String(report.expectedScore), exact: true }).waitFor());
+
+  // Abonnement : offre gratuite et crédits réels ; sans clé Stripe, aucun bouton de paiement n'est affiché.
+  await page.getByRole('link', { name: 'Abonnement' }).first().click();
+  await page.waitForURL(`${BASE}/billing`);
+  await assert.doesNotReject(page.getByText('15 restants').waitFor());
+  await assert.doesNotReject(page.getByText('Le paiement en ligne ouvre très bientôt.', { exact: false }).waitFor());
+  assert.equal(await page.getByRole('button', { name: /Passer/ }).count(), 0, 'pas de faux bouton de paiement');
+  const freeCard = page.locator('section[aria-labelledby="plans-title"] > div > *').first();
+  await assert.doesNotReject(freeCard.getByText('Votre offre').waitFor());
+  await shot(page, '13-abonnement');
+  // La page des coûts de la plateforme n'existe pas pour un client.
+  const admin = await page.goto(`${BASE}/admin`);
+  assert.equal(admin?.status(), 404);
   assert.deepEqual(errors, [], 'aucune erreur JavaScript');
   await context.close();
 });

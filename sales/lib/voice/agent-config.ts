@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { MAX_CALL_MINUTES } from '../billing/plans.ts';
 import type { Locale } from '../domain.ts';
 import type { ScenarioContent, ScenarioMeta } from '../scenarios/content.ts';
 import type { AgentPayload } from './provider.ts';
@@ -127,8 +128,8 @@ export function agentPayload(
       },
       tts: { model_id: TTS_MODEL, ...(voiceId ? { voice_id: voiceId } : {}) },
       turn: { turn_eagerness: EAGERNESS[content.prospect.personality] },
-      // Plafond de durée : la durée visée du scénario plus une marge, jamais plus de 30 minutes (maîtrise des coûts).
-      conversation: { max_duration_seconds: Math.min(30, meta.estimatedMinutes + 5) * 60 },
+      // Plafond de durée : la durée visée du scénario plus une marge, jamais plus de MAX_CALL_MINUTES (maîtrise des coûts).
+      conversation: { max_duration_seconds: Math.min(MAX_CALL_MINUTES, meta.estimatedMinutes + 5) * 60 },
     },
     // Seuls les jetons émis par notre serveur ouvrent une conversation avec ce prospect.
     platform_settings: { auth: { enable_auth: true } },

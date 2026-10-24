@@ -6,7 +6,8 @@ import { getDb } from '@/lib/db/client';
 import { SKILLS } from '@/lib/domain';
 import { echo, fieldErrorsFrom, type FormState } from '@/lib/forms';
 import { ScenarioInputSchema, splitLines } from '@/lib/scenarios/content';
-import { archiveScenario, createScenario, ForbiddenError, updateScenario } from '@/lib/scenarios/service';
+import { format } from '@/lib/i18n';
+import { archiveScenario, createScenario, ForbiddenError, PlanLimitError, updateScenario } from '@/lib/scenarios/service';
 import { getI18n, requireAuth } from '@/lib/server/context';
 
 function text(formData: FormData, key: string) {
@@ -77,6 +78,7 @@ export async function createScenarioAction(_prev: FormState, formData: FormData)
     id = await createScenario(await getDb(), auth, parsed.data);
   } catch (err) {
     if (err instanceof ForbiddenError) return { error: t.form.forbidden, values: echo(formData) };
+    if (err instanceof PlanLimitError) return { error: format(t.form.planLimit, { n: err.limit }), values: echo(formData) };
     throw err;
   }
   revalidatePath('/scenarios');

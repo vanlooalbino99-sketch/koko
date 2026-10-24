@@ -68,7 +68,11 @@ const PERMISSIONS = {
   'scenario:edit': ['owner', 'admin', 'manager'],
   'scenario:view_hidden': ['owner', 'admin', 'manager'],
   'members:view': ['owner', 'admin', 'manager'],
+  'members:manage': ['owner', 'admin'],
   'organization:edit': ['owner', 'admin'],
+  'billing:manage': ['owner', 'admin'],
+  'team:view': ['owner', 'admin', 'manager'],
+  'missions:assign': ['owner', 'admin', 'manager'],
 } as const satisfies Record<string, readonly Role[]>;
 export type Permission = keyof typeof PERMISSIONS;
 

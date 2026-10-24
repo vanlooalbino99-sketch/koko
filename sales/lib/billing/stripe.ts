@@ -1,0 +1,266 @@
+import Stripe from 'stripe';
+import { DEFAULT_PRICES, PAID_PLANS, type PaidPlan } from './plans.ts';
+
+// Ce dont l'application a besoin de Stripe. Les tests utilisent un faux fournisseur.
+export type PlanPrice = {
+  plan: PaidPlan;
+  priceId: string;
+  productId: string;
+  amount: number;
+  currency: string;
+  interval: string;
+};
+
+export type SubscriptionSnapshot = {
+  id: string;
+  customerId: string;
+  status: string;
+  priceId: string | null;
+  plan: PaidPlan | null;
+  itemId: string | null;
+  seats: number;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+  organizationId: string | null;
+};
+
+export type CheckoutSnapshot = {
+  organizationId: string | null;
+  customerId: string | null;
+  subscriptionId: string | null;
+};
+
+// Événement Stripe vérifié, réduit à ce qui sert : de quoi relire l'abonnement concerné.
+export type WebhookEvent = {
+  id: string;
+  type: string;
+  subscriptionId: string | null;
+};
+
+export class WebhookSignatureError extends Error {}
+
+export interface BillingProvider {
+  prices(): Promise<Record<PaidPlan, PlanPrice>>;
+  createCustomer(input: { name: string; email: string; organizationId: string }): Promise<string>;
+  createCheckout(input: {
+    customerId: string;
+    price: PlanPrice;
+    seats: number;
+    organizationId: string;
+    successUrl: string;
+    cancelUrl: string;
+    locale: 'fr' | 'en';
+  }): Promise<string>;
+  getCheckout(sessionId: string): Promise<CheckoutSnapshot>;
+  createPortal(input: { customerId: string; returnUrl: string; locale: 'fr' | 'en' }): Promise<string>;
+  getSubscription(subscriptionId: string): Promise<SubscriptionSnapshot>;
+  // Change l'offre (prix) et le nombre de sièges d'un abonnement en cours, au prorata.
+  updateSubscription(subscriptionId: string, itemId: string, priceId: string, seats: number): Promise<SubscriptionSnapshot>;
+  parseWebhook(body: string, signature: string): WebhookEvent;
+}
+
+const PORTAL_TAG = 'blackstart-sales';
+
+function idOf(value: string | { id: string } | null | undefined): string | null {
+  if (!value) return null;
+  return typeof value === 'string' ? value : value.id;
+}
+
+function planOfPrice(price: Stripe.Price | null | undefined, known: Record<PaidPlan, PlanPrice> | null): PaidPlan | null {
+  if (!price) return null;
+  for (const plan of PAID_PLANS) {
+    if (known?.[plan].priceId === price.id || price.lookup_key === DEFAULT_PRICES[plan].lookupKey || price.metadata?.bs_plan === plan) return plan;
+  }
+  return null;
+}
+
+export function stripeProvider(secretKey: string, webhookSecret: string | null): BillingProvider {
+  const stripe = new Stripe(secretKey, {
+    maxNetworkRetries: 2,
+    timeout: 20_000,
+  });
+  let cachedPrices: { at: number; value: Record<PaidPlan, PlanPrice> } | null = null;
+  let portalConfiguration: string | null = null;
+
+  const toPlanPrice = (plan: PaidPlan, price: Stripe.Price): PlanPrice => ({
+    plan,
+    priceId: price.id,
+    productId: idOf(price.product)!,
+    amount: price.unit_amount ?? 0,
+    currency: price.currency,
+    interval: price.recurring?.interval ?? 'month',
+  });
+
+  // Prix d'une offre : l'identifiant fourni (STRIPE_PRICE_PRO / STRIPE_PRICE_TEAM), sinon celui créé par
+  // l'application sous sa clé de recherche, créé au premier besoin.
+  async function priceFor(plan: PaidPlan): Promise<PlanPrice> {
+    const configured = process.env[plan === 'pro' ? 'STRIPE_PRICE_PRO' : 'STRIPE_PRICE_TEAM']?.trim();
+    if (configured) return toPlanPrice(plan, await stripe.prices.retrieve(configured));
+    const spec = DEFAULT_PRICES[plan];
+    const found = await stripe.prices.list({
+      lookup_keys: [spec.lookupKey],
+      active: true,
+      limit: 1,
+    });
+    if (found.data[0]) return toPlanPrice(plan, found.data[0]);
+    const product = await stripe.products.create({
+      name: spec.name,
+      metadata: { bs_plan: plan },
+    });
+    const price = await stripe.prices.create({
+      product: product.id,
+      currency: 'eur',
+      unit_amount: spec.amount,
+      recurring: { interval: 'month' },
+      lookup_key: spec.lookupKey,
+      tax_behavior: 'inclusive',
+      metadata: { bs_plan: plan },
+    });
+    return toPlanPrice(plan, price);
+  }
+
+  async function prices() {
+    if (cachedPrices && Date.now() - cachedPrices.at < 10 * 60 * 1000) return cachedPrices.value;
+    const value = { pro: await priceFor('pro'), team: await priceFor('team') };
+    cachedPrices = { at: Date.now(), value };
+    return value;
+  }
+
+  async function snapshot(sub: Stripe.Subscription): Promise<SubscriptionSnapshot> {
+    const item = sub.items.data[0];
+    return {
+      id: sub.id,
+      customerId: idOf(sub.customer)!,
+      status: sub.status,
+      priceId: item?.price.id ?? null,
+      plan: planOfPrice(item?.price, await prices().catch(() => null)),
+      itemId: item?.id ?? null,
+      seats: item?.quantity ?? 1,
+      currentPeriodEnd: item?.current_period_end ? new Date(item.current_period_end * 1000) : null,
+      cancelAtPeriodEnd: sub.cancel_at_period_end,
+      organizationId: sub.metadata?.organizationId ?? null,
+    };
+  }
+
+  // Portail client : factures, moyen de paiement, coordonnées et résiliation en fin de période.
+  async function portalConfigurationId() {
+    if (portalConfiguration) return portalConfiguration;
+    const list = await stripe.billingPortal.configurations.list({
+      limit: 20,
+      active: true,
+    });
+    const existing = list.data.find((c) => c.metadata?.app === PORTAL_TAG);
+    portalConfiguration =
+      existing?.id ??
+      (
+        await stripe.billingPortal.configurations.create({
+          features: {
+            invoice_history: { enabled: true },
+            payment_method_update: { enabled: true },
+            customer_update: {
+              enabled: true,
+              allowed_updates: ['email', 'name', 'address', 'tax_id'],
+            },
+            subscription_cancel: { enabled: true, mode: 'at_period_end' },
+          },
+          metadata: { app: PORTAL_TAG },
+        })
+      ).id;
+    return portalConfiguration;
+  }
+
+  return {
+    prices,
+    async createCustomer({ name, email, organizationId }) {
+      const customer = await stripe.customers.create({
+        name,
+        email,
+        metadata: { organizationId },
+      });
+      return customer.id;
+    },
+    async createCheckout({ customerId, price, seats, organizationId, successUrl, cancelUrl, locale }) {
+      const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        customer: customerId,
+        client_reference_id: organizationId,
+        line_items: [{ price: price.priceId, quantity: seats }],
+        subscription_data: { metadata: { organizationId } },
+        metadata: { organizationId },
+        allow_promotion_codes: true,
+        customer_update: { address: 'auto', name: 'auto' },
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        locale,
+      });
+      if (!session.url) throw new Error('checkout_without_url');
+      return session.url;
+    },
+    async getCheckout(sessionId) {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      return {
+        organizationId: session.client_reference_id ?? session.metadata?.organizationId ?? null,
+        customerId: idOf(session.customer),
+        subscriptionId: idOf(session.subscription),
+      };
+    },
+    async createPortal({ customerId, returnUrl, locale }) {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+        configuration: await portalConfigurationId(),
+        locale,
+      });
+      return session.url;
+    },
+    async getSubscription(subscriptionId) {
+      return snapshot(await stripe.subscriptions.retrieve(subscriptionId));
+    },
+    async updateSubscription(subscriptionId, itemId, priceId, seats) {
+      return snapshot(
+        await stripe.subscriptions.update(subscriptionId, {
+          items: [{ id: itemId, price: priceId, quantity: seats }],
+          proration_behavior: 'create_prorations',
+        }),
+      );
+    },
+    parseWebhook(body, signature) {
+      if (!webhookSecret) throw new WebhookSignatureError('webhook_secret_missing');
+      let event: Stripe.Event;
+      try {
+        event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      } catch (error) {
+        throw new WebhookSignatureError(error instanceof Error ? error.message : 'invalid_signature');
+      }
+      const object = event.data.object as {
+        object?: string;
+        id?: string;
+        subscription?: unknown;
+        mode?: string;
+      };
+      let subscriptionId: string | null = null;
+      if (object.object === 'subscription') subscriptionId = object.id ?? null;
+      else if (object.object === 'checkout.session' && object.mode === 'subscription') subscriptionId = idOf(object.subscription as string | null);
+      return { id: event.id, type: event.type, subscriptionId };
+    },
+  };
+}
+
+// Un client par processus (Next charge ce module une fois par route) : les prix restent en cache.
+const holder = globalThis as typeof globalThis & {
+  __blackstartBilling?: { key: string; provider: BillingProvider };
+};
+
+export function billingProviderFromEnv(): BillingProvider | null {
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!key) return null;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim() || null;
+  const cacheKey = `${key}:${webhookSecret ?? ''}`;
+  if (holder.__blackstartBilling?.key !== cacheKey) {
+    holder.__blackstartBilling = {
+      key: cacheKey,
+      provider: stripeProvider(key, webhookSecret),
+    };
+  }
+  return holder.__blackstartBilling.provider;
+}

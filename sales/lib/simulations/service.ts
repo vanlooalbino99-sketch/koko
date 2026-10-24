@@ -1,6 +1,7 @@
-import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { audit } from '../audit.ts';
 import type { AuthContext } from '../auth/service.ts';
+import { creditStatus, debitSimulation, platformUsage } from '../billing/credits.ts';
 import type { Db } from '../db/client.ts';
 import { scenarioVersions, scenarios, simulations, voiceAgents, type Simulation, type TranscriptTurn } from '../db/schema.ts';
 import type { Locale } from '../domain.ts';
@@ -12,25 +13,6 @@ import type { ProviderConversation, VoiceProvider } from '../voice/provider.ts';
 const ACTIVE = ['connecting', 'in_progress', 'processing'] as const;
 // Au-delà, une simulation jamais connectée ou jamais transcrite est considérée comme perdue.
 const LOST_AFTER_MS = 45 * 60 * 1000;
-
-// Minutes de voix incluses par mois. L'étape 4 (abonnements) remplacera ce plafond unique par celui de chaque offre.
-export function monthlyVoiceMinutes(): number {
-  const n = Number(process.env.VOICE_FREE_MONTHLY_MINUTES ?? 30);
-  return Number.isFinite(n) && n >= 0 ? n : 30;
-}
-
-export type VoiceQuota = { usedSeconds: number; limitSeconds: number; remainingSeconds: number };
-
-// Consommation du mois civil (UTC) de l'organisation : la durée réelle mesurée par ElevenLabs.
-export async function voiceQuota(db: Db, auth: AuthContext, now = new Date()): Promise<VoiceQuota> {
-  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const [row] = await db
-    .select({ seconds: sql<number>`coalesce(sum(${simulations.durationSeconds}), 0)`.mapWith(Number) })
-    .from(simulations)
-    .where(and(eq(simulations.organizationId, auth.organization.id), gte(simulations.createdAt, monthStart)));
-  const limitSeconds = monthlyVoiceMinutes() * 60;
-  return { usedSeconds: row.seconds, limitSeconds, remainingSeconds: Math.max(0, limitSeconds - row.seconds) };
-}
 
 // Prospect vocal de la version : réutilisé tant que la configuration ne change pas. Le verrou évite que deux
 // premiers appels simultanés créent chacun un agent.
@@ -57,7 +39,7 @@ export async function ensureVoiceAgent(db: Db, provider: VoiceProvider, playable
 
 export type StartResult =
   | { ok: true; simulationId: string; token: string }
-  | { ok: false; error: 'not_found' | 'quota_exceeded' | 'provider_error' };
+  | { ok: false; error: 'not_found' | 'quota_exceeded' | 'concurrent_limit' | 'platform_saturated' | 'provider_error' };
 
 export async function startSimulation(
   db: Db,
@@ -68,14 +50,17 @@ export async function startSimulation(
 ): Promise<StartResult> {
   const playable = await getPlayableVersion(db, auth, scenarioId);
   if (!playable) return { ok: false, error: 'not_found' };
-  // Moins d'une minute restante : on ne démarre pas un appel qui serait coupé presque aussitôt.
-  if ((await voiceQuota(db, auth)).remainingSeconds < 60) return { ok: false, error: 'quota_exceeded' };
-
-  // Un seul appel à la fois : un appel précédent resté ouvert (onglet fermé) part en récupération de transcription.
+  // Un seul appel à la fois par vendeur : un appel précédent resté ouvert (onglet fermé) part en récupération de transcription.
   await db
     .update(simulations)
     .set({ status: 'processing', endedAt: new Date(), endReason: sql`coalesce(${simulations.endReason}, 'timeout')` })
     .where(and(eq(simulations.userId, auth.user.id), inArray(simulations.status, ['connecting', 'in_progress'])));
+
+  // Moins d'un crédit restant : on ne démarre pas un appel qui serait coupé presque aussitôt.
+  const credits = await creditStatus(db, auth.organization);
+  if (credits.remaining < 1) return { ok: false, error: 'quota_exceeded' };
+  if (credits.activeCalls >= credits.concurrentCalls) return { ok: false, error: 'concurrent_limit' };
+  if ((await platformUsage(db)).voiceSaturated) return { ok: false, error: 'platform_saturated' };
 
   let agentId: string;
   try {
@@ -214,13 +199,24 @@ export async function syncSimulation(db: Db, provider: VoiceProvider, sim: Simul
   if (conversation.status === 'done') {
     const transcript = normalizeTranscript(conversation.transcript);
     const lastAt = transcript.at(-1)?.at ?? 0;
-    return save({
-      status: 'completed',
-      transcript,
-      durationSeconds: Math.round(conversation.metadata?.call_duration_secs ?? lastAt),
-      providerCost: conversation.metadata?.cost == null ? null : Math.round(conversation.metadata.cost),
-      endReason: sim.endReason ?? 'timeout',
-      endedAt: sim.endedAt ?? now,
+    // Terminé et débité ensemble : si l'écriture échoue, ni l'un ni l'autre n'a lieu.
+    return db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(simulations)
+        .set({
+          status: 'completed',
+          transcript,
+          durationSeconds: Math.round(conversation.metadata?.call_duration_secs ?? lastAt),
+          providerCost: conversation.metadata?.cost == null ? null : Math.round(conversation.metadata.cost),
+          endReason: sim.endReason ?? 'timeout',
+          endedAt: sim.endedAt ?? now,
+          lastSyncedAt: now,
+        })
+        .where(and(eq(simulations.id, sim.id), inArray(simulations.status, [...ACTIVE])))
+        .returning();
+      if (!row) return sim;
+      await debitSimulation(tx, row);
+      return row;
     });
   }
   if (conversation.status === 'failed') return save({ status: 'failed', endReason: sim.endReason ?? 'error', errorMessage: 'provider_failed' });

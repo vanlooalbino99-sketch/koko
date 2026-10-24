@@ -25,7 +25,10 @@ export type CallLabels = {
   liveEmpty: string;
   you: string;
   micHint: string;
-  errors: Record<'not_configured' | 'quota_exceeded' | 'provider_error' | 'not_found' | 'mic_denied' | 'connection', string>;
+  errors: Record<
+    'not_configured' | 'quota_exceeded' | 'concurrent_limit' | 'platform_saturated' | 'provider_error' | 'not_found' | 'mic_denied' | 'connection',
+    string
+  >;
 };
 
 type Line = { id: number; role: 'seller' | 'prospect'; text: string };

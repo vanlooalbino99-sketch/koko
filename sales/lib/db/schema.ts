@@ -45,11 +45,15 @@ export const organizations = pgTable(
     name: text('name').notNull(),
     // personal : l'espace d'un indépendant ; team : une entreprise avec plusieurs membres.
     kind: text('kind').notNull().default('personal'),
+    // Forfait en vigueur, tenu à jour par les webhooks Stripe (lib/billing). free tant qu'aucun abonnement n'est actif.
     plan: text('plan').notNull().default('free'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [check('organizations_kind_check', sql`${t.kind} in ('personal', 'team')`)],
+  (t) => [
+    check('organizations_kind_check', sql`${t.kind} in ('personal', 'team')`),
+    check('organizations_plan_check', sql`${t.plan} in ('free', 'pro', 'team')`),
+  ],
 );
 
 export const memberships = pgTable(
@@ -257,6 +261,111 @@ export const simulationAnalyses = pgTable(
   (t) => [check('simulation_analyses_status_check', sql`${t.status} in ('running', 'completed', 'failed', 'insufficient')`)],
 );
 
+// Débit de crédits : 1 crédit = 1 minute de simulation, analyse comprise. Une seule ligne par simulation
+// (index unique) : un appel ne peut pas être débité deux fois, même si deux synchronisations se croisent.
+export const creditDebits = pgTable(
+  'credit_debits',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    simulationId: uuid('simulation_id')
+      .notNull()
+      .references(() => simulations.id, { onDelete: 'cascade' }),
+    credits: integer('credits').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex('credit_debits_simulation_key').on(t.simulationId),
+    index('credit_debits_org_idx').on(t.organizationId, t.createdAt),
+    check('credit_debits_credits_check', sql`${t.credits} >= 0`),
+  ],
+);
+
+// Abonnement Stripe d'une organisation. Recopié depuis Stripe à chaque webhook : Stripe fait foi.
+export const billingAccounts = pgTable(
+  'billing_accounts',
+  {
+    organizationId: uuid('organization_id')
+      .primaryKey()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    stripeCustomerId: text('stripe_customer_id').notNull(),
+    stripeSubscriptionId: text('stripe_subscription_id'),
+    plan: text('plan'),
+    // Statut Stripe tel quel : active, trialing, past_due, canceled, unpaid, incomplete…
+    status: text('status'),
+    seats: integer('seats').notNull().default(1),
+    currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
+    cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex('billing_accounts_customer_key').on(t.stripeCustomerId),
+    uniqueIndex('billing_accounts_subscription_key').on(t.stripeSubscriptionId),
+    check('billing_accounts_plan_check', sql`${t.plan} is null or ${t.plan} in ('pro', 'team')`),
+    check('billing_accounts_seats_check', sql`${t.seats} >= 1`),
+  ],
+);
+
+// Invitation à rejoindre une organisation. Seule l'empreinte du jeton est stockée ; le lien est donné une
+// fois, à la création. Une invitation en attente occupe un siège.
+export const invitations = pgTable(
+  'invitations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    role: text('role').notNull(),
+    tokenHash: text('token_hash').notNull(),
+    invitedBy: uuid('invited_by').references(() => users.id, { onDelete: 'set null' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    acceptedBy: uuid('accepted_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex('invitations_token_key').on(t.tokenHash),
+    uniqueIndex('invitations_pending_key').on(t.organizationId, t.email).where(sql`${t.acceptedAt} is null`),
+    check('invitations_email_lower', sql`${t.email} = lower(${t.email})`),
+    check('invitations_role_check', sql`${t.role} in ('admin', 'manager', 'member')`),
+  ],
+);
+
+// Mission : un scénario qu'un responsable demande à un membre de travailler. Elle est remplie dès que le
+// membre termine un appel sur ce scénario après l'avoir reçue.
+export const missions = pgTable(
+  'missions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    scenarioId: uuid('scenario_id')
+      .notNull()
+      .references(() => scenarios.id, { onDelete: 'cascade' }),
+    assigneeId: uuid('assignee_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    assignedBy: uuid('assigned_by').references(() => users.id, { onDelete: 'set null' }),
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    note: text('note'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('missions_assignee_idx').on(t.organizationId, t.assigneeId, t.createdAt)],
+);
+
+// Webhooks Stripe déjà traités : Stripe peut renvoyer le même événement plusieurs fois.
+export const stripeEvents = pgTable('stripe_events', {
+  id: text('id').primaryKey(),
+  type: text('type').notNull(),
+  createdAt: createdAt(),
+});
+
 export const auditLog = pgTable(
   'audit_log',
   {
@@ -282,3 +391,6 @@ export type Simulation = typeof simulations.$inferSelect;
 export type VoiceAgent = typeof voiceAgents.$inferSelect;
 export type SimulationAnalysis = typeof simulationAnalyses.$inferSelect;
 export type UserProfile = typeof userProfiles.$inferSelect;
+export type BillingAccount = typeof billingAccounts.$inferSelect;
+export type Invitation = typeof invitations.$inferSelect;
+export type Mission = typeof missions.$inferSelect;

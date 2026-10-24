@@ -1,5 +1,6 @@
 import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { audit } from '../audit.ts';
+import { orgLimits } from '../billing/credits.ts';
 import type { AuthContext } from '../auth/service.ts';
 import type { Db } from '../db/client.ts';
 import { scenarioVersions, scenarios, type Scenario, type UserProfile } from '../db/schema.ts';
@@ -17,6 +18,15 @@ export type ScenarioFilters = {
 export class ForbiddenError extends Error {
   constructor() {
     super('forbidden');
+  }
+}
+
+// L'offre de l'organisation ne permet pas un scénario privé de plus.
+export class PlanLimitError extends Error {
+  readonly limit: number;
+  constructor(limit: number) {
+    super('plan_limit');
+    this.limit = limit;
   }
 }
 
@@ -116,7 +126,17 @@ export async function getPlayableVersion(db: Db, auth: AuthContext, scenarioId: 
 export async function createScenario(db: Db, auth: AuthContext, input: ScenarioInput): Promise<string> {
   if (!can(auth.role, 'scenario:create')) throw new ForbiddenError();
   const { meta, content } = ScenarioInputSchema.parse(input);
+  const { limits } = await orgLimits(db, auth.organization);
   return db.transaction(async (tx) => {
+    if (limits.privateScenarios !== null) {
+      // Verrou sur l'organisation : deux créations simultanées ne dépassent pas la limite.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${auth.organization.id}, 1))`);
+      const [{ n }] = await tx
+        .select({ n: sql<number>`count(*)`.mapWith(Number) })
+        .from(scenarios)
+        .where(and(eq(scenarios.organizationId, auth.organization.id), eq(scenarios.status, 'active')));
+      if (n >= limits.privateScenarios) throw new PlanLimitError(limits.privateScenarios);
+    }
     const [row] = await tx
       .insert(scenarios)
       .values({ ...meta, organizationId: auth.organization.id, createdBy: auth.user.id, currentVersion: 1 })

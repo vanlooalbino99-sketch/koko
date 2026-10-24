@@ -29,7 +29,14 @@ export function AppShell({ auth, t, locale, children }: { auth: AuthContext; t: 
         ...(can(auth.role, 'scenario:create') ? [{ href: '/scenarios/new', label: t.nav.newScenario, icon: 'new' as const }] : []),
       ],
     },
-    { title: t.nav.account, items: [{ href: '/settings', label: t.nav.settings, icon: 'settings' }] },
+    {
+      title: t.nav.account,
+      items: [
+        { href: '/settings', label: t.nav.settings, icon: 'settings' },
+        { href: '/billing', label: t.nav.billing, icon: 'billing' },
+        ...(auth.user.isPlatformAdmin ? [{ href: '/admin', label: t.nav.admin, icon: 'admin' as const }] : []),
+      ],
+    },
   ];
   const account = (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-2/60 p-3">

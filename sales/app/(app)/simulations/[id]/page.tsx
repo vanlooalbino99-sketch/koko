@@ -12,6 +12,7 @@ import { FormAlert } from '@/components/ui/field';
 import { analyzerFromEnv } from '@/lib/analysis/claude';
 import type { AnalysisResult } from '@/lib/analysis/schema';
 import { getAnalysis } from '@/lib/analysis/service';
+import { platformUsage } from '@/lib/billing/credits';
 import { getDb } from '@/lib/db/client';
 import type { TranscriptTurn } from '@/lib/db/schema';
 import type { Family, Skill } from '@/lib/domain';
@@ -102,9 +103,12 @@ export default async function SimulationPage({ params }: Props) {
   const analysis = sim.status === 'completed' ? await getAnalysis(db, sim.id) : null;
   const result = analysis?.status === 'completed' ? (analysis.result as AnalysisResult) : null;
   const analyzerReady = analyzerFromEnv() !== null;
+  // Plafond quotidien de la plateforme atteint : l'analyse attend le lendemain.
+  const deferred = sim.status === 'completed' && analyzerReady && !analysis && (await platformUsage(db)).analysisSaturated;
   const waitingForAnalysis =
     sim.status === 'completed' &&
     analyzerReady &&
+    !deferred &&
     (!analysis || analysis.status === 'running' || (analysis.status === 'failed' && analysis.attempts < 3));
   const pending = ['connecting', 'in_progress', 'processing'].includes(sim.status) || waitingForAnalysis;
   const transcript = sim.transcript ?? [];
@@ -167,13 +171,15 @@ export default async function SimulationPage({ params }: Props) {
           <p className="text-sm" role="status">
             {!analyzerReady
               ? r.notConfigured
-              : analysis?.status === 'insufficient'
-                ? r.insufficient
-                : analysis?.status === 'failed'
-                  ? analysis.attempts < 3
-                    ? r.failed
-                    : r.failedFinal
-                  : r.analyzing}
+              : deferred
+                ? r.deferred
+                : analysis?.status === 'insufficient'
+                  ? r.insufficient
+                  : analysis?.status === 'failed'
+                    ? analysis.attempts < 3
+                      ? r.failed
+                      : r.failedFinal
+                    : r.analyzing}
           </p>
         </Card>
       )}

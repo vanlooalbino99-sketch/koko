@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Target, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { FormAlert } from '@/components/ui/field';
 import { getDb } from '@/lib/db/client';
 import { format } from '@/lib/i18n';
 import { getScenario } from '@/lib/scenarios/service';
 import { getI18n, requireOnboarded } from '@/lib/server/context';
-import { voiceQuota } from '@/lib/simulations/service';
+import { creditStatus } from '@/lib/billing/credits';
 import { voiceProviderFromEnv } from '@/lib/voice/provider';
 import { CallRoomLoader } from './call-room-loader';
 
@@ -30,8 +31,8 @@ export default async function CallPage({ params }: Props) {
   if (!detail || detail.scenario.status !== 'active') notFound();
   const { scenario, content } = detail;
   const configured = voiceProviderFromEnv() !== null;
-  const quota = await voiceQuota(db, auth);
-  const remainingMinutes = Math.floor(quota.remainingSeconds / 60);
+  const credits = await creditStatus(db, auth.organization);
+  const remainingMinutes = credits.remaining;
 
   return (
     <div className="grid gap-6">
@@ -69,7 +70,12 @@ export default async function CallPage({ params }: Props) {
       {!configured ? (
         <FormAlert message={c.notConfigured} />
       ) : remainingMinutes < 1 ? (
-        <FormAlert message={c.quotaExceeded} />
+        <div className="grid justify-items-start gap-3">
+          <FormAlert message={c.quotaExceeded} />
+          <Button asChild variant="outline">
+            <Link href="/billing">{c.upgrade}</Link>
+          </Button>
+        </div>
       ) : (
         <CallRoomLoader
           scenarioId={scenario.id}
@@ -93,6 +99,8 @@ export default async function CallPage({ params }: Props) {
             errors: {
               not_configured: c.notConfigured,
               quota_exceeded: c.quotaExceeded,
+              concurrent_limit: c.concurrentLimit,
+              platform_saturated: c.platformSaturated,
               provider_error: c.providerError,
               not_found: c.notFound,
               mic_denied: c.micDenied,

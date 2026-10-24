@@ -10,10 +10,10 @@ import {
   markSimulationConnected,
   startSimulation,
   syncSimulation,
-  voiceQuota,
 } from '../lib/simulations/service.ts';
+import { creditStatus } from '../lib/billing/credits.ts';
 import type { AgentPayload, ProviderConversation, VoiceProvider } from '../lib/voice/provider.ts';
-import { newUser, testDb } from './helpers.ts';
+import { joinOrg, newUser, testDb } from './helpers.ts';
 
 let db: Db;
 let close: () => Promise<void>;
@@ -70,7 +70,7 @@ test('prospect vocal : consigne complète côté serveur, un agent par version, 
   const [payload] = provider.agents;
   assert.equal(payload.conversation_config.agent.language, 'fr');
   assert.equal(payload.platform_settings.auth.enable_auth, true, 'seuls nos jetons ouvrent une conversation');
-  assert.ok(payload.conversation_config.conversation.max_duration_seconds <= 30 * 60);
+  assert.ok(payload.conversation_config.conversation.max_duration_seconds <= 15 * 60);
   // Les faits cachés sont dans la consigne du prospect (serveur), jamais dans la réponse au navigateur.
   assert.match(payload.conversation_config.agent.prompt.prompt, /Hidden facts/);
   assert.equal(JSON.stringify(a).includes('Hidden'), false);
@@ -138,8 +138,9 @@ test('session : fin d\'appel, transcription normalisée, durée et coût enregis
   // Une simulation terminée n'est plus modifiée par une nouvelle synchronisation.
   provider.conversations.set(provider.conv(1), { status: 'failed', agent_id: agentId, transcript: null, metadata: null });
   assert.equal((await syncSimulation(db, provider, done, new Date(Date.now() + 10_000))).status, 'completed');
-  const quota = await voiceQuota(db, auth);
-  assert.equal(quota.usedSeconds, 74);
+  // 74 secondes : 2 crédits débités une seule fois, malgré les synchronisations répétées.
+  const credits = await creditStatus(db, auth.organization);
+  assert.equal(credits.used, 2);
 });
 
 test('session : une conversation d\'un autre agent n\'est jamais rattachée', async () => {
@@ -179,12 +180,25 @@ test('isolation : un autre compte ne voit ni ne termine la simulation', async ()
   assert.equal(row.status, 'connecting');
 });
 
-test('coûts : plus de minutes ce mois-ci, pas d\'appel ; jeton refusé, simulation en échec', async () => {
+test('coûts : plus de crédits ce mois-ci, pas d\'appel ; jeton refusé, simulation en échec', async () => {
   const { auth } = await newUser(db, 'Lina');
   const scenario = await firstCatalogScenario(auth);
   const started = await startSimulation(db, provider, auth, scenario.id);
   assert.ok(started.ok);
-  await db.update(simulations).set({ status: 'completed', durationSeconds: 30 * 60 }).where(eq(simulations.id, started.simulationId));
+  // Appel de 15 minutes : tout le forfait gratuit.
+  const [sim] = await db.select().from(simulations).where(eq(simulations.id, started.simulationId));
+  provider.conversations.set(provider.conv(1), {
+    status: 'done',
+    agent_id: sim.providerAgentId,
+    transcript: [{ role: 'user', message: 'Bonjour', time_in_call_secs: 1 }],
+    metadata: { call_duration_secs: 15 * 60, cost: 1200 },
+  });
+  // Deux synchronisations simultanées (deux onglets) : un seul débit.
+  const [a, b] = await Promise.all([syncSimulation(db, provider, sim), syncSimulation(db, provider, sim)]);
+  assert.ok([a.status, b.status].includes('completed'));
+  const credits = await creditStatus(db, auth.organization);
+  assert.equal(credits.used, 15);
+  assert.equal(credits.remaining, 0);
   assert.deepEqual(await startSimulation(db, provider, auth, scenario.id), { ok: false, error: 'quota_exceeded' });
 
   const other = await newUser(db, 'Malo');
@@ -211,4 +225,22 @@ test('consigne : règles du jeu avant le scénario, contenu balisé, langue impo
   assert.match(prompt, /Never say or hint that you are an AI/);
   const [stored] = await db.select().from(voiceAgents).where(eq(voiceAgents.agentId, provider.agentId(1)));
   assert.ok(stored, 'l\'agent est enregistré pour sa version');
+});
+
+test('coûts : un appel à la fois dans l\'offre gratuite, garde-fou mensuel de la plateforme', async () => {
+  const owner = await newUser(db, 'Sacha');
+  const colleague = await joinOrg(db, owner.auth.organization.id, 'member', 'Tess');
+  const scenario = await firstCatalogScenario(owner.auth);
+  const first = await startSimulation(db, provider, owner.auth, scenario.id);
+  assert.ok(first.ok);
+  assert.deepEqual(await startSimulation(db, provider, colleague, scenario.id), { ok: false, error: 'concurrent_limit' });
+
+  const solo = await newUser(db, 'Ugo');
+  process.env.PLATFORM_MONTHLY_MINUTES = '0';
+  try {
+    assert.deepEqual(await startSimulation(db, provider, solo.auth, scenario.id), { ok: false, error: 'platform_saturated' });
+  } finally {
+    delete process.env.PLATFORM_MONTHLY_MINUTES;
+  }
+  assert.ok((await startSimulation(db, provider, solo.auth, scenario.id)).ok);
 });

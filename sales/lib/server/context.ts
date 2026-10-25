@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { getAuthContext, SESSION_DAYS, type AuthContext } from '@/lib/auth/service';
 import { getDb as getMainDb } from '@/lib/db/client';
-import { DEMO_COOKIE, demoSpace } from '@/lib/demo/space';
+import { DEMO_COOKIE, demoSpace, demoSpaceEnabled } from '@/lib/demo/space';
 import { echo, safeNext, type FormState } from '@/lib/forms';
 import { getDictionary, LOCALE_COOKIE, resolveLocale } from '@/lib/i18n';
 import { getProfile } from '@/lib/profile/service';
@@ -15,7 +15,7 @@ export const SESSION_COOKIE = 'bs_session';
 const secure = process.env.NODE_ENV === 'production' && process.env.INSECURE_COOKIES !== '1';
 
 export async function isDemo(): Promise<boolean> {
-  return (await cookies()).has(DEMO_COOKIE);
+  return demoSpaceEnabled() && (await cookies()).has(DEMO_COOKIE);
 }
 
 // Une seule lecture de session par requête, partagée par le layout et la page. Pendant la visite de démo, tout

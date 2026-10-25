@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { LogInSchema, logIn, logOut, setUserLocale, signUp, SignUpSchema } from '@/lib/auth/service';
 import { hit } from '@/lib/auth/rate-limit';
 import { getDb } from '@/lib/db/client';
+import { demoSpaceEnabled } from '@/lib/demo/space';
 import { LOCALES, isOneOf } from '@/lib/domain';
 import { echo, fieldErrorsFrom, safeNext, type FormState } from '@/lib/forms';
 import {
@@ -64,6 +65,7 @@ export async function logInAction(_prev: FormState, formData: FormData): Promise
 
 // Visite de l'application avec l'équipe fictive : aucune inscription, rien n'est enregistré.
 export async function enterDemoAction() {
+  if (!demoSpaceEnabled()) redirect('/demo');
   await setDemoCookie();
   redirect('/dashboard');
 }

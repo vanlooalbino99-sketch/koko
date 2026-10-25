@@ -27,6 +27,12 @@ import type { Role, Skill } from '../domain.ts';
 // cet espace n'entre dans les statistiques de la plateforme.
 export const DEMO_COOKIE = 'bs_demo';
 
+// La base de démo vit en mémoire (PGlite) et pèse près de 700 Mo : une instance de 512 Mo s'arrête dès qu'elle la
+// construit. En production, l'espace démo reste donc fermé sauf si DEMO_SPACE=1 le demande.
+export function demoSpaceEnabled(): boolean {
+  return process.env.NODE_ENV !== 'production' || process.env.DEMO_SPACE === '1';
+}
+
 const DAY = 86_400_000;
 
 type Template = {

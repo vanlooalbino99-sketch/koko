@@ -4,6 +4,7 @@ import { enterDemoAction } from '@/app/actions/auth';
 import { Brand } from '@/components/brand';
 import { LanguageSwitch } from '@/components/shell/language-switch';
 import { Button } from '@/components/ui/button';
+import { demoSpaceEnabled } from '@/lib/demo/space';
 import { getAuth, getI18n } from '@/lib/server/context';
 import { voiceProviderFromEnv } from '@/lib/voice/provider';
 
@@ -48,7 +49,7 @@ export default async function LandingPage() {
                   <PlayCircle /> {l.ctaDemo}
                 </Link>
               </Button>
-              {!auth && (
+              {!auth && demoSpaceEnabled() && (
                 <form action={enterDemoAction}>
                   <Button size="lg" variant="outline">
                     <LayoutDashboard /> {t.demo.explore}

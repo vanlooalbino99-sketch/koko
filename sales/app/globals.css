@@ -67,6 +67,57 @@
     radial-gradient(40% 90% at 100% 0%, color-mix(in srgb, var(--teal) 10%, transparent), transparent 60%);
 }
 
+/* Écran d'appel en direct : noir neutre, accent vert d'eau, dégradé vert → bleu sur les actions principales.
+   Contrastes AA : muted (#8c939e) sur fond (#0b0d10) ≈ 6:1. */
+.theme-vox {
+  --background: #0b0d10;
+  --surface: #111418;
+  --surface-2: #181b20;
+  --foreground: #eceef2;
+  --muted-foreground: #8c939e;
+  --teal: #2fd8a8;
+  --success: #2fd8a8;
+  --warning: #f5b544;
+  --destructive: #f2716b;
+  --border: #22262d;
+  --input: #2b3038;
+  --ring: #2fd8a8;
+  --vox-blue: #3d7bfa;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.vox-gradient {
+  background-image: linear-gradient(90deg, #17c08a, #2f7bf5);
+}
+
+/* Cadre du visualiseur : liseré dégradé vert → bleu. */
+.vox-frame {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#0c1012, #0c1012) padding-box,
+    linear-gradient(135deg, #2fd8a8, #24313b 40%, #24313b 60%, #3d7bfa) border-box;
+}
+
+.vox-dots {
+  background-image: radial-gradient(circle, rgb(255 255 255 / 0.09) 1px, transparent 1.3px);
+  background-size: 7px 7px;
+  mask-image: radial-gradient(60% 75% at 50% 45%, #000 20%, transparent 80%);
+}
+
+.vox-glow {
+  background: radial-gradient(closest-side, rgb(47 216 168 / 0.36), rgb(47 216 168 / 0.1) 55%, transparent);
+  transform: scale(calc(0.85 + var(--level, 0) * 0.35));
+  transition: transform 120ms linear;
+}
+
+.vox-talk-card {
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgb(47 216 168 / 0.28), transparent 60%),
+    radial-gradient(100% 80% at 100% 100%, rgb(61 123 250 / 0.14), transparent 65%),
+    var(--surface);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

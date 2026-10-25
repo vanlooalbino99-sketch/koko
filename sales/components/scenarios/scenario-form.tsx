@@ -1,13 +1,14 @@
 'use client';
 
-import { useActionState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useActionState, useRef, useState } from 'react';
+import { Loader2, Pause, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Field, FormAlert } from '@/components/ui/field';
 import { Input, Select, Textarea } from '@/components/ui/input';
 import { initialFormState, type FormState } from '@/lib/forms';
 
 type Option = { value: string; label: string };
+export type VoiceOption = { id: string; name: string; previewUrl: string | null; hint: string };
 export type ScenarioFormValues = Record<string, string>;
 export type ScenarioFormLabels = Record<string, string>;
 
@@ -18,6 +19,7 @@ export function ScenarioForm({
   labels,
   options,
   skills,
+  voices = [],
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   id?: string;
@@ -25,6 +27,7 @@ export function ScenarioForm({
   labels: ScenarioFormLabels;
   options: Record<'family' | 'difficulty' | 'language' | 'channel' | 'personality' | 'decisionPower', Option[]>;
   skills: Option[];
+  voices?: VoiceOption[];
 }) {
   const [state, formAction, pending] = useActionState(action, initialFormState);
   const errors = state.fieldErrors ?? {};
@@ -109,6 +112,7 @@ export function ScenarioForm({
             {select('decisionPower', labels.decisionPower, 'prospect.decisionPower')}
           </div>
           {text('prospect.publicProfile', labels.publicProfile, { area: true, rows: 2, max: 800 })}
+          <VoiceField voices={voices} initial={value('voiceId')} error={errors.voiceId} labels={labels} />
         </>,
       )}
       {section(
@@ -154,5 +158,56 @@ export function ScenarioForm({
         {pending && <Loader2 className="animate-spin" />} {id ? labels.update : labels.create}
       </Button>
     </form>
+  );
+}
+
+// Choix de la voix ElevenLabs du prospect, avec écoute de l'extrait fourni par ElevenLabs.
+function VoiceField({ voices, initial, error, labels }: { voices: VoiceOption[]; initial: string; error?: string; labels: ScenarioFormLabels }) {
+  const [selected, setSelected] = useState(initial);
+  const [playing, setPlaying] = useState(false);
+  const audio = useRef<HTMLAudioElement | null>(null);
+  const preview = voices.find((v) => v.id === selected)?.previewUrl ?? null;
+  const stop = () => {
+    audio.current?.pause();
+    setPlaying(false);
+  };
+  const listen = () => {
+    if (playing) return stop();
+    if (!preview) return;
+    audio.current?.pause();
+    const a = new Audio(preview);
+    a.onended = () => setPlaying(false);
+    audio.current = a;
+    setPlaying(true);
+    void a.play().catch(() => setPlaying(false));
+  };
+  return (
+    <Field id="voiceId" label={labels.voice} hint={voices.length ? labels.voiceHint : labels.voiceListEmpty} error={error}>
+      {(p) => (
+        <div className="flex gap-2">
+          <Select
+            {...p}
+            name="voiceId"
+            value={selected}
+            onChange={(e) => {
+              stop();
+              setSelected(e.target.value);
+            }}
+            className="flex-1"
+          >
+            <option value="">{labels.voiceDefault}</option>
+            {voices.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.hint ? `${v.name} · ${v.hint}` : v.name}
+              </option>
+            ))}
+            {selected && !voices.some((v) => v.id === selected) && <option value={selected}>{selected}</option>}
+          </Select>
+          <Button type="button" variant="outline" onClick={listen} disabled={!preview} aria-pressed={playing}>
+            {playing ? <Pause /> : <Play />} {labels.voiceListen}
+          </Button>
+        </div>
+      )}
+    </Field>
   );
 }

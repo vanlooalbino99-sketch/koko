@@ -9,6 +9,7 @@ import { ScenarioInputSchema, splitLines } from '@/lib/scenarios/content';
 import { format } from '@/lib/i18n';
 import { archiveScenario, createScenario, ForbiddenError, PlanLimitError, updateScenario } from '@/lib/scenarios/service';
 import { getI18n, requireAuth } from '@/lib/server/context';
+import { listVoices } from '@/lib/voice/catalog';
 
 function text(formData: FormData, key: string) {
   const v = formData.get(key);
@@ -41,6 +42,7 @@ function readScenario(formData: FormData) {
         decisionPower: text(formData, 'prospect.decisionPower'),
         publicProfile: text(formData, 'prospect.publicProfile'),
       },
+      voiceId: text(formData, 'voiceId').trim() || undefined,
       need: text(formData, 'need'),
       budget: text(formData, 'budget'),
       objections: splitLines(formData.get('objections')),
@@ -68,11 +70,19 @@ function invalid(error: import('zod').ZodError, formData: FormData, t: Awaited<R
   };
 }
 
+// Une voix choisie doit exister dans le compte ElevenLabs (quand la liste est disponible).
+async function unknownVoice(voiceId: string | undefined) {
+  if (!voiceId) return false;
+  const voices = await listVoices();
+  return voices.length > 0 && !voices.some((v) => v.id === voiceId);
+}
+
 export async function createScenarioAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const auth = await requireAuth();
   const { t } = await getI18n();
   const parsed = ScenarioInputSchema.safeParse(readScenario(formData));
   if (!parsed.success) return invalid(parsed.error, formData, t);
+  if (await unknownVoice(parsed.data.content.voiceId)) return { fieldErrors: { voiceId: t.form.voiceUnknown }, values: echo(formData) };
   let id: string;
   try {
     id = await createScenario(await getDb(), auth, parsed.data);
@@ -91,6 +101,7 @@ export async function updateScenarioAction(_prev: FormState, formData: FormData)
   const id = text(formData, '$id');
   const parsed = ScenarioInputSchema.safeParse(readScenario(formData));
   if (!parsed.success) return invalid(parsed.error, formData, t);
+  if (await unknownVoice(parsed.data.content.voiceId)) return { fieldErrors: { voiceId: t.form.voiceUnknown }, values: echo(formData) };
   try {
     await updateScenario(await getDb(), auth, id, parsed.data);
   } catch (err) {

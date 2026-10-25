@@ -6,6 +6,7 @@ import {
   finishSimulation,
   getSimulation,
   markSimulationConnected,
+  saveMarkers,
   startSimulation,
   syncSimulation,
   type StartResult,
@@ -25,6 +26,12 @@ export async function startSimulationAction(scenarioId: string): Promise<StartRe
 export async function markConnectedAction(simulationId: string, conversationId: string): Promise<boolean> {
   const auth = await requireAuth();
   return markSimulationConnected(await getDb(), auth, String(simulationId), String(conversationId ?? ''));
+}
+
+export async function saveMarkersAction(simulationId: string, markers: number[]): Promise<boolean> {
+  const auth = await requireAuth();
+  if (!Array.isArray(markers)) return false;
+  return saveMarkers(await getDb(), auth, String(simulationId), markers.slice(0, 200).map(Number));
 }
 
 export async function finishSimulationAction(

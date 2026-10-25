@@ -67,6 +67,7 @@ export function valuesFrom(scenario: Scenario, content: ScenarioContent): Record
     'prospect.personality': content.prospect.personality,
     'prospect.decisionPower': content.prospect.decisionPower,
     'prospect.publicProfile': content.prospect.publicProfile,
+    voiceId: content.voiceId ?? '',
     need: content.need,
     budget: content.budget,
     objections: content.objections.join('\n'),

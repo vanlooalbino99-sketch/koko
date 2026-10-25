@@ -104,7 +104,7 @@ export function agentPayload(
   version: { id: string; number: number },
   voices: Partial<Record<Locale, string>> = {},
 ): AgentPayload {
-  const voiceId = voices[meta.language];
+  const voiceId = content.voiceId ?? voices[meta.language];
   return {
     name: `Blackstart · ${meta.title.slice(0, 60)} · v${version.number}`,
     tags: ['blackstart-sales', `scenario-version-${version.id}`],

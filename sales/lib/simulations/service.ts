@@ -153,6 +153,16 @@ export async function finishSimulation(
   return provider ? syncSimulation(db, provider, updated) : updated;
 }
 
+// Moments marqués par le vendeur pendant l'appel (secondes depuis le début) : triés, sans doublon, bornés.
+export const MAX_MARKERS = 50;
+export async function saveMarkers(db: Db, auth: AuthContext, id: string, markers: number[]): Promise<boolean> {
+  const sim = await ownSimulation(db, auth, id);
+  if (!sim) return false;
+  const clean = [...new Set(markers.filter((m) => Number.isInteger(m) && m >= 0 && m <= 3600))].sort((a, b) => a - b).slice(0, MAX_MARKERS);
+  await db.update(simulations).set({ markers: clean }).where(eq(simulations.id, sim.id));
+  return true;
+}
+
 export function normalizeTranscript(turns: ProviderConversation['transcript']): TranscriptTurn[] {
   return (turns ?? []).flatMap((turn): TranscriptTurn[] => {
     const text = turn.message?.trim();

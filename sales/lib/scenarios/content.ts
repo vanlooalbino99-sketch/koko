@@ -31,6 +31,12 @@ export const ScenarioContentSchema = z.object({
     // Ce que le vendeur sait avant l'appel (visible par l'apprenant).
     publicProfile: z.string().trim().max(800),
   }),
+  // Voix ElevenLabs du prospect ; sans elle, la voix par défaut de la langue du scénario.
+  voiceId: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9_-]{8,64}$/)
+    .optional(),
   need: line(800),
   budget: line(300),
   objections: list(10, 1),

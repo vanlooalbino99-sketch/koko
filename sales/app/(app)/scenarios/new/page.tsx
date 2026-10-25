@@ -5,6 +5,7 @@ import { ScenarioForm } from '@/components/scenarios/scenario-form';
 import { FormAlert } from '@/components/ui/field';
 import { can } from '@/lib/domain';
 import { getI18n, requireOnboarded } from '@/lib/server/context';
+import { listVoices } from '@/lib/voice/catalog';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -27,7 +28,7 @@ export default async function NewScenarioPage() {
         <p className="mt-1 text-muted-foreground">{t.form.newSubtitle}</p>
       </div>
       {can(auth.role, 'scenario:create') ? (
-        <ScenarioForm action={createScenarioAction} initial={initial} {...scenarioFormProps(t)} />
+        <ScenarioForm action={createScenarioAction} initial={initial} voices={await listVoices()} {...scenarioFormProps(t)} />
       ) : (
         <FormAlert message={t.form.forbidden} />
       )}

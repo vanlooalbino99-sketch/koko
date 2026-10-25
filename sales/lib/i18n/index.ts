@@ -11,10 +11,7 @@ export function getDictionary(locale: Locale): Dictionary {
   return DICTIONARIES[locale];
 }
 
-// Remplace {nom} par sa valeur : « Bonjour {name} » → « Bonjour Albino ».
-export function format(template: string, values: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
-}
+export { format } from './format.ts';
 
 // Choix de la langue : préférence du compte, sinon cookie, sinon en-tête du navigateur, sinon français.
 export function resolveLocale(options: { user?: string | null; cookie?: string | null; acceptLanguage?: string | null }): Locale {

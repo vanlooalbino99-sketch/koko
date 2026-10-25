@@ -3,11 +3,15 @@ import { after, before, beforeEach, test } from 'node:test';
 import { eq } from 'drizzle-orm';
 import { simulations, voiceAgents } from '../lib/db/schema.ts';
 import type { Db } from '../lib/db/client.ts';
-import { listScenarios } from '../lib/scenarios/service.ts';
+import { getPlayableVersion, listScenarios } from '../lib/scenarios/service.ts';
+import { ScenarioMetaSchema } from '../lib/scenarios/content.ts';
+import { agentPayload } from '../lib/voice/agent-config.ts';
 import {
   finishSimulation,
   getSimulation,
   markSimulationConnected,
+  MAX_MARKERS,
+  saveMarkers,
   startSimulation,
   syncSimulation,
 } from '../lib/simulations/service.ts';
@@ -77,6 +81,18 @@ test('prospect vocal : consigne complète côté serveur, un agent par version, 
   // Le nom de participant envoyé à ElevenLabs est l'identifiant de simulation, pas le nom ni l'e-mail.
   assert.ok(a.ok && provider.tokens[0].participant === a.simulationId);
   assert.equal(JSON.stringify(provider.tokens).includes(auth.user.email), false);
+});
+
+test('prospect vocal : la voix choisie dans le scénario passe avant la voix par défaut de la langue', async () => {
+  const { auth } = await newUser(db, 'Yann');
+  const scenario = await firstCatalogScenario(auth);
+  const playable = (await getPlayableVersion(db, auth, scenario.id))!;
+  const meta = ScenarioMetaSchema.parse(playable.scenario);
+  const version = { id: playable.versionId, number: playable.versionNumber };
+  assert.equal(agentPayload(meta, playable.content, version).conversation_config.tts.voice_id, undefined);
+  assert.equal(agentPayload(meta, playable.content, version, { fr: 'voixLangueFr1' }).conversation_config.tts.voice_id, 'voixLangueFr1');
+  const chosen = agentPayload(meta, { ...playable.content, voiceId: 'voixScenario1' }, version, { fr: 'voixLangueFr1' });
+  assert.equal(chosen.conversation_config.tts.voice_id, 'voixScenario1');
 });
 
 test('prospect vocal : le premier appel précédent passe en récupération quand on en démarre un autre', async () => {
@@ -176,8 +192,23 @@ test('isolation : un autre compte ne voit ni ne termine la simulation', async ()
   assert.equal(await getSimulation(db, b.auth, started.simulationId), null);
   assert.equal(await markSimulationConnected(db, b.auth, started.simulationId, provider.conv(1)), false);
   assert.equal(await finishSimulation(db, provider, b.auth, started.simulationId, 'user'), null);
+  assert.equal(await saveMarkers(db, b.auth, started.simulationId, [3]), false);
   const [row] = await db.select().from(simulations).where(eq(simulations.id, started.simulationId));
   assert.equal(row.status, 'connecting');
+  assert.deepEqual(row.markers, []);
+});
+
+test('moments marqués : triés, sans doublon, bornés à la durée d\'un appel', async () => {
+  const { auth } = await newUser(db, 'Kim');
+  const scenario = await firstCatalogScenario(auth);
+  const started = await startSimulation(db, provider, auth, scenario.id);
+  assert.ok(started.ok);
+  assert.equal(await saveMarkers(db, auth, started.simulationId, [42, 7, 42, -1, 1.5, 9999, 12]), true);
+  let [row] = await db.select().from(simulations).where(eq(simulations.id, started.simulationId));
+  assert.deepEqual(row.markers, [7, 12, 42]);
+  await saveMarkers(db, auth, started.simulationId, Array.from({ length: 80 }, (_, i) => i));
+  [row] = await db.select().from(simulations).where(eq(simulations.id, started.simulationId));
+  assert.equal(row.markers.length, MAX_MARKERS);
 });
 
 test('coûts : plus de crédits ce mois-ci, pas d\'appel ; jeton refusé, simulation en échec', async () => {

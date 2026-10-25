@@ -7,6 +7,7 @@ import { getDb } from '@/lib/db/client';
 import type { ScenarioContent } from '@/lib/scenarios/content';
 import { getScenario } from '@/lib/scenarios/service';
 import { getI18n, requireOnboarded } from '@/lib/server/context';
+import { listVoices } from '@/lib/voice/catalog';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -29,6 +30,7 @@ export default async function EditScenarioPage({ params }: { params: Promise<{ i
         action={updateScenarioAction}
         id={detail.scenario.id}
         initial={valuesFrom(detail.scenario, detail.content as ScenarioContent)}
+        voices={await listVoices()}
         {...scenarioFormProps(t)}
       />
     </div>

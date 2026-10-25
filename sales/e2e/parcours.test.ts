@@ -161,6 +161,16 @@ before(async () => {
     req.on('end', () => {
       mockCalls.push({ method: req.method ?? '', url: req.url ?? '', key: req.headers['xi-api-key'] as string, body });
       res.setHeader('content-type', 'application/json');
+      if (req.url === '/v1/voices') {
+        return res.end(
+          JSON.stringify({
+            voices: [
+              { voice_id: 'voixThomas01', name: 'Thomas', preview_url: null, labels: { gender: 'male', accent: 'french' } },
+              { voice_id: 'voixCharlotte1', name: 'Charlotte', preview_url: null, labels: { gender: 'female', accent: 'french' } },
+            ],
+          }),
+        );
+      }
       if (req.url?.startsWith('/v1/convai/agents/create')) return res.end(JSON.stringify({ agent_id: `agent_e2e_${mockCalls.length}` }));
       if (req.url?.startsWith('/v1/convai/conversation/token')) {
         return res.end(JSON.stringify({ token: 'jeton-de-test', conversation_id: `conv_e2e_${mockCalls.length}` }));
@@ -197,9 +207,11 @@ before(async () => {
       DATABASE_URL: '',
       ELEVENLABS_API_KEY: 'cle-de-test',
       ELEVENLABS_API_BASE: `http://127.0.0.1:${MOCK_PORT}`,
+      ELEVENLABS_VOICE_FR: 'voixThomas01',
       ANTHROPIC_API_KEY: 'cle-de-test',
       ANTHROPIC_BASE_URL: `http://127.0.0.1:${MOCK_PORT}`,
       ANALYSIS_MODEL: '',
+      BS_PREVIEW: '1',
     },
     stdio: ['ignore', 'ignore', 'pipe'],
     detached: true,
@@ -303,6 +315,8 @@ test('parcours complet d\'un nouvel utilisateur', async () => {
   await page.getByLabel('Objections (une par ligne)').fill('Trop cher\nPas le temps');
   await page.getByLabel('Informations cachées (une par ligne)').fill('Son associé veut un essai gratuit');
   await page.getByLabel('Critères de réussite (un par ligne)').fill('Date de décision obtenue');
+  // Voix du prospect choisie parmi les voix du compte ElevenLabs.
+  await page.getByLabel('Voix du prospect').selectOption('voixCharlotte1');
   await page.getByRole('button', { name: 'Créer le scénario' }).click();
   await assert.doesNotReject(page.getByText('Scénario créé.').waitFor());
   assert.equal(await page.getByText('Son associé veut un essai gratuit').count(), 1, 'l\'auteur voit ses infos cachées');
@@ -312,6 +326,7 @@ test('parcours complet d\'un nouvel utilisateur', async () => {
 
   // Modification : nouvelle version.
   await page.getByRole('link', { name: 'Modifier' }).click();
+  assert.equal(await page.getByLabel('Voix du prospect').inputValue(), 'voixCharlotte1', 'voix enregistrée dans la version');
   await page.getByLabel('Titre').fill('Relance d\'un garage automobile indépendant');
   await page.getByRole('button', { name: 'Enregistrer une nouvelle version' }).click();
   await assert.doesNotReject(page.getByText('Nouvelle version enregistrée.').waitFor());
@@ -377,9 +392,14 @@ test('appel vocal : prospect créé côté serveur, échec de connexion géré, 
   await page.getByRole('link', { name: "Démarrer l'appel" }).click();
   await page.waitForURL(/\/call$/);
   await assert.doesNotReject(page.getByText('15 min de voix restantes ce mois-ci').waitFor());
+  await assert.doesNotReject(page.getByText('Voix : Thomas').waitFor());
   // La consigne du prospect (faits cachés) ne quitte jamais le serveur.
   assert.equal((await page.content()).includes("dizaine d'appels"), false);
   await shot(page, '09-appel-brief');
+  // Le brief du prospect s'ouvre depuis la barre de commandes, sans les faits cachés.
+  await page.getByRole('button', { name: 'Brief' }).click();
+  await assert.doesNotReject(page.getByRole('dialog', { name: 'Avant de décrocher' }).waitFor());
+  await page.getByRole('button', { name: 'Fermer le brief' }).click();
 
   const before = mockCalls.length;
   await page.getByRole('button', { name: "Démarrer l'appel" }).click();
@@ -394,6 +414,7 @@ test('appel vocal : prospect créé côté serveur, échec de connexion géré, 
   const payload = JSON.parse(create.body);
   assert.equal(payload.conversation_config.agent.language, 'fr');
   assert.equal(payload.platform_settings.auth.enable_auth, true);
+  assert.equal(payload.conversation_config.tts.voice_id, 'voixThomas01', 'voix française par défaut');
   assert.match(payload.conversation_config.agent.prompt.prompt, /dizaine d'appels/, 'les faits cachés sont dans la consigne serveur');
   const token = calls.find((c) => c.url.startsWith('/v1/convai/conversation/token'));
   assert.ok(token);
@@ -410,6 +431,25 @@ test('appel vocal : prospect créé côté serveur, échec de connexion géré, 
   await page.getByRole('link', { name: /plombier/ }).click();
   await page.getByRole('link', { name: "Démarrer l'appel" }).click();
   await assert.doesNotReject(page.getByText('15 min de voix restantes ce mois-ci').waitFor());
+
+  // Écran en pleine conversation (aperçu des tests) : mêmes mesures que pendant un vrai appel.
+  await page.setViewportSize({ width: 1440, height: 1024 });
+  await page.goto(`${BASE}/preview/vox`);
+  await assert.doesNotReject(page.getByText('Vous avez évoqué une remise.', { exact: false }).waitFor());
+  await assert.doesNotReject(page.getByText('Question ouverte').first().waitFor());
+  await assert.doesNotReject(page.getByText('Concession', { exact: true }).waitFor());
+  await page.waitForTimeout(400);
+  await shot(page, '09b-appel-en-direct');
+
+  // Mobile : l'écran d'appel tient dans la largeur.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${BASE}/scenarios?language=fr`);
+  await page.getByRole('link', { name: /plombier/ }).click();
+  await page.getByRole('link', { name: "Démarrer l'appel" }).click();
+  await page.waitForURL(/\/call$/);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  assert.ok(overflow <= 1, `débordement horizontal de ${overflow}px`);
+  await shot(page, '09c-appel-mobile');
   assert.deepEqual(errors, [], 'aucune erreur JavaScript');
   await context.close();
 });

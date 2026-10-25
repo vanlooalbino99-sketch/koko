@@ -225,6 +225,8 @@ export const simulations = pgTable(
     errorMessage: text('error_message'),
     lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
     overallScore: integer('overall_score'),
+    // Moments marqués par le vendeur pendant l'appel (secondes depuis le début), repris dans le rapport.
+    markers: integer('markers').array().notNull().default(sql`'{}'::integer[]`),
     createdAt: createdAt(),
   },
   (t) => [

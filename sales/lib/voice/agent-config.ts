@@ -7,10 +7,11 @@ import type { AgentPayload } from './provider.ts';
 // Modèle de consigne versionné : changer ce numéro (ou la consigne) recrée les prospects vocaux existants.
 export const PROMPT_TEMPLATE_VERSION = 1;
 
-// Le prospect répond vite : un modèle rapide pour la conversation, la voix la plus réactive d'ElevenLabs
-// (multilingue). L'analyse détaillée de l'appel est faite après coup, à l'étape 3.
+// Le prospect répond vite : un modèle rapide pour la conversation, la voix la plus réactive d'ElevenLabs.
+// ElevenLabs exige sa version anglaise pour un prospect anglais, la multilingue pour les autres langues.
+// L'analyse détaillée de l'appel est faite après coup, à l'étape 3.
 const LLM = 'claude-haiku-5-5';
-const TTS_MODEL = 'eleven_flash_v2_5';
+const TTS_MODEL: Record<Locale, string> = { fr: 'eleven_flash_v2_5', en: 'eleven_flash_v2' };
 
 const LANGUAGE_NAME: Record<Locale, string> = { fr: 'French', en: 'English' };
 
@@ -126,7 +127,7 @@ export function agentPayload(
           },
         },
       },
-      tts: { model_id: TTS_MODEL, ...(voiceId ? { voice_id: voiceId } : {}) },
+      tts: { model_id: TTS_MODEL[meta.language], ...(voiceId ? { voice_id: voiceId } : {}) },
       turn: { turn_eagerness: EAGERNESS[content.prospect.personality] },
       // Plafond de durée : la durée visée du scénario plus une marge, jamais plus de MAX_CALL_MINUTES (maîtrise des coûts).
       conversation: { max_duration_seconds: Math.min(MAX_CALL_MINUTES, meta.estimatedMinutes + 5) * 60 },

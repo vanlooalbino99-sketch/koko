@@ -1,5 +1,6 @@
 // Lancé avant « next start » : migrations de la base de production et catalogue public à jour.
-import { migratePostgres } from '../lib/db/client.ts';
+import { connectPostgres, migratePostgres } from '../lib/db/client.ts';
+import { demoDatabaseUrl, refreshDemoSchema } from '../lib/demo/space.ts';
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -7,4 +8,16 @@ if (!url) {
 } else {
   const result = await migratePostgres(url);
   console.log(`[migrate] migrations appliquées ; catalogue : ${result.created} créés, ${result.updated} mis à jour.`);
+}
+
+// Espace démo dans le schéma demo : reconstruit si besoin. Un échec ne bloque pas le démarrage du site.
+if (url && demoDatabaseUrl()) {
+  const { db, close } = await connectPostgres(url, 1);
+  try {
+    console.log(`[migrate] espace démo ${(await refreshDemoSchema(db)) ? 'reconstruit' : 'à jour'}.`);
+  } catch (error) {
+    console.error('[migrate] espace démo non reconstruit', error instanceof Error ? error.message : error);
+  } finally {
+    await close();
+  }
 }

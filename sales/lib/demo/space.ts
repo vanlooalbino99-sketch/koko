@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { and, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import { hashToken } from '../auth/service.ts';
-import { connectPglite, type Db } from '../db/client.ts';
+import { connectPglite, connectPostgres, getDb as getMainDb, MIGRATIONS_FOLDER, type Db } from '../db/client.ts';
 import {
   billingAccounts,
   creditDebits,
@@ -19,18 +21,34 @@ import {
   type TranscriptTurn,
 } from '../db/schema.ts';
 import { finalizeAnalysis, scenariosForSkills } from '../analysis/service.ts';
+import { syncCatalog } from '../scenarios/catalog-sync.ts';
 import type { ClaudeAnalysis } from '../analysis/schema.ts';
 import type { Role, Skill } from '../domain.ts';
 
 // Espace de démonstration : une équipe fictive (« Horizon Conseil ») avec ses appels, ses rapports et ses
-// missions, dans une base Postgres en mémoire, séparée de la vraie base et en lecture seule. Aucun chiffre de
-// cet espace n'entre dans les statistiques de la plateforme.
+// missions, séparée des vraies données et en lecture seule. Aucun chiffre de cet espace n'entre dans les
+// statistiques de la plateforme.
+//
+// En production, il vit dans le schéma Postgres « demo » de la base, à côté des vraies tables sans s'y mêler. Les
+// visites le lisent avec le rôle bs_demo_app, qui ne peut que lire et dont le chemin de recherche pointe sur ce
+// schéma : même adresse que DATABASE_URL, avec ce rôle et son mot de passe DEMO_DATABASE_PASSWORD. Ailleurs, sans
+// ce mot de passe, une base PGlite en mémoire fait l'affaire : elle pèse près de 700 Mo, trop pour la production.
 export const DEMO_COOKIE = 'bs_demo';
+export const DEMO_READER = 'bs_demo_app';
 
-// La base de démo vit en mémoire (PGlite) et pèse près de 700 Mo : une instance de 512 Mo s'arrête dès qu'elle la
-// construit. En production, l'espace démo reste donc fermé sauf si DEMO_SPACE=1 le demande.
+export function demoDatabaseUrl(): string | null {
+  const main = process.env.DATABASE_URL;
+  const password = process.env.DEMO_DATABASE_PASSWORD;
+  if (!main || !password) return null;
+  const url = new URL(main);
+  // Le pooler de Supabase attend « rôle.projet » : seul le rôle change.
+  url.username = url.username.replace(/^[^.]+/, DEMO_READER);
+  url.password = encodeURIComponent(password);
+  return url.toString();
+}
+
 export function demoSpaceEnabled(): boolean {
-  return process.env.NODE_ENV !== 'production' || process.env.DEMO_SPACE === '1';
+  return demoDatabaseUrl() !== null || process.env.NODE_ENV !== 'production';
 }
 
 const DAY = 86_400_000;
@@ -413,31 +431,120 @@ export async function seedDemoSpace(db: Db, now = new Date()): Promise<{ token: 
   return { token, organizationId: org.id };
 }
 
-export type DemoSpace = { db: Db; token: string; close: () => Promise<void> };
-
-// Construite à la première visite, puis reconstruite chaque jour pour que les dates restent récentes.
+// Reconstruit chaque jour pour que les dates restent récentes.
 const REBUILD_MS = DAY;
-const holder = globalThis as typeof globalThis & { __bsDemoSpace?: { builtAt: number; space: Promise<DemoSpace> } };
+// À changer quand les données fictives changent : le schéma demo est alors reconstruit au démarrage suivant.
+const SEED_VERSION = 1;
 
-async function build(): Promise<DemoSpace> {
-  const { db, close } = await connectPglite();
-  try {
-    const { token } = await seedDemoSpace(db);
-    // Lecture seule : aucune requête de la visite ne peut rien écrire, même par un chemin oublié.
-    await db.execute(sql`set session characteristics as transaction read only`);
-    return { db, token, close };
-  } catch (error) {
-    await close();
-    throw error;
-  }
+type Rows = { rows: Record<string, unknown>[] };
+const rows = async (db: Db, query: SQL) => ((await db.execute(query)) as unknown as Rows).rows;
+
+// Les migrations de la vraie base, rejouées dans le schéma demo.
+function migrationStatements(): string[] {
+  const journal = JSON.parse(readFileSync(join(MIGRATIONS_FOLDER, 'meta', '_journal.json'), 'utf8')) as { entries: { tag: string }[] };
+  return journal.entries.flatMap(({ tag }) =>
+    readFileSync(join(MIGRATIONS_FOLDER, `${tag}.sql`), 'utf8')
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim().replaceAll('"public".', ''))
+      // Pas de sécurité par ligne ici : le rôle de lecture n'est pas propriétaire des tables, elle lui cacherait tout.
+      .filter((statement) => statement && !/ROW LEVEL SECURITY/i.test(statement)),
+  );
 }
 
-export function demoSpace(): Promise<DemoSpace> {
+// Construit le schéma demo (tables, catalogue, équipe fictive) s'il manque, s'il a plus d'un jour ou si les
+// migrations ou les données ont changé. Le verrou évite deux constructions en même temps. Vrai s'il a été reconstruit.
+export async function refreshDemoSchema(db: Db, now = new Date()): Promise<boolean> {
+  const statements = migrationStatements();
+  const version = createHash('sha256').update(`${SEED_VERSION}\n${statements.join('\n')}`).digest('hex').slice(0, 16);
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('blackstart-demo-schema'))`);
+    const [present] = await rows(tx, sql`select to_regclass('demo.demo_meta') is not null as present`);
+    if (present?.present) {
+      const [built] = await rows(tx, sql`select version, built_at from demo.demo_meta`);
+      if (built?.version === version && now.getTime() - new Date(built.built_at as string).getTime() < REBUILD_MS) return false;
+    }
+    await tx.execute(sql`drop schema if exists demo cascade`);
+    await tx.execute(sql`create schema demo`);
+    await tx.execute(sql`set local search_path to demo`);
+    for (const statement of statements) await tx.execute(sql.raw(statement));
+    await syncCatalog(tx);
+    const { token } = await seedDemoSpace(tx, now);
+    await tx.execute(sql`create table demo_meta (version text not null, built_at timestamptz not null, token text not null)`);
+    await tx.execute(sql`insert into demo_meta values (${version}, ${now.toISOString()}, ${token})`);
+    await tx.execute(
+      sql.raw(`do $$ begin if exists (select from pg_roles where rolname = '${DEMO_READER}') then
+        grant usage on schema demo to ${DEMO_READER};
+        grant select on all tables in schema demo to ${DEMO_READER};
+      end if; end $$`),
+    );
+    return true;
+  });
+}
+
+export type DemoSpace = { db: Db; token: string };
+
+const holder = globalThis as typeof globalThis & {
+  __bsDemoReader?: Promise<Db>;
+  __bsDemoRefresh?: Promise<unknown>;
+  __bsDemoSpace?: { builtAt: number; space: Promise<DemoSpace & { close: () => Promise<void> }> };
+};
+
+function refresh(): Promise<unknown> {
+  holder.__bsDemoRefresh ??= getMainDb()
+    .then((db) => refreshDemoSchema(db))
+    .catch((error) => console.error('[demo] espace démo non reconstruit', error instanceof Error ? error.message : error))
+    .finally(() => delete holder.__bsDemoRefresh);
+  return holder.__bsDemoRefresh;
+}
+
+// Base de la visite de démo.
+export function demoDb(): Promise<Db> {
+  const url = demoDatabaseUrl();
+  if (!url) return localSpace().then((space) => space.db);
+  holder.__bsDemoReader ??= connectPostgres(url, 2).then(
+    (r) => r.db,
+    (error) => {
+      delete holder.__bsDemoReader;
+      throw error;
+    },
+  );
+  return holder.__bsDemoReader;
+}
+
+// La base et la session de Camille, partagée par tous les visiteurs.
+export async function demoSpace(): Promise<DemoSpace> {
+  if (!demoDatabaseUrl()) return localSpace();
+  const db = await demoDb();
+  const read = async () => (await rows(db, sql`select token, built_at from demo_meta`).catch(() => []))[0];
+  let meta = await read();
+  if (!meta) {
+    await refresh();
+    meta = await read();
+    if (!meta) throw new Error('Espace démo indisponible.');
+  } else if (Date.now() - new Date(meta.built_at as string).getTime() > REBUILD_MS) {
+    void refresh();
+  }
+  return { db, token: meta.token as string };
+}
+
+// Hors production : base PGlite en mémoire, en lecture seule, reconstruite chaque jour.
+function localSpace() {
   const current = holder.__bsDemoSpace;
   if (current && Date.now() - current.builtAt < REBUILD_MS) return current.space;
   // L'ancienne base est fermée un peu plus tard, le temps que les requêtes en cours se terminent.
   void current?.space.then((old) => setTimeout(() => void old.close(), 120_000).unref(), () => undefined);
-  const space = build();
+  const space = (async () => {
+    const { db, close } = await connectPglite();
+    try {
+      const { token } = await seedDemoSpace(db);
+      // Lecture seule : aucune requête de la visite ne peut rien écrire, même par un chemin oublié.
+      await db.execute(sql`set session characteristics as transaction read only`);
+      return { db, token, close };
+    } catch (error) {
+      await close();
+      throw error;
+    }
+  })();
   holder.__bsDemoSpace = { builtAt: Date.now(), space };
   space.catch(() => {
     if (holder.__bsDemoSpace?.space === space) delete holder.__bsDemoSpace;

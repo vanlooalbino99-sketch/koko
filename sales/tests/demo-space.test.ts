@@ -6,7 +6,7 @@ import type { AnalysisResult } from '../lib/analysis/schema.ts';
 import { getDashboard } from '../lib/dashboard/service.ts';
 import type { Db } from '../lib/db/client.ts';
 import { simulationAnalyses, simulations, users } from '../lib/db/schema.ts';
-import { seedDemoSpace } from '../lib/demo/space.ts';
+import { refreshDemoSchema, seedDemoSpace } from '../lib/demo/space.ts';
 import { testDb } from './helpers.ts';
 
 let db: Db;
@@ -45,4 +45,27 @@ test("l'espace de démo : une équipe fictive complète, des rapports valides, p
 
   await db.execute(sql`set session characteristics as transaction read only`);
   await assert.rejects(db.update(users).set({ name: 'X' }), (e: Error) => /read-only/.test(String(e.cause)));
+});
+
+test('en production, l\'espace démo vit dans le schéma demo, sans toucher aux vraies tables', async () => {
+  const own = await testDb();
+  try {
+    const now = new Date('2026-10-25T12:00:00Z');
+    assert.equal(await refreshDemoSchema(own.db, now), true);
+    assert.equal(await refreshDemoSchema(own.db, new Date(now.getTime() + 3_600_000)), false, 'à jour : rien à refaire');
+    assert.equal((await own.db.select().from(users)).length, 0, 'aucune donnée fictive dans les vraies tables');
+
+    // Ce que voit le rôle de lecture, dont le chemin de recherche pointe sur demo.
+    await own.db.execute(sql`set search_path to demo`);
+    const [{ token }] = ((await own.db.execute(sql`select token from demo_meta`)) as unknown as { rows: { token: string }[] }).rows;
+    const auth = await getAuthContext(own.db, token);
+    assert.equal(auth?.user.name, 'Camille Roux');
+    const d = await getDashboard(own.db, auth!);
+    assert.equal(d.members, 5);
+    await own.db.execute(sql`set search_path to public`);
+
+    assert.equal(await refreshDemoSchema(own.db, new Date(now.getTime() + 2 * 86_400_000)), true, 'reconstruit après un jour');
+  } finally {
+    await own.close();
+  }
 });

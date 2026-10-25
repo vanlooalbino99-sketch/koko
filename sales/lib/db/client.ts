@@ -10,14 +10,14 @@ export const MIGRATIONS_FOLDER = join(process.cwd(), 'drizzle');
 
 // Production : DATABASE_URL (Supabase, pooler en mode session). Supabase signe ses certificats avec sa
 // propre autorité : DATABASE_CA (le certificat téléchargé depuis Supabase) permet de la vérifier.
-export async function connectPostgres(url: string): Promise<{ db: Db; close: () => Promise<void> }> {
+export async function connectPostgres(url: string, max = Number(process.env.DATABASE_POOL_MAX ?? 5)): Promise<{ db: Db; close: () => Promise<void> }> {
   const { Pool } = await import('pg');
   const { drizzle } = await import('drizzle-orm/node-postgres');
   const local = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
   const ca = process.env.DATABASE_CA?.replace(/\\n/g, '\n');
   const pool = new Pool({
     connectionString: url,
-    max: Number(process.env.DATABASE_POOL_MAX ?? 5),
+    max,
     ssl: local ? false : ca ? { ca } : { rejectUnauthorized: false },
   });
   return { db: drizzle(pool, { schema }), close: () => pool.end() };

@@ -1,21 +1,21 @@
 @import 'tailwindcss';
 
-/* Thème sombre Blackstart : surfaces bleu nuit, accent violet, second accent turquoise. Contrastes AA vérifiés
+/* Thème sombre Blackstart : surfaces graphite, accent violet, second accent turquoise. Contrastes AA vérifiés
    sur les textes (foreground et muted-foreground sur background et surface). */
 :root {
-  --background: #090c15;
-  --surface: #0f1320;
-  --surface-2: #161b2c;
-  --foreground: #e8ebf4;
-  --muted-foreground: #98a1b7;
-  --primary: #7c6cff;
+  --background: #0c0d11;
+  --surface: #15161c;
+  --surface-2: #1c1d24;
+  --foreground: #eceef3;
+  --muted-foreground: #9a9eac;
+  --primary: #7b6cff;
   --primary-foreground: #ffffff;
-  --teal: #2dd4bf;
-  --success: #34d399;
+  --teal: #3fe0b5;
+  --success: #3fe0b5;
   --warning: #fbbf24;
   --destructive: #f87171;
-  --border: #1f2638;
-  --input: #2a3248;
+  --border: #24252e;
+  --input: #2e303a;
   --ring: #8f82ff;
   color-scheme: dark;
 }

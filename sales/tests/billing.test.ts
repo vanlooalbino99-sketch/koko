@@ -55,6 +55,9 @@ const PRICES: Record<'pro' | 'team', PlanPrice> = {
 // Faux Stripe : garde les clients, sessions et abonnements en mémoire, au format des instantanés.
 let fakes = 0;
 class FakeStripe implements BillingProvider {
+  async paidInvoices() {
+    return [];
+  }
   readonly prefix = `f${++fakes}`;
   customers: { name: string; email: string; organizationId: string }[] = [];
   checkouts: Parameters<BillingProvider['createCheckout']>[0][] = [];

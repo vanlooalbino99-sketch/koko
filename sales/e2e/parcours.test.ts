@@ -15,7 +15,7 @@ import type { ClaudeAnalysis } from '../lib/analysis/schema.ts';
 import { getAuthContext, signUp as createAccount } from '../lib/auth/service.ts';
 import { connectPglite } from '../lib/db/client.ts';
 import { eq } from 'drizzle-orm';
-import { billingAccounts, organizations, simulationAnalyses, simulations, type TranscriptTurn } from '../lib/db/schema.ts';
+import { billingAccounts, organizations, simulationAnalyses, simulations, users, type TranscriptTurn } from '../lib/db/schema.ts';
 import type { Skill } from '../lib/domain.ts';
 import { OnboardingSchema, saveProfile } from '../lib/profile/service.ts';
 import { getPlayableVersion, listScenarios } from '../lib/scenarios/service.ts';
@@ -170,6 +170,21 @@ async function seedTeam() {
   }
 }
 
+// Le compte de l'éditeur, seul à voir le cockpit de la plateforme.
+const admin = { email: `editeur.${Date.now()}@example.com` };
+async function seedAdmin() {
+  const { db, close } = await connectPglite(dataDir);
+  try {
+    const res = await createAccount(db, { name: 'Éditeur Blackstart', email: admin.email, password: 'motdepasse-solide', locale: 'fr' });
+    if (!res.ok) throw new Error(res.error);
+    const auth = (await getAuthContext(db, res.token))!;
+    await saveProfile(db, auth, OnboardingSchema.parse({ persona: 'agency', experience: 'expert', goals: ['closing'] }));
+    await db.update(users).set({ isPlatformAdmin: true }).where(eq(users.id, auth.user.id));
+  } finally {
+    await close();
+  }
+}
+
 async function waitForHealth() {
   for (let i = 0; i < 120; i++) {
     try {
@@ -232,6 +247,7 @@ before(async () => {
   await new Promise<void>((resolve) => mock.listen(MOCK_PORT, '127.0.0.1', resolve));
   await seedCompletedCall();
   await seedTeam();
+  await seedAdmin();
   // Groupe de processus à part : on arrête le serveur et ses enfants d'un coup à la fin.
   server = spawn('node_modules/.bin/next', ['start', '-p', String(PORT), '-H', '127.0.0.1'], {
     env: {
@@ -687,4 +703,56 @@ test('espace équipe : invitation par lien, inscription, mission attribuée, rô
   assert.deepEqual(errors, [], 'aucune erreur JavaScript');
   await guestContext.close();
   await ownerContext.close();
+});
+
+test('cockpit de l\'éditeur : chiffres réels de la plateforme, comptes à surveiller, export CSV', async () => {
+  const context = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1440, height: 1000 } });
+  context.setDefaultTimeout(20_000);
+  const page = await context.newPage();
+  lastPage = page;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`${BASE}/login`);
+  await page.getByLabel('E-mail').fill(admin.email);
+  await page.getByLabel('Mot de passe').fill('motdepasse-solide');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.waitForURL(`${BASE}/dashboard`);
+  await page.getByRole('link', { name: 'Cockpit', exact: true }).first().click();
+  await page.waitForURL(`${BASE}/admin`);
+  await assert.doesNotReject(page.getByRole('heading', { name: 'Cockpit', level: 1 }).waitFor());
+
+  // MRR : l'abonnement Équipe de Tania (3 sièges au prix de lancement de 25 €), sans Stripe pas d'encaissé inventé.
+  const mrr = page.locator('section', { has: page.getByRole('heading', { name: 'MRR', exact: true }) });
+  await assert.doesNotReject(mrr.getByText(/^75\s€$/).first().waitFor());
+  await assert.doesNotReject(page.getByText('Stripe n’est pas encore connecté', { exact: false }).waitFor());
+  // Comptes à surveiller : les espaces qui ont appelé ou payé, avec leur santé.
+  const risk = page.locator('section[aria-labelledby="risk-title"]');
+  await assert.doesNotReject(risk.getByText('Équipe Tania').waitFor());
+  await assert.doesNotReject(risk.getByText('Romain Rapport', { exact: false }).first().waitFor());
+  await shot(page, '18-cockpit');
+
+  // Période et export.
+  await page.locator('summary', { hasText: '–' }).click();
+  await page.getByRole('link', { name: '7 derniers jours' }).click();
+  await page.waitForURL(`${BASE}/admin?period=7`);
+  const csv = await page.request.get(`${BASE}/api/admin/export?period=7`);
+  assert.equal(csv.status(), 200);
+  assert.match(csv.headers()['content-type'], /text\/csv/);
+  const body = await csv.text();
+  assert.match(body, /^\uFEFFCompte,Offre,Santé/);
+  assert.ok(body.includes('Équipe Tania'));
+
+  // Sur téléphone, le cockpit tient dans la largeur (le tableau défile dans sa carte).
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  assert.ok(overflow <= 0, `débordement horizontal de ${overflow}px`);
+  await shot(page, '18b-cockpit-mobile');
+
+  // Un client n'a ni la page ni l'export.
+  const client = await browser.newContext();
+  const res = await client.request.get(`${BASE}/api/admin/export`);
+  assert.equal(res.status(), 404);
+  await client.close();
+  assert.deepEqual(errors, [], 'aucune erreur JavaScript');
+  await context.close();
 });

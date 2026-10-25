@@ -37,6 +37,9 @@ export type WebhookEvent = {
   subscriptionId: string | null;
 };
 
+// Facture payée, réduite à ce que le cockpit de l'éditeur affiche.
+export type PaidInvoice = { amount: number; currency: string; paidAt: Date };
+
 export class WebhookSignatureError extends Error {}
 
 export interface BillingProvider {
@@ -57,6 +60,8 @@ export interface BillingProvider {
   // Change l'offre (prix) et le nombre de sièges d'un abonnement en cours, au prorata.
   updateSubscription(subscriptionId: string, itemId: string, priceId: string, seats: number): Promise<SubscriptionSnapshot>;
   parseWebhook(body: string, signature: string): WebhookEvent;
+  // Factures payées depuis une date (2 000 au plus), pour le chiffre d'affaires encaissé.
+  paidInvoices(since: Date): Promise<PaidInvoice[]>;
 }
 
 const PORTAL_TAG = 'blackstart-sales';
@@ -171,6 +176,16 @@ export function stripeProvider(secretKey: string, webhookSecret: string | null):
 
   return {
     prices,
+    async paidInvoices(since) {
+      const invoices = await stripe.invoices
+        .list({ status: 'paid', created: { gte: Math.floor(since.getTime() / 1000) }, limit: 100 })
+        .autoPagingToArray({ limit: 2000 });
+      return invoices.map((invoice) => ({
+        amount: invoice.amount_paid,
+        currency: invoice.currency,
+        paidAt: new Date((invoice.status_transitions?.paid_at ?? invoice.created) * 1000),
+      }));
+    },
     async createCustomer({ name, email, organizationId }) {
       const customer = await stripe.customers.create({
         name,

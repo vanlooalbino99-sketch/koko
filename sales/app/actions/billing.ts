@@ -4,9 +4,9 @@ import { redirect } from 'next/navigation';
 import { BillingError, changeSubscription, openPortal, startCheckout } from '@/lib/billing/service';
 import { PAID_PLANS } from '@/lib/billing/plans';
 import { billingProviderFromEnv } from '@/lib/billing/stripe';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { isOneOf } from '@/lib/domain';
-import { getI18n, requireAuth } from '@/lib/server/context';
+import { getI18n, refuseInDemo, requireAuth } from '@/lib/server/context';
 import { appUrl } from '@/lib/server/url';
 
 // Chaque action renvoie vers Stripe ou vers la page Abonnement avec un code d'erreur lisible.
@@ -29,6 +29,7 @@ function seatsFrom(formData: FormData) {
 }
 
 export async function startCheckoutAction(formData: FormData) {
+  await refuseInDemo();
   const auth = await requireAuth();
   const provider = billingProviderFromEnv();
   const plan = formData.get('plan');
@@ -53,6 +54,7 @@ export async function startCheckoutAction(formData: FormData) {
 }
 
 export async function changeSubscriptionAction(formData: FormData) {
+  await refuseInDemo();
   const auth = await requireAuth();
   const provider = billingProviderFromEnv();
   const plan = formData.get('plan');
@@ -65,6 +67,7 @@ export async function changeSubscriptionAction(formData: FormData) {
 }
 
 export async function openPortalAction() {
+  await refuseInDemo();
   const auth = await requireAuth();
   const provider = billingProviderFromEnv();
   if (!provider) redirect('/billing?error=not_configured');

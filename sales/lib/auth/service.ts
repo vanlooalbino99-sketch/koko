@@ -28,6 +28,8 @@ export type AuthContext = {
   user: { id: string; name: string; email: string; locale: Locale; isPlatformAdmin: boolean };
   organization: { id: string; name: string; kind: string; plan: string };
   role: Role;
+  // Visite de démo : équipe fictive, en lecture seule.
+  demo?: boolean;
 };
 
 // Comptes de l'éditeur (page des coûts de la plateforme) : PLATFORM_ADMIN_EMAILS, séparés par des virgules.

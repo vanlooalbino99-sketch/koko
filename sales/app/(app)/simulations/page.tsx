@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import type { Family } from '@/lib/domain';
 import { format, formatDate } from '@/lib/i18n';
 import { getI18n, requireOnboarded } from '@/lib/server/context';

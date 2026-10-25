@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { creditStatus } from '@/lib/billing/credits';
 import { getDashboard } from '@/lib/dashboard/service';
 import { PERIODS, periodOf, trainingPulse, type SkillRow } from '@/lib/dashboard/pulse';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { can, SKILLS, type Family, type Skill } from '@/lib/domain';
 import { format, formatDate, timeAgo } from '@/lib/i18n';
 import { recommendScenarios } from '@/lib/scenarios/service';

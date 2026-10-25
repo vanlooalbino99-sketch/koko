@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { format } from '@/lib/i18n';
 import { getScenario } from '@/lib/scenarios/service';
 import { getI18n, requireOnboarded } from '@/lib/server/context';

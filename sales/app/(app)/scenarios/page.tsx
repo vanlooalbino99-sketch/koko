@@ -5,7 +5,7 @@ import { ScenarioCard } from '@/components/scenarios/scenario-card';
 import { Button } from '@/components/ui/button';
 import { FormAlert } from '@/components/ui/field';
 import { Input, Select } from '@/components/ui/input';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { DIFFICULTIES, FAMILIES, LOCALES, isOneOf } from '@/lib/domain';
 import { format } from '@/lib/i18n';
 import { listScenarios } from '@/lib/scenarios/service';

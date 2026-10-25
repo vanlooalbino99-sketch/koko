@@ -77,11 +77,13 @@ export async function voxData(
     },
     voiceName,
     remaining: configured ? format(c.remaining, { n: credits.remaining }) : null,
-    blocked: !configured
-      ? { message: c.notConfigured }
-      : credits.remaining < 1
-        ? { message: c.quotaExceeded, link: { href: '/billing', label: c.upgrade } }
-        : null,
+    blocked: auth.demo
+      ? { message: t.demo.callBlocked, link: { href: '/demo', label: t.demo.callBlockedLink } }
+      : !configured
+        ? { message: c.notConfigured }
+        : credits.remaining < 1
+          ? { message: c.quotaExceeded, link: { href: '/billing', label: c.upgrade } }
+          : null,
     locale,
     labels: c,
   };

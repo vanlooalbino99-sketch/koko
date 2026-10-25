@@ -53,7 +53,7 @@ import { analyzerFromEnv } from '@/lib/analysis/claude';
 import type { AnalysisResult } from '@/lib/analysis/schema';
 import { canReanalyze, getAnalysis } from '@/lib/analysis/service';
 import { platformUsage } from '@/lib/billing/credits';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import type { TranscriptTurn } from '@/lib/db/schema';
 import type { Family, Locale, Skill } from '@/lib/domain';
 import { format, formatDate, type Dictionary } from '@/lib/i18n';

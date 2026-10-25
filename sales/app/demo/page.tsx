@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, LayoutDashboard } from 'lucide-react';
+import { enterDemoAction } from '@/app/actions/auth';
 import type { VoxStatic } from '@/components/vox/vox-screen';
 import { DEMO_CALL } from '@/lib/demo/script';
 import type { Difficulty } from '@/lib/domain';
@@ -101,6 +102,14 @@ export default async function DemoPage() {
               <figcaption className="mt-2 text-[12px] text-muted-foreground">{d.sample}</figcaption>
             </figure>
           </div>
+
+          <form action={enterDemoAction} className="mt-4 flex flex-col items-start gap-4 rounded-xl border border-primary/40 bg-primary/10 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-2xl text-[14px] text-muted-foreground">{d.exploreText}</p>
+            <button className="vox-gradient inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-4 text-[14px] font-medium text-white hover:brightness-110">
+              <LayoutDashboard className="size-4" aria-hidden="true" />
+              {d.explore}
+            </button>
+          </form>
 
           <div className="mt-12 flex flex-col items-start gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>

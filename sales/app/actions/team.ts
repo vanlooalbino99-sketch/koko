@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { ROLES, isOneOf } from '@/lib/domain';
 import { echo, type FormState } from '@/lib/forms';
 import { format } from '@/lib/i18n';
@@ -16,7 +16,7 @@ import {
   switchOrganization,
   TeamError,
 } from '@/lib/organization/service';
-import { getI18n, requireAuth } from '@/lib/server/context';
+import { demoFormError, getI18n, refuseInDemo, requireAuth } from '@/lib/server/context';
 import { appUrl } from '@/lib/server/url';
 import { createMissions, deleteMission, MissionSchema } from '@/lib/team/service';
 
@@ -36,6 +36,8 @@ async function onTeamPage(task: () => Promise<unknown>, done: string): Promise<n
 }
 
 export async function inviteAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const blocked = await demoFormError(formData);
+  if (blocked) return blocked;
   const auth = await requireAuth();
   const { t } = await getI18n();
   const parsed = InvitationSchema.safeParse({ email: formData.get('email'), role: formData.get('role') });
@@ -51,6 +53,7 @@ export async function inviteAction(_prev: FormState, formData: FormData): Promis
 }
 
 export async function revokeInvitationAction(formData: FormData) {
+  await refuseInDemo();
   const auth = await requireAuth();
   const id = String(formData.get('invitation') ?? '');
   await onTeamPage(async () => {
@@ -60,6 +63,7 @@ export async function revokeInvitationAction(formData: FormData) {
 }
 
 export async function changeRoleAction(formData: FormData) {
+  await refuseInDemo();
   const auth = await requireAuth();
   const userId = String(formData.get('user') ?? '');
   const role = formData.get('role');
@@ -71,6 +75,7 @@ export async function changeRoleAction(formData: FormData) {
 }
 
 export async function removeMemberAction(formData: FormData) {
+  await refuseInDemo();
   const auth = await requireAuth();
   const userId = String(formData.get('user') ?? '');
   await onTeamPage(async () => {
@@ -80,6 +85,8 @@ export async function removeMemberAction(formData: FormData) {
 }
 
 export async function assignMissionAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const blocked = await demoFormError(formData);
+  if (blocked) return blocked;
   const auth = await requireAuth();
   const { t } = await getI18n();
   const parsed = MissionSchema.safeParse({
@@ -100,6 +107,7 @@ export async function assignMissionAction(_prev: FormState, formData: FormData):
 }
 
 export async function deleteMissionAction(formData: FormData) {
+  await refuseInDemo();
   const auth = await requireAuth();
   await onTeamPage(async () => deleteMission(await getDb(), auth, String(formData.get('mission') ?? '')), 'mission_deleted');
 }
@@ -107,6 +115,7 @@ export async function deleteMissionAction(formData: FormData) {
 // ─── Invitation, espaces ─────────────────────────────────────────────────────
 
 export async function acceptInvitationAction(formData: FormData) {
+  await refuseInDemo();
   const auth = await requireAuth();
   const token = String(formData.get('token') ?? '');
   let target = '/dashboard';
@@ -121,6 +130,7 @@ export async function acceptInvitationAction(formData: FormData) {
 }
 
 export async function switchOrganizationAction(formData: FormData) {
+  await refuseInDemo();
   const auth = await requireAuth();
   const id = String(formData.get('organization') ?? '');
   if (UUID.test(id)) await switchOrganization(await getDb(), auth, id);
@@ -129,6 +139,7 @@ export async function switchOrganizationAction(formData: FormData) {
 }
 
 export async function leaveOrganizationAction() {
+  await refuseInDemo();
   const auth = await requireAuth();
   let target = '/dashboard';
   try {
@@ -142,6 +153,8 @@ export async function leaveOrganizationAction() {
 }
 
 export async function renameOrganizationAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const blocked = await demoFormError(formData);
+  if (blocked) return blocked;
   const auth = await requireAuth();
   const { t } = await getI18n();
   const parsed = OrganizationNameSchema.safeParse(formData.get('name'));

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormAlert } from '@/components/ui/field';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { can, type Role } from '@/lib/domain';
 import { format, formatDate } from '@/lib/i18n';
 import { listMembers, listMyOrganizations, type TeamErrorCode } from '@/lib/organization/service';

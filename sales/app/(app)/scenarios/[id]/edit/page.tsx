@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { updateScenarioAction } from '@/app/actions/scenarios';
 import { scenarioFormProps, valuesFrom } from '@/components/scenarios/form-props';
 import { ScenarioForm } from '@/components/scenarios/scenario-form';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import type { ScenarioContent } from '@/lib/scenarios/content';
 import { getScenario } from '@/lib/scenarios/service';
 import { getI18n, requireOnboarded } from '@/lib/server/context';

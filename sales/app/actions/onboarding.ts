@@ -1,12 +1,14 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { echo, fieldErrorsFrom, type FormState } from '@/lib/forms';
 import { OnboardingSchema, saveProfile } from '@/lib/profile/service';
-import { getI18n, requireAuth } from '@/lib/server/context';
+import { demoFormError, getI18n, requireAuth } from '@/lib/server/context';
 
 export async function saveOnboardingAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const blocked = await demoFormError(formData);
+  if (blocked) return blocked;
   const auth = await requireAuth();
   const { t } = await getI18n();
   const parsed = OnboardingSchema.safeParse({

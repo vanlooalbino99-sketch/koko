@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/input';
 import { Kpi } from '@/components/ui/kpi';
 import { orgLimits } from '@/lib/billing/credits';
 import { seatsInUse } from '@/lib/billing/service';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { can } from '@/lib/domain';
 import { format, formatDate } from '@/lib/i18n';
 import { INVITATION_DAYS, listInvitations } from '@/lib/organization/invitations';

@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ArrowRight, BrainCircuit, MessageSquareQuote, PlayCircle, Target } from 'lucide-react';
+import { ArrowRight, BrainCircuit, LayoutDashboard, MessageSquareQuote, PlayCircle, Target } from 'lucide-react';
+import { enterDemoAction } from '@/app/actions/auth';
 import { Brand } from '@/components/brand';
 import { LanguageSwitch } from '@/components/shell/language-switch';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,13 @@ export default async function LandingPage() {
                   <PlayCircle /> {l.ctaDemo}
                 </Link>
               </Button>
+              {!auth && (
+                <form action={enterDemoAction}>
+                  <Button size="lg" variant="outline">
+                    <LayoutDashboard /> {t.demo.explore}
+                  </Button>
+                </form>
+              )}
               {!auth && (
                 <Button asChild size="lg" variant="ghost">
                   <Link href="/login">{l.ctaLogin}</Link>

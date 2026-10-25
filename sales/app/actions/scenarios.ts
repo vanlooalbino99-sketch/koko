@@ -2,13 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { SKILLS } from '@/lib/domain';
 import { echo, fieldErrorsFrom, type FormState } from '@/lib/forms';
 import { ScenarioInputSchema, splitLines } from '@/lib/scenarios/content';
 import { format } from '@/lib/i18n';
 import { archiveScenario, createScenario, ForbiddenError, PlanLimitError, updateScenario } from '@/lib/scenarios/service';
-import { getI18n, requireAuth } from '@/lib/server/context';
+import { demoFormError, getI18n, refuseInDemo, requireAuth } from '@/lib/server/context';
 import { listVoices } from '@/lib/voice/catalog';
 
 function text(formData: FormData, key: string) {
@@ -78,6 +78,8 @@ async function unknownVoice(voiceId: string | undefined) {
 }
 
 export async function createScenarioAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const blocked = await demoFormError(formData);
+  if (blocked) return blocked;
   const auth = await requireAuth();
   const { t } = await getI18n();
   const parsed = ScenarioInputSchema.safeParse(readScenario(formData));
@@ -96,6 +98,8 @@ export async function createScenarioAction(_prev: FormState, formData: FormData)
 }
 
 export async function updateScenarioAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const blocked = await demoFormError(formData);
+  if (blocked) return blocked;
   const auth = await requireAuth();
   const { t } = await getI18n();
   const id = text(formData, '$id');
@@ -113,6 +117,7 @@ export async function updateScenarioAction(_prev: FormState, formData: FormData)
 }
 
 export async function archiveScenarioAction(formData: FormData) {
+  await refuseInDemo();
   const auth = await requireAuth();
   const id = text(formData, 'id');
   await archiveScenario(await getDb(), auth, id);

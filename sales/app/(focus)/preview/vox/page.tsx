@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { getScenario, listScenarios } from '@/lib/scenarios/service';
 import { getI18n, requireOnboarded } from '@/lib/server/context';
 import { voxData } from '@/lib/server/vox';

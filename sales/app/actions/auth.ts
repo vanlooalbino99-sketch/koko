@@ -7,10 +7,13 @@ import { getDb } from '@/lib/db/client';
 import { LOCALES, isOneOf } from '@/lib/domain';
 import { echo, fieldErrorsFrom, safeNext, type FormState } from '@/lib/forms';
 import {
+  clearDemoCookie,
   clearSessionCookie,
   clientIp,
   getAuth,
   getI18n,
+  isDemo,
+  setDemoCookie,
   setLocaleCookie,
   setSessionCookie,
   SESSION_COOKIE,
@@ -38,6 +41,7 @@ export async function signUpAction(_prev: FormState, formData: FormData): Promis
   }
   const result = await signUp(await getDb(), parsed.data);
   if (!result.ok) return { fieldErrors: { email: t.auth.emailTaken }, values: echo(formData, ['password']) };
+  await clearDemoCookie();
   await setSessionCookie(result.token);
   redirect(safeNext(formData.get('next')) ?? '/onboarding');
 }
@@ -53,11 +57,25 @@ export async function logInAction(_prev: FormState, formData: FormData): Promise
   }
   const session = await logIn(await getDb(), parsed.data.email, parsed.data.password);
   if (!session) return { error: t.auth.invalid, values: echo(formData, ['password']) };
+  await clearDemoCookie();
   await setSessionCookie(session.token);
   redirect(safeNext(formData.get('next')) ?? '/dashboard');
 }
 
+// Visite de l'application avec l'équipe fictive : aucune inscription, rien n'est enregistré.
+export async function enterDemoAction() {
+  await setDemoCookie();
+  redirect('/dashboard');
+}
+
+// Sortie de la démo, vers l'accueil ou vers l'inscription (« Créer mon compte »).
+export async function exitDemoAction(formData?: FormData) {
+  await clearDemoCookie();
+  redirect(formData?.get('next') === '/signup' ? '/signup' : '/');
+}
+
 export async function logOutAction(formData?: FormData) {
+  if (await isDemo()) return exitDemoAction();
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   await logOut(await getDb(), token);
   await clearSessionCookie();
@@ -70,6 +88,6 @@ export async function setLocaleAction(formData: FormData) {
   if (!isOneOf(LOCALES, locale)) return;
   await setLocaleCookie(locale);
   const auth = await getAuth();
-  if (auth) await setUserLocale(await getDb(), auth.user.id, locale);
+  if (auth && !auth.demo) await setUserLocale(await getDb(), auth.user.id, locale);
   revalidatePath('/', 'layout');
 }

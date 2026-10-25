@@ -11,7 +11,7 @@ import { PeriodMenu } from '@/components/cockpit/period-menu';
 import { platformReport } from '@/lib/billing/admin';
 import { cockpit, PERIODS, type Period, type RiskFactor } from '@/lib/billing/cockpit';
 import { billingProviderFromEnv } from '@/lib/billing/stripe';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import type { Family } from '@/lib/domain';
 import { format, timeAgo } from '@/lib/i18n';
 import { getI18n, requireOnboarded } from '@/lib/server/context';

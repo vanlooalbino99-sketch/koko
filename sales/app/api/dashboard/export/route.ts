@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { periodOf, sessionsCsv, trainingPulse } from '@/lib/dashboard/pulse';
 import { getDictionary } from '@/lib/i18n';
 import { getAuth } from '@/lib/server/context';

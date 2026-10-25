@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/input';
 import { DEFAULT_PRICES, PLANS, planLimits, grantsAccess, TEAM_MAX_SEATS, TEAM_MIN_SEATS, type PaidPlan, type Plan } from '@/lib/billing/plans';
 import { billingOverview, confirmCheckout } from '@/lib/billing/service';
 import { billingProviderFromEnv, type PlanPrice } from '@/lib/billing/stripe';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import type { Locale } from '@/lib/domain';
 import { format, formatDate, type Dictionary } from '@/lib/i18n';
 import { getI18n, requireOnboarded } from '@/lib/server/context';

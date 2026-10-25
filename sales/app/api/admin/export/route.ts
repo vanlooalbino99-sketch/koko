@@ -1,6 +1,6 @@
 import { accountsCsv, cockpit, PERIODS, type Period } from '@/lib/billing/cockpit';
 import { billingProviderFromEnv } from '@/lib/billing/stripe';
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { getDictionary } from '@/lib/i18n';
 import { getAuth } from '@/lib/server/context';
 

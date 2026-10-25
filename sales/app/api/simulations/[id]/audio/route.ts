@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db/client';
+import { getDb } from '@/lib/server/db';
 import { getAuth } from '@/lib/server/context';
 import { getSimulation } from '@/lib/simulations/service';
 

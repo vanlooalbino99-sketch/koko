@@ -3,7 +3,8 @@ import { after } from 'next/server';
 import { analyzerFromEnv } from '@/lib/analysis/claude';
 import { analyzeSimulation, getAnalysis } from '@/lib/analysis/service';
 import { platformUsage } from '@/lib/billing/credits';
-import { getDb } from '@/lib/db/client';
+import { isDemo } from '@/lib/server/context';
+import { getDb } from '@/lib/server/db';
 
 const RETRYABLE_AFTER_MS = 5 * 60 * 1000;
 
@@ -11,7 +12,7 @@ const RETRYABLE_AFTER_MS = 5 * 60 * 1000;
 // Sans effet si elle est déjà faite, en cours, si la clé Claude n'est pas configurée ou si le plafond
 // quotidien d'analyses de la plateforme est atteint (elle reprendra le lendemain, à la visite suivante).
 export async function scheduleAnalysis(simulationId: string) {
-  if (!analyzerFromEnv()) return;
+  if (!analyzerFromEnv() || (await isDemo())) return;
   const db = await getDb();
   const existing = await getAnalysis(db, simulationId);
   const due =

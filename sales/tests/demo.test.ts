@@ -75,6 +75,12 @@ function fakeApi(over: Partial<DemoVoiceApi> = {}) {
       calls.push(`speech:${voiceId}:${body.text.slice(0, 12)}`);
       return { mime: 'audio/mpeg', audio: new Uint8Array([1, 2, 3, voiceId.length]) };
     },
+    async designVoice() {
+      throw new Error('ElevenLabs → 404');
+    },
+    async saveDesignedVoice() {
+      throw new Error('ElevenLabs → 404');
+    },
     ...over,
   };
   return { api, calls };
@@ -174,6 +180,39 @@ test("compte ElevenLabs gratuit : la voix de bibliothèque refusée est remplac�
   assert.deepEqual(again?.prospect, { id: 'voixBrian0001', name: 'Brian', source: 'saved' });
   // Une voix imposée par l'environnement n'est jamais remplacée en silence.
   assert.equal(await premadeFallback(db, api, 'fr', 'seller', { ...first, seller: { id: 'voixEnv00001', name: 'E', source: 'env' } }), null);
+});
+
+test('en français, des voix parisiennes créées une fois avec Voice Design, jamais pour l’anglais', async () => {
+  const texts: string[] = [];
+  const { api, calls } = fakeApi({
+    async designVoice(description, text, seed) {
+      texts.push(text);
+      calls.push(`design:${seed}:${description.slice(0, 12)}`);
+      return [{ generatedId: `gen${seed}en`, language: 'en' }, { generatedId: `gen${seed}fr`, language: 'fr' }];
+    },
+    async saveDesignedVoice(name, _description, generatedId) {
+      calls.push(`save:${generatedId}`);
+      return `voix_${generatedId}`;
+    },
+  });
+  const fr = await resolveDemoVoices(db, api, 'fr');
+  assert.deepEqual(fr, {
+    seller: { id: 'voix_gen301fr', name: 'Blackstart démo · vendeuse parisienne', source: 'design' },
+    prospect: { id: 'voix_gen302fr', name: 'Blackstart démo · prospect parisien', source: 'design' },
+  });
+  assert.ok(texts.every((t) => t.length >= 100 && t.length <= 1000), 'texte d’essai entre 100 et 1 000 caractères');
+  const { api: api2, calls: calls2 } = fakeApi({
+    async voices() {
+      return [...ACCOUNT, voice('voix_gen301fr', 'V', {}), voice('voix_gen302fr', 'P', {})];
+    },
+  });
+  const again = await resolveDemoVoices(db, api2, 'fr');
+  assert.equal(again?.seller.id, 'voix_gen301fr');
+  assert.equal(again?.prospect.source, 'saved');
+  assert.ok(!calls2.some((c) => c.startsWith('design')));
+  // En anglais, la vendeuse ne prend pas la voix parisienne.
+  const en = await resolveDemoVoices(db, api2, 'en');
+  assert.notEqual(en?.seller.id, 'voix_gen301fr');
 });
 
 test('chaque réplique est synthétisée une fois puis servie depuis la base', async () => {

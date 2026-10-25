@@ -41,6 +41,9 @@ export interface DemoVoiceApi {
   sharedVoices(query: SharedQuery): Promise<SharedVoice[]>;
   addSharedVoice(ownerId: string, voiceId: string, name: string): Promise<string>;
   speech(voiceId: string, body: SpeechRequest): Promise<{ mime: string; audio: Uint8Array }>;
+  // Voice Design : une voix créée d'après une description (permis par l'offre gratuite, contrairement à la bibliothèque).
+  designVoice(description: string, text: string, seed: number): Promise<{ generatedId: string; language: string | null }[]>;
+  saveDesignedVoice(name: string, description: string, generatedId: string): Promise<string>;
 }
 
 const VoicesSchema = z.object({
@@ -75,6 +78,10 @@ const SharedSchema = z.object({
 });
 
 const IdSchema = z.object({ voice_id: z.string() });
+
+const DesignSchema = z.object({
+  previews: z.array(z.object({ generated_voice_id: z.string(), language: z.string().nullish() })),
+});
 
 export class DemoApiError extends Error {
   constructor(
@@ -142,6 +149,15 @@ export function demoVoiceApi(apiKey: string, baseUrl = 'https://api.elevenlabs.i
     async addSharedVoice(ownerId, voiceId, name) {
       const path = `/v1/voices/add/${encodeURIComponent(ownerId)}/${encodeURIComponent(voiceId)}`;
       return IdSchema.parse(await (await call(path, { method: 'POST', headers: json, body: JSON.stringify({ new_name: name }) })).json()).voice_id;
+    },
+    async designVoice(description, text, seed) {
+      const body = { voice_description: description, model_id: 'eleven_multilingual_ttv_v2', text, seed };
+      const res = await call('/v1/text-to-voice/design', { method: 'POST', headers: json, body: JSON.stringify(body) }, 90_000);
+      return DesignSchema.parse(await res.json()).previews.map((p) => ({ generatedId: p.generated_voice_id, language: p.language ?? null }));
+    },
+    async saveDesignedVoice(name, description, generatedId) {
+      const body = { voice_name: name, voice_description: description, generated_voice_id: generatedId };
+      return IdSchema.parse(await (await call('/v1/text-to-voice', { method: 'POST', headers: json, body: JSON.stringify(body) }, 60_000)).json()).voice_id;
     },
     async speech(voiceId, body) {
       const path = `/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`;

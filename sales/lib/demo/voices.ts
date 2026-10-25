@@ -3,6 +3,7 @@ import type { Db } from '../db/client.ts';
 import { demoVoices } from '../db/schema.ts';
 import type { Locale } from '../domain.ts';
 import type { AccountVoice, DemoVoiceApi, SharedVoice } from './eleven.ts';
+import { DEMO_CALL } from './script.ts';
 
 // Voix de la démo publique. Ordre de choix, pour chaque rôle :
 // 1. la variable d'environnement (identifiant ou nom exact d'une voix du compte) ;
@@ -10,7 +11,7 @@ import type { AccountVoice, DemoVoiceApi, SharedVoice } from './eleven.ts';
 // 3. vendeur : un clone de l'extrait de voix fourni par l'équipe (rangé en base, jamais dans le dépôt public) ;
 //    prospect : une voix masculine grave de la bibliothèque ElevenLabs, dans la langue de l'appel, ajoutée au compte ;
 // 4. la voix du compte qui ressemble le plus à ce qu'on cherche.
-export type DemoVoiceSource = 'env' | 'saved' | 'clone' | 'library' | 'account';
+export type DemoVoiceSource = 'env' | 'saved' | 'clone' | 'design' | 'library' | 'account';
 export type DemoVoice = { id: string; name: string; source: DemoVoiceSource };
 export type DemoVoices = { seller: DemoVoice; prospect: DemoVoice };
 
@@ -68,10 +69,10 @@ function fromEnv(value: string | undefined, voices: AccountVoice[]): DemoVoice |
   return VOICE_ID.test(v) ? { id: v, name: v, source: 'env' } : null;
 }
 
-async function saved(db: Db, role: string, voices: AccountVoice[]) {
+async function saved(db: Db, role: string, voices: AccountVoice[], only?: (source: string | null) => boolean) {
   const [row] = await db.select().from(demoVoices).where(eq(demoVoices.role, role));
   // Une voix enregistrée puis supprimée du compte ne sert plus : on en cherche une autre.
-  const usable = row?.voiceId && (voices.length === 0 || voices.some((v) => v.id === row.voiceId));
+  const usable = row?.voiceId && (!only || only(row.source)) && (voices.length === 0 || voices.some((v) => v.id === row.voiceId));
   return { row, voice: usable ? ({ id: row.voiceId!, name: row.name ?? row.voiceId!, source: 'saved' } as DemoVoice) : null };
 }
 
@@ -84,10 +85,51 @@ async function remember(db: Db, role: string, voice: DemoVoice) {
 
 const quiet = (what: string, error: unknown) => console.error(`[demo] ${what}`, error instanceof Error ? error.message : error);
 
+// Voix françaises à l'accent parisien, créées une fois avec Voice Design puis gardées en base.
+const PARISIAN = {
+  seller:
+    'French woman around 30 with a native Parisian accent. Warm, clear, confident and friendly voice of a professional sales rep making a phone call. Natural conversational pace, close-mic studio recording.',
+  prospect:
+    'French man in his fifties with a native Parisian accent. Deep, low, slightly gravelly voice of a busy small-business owner, direct and a little impatient but polite. Natural conversational delivery, clear recording.',
+};
+
+function sampleText(role: 'seller' | 'prospect') {
+  const text = DEMO_CALL.fr.lines
+    .filter((l) => l.role === role)
+    .map((l) => l.say ?? l.text)
+    .join(' ');
+  if (text.length > 1000) return text.slice(0, 1000).replace(/\s+\S*$/, '');
+  return text.length >= 100 ? text : `${text} ${text}`;
+}
+
+async function parisianVoice(db: Db, api: DemoVoiceApi, voices: AccountVoice[], role: 'seller' | 'prospect'): Promise<DemoVoice | null> {
+  const key = role === 'seller' ? 'seller' : 'prospect:fr';
+  const { voice } = await saved(db, key, voices, (source) => source === 'design');
+  if (voice) return voice;
+  try {
+    const previews = await api.designVoice(PARISIAN[role], sampleText(role), role === 'seller' ? 301 : 302);
+    const pick = previews.find((p) => p.language === 'fr') ?? previews[0];
+    if (!pick) return null;
+    const name = role === 'seller' ? 'Blackstart démo · vendeuse parisienne' : 'Blackstart démo · prospect parisien';
+    const id = await api.saveDesignedVoice(name, PARISIAN[role], pick.generatedId);
+    const designed: DemoVoice = { id, name, source: 'design' };
+    await remember(db, key, designed);
+    return designed;
+  } catch (error) {
+    quiet(`voix parisienne (${role}) impossible à créer`, error);
+    return null;
+  }
+}
+
 async function sellerVoice(db: Db, api: DemoVoiceApi, voices: AccountVoice[], locale: Locale): Promise<DemoVoice | null> {
   const env = fromEnv(process.env.ELEVENLABS_DEMO_SELLER_VOICE, voices);
   if (env) return env;
-  const { row, voice } = await saved(db, 'seller', voices);
+  if (locale === 'fr') {
+    const parisian = await parisianVoice(db, api, voices, 'seller');
+    if (parisian) return parisian;
+  }
+  // La voix parisienne de la vendeuse ne sert qu'en français.
+  const { row, voice } = await saved(db, 'seller', voices, (source) => source !== 'design');
   if (voice) return voice;
   if (row?.sample && row.sample.length > 0) {
     try {
@@ -108,6 +150,10 @@ async function sellerVoice(db: Db, api: DemoVoiceApi, voices: AccountVoice[], lo
 async function prospectVoice(db: Db, api: DemoVoiceApi, voices: AccountVoice[], locale: Locale, sellerId: string | null): Promise<DemoVoice | null> {
   const env = fromEnv(process.env.ELEVENLABS_DEMO_PROSPECT_VOICE, voices);
   if (env) return env;
+  if (locale === 'fr') {
+    const parisian = await parisianVoice(db, api, voices, 'prospect');
+    if (parisian) return parisian;
+  }
   const role = `prospect:${locale}`;
   const { voice } = await saved(db, role, voices);
   if (voice) return voice;

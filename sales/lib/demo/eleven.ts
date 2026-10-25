@@ -92,13 +92,42 @@ export class DemoApiError extends Error {
   }
 }
 
+// L'offre gratuite d'ElevenLabs refuse plus de 2 requêtes à la fois (429) : les appels du processus font la queue,
+// réponse lue comprise, et un 429 restant est retenté un peu plus tard.
+const MAX_PARALLEL = 2;
+const gate = ((globalThis as typeof globalThis & { __bsElevenGate?: { busy: number; queue: (() => void)[] } }).__bsElevenGate ??= {
+  busy: 0,
+  queue: [],
+});
+
+async function queued<T>(task: () => Promise<T>): Promise<T> {
+  if (gate.busy < MAX_PARALLEL) gate.busy++;
+  else await new Promise<void>((resolve) => gate.queue.push(resolve));
+  try {
+    return await task();
+  } finally {
+    const next = gate.queue.shift();
+    if (next) next();
+    else gate.busy--;
+  }
+}
+
 export function demoVoiceApi(apiKey: string, baseUrl = 'https://api.elevenlabs.io'): DemoVoiceApi {
   async function call(path: string, init: RequestInit = {}, timeout = 15_000): Promise<Response> {
-    const res = await fetch(`${baseUrl}${path}`, {
-      ...init,
-      headers: { 'xi-api-key': apiKey, ...init.headers },
-      signal: AbortSignal.timeout(timeout),
-    });
+    let res: Response;
+    for (let attempt = 1; ; attempt++) {
+      res = await queued(async () => {
+        const r = await fetch(`${baseUrl}${path}`, {
+          ...init,
+          headers: { 'xi-api-key': apiKey, ...init.headers },
+          signal: AbortSignal.timeout(timeout),
+        });
+        const body = r.status === 204 || r.status === 205 || r.status === 304 ? null : await r.arrayBuffer();
+        return new Response(body, { status: r.status, headers: r.headers });
+      });
+      if (res.status !== 429 || attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+    }
     if (!res.ok) {
       const detail = (await res.text().catch(() => '')).slice(0, 200);
       throw new DemoApiError(`ElevenLabs ${init.method ?? 'GET'} ${path.split('?')[0]} → ${res.status} ${detail}`, res.status);

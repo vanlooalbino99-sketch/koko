@@ -118,7 +118,8 @@ export function DemoCallScreen({ data, call, lang, text }: { data: VoxStatic; ca
   const graph = useRef<{ mix: GainNode; master: GainNode; analyser: AnalyserNode; phone: AudioNode } | null>(null);
   const run = useRef(0);
   const source = useRef<AudioBufferSourceNode | null>(null);
-  const startedAt = useRef(0);
+  // Heure de l'horloge audio au décroché ; null tant que l'appel n'a pas commencé.
+  const startedAt = useRef<number | null>(null);
   const speaking = useRef<Speaker>(null);
   const live = useRef<LiveState>({ ...EMPTY_STATS });
   const history = useRef<WaveSample[]>([]);
@@ -150,7 +151,7 @@ export function DemoCallScreen({ data, call, lang, text }: { data: VoxStatic; ca
     [],
   );
 
-  const now = () => (ctxRef.current && startedAt.current ? ctxRef.current.currentTime - startedAt.current : 0);
+  const now = () => (ctxRef.current && startedAt.current !== null ? ctxRef.current.currentTime - startedAt.current : 0);
 
   function rms() {
     const analyser = graph.current?.analyser;
@@ -227,7 +228,7 @@ export function DemoCallScreen({ data, call, lang, text }: { data: VoxStatic; ca
     live.current = { ...EMPTY_STATS };
     history.current = [];
     lastFast.current = -Infinity;
-    startedAt.current = 0;
+    startedAt.current = null;
     speaking.current = null;
     setLines([]);
     setSignals([]);

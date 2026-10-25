@@ -782,7 +782,7 @@ test('démo publique : appel scénarisé joué sans compte, voix choisies et syn
   await page.getByText('Écoutez Camille appeler Marc Lefèvre').waitFor();
   await page.getByRole('button', { name: "Écouter l'appel" }).click();
   await page.getByText("Plomberie Lefèvre, j'écoute.").first().waitFor({ timeout: 20_000 });
-  await page.getByText('Qui décroche le téléphone', { exact: false }).first().waitFor({ timeout: 20_000 });
+  await page.getByText('Qui décroche quand', { exact: false }).first().waitFor({ timeout: 20_000 });
   await page.locator('#signals-title + ol').getByText('Question ouverte').first().waitFor({ timeout: 20_000 });
 
   const tts = mockCalls.filter((c) => c.url.startsWith('/v1/text-to-speech/'));
@@ -790,7 +790,7 @@ test('démo publique : appel scénarisé joué sans compte, voix choisies et syn
   assert.ok(mockCalls.some((c) => c.method === 'POST' && c.url === '/v1/voices/add/proprio2/voixGraveBiblio'));
   const first = tts.find((c) => JSON.parse(c.body).text.startsWith('Plomberie Lefèvre'));
   assert.ok(first?.url.startsWith('/v1/text-to-speech/voixGraveAjoutee?'), first?.url);
-  assert.equal(JSON.parse(first.body).model_id, 'eleven_multilingual_v2');
+  assert.equal(JSON.parse(first!.body).model_id, 'eleven_multilingual_v2');
   assert.ok(tts.some((c) => c.url.startsWith('/v1/text-to-speech/voixCharlotte1?')));
   assert.ok(tts.every((c) => c.key === 'cle-de-test'));
   assert.ok(!(await page.content()).includes('cle-de-test'), 'la clé reste sur le serveur');

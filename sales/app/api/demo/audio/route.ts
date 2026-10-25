@@ -1,8 +1,8 @@
 import { getDb } from '@/lib/db/client';
 import { demoClip, demoVersion } from '@/lib/demo/audio';
-import { demoVoiceApiFromEnv } from '@/lib/demo/eleven';
+import { DemoApiError, demoVoiceApiFromEnv } from '@/lib/demo/eleven';
 import { DEMO_CALL } from '@/lib/demo/script';
-import { demoVoicesFor } from '@/lib/demo/voices';
+import { demoVoicesFor, premadeFallback } from '@/lib/demo/voices';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,10 +16,20 @@ export async function GET(req: Request) {
   const api = demoVoiceApiFromEnv();
   if (!api) return new Response(null, { status: 404 });
   const db = await getDb();
-  const voices = await demoVoicesFor(db, api, lang);
+  let voices = await demoVoicesFor(db, api, lang);
   if (!voices) return new Response(null, { status: 503 });
   try {
-    const clip = await demoClip(db, api, lang, index, voices);
+    let clip;
+    try {
+      clip = await demoClip(db, api, lang, index, voices);
+    } catch (error) {
+      // Voix refusée par l'abonnement ElevenLabs : on change de voix pour ce rôle et on refait la réplique.
+      const fallback = error instanceof DemoApiError && error.status === 402 && (await premadeFallback(db, api, lang, DEMO_CALL[lang].lines[index].role, voices));
+      if (!fallback) throw error;
+      console.error('[demo] voix refusée par ElevenLabs, voix standard du compte à la place', (error as Error).message);
+      voices = fallback;
+      clip = await demoClip(db, api, lang, index, voices);
+    }
     if (!clip) return new Response(null, { status: 404 });
     // Même version demandée que celle en service : l'adresse ne changera plus de contenu.
     const stable = params.get('v') === demoVersion(voices);

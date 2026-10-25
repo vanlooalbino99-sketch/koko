@@ -6,7 +6,7 @@ import { demoAudio, demoVoices } from '../lib/db/schema.ts';
 import { demoClip, speechRequest } from '../lib/demo/audio.ts';
 import type { AccountVoice, DemoVoiceApi, SharedVoice } from '../lib/demo/eleven.ts';
 import { DEMO_CALL } from '../lib/demo/script.ts';
-import { pickAccountVoice, pickSharedVoice, resolveDemoVoices } from '../lib/demo/voices.ts';
+import { forgetDemoVoices, pickAccountVoice, pickSharedVoice, premadeFallback, resolveDemoVoices } from '../lib/demo/voices.ts';
 import { isOpenQuestion, isQuestion, sentences } from '../lib/live/speech.ts';
 import { testDb } from './helpers.ts';
 
@@ -160,6 +160,20 @@ test("les variables d'environnement imposent les voix, par nom ou par identifian
     prospect: { id: 'voixHorsCompte42', name: 'voixHorsCompte42', source: 'env' },
   });
   assert.deepEqual(calls, ['voices']);
+});
+
+test("compte ElevenLabs gratuit : la voix de bibliothèque refusée est remplacée par une voix standard, une fois pour toutes", async () => {
+  const { api } = fakeApi();
+  const first = (await resolveDemoVoices(db, api, 'fr'))!;
+  assert.equal(first.prospect.source, 'library');
+  const next = await premadeFallback(db, api, 'fr', 'prospect', first);
+  assert.deepEqual(next?.prospect, { id: 'voixBrian0001', name: 'Brian', source: 'account' });
+  assert.deepEqual(next?.seller, first.seller, 'la vendeuse ne change pas');
+  forgetDemoVoices();
+  const again = await resolveDemoVoices(db, api, 'fr');
+  assert.deepEqual(again?.prospect, { id: 'voixBrian0001', name: 'Brian', source: 'saved' });
+  // Une voix imposée par l'environnement n'est jamais remplacée en silence.
+  assert.equal(await premadeFallback(db, api, 'fr', 'seller', { ...first, seller: { id: 'voixEnv00001', name: 'E', source: 'env' } }), null);
 });
 
 test('chaque réplique est synthétisée une fois puis servie depuis la base', async () => {

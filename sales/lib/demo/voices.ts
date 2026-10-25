@@ -136,6 +136,27 @@ async function prospectVoice(db: Db, api: DemoVoiceApi, voices: AccountVoice[], 
   return best ? { id: best.id, name: best.name, source: 'account' } : null;
 }
 
+// Compte ElevenLabs gratuit : l'API refuse les voix de la bibliothèque (402 paid_plan_required). On se rabat sur
+// une voix standard du compte pour ce rôle, enregistrée en base pour ne plus retenter la bibliothèque.
+export async function premadeFallback(
+  db: Db,
+  api: DemoVoiceApi,
+  locale: Locale,
+  role: 'seller' | 'prospect',
+  current: DemoVoices,
+): Promise<DemoVoices | null> {
+  if (current[role].source === 'env') return null;
+  const other = role === 'seller' ? current.prospect.id : current.seller.id;
+  const premade = (await api.voices()).filter((v) => v.category === 'premade' && v.id !== current[role].id && v.id !== other);
+  const want: Want = role === 'seller' ? { gender: 'female', deep: false, language: locale } : { gender: 'male', deep: true, language: locale };
+  const best = pickAccountVoice(premade, want);
+  if (!best) return null;
+  const voice: DemoVoice = { id: best.id, name: best.name, source: 'account' };
+  await remember(db, role === 'seller' ? 'seller' : `prospect:${locale}`, voice);
+  forgetDemoVoices();
+  return { ...current, [role]: voice };
+}
+
 export async function resolveDemoVoices(db: Db, api: DemoVoiceApi, locale: Locale): Promise<DemoVoices | null> {
   let voices: AccountVoice[] = [];
   try {

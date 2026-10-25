@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ArrowDownRight, ArrowUpRight, CalendarDays, ChevronDown, Sparkles, Upload } from 'lucide-react';
+import { Sparkles, Upload } from 'lucide-react';
+import { Change } from '@/components/cockpit/change';
+import { PeriodMenu } from '@/components/cockpit/period-menu';
 import {
   AreaWave,
   Bubbles,
@@ -21,7 +23,7 @@ import { cockpit, PERIODS, type Period, type RiskFactor } from '@/lib/billing/co
 import { billingProviderFromEnv } from '@/lib/billing/stripe';
 import { getDb } from '@/lib/db/client';
 import type { Family } from '@/lib/domain';
-import { format } from '@/lib/i18n';
+import { format, timeAgo } from '@/lib/i18n';
 import { getI18n, requireOnboarded } from '@/lib/server/context';
 import { cn } from '@/lib/utils';
 
@@ -39,24 +41,6 @@ const RISK_TONE: Record<RiskFactor, string> = {
 
 function healthTone(score: number) {
   return score >= 80 ? 'bg-[#3fe0b5]/15 text-[#5ff0c6]' : score >= 50 ? 'bg-[#f5a524]/15 text-[#ffc15e]' : 'bg-[#f06b8f]/15 text-[#ff8fab]';
-}
-
-// Écart en pourcentage avec la période précédente (rien si elle était vide : un écart infini ne dit rien).
-function Change({ value, previous, label, points, tag }: { value: number | null; previous: number | null; label: string; points?: boolean; tag: string }) {
-  if (value === null || previous === null || (!points && previous === 0)) return <p className="text-[11.5px] text-muted-foreground">{label}</p>;
-  const diff = points ? Math.round((value - previous) * 10) / 10 : Math.round(((value - previous) / previous) * 1000) / 10;
-  const up = diff >= 0;
-  const Icon = up ? ArrowUpRight : ArrowDownRight;
-  return (
-    <p className="flex items-center gap-1 text-[11.5px] text-muted-foreground">
-      <span className={cn('inline-flex items-center gap-0.5 font-medium', up ? 'text-[#3fe0b5]' : 'text-[#ff8fab]')}>
-        <Icon className="size-3.5" aria-hidden="true" />
-        {new Intl.NumberFormat(tag).format(Math.abs(diff))}
-        {points ? ' pt' : ' %'}
-      </span>
-      {label}
-    </p>
-  );
 }
 
 // Page de l'éditeur uniquement : pour tout autre compte, elle n'existe pas.
@@ -86,15 +70,7 @@ export default async function AdminPage({ searchParams }: Props) {
   const money = (cents: number, currency = 'eur') =>
     new Intl.NumberFormat(tag, { style: 'currency', currency: currency.toUpperCase(), maximumFractionDigits: cents % 100 === 0 ? 0 : 2 }).format(cents / 100);
   const range = `${new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short' }).format(c.since)} – ${new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short' }).format(now)}`;
-  const rtf = new Intl.RelativeTimeFormat(tag, { numeric: 'auto' });
-  const ago = (d: Date | null) => {
-    if (!d) return a.never;
-    const minutes = Math.round((d.getTime() - now.getTime()) / 60_000);
-    if (Math.abs(minutes) < 60) return rtf.format(minutes, 'minute');
-    const hours = Math.round(minutes / 60);
-    if (Math.abs(hours) < 24) return rtf.format(hours, 'hour');
-    return rtf.format(Math.round(hours / 24), 'day');
-  };
+  const ago = (d: Date | null) => (d ? timeAgo(d, now, tag) : a.never);
   const vs = a.vsPrevious;
   const card = 'min-w-0 rounded-xl border border-border bg-surface p-4';
   const kpiTitle = 'text-[13px] font-medium text-[#d9dce6]';
@@ -113,27 +89,7 @@ export default async function AdminPage({ searchParams }: Props) {
           <p className="text-[13px] text-muted-foreground">{a.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
-          <details className="group relative">
-            <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-lg border border-border bg-surface px-3 text-[13px]">
-              <CalendarDays className="size-4 text-muted-foreground" aria-hidden="true" />
-              <span className="sr-only">{a.period} : </span>
-              {range}
-              <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden="true" />
-            </summary>
-            <ul className="absolute right-0 z-20 mt-1 grid min-w-44 gap-0.5 rounded-lg border border-border bg-surface-2 p-1 shadow-xl">
-              {PERIODS.map((p) => (
-                <li key={p}>
-                  <a
-                    href={`/admin?period=${p}`}
-                    aria-current={p === days ? 'true' : undefined}
-                    className={cn('block rounded-md px-3 py-1.5 text-[13px] hover:bg-white/5', p === days && 'text-primary')}
-                  >
-                    {a.periods[`d${p}`]}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </details>
+          <PeriodMenu path="/admin" range={range} current={days} periods={PERIODS} labels={a.periods} srLabel={a.period} />
           <a
             href={`/api/admin/export?period=${days}`}
             download
@@ -312,7 +268,7 @@ export default async function AdminPage({ searchParams }: Props) {
           ) : (
             <ul className="mt-3 grid gap-2.5">
               {c.activity.map((e) => (
-                <li key={e.id} className="flex items-start justify-between gap-3 text-[12.5px]">
+                <li key={e.id} className="flex min-w-0 items-start justify-between gap-3 text-[12.5px]">
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{e.organization ?? '—'}</span>
                     <span className="block truncate text-muted-foreground">{a.actions[e.action as keyof typeof a.actions] ?? e.action}</span>

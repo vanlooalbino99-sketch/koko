@@ -13,6 +13,7 @@ import {
   userProfiles,
   users,
 } from '../db/schema.ts';
+import { toCsv } from '../csv.ts';
 import { monthStart, platformUsage } from './credits.ts';
 import { DEFAULT_PRICES, grantsAccess, planLimits, type PaidPlan, type Plan } from './plans.ts';
 import type { PaidInvoice, PlanPrice } from './stripe.ts';
@@ -378,17 +379,19 @@ async function engagementInsight(db: Db, paidOrgs: Set<string>) {
   };
 }
 
-// Export CSV des comptes : protège contre l'injection de formules dans un tableur.
+// Export CSV des comptes (cellules protégées contre l'injection de formules).
 export function accountsCsv(rows: AccountRow[], header: string[]) {
-  const cell = (v: string | number) => {
-    let s = String(v);
-    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const lines = rows.map((r) =>
-    [r.name, r.plan, r.health, r.lastActivity ? r.lastActivity.toISOString().slice(0, 10) : '', r.callsInPeriod, `${r.usage}%`, (r.mrr / 100).toFixed(2), r.risk]
-      .map(cell)
-      .join(','),
-  );
-  return [header.map(cell).join(','), ...lines].join('\n') + '\n';
+  return toCsv([
+    header,
+    ...rows.map((r) => [
+      r.name,
+      r.plan,
+      r.health,
+      r.lastActivity ? r.lastActivity.toISOString().slice(0, 10) : '',
+      r.callsInPeriod,
+      `${r.usage}%`,
+      (r.mrr / 100).toFixed(2),
+      r.risk,
+    ]),
+  ]);
 }

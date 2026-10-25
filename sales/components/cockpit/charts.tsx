@@ -147,6 +147,14 @@ export const PLAN_COLORS = { pro: PURPLE, team: BLUE } as const;
 
 // Anneau du MRR par offre, total au centre.
 export function PlanDonut({ segments, center, caption }: { segments: { key: keyof typeof PLAN_COLORS; value: number }[]; center: string; caption: string }) {
+  return <Donut segments={segments.map((s) => ({ label: s.key, value: s.value, color: PLAN_COLORS[s.key] }))} center={center} caption={caption} />;
+}
+
+// Couleurs des séries quand il y en a plusieurs (types d'appel, issues…).
+export const SERIES_COLORS = [PURPLE, BLUE, TEAL, '#a78bfa', '#f5a524', '#f06b8f', '#5ad1f0', '#c4b5fd', '#8f96a8'] as const;
+
+// Anneau générique : une part par segment, total au centre.
+export function Donut({ segments, center, caption }: { segments: { label: string; value: number; color: string }[]; center: string; caption: string }) {
   const total = segments.reduce((n, s) => n + s.value, 0);
   const r = 58;
   const c = 2 * Math.PI * r;
@@ -161,12 +169,12 @@ export function PlanDonut({ segments, center, caption }: { segments: { key: keyo
             const len = (s.value / total) * c;
             const el = (
               <circle
-                key={s.key}
+                key={s.label}
                 cx="80"
                 cy="80"
                 r={r}
                 fill="none"
-                stroke={PLAN_COLORS[s.key]}
+                stroke={s.color}
                 strokeWidth="24"
                 strokeDasharray={`${Math.max(0, len - 2)} ${c}`}
                 strokeDashoffset={-offset}
@@ -182,6 +190,25 @@ export function PlanDonut({ segments, center, caption }: { segments: { key: keyo
       <text x="80" y="97" textAnchor="middle" fontSize="9.5" fill="#9a9eac">
         {caption}
       </text>
+    </svg>
+  );
+}
+
+// Barres verticales : une par jour (par semaine au-delà de 30 jours), plus haute les jours avec des appels.
+export function DayBars({ values, label }: { values: number[]; label: string }) {
+  const grouped =
+    values.length > 30 ? Array.from({ length: Math.ceil(values.length / 7) }, (_, i) => values.slice(i * 7, i * 7 + 7).reduce((a, b) => a + b, 0)) : values;
+  const W = 150;
+  const H = 58;
+  const s = scale(grouped);
+  const step = W / Math.max(grouped.length, 1);
+  const bw = Math.max(1.6, Math.min(4, step * 0.55));
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} className="h-14 w-full" preserveAspectRatio="none">
+      {grouped.map((v, i) => {
+        const h = v ? 8 + s(v) * (H - 10) : 3;
+        return <rect key={i} x={i * step + (step - bw) / 2} y={H - h} width={bw} height={h} rx={bw / 2} fill={v ? TEAL : '#2a2c36'} opacity={v ? 0.9 : 1} />;
+      })}
     </svg>
   );
 }

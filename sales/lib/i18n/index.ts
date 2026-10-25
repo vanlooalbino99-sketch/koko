@@ -11,7 +11,7 @@ export function getDictionary(locale: Locale): Dictionary {
   return DICTIONARIES[locale];
 }
 
-export { format } from './format.ts';
+export { format, timeAgo } from './format.ts';
 
 // Choix de la langue : préférence du compte, sinon cookie, sinon en-tête du navigateur, sinon français.
 export function resolveLocale(options: { user?: string | null; cookie?: string | null; acceptLanguage?: string | null }): Locale {

@@ -590,6 +590,31 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   await page.goto(`${BASE}/simulations`);
   await assert.doesNotReject(page.getByRole('cell', { name: String(report.expectedScore), exact: true }).waitFor());
 
+  // Tableau de bord : les séances analysées alimentent les compétences, l'issue des appels et l'export.
+  await page.goto(`${BASE}/dashboard`);
+  const skillsTable = page.locator('section[aria-labelledby="skills-title"] tbody tr');
+  assert.ok((await skillsTable.count()) > 0, 'compétences notées listées');
+  await assert.doesNotReject(page.getByRole('heading', { name: 'Parcours de vos appels' }).waitFor());
+  await assert.doesNotReject(page.getByText('Votre point faible du moment', { exact: false }).waitFor());
+  await assert.doesNotReject(page.getByText('Décision repoussée').first().waitFor());
+  const csv = await page.request.get(`${BASE}/api/dashboard/export?period=30`);
+  assert.equal(csv.status(), 200);
+  assert.match(await csv.text(), /Date \(UTC\),Scénario,Statut/);
+  await shot(page, '29b-tableau-de-bord-rempli');
+  await page.goto(`${BASE}/dashboard?period=7`);
+  await assert.doesNotReject(page.locator('a[aria-current="true"][href="/dashboard?period=7"]').waitFor({ state: 'attached' }));
+  await page.setViewportSize({ width: 390, height: 844 });
+  const dashOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  const dashWide = await page.evaluate(() =>
+    [...document.querySelectorAll('body *')]
+      .filter((el) => el.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+      .slice(0, 6)
+      .map((el) => `${el.tagName}.${String(el.className).slice(0, 60)}`),
+  );
+  assert.ok(dashOverflow <= 0, `tableau de bord : débordement horizontal de ${dashOverflow}px : ${dashWide.join(' | ')}`);
+  await shot(page, '29c-tableau-de-bord-mobile');
+  await page.setViewportSize({ width: 1440, height: 900 });
+
   // Abonnement : offre gratuite et crédits réels ; sans clé Stripe, aucun bouton de paiement n'est affiché.
   await page.getByRole('link', { name: 'Abonnement' }).first().click();
   await page.waitForURL(`${BASE}/billing`);

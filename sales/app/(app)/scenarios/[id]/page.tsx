@@ -151,13 +151,21 @@ export default async function ScenarioPage({ params, searchParams }: Props) {
               <CardTitle>{s.startTitle}</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">{voiceReady ? s.startText : t.call.notConfigured}</p>
-            {voiceReady && scenario.status === 'active' && (
-              <Button asChild size="lg">
-                <Link href={`/scenarios/${scenario.id}/call`}>
-                  <Phone /> {t.call.start}
-                </Link>
-              </Button>
-            )}
+            {scenario.status === 'active' &&
+              (voiceReady ? (
+                <Button asChild size="lg">
+                  <Link href={`/scenarios/${scenario.id}/call`}>
+                    <Phone /> {t.call.start}
+                  </Link>
+                </Button>
+              ) : (
+                // Sans clé, l'écran d'appel reste visible : il explique pourquoi l'appel ne peut pas démarrer.
+                <Button asChild size="lg" variant="outline">
+                  <Link href={`/scenarios/${scenario.id}/call`}>
+                    <Phone /> {t.call.preview}
+                  </Link>
+                </Button>
+              ))}
           </Card>
           <Card className="grid gap-4">
             <CardTitle>{s.prospect}</CardTitle>

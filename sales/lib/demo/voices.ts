@@ -212,6 +212,8 @@ export async function resolveDemoVoices(db: Db, api: DemoVoiceApi, locale: Local
   }
   const seller = await sellerVoice(db, api, voices, locale);
   const prospect = await prospectVoice(db, api, voices, locale, seller?.id ?? null);
+  const label = (v: DemoVoice | null) => (v ? `${v.name} (${v.source})` : 'aucune');
+  console.log(`[demo] voix ${locale} : vendeuse ${label(seller)}, prospect ${label(prospect)}`);
   return seller && prospect ? { seller, prospect } : null;
 }
 

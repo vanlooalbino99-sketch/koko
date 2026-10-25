@@ -178,8 +178,10 @@ test("compte ElevenLabs gratuit : la voix de bibliothèque refusée est remplac�
   forgetDemoVoices();
   const again = await resolveDemoVoices(db, api, 'fr');
   assert.deepEqual(again?.prospect, { id: 'voixBrian0001', name: 'Brian', source: 'saved' });
-  // Une voix imposée par l'environnement n'est jamais remplacée en silence.
-  assert.equal(await premadeFallback(db, api, 'fr', 'seller', { ...first, seller: { id: 'voixEnv00001', name: 'E', source: 'env' } }), null);
+  // Une voix imposée par l'environnement mais refusée laisse aussi la place à une voix standard : pas d'appel muet.
+  const env = await premadeFallback(db, api, 'fr', 'seller', { ...first, seller: { id: 'voixEnv00001', name: 'E', source: 'env' } });
+  assert.equal(env?.seller.source, 'account');
+  assert.notEqual(env?.seller.id, 'voixEnv00001');
 });
 
 test('en français, des voix parisiennes créées une fois avec Voice Design, jamais pour l’anglais', async () => {

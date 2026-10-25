@@ -64,13 +64,17 @@ export function pickSharedVoice(voices: SharedVoice[]): SharedVoice | null {
 // « Albino IA », « albino-ia » ou « Albino IA (FR) » désignent la même voix : casse, accents et ponctuation ignorés.
 const loose = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 
+// Voix refusées par l'abonnement ElevenLabs (402) depuis le démarrage : même choisies dans l'environnement, elles
+// laissent la place à une voix standard plutôt qu'à un appel muet.
+const refused = ((globalThis as typeof globalThis & { __bsRefusedVoices?: Set<string> }).__bsRefusedVoices ??= new Set());
+
 function fromEnv(value: string | undefined, voices: AccountVoice[]): DemoVoice | null {
   const v = value?.trim();
   if (!v) return null;
   const key = loose(v);
   const found = voices.find((x) => x.id === v) ?? voices.find((x) => loose(x.name) === key) ?? voices.find((x) => loose(x.name).startsWith(key));
-  if (found) return { id: found.id, name: found.name, source: 'env' };
-  if (VOICE_ID.test(v)) return { id: v, name: v, source: 'env' };
+  if (found) return refused.has(found.id) ? null : { id: found.id, name: found.name, source: 'env' };
+  if (VOICE_ID.test(v)) return refused.has(v) ? null : { id: v, name: v, source: 'env' };
   const own = voices.filter((x) => x.category !== 'premade').map((x) => x.name);
   console.error(`[demo] voix « ${v} » introuvable dans le compte ElevenLabs ; voix personnelles du compte : ${own.join(', ') || 'aucune'}`);
   return null;
@@ -198,7 +202,7 @@ export async function premadeFallback(
   role: 'seller' | 'prospect',
   current: DemoVoices,
 ): Promise<DemoVoices | null> {
-  if (current[role].source === 'env') return null;
+  refused.add(current[role].id);
   const other = role === 'seller' ? current.prospect.id : current.seller.id;
   const premade = (await api.voices()).filter((v) => v.category === 'premade' && v.id !== current[role].id && v.id !== other);
   const want: Want = role === 'seller' ? { gender: 'female', deep: false, language: locale } : { gender: 'male', deep: true, language: locale };

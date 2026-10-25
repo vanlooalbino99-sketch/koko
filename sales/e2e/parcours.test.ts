@@ -198,6 +198,27 @@ async function waitForHealth() {
   throw new Error('le serveur ne répond pas');
 }
 
+// Court son WAV (220 Hz) que le faux ElevenLabs renvoie pour chaque réplique de la démo.
+function toneWav(seconds: number) {
+  const rate = 22050;
+  const n = Math.round(rate * seconds);
+  const buf = Buffer.alloc(44 + n * 2);
+  buf.write('RIFF', 0);
+  buf.writeUInt32LE(36 + n * 2, 4);
+  buf.write('WAVEfmt ', 8);
+  buf.writeUInt32LE(16, 16);
+  buf.writeUInt16LE(1, 20);
+  buf.writeUInt16LE(1, 22);
+  buf.writeUInt32LE(rate, 24);
+  buf.writeUInt32LE(rate * 2, 28);
+  buf.writeUInt16LE(2, 32);
+  buf.writeUInt16LE(16, 34);
+  buf.write('data', 36);
+  buf.writeUInt32LE(n * 2, 40);
+  for (let i = 0; i < n; i++) buf.writeInt16LE(Math.round(8000 * Math.sin((2 * Math.PI * 220 * i) / rate)), 44 + i * 2);
+  return buf;
+}
+
 async function shot(page: Page, name: string) {
   if (!SHOTS) return;
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -239,6 +260,23 @@ before(async () => {
         };
         setTimeout(() => res.end(JSON.stringify(message)), 1500);
         return;
+      }
+      // Démo publique : bibliothèque de voix, ajout au compte et synthèse des répliques.
+      if (req.url?.startsWith('/v1/shared-voices')) {
+        return res.end(
+          JSON.stringify({
+            voices: [
+              { public_owner_id: 'proprio1', voice_id: 'voixCalmeBiblio', name: 'Paul', gender: 'male', age: 'middle_aged', descriptive: 'calm', usage_character_count_1y: 900 },
+              { public_owner_id: 'proprio2', voice_id: 'voixGraveBiblio', name: 'Gérard', gender: 'male', age: 'middle_aged', descriptive: 'deep', usage_character_count_1y: 500, free_users_allowed: true },
+            ],
+            has_more: false,
+          }),
+        );
+      }
+      if (req.method === 'POST' && req.url?.startsWith('/v1/voices/add/')) return res.end(JSON.stringify({ voice_id: 'voixGraveAjoutee' }));
+      if (req.method === 'POST' && req.url?.startsWith('/v1/text-to-speech/')) {
+        res.setHeader('content-type', 'audio/wav');
+        return res.end(toneWav(0.25));
       }
       res.statusCode = 404;
       res.end('{}');
@@ -731,6 +769,48 @@ test('espace équipe : invitation par lien, inscription, mission attribuée, rô
   assert.deepEqual(errors, [], 'aucune erreur JavaScript');
   await guestContext.close();
   await ownerContext.close();
+});
+
+test('démo publique : appel scénarisé joué sans compte, voix choisies et synthétisées côté serveur, une seule fois', async () => {
+  const context = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  lastPage = page;
+  await page.goto(`${BASE}/`);
+  await page.getByRole('link', { name: 'Voir une démo' }).click();
+  await page.waitForURL(`${BASE}/demo`);
+  await page.getByText('Démo · appel scénarisé').first().waitFor();
+  await page.getByText('Écoutez Camille appeler Marc Lefèvre').waitFor();
+  await page.getByRole('button', { name: "Écouter l'appel" }).click();
+  await page.getByText("Plomberie Lefèvre, j'écoute.").first().waitFor({ timeout: 20_000 });
+  await page.getByText('Qui décroche le téléphone', { exact: false }).first().waitFor({ timeout: 20_000 });
+  await page.locator('#signals-title + ol').getByText('Question ouverte').first().waitFor({ timeout: 20_000 });
+
+  const tts = mockCalls.filter((c) => c.url.startsWith('/v1/text-to-speech/'));
+  // Prospect : la voix grave trouvée dans la bibliothèque et ajoutée au compte ; vendeuse : voix féminine du compte.
+  assert.ok(mockCalls.some((c) => c.method === 'POST' && c.url === '/v1/voices/add/proprio2/voixGraveBiblio'));
+  const first = tts.find((c) => JSON.parse(c.body).text.startsWith('Plomberie Lefèvre'));
+  assert.ok(first?.url.startsWith('/v1/text-to-speech/voixGraveAjoutee?'), first?.url);
+  assert.equal(JSON.parse(first.body).model_id, 'eleven_multilingual_v2');
+  assert.ok(tts.some((c) => c.url.startsWith('/v1/text-to-speech/voixCharlotte1?')));
+  assert.ok(tts.every((c) => c.key === 'cle-de-test'));
+  assert.ok(!(await page.content()).includes('cle-de-test'), 'la clé reste sur le serveur');
+  await shot(page, '38-demo-appel');
+
+  // Réécouter : les répliques déjà synthétisées viennent de la base, ElevenLabs n'est pas rappelé pour elles.
+  await page.getByRole('button', { name: 'Arrêter' }).click();
+  const before = mockCalls.filter((c) => c.url.startsWith('/v1/text-to-speech/')).length;
+  const page2 = await context.newPage();
+  await page2.goto(`${BASE}/demo`);
+  await page2.getByRole('button', { name: "Écouter l'appel" }).click();
+  await page2.getByText("Plomberie Lefèvre, j'écoute.").first().waitFor({ timeout: 20_000 });
+  const again = mockCalls.filter((c) => c.url.startsWith('/v1/text-to-speech/')).slice(before);
+  assert.ok(!again.some((c) => JSON.parse(c.body).text.startsWith('Plomberie Lefèvre')), 'réplique déjà en base');
+  await page2.getByRole('button', { name: 'Arrêter' }).click();
+
+  // Seules les répliques du script existent.
+  assert.equal((await page.request.get(`${BASE}/api/demo/audio?lang=fr&line=999`)).status(), 404);
+  assert.equal((await page.request.get(`${BASE}/api/demo/audio?lang=fr&line=abc`)).status(), 404);
+  await context.close();
 });
 
 test('cockpit de l\'éditeur : chiffres réels de la plateforme, comptes à surveiller, export CSV', async () => {

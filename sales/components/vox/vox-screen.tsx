@@ -21,6 +21,8 @@ import {
   Mic,
   MicOff,
   Minimize2,
+  Pause,
+  Play,
   Radio,
   Settings,
   Users,
@@ -91,6 +93,9 @@ export type VoxStatic = {
   blocked: { message: string; link?: { href: string; label: string } } | null;
   locale: Locale;
   labels: CallLabels;
+  // Démo publique (/demo) : liens vers des pages ouvertes à tous et bandeau qui annonce un appel scénarisé.
+  links?: { home: string; live: string; scenario: string; family: string; newSession: string; quit: string };
+  demo?: { badge: string };
 };
 
 export type VoxPhase = 'loading' | 'idle' | 'starting' | 'live' | 'ending';
@@ -113,6 +118,8 @@ export type VoxLive = {
   volumeOn: boolean;
   interrupted: boolean;
   error?: string;
+  // Message affiché à la place de « Prêt à appeler » quand l'écran est au repos (fin de la démo, par exemple).
+  notice?: string;
 };
 
 // Lecture du son en continu, sans re-rendu React : niveau global, spectre et historique de l'appel.
@@ -215,12 +222,12 @@ function Sidebar({ data, asked }: { data: VoxStatic; asked: number }) {
   const shown = Math.min(asked, QUESTION_TARGET);
   return (
     <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border lg:row-span-3 lg:flex xl:row-span-2">
-      <Link href="/dashboard" className="flex h-[70px] shrink-0 items-center gap-2 px-[18px]">
+      <Link href={data.links?.home ?? '/dashboard'} className="flex h-[70px] shrink-0 items-center gap-2 px-[18px]">
         <AudioWaveform className="size-7 text-teal" strokeWidth={1.75} aria-hidden="true" />
         <span className="text-[19px] font-medium tracking-tight">{data.appName}</span>
       </Link>
       <nav className="grid gap-0.5 px-4 pt-4">
-        <NavLink item={{ href: `/scenarios/${data.scenario.id}/call`, label: c.navLive, icon: 'live' }} active />
+        <NavLink item={{ href: data.links?.live ?? `/scenarios/${data.scenario.id}/call`, label: c.navLive, icon: 'live' }} active />
         {data.nav.map((item) => (
           <NavLink key={item.href} item={item} />
         ))}
@@ -321,23 +328,28 @@ function Header({ data }: { data: VoxStatic }) {
   const c = data.labels;
   return (
     <header className="sticky top-0 z-20 flex h-[70px] items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur lg:col-start-2 lg:px-5 xl:static xl:col-span-2">
-      <Link href={`/scenarios/${data.scenario.id}`} className="grid size-9 place-items-center rounded-lg border border-border lg:hidden" aria-label={c.back}>
+      <Link href={data.links?.scenario ?? `/scenarios/${data.scenario.id}`} className="grid size-9 place-items-center rounded-lg border border-border lg:hidden" aria-label={c.back}>
         <ArrowLeft className="size-4" aria-hidden="true" />
       </Link>
       <nav aria-label={c.breadcrumb} className="flex min-w-0 items-center gap-1.5 text-[14px]">
         <span className="hidden text-muted-foreground sm:inline">{c.navLive} /</span>
-        <Link href={`/scenarios?family=${data.scenario.family}`} className="flex min-w-0 items-center gap-1.5 text-foreground hover:text-teal">
+        <Link href={data.links?.family ?? `/scenarios?family=${data.scenario.family}`} className="flex min-w-0 items-center gap-1.5 text-foreground hover:text-teal">
           <span className="truncate">{data.scenario.familyLabel}</span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </Link>
       </nav>
+      {data.demo && (
+        <span className="hidden shrink-0 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-[11px] font-medium tracking-[0.04em] text-teal uppercase sm:inline">
+          {data.demo.badge}
+        </span>
+      )}
       <div className="ml-auto flex items-center gap-4">
         <span className="hidden sm:inline">
           <Clock locale={data.locale} />
         </span>
         <span aria-hidden="true" className="hidden h-6 w-px bg-border sm:block" />
         <Link
-          href="/scenarios"
+          href={data.links?.newSession ?? '/scenarios'}
           className="vox-gradient inline-flex h-9 items-center gap-2 rounded-lg px-3.5 text-[14px] font-medium text-white shadow-[0_0_0_1px_rgb(255_255_255/0.12)_inset] hover:brightness-110"
         >
           <AudioLines className="size-4" aria-hidden="true" />
@@ -563,6 +575,8 @@ function Visualizer({ data, live, meter }: { data: VoxStatic; live: VoxLive; met
               <p role="alert" className="max-w-md rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
                 {data.blocked.message}
               </p>
+            ) : live.notice ? (
+              <p className="max-w-md text-[15px] text-balance">{live.notice}</p>
             ) : (
               <>
                 <p className="text-[15px]">{format(c.ready, { name: data.scenario.prospect.name })}</p>
@@ -791,7 +805,17 @@ function Controls({ data, live, on }: { data: VoxStatic; live: VoxLive; on: VoxH
             aria-pressed={live.isMuted}
             className="vox-gradient inline-flex h-9 items-center gap-2 rounded-lg px-4 text-[14px] font-medium text-white shadow-[0_0_0_1px_rgb(255_255_255/0.12)_inset] hover:brightness-110"
           >
-            {live.isMuted ? <MicOff className="size-4" aria-hidden="true" /> : <Mic className="size-4" aria-hidden="true" />}
+            {data.demo ? (
+              live.isMuted ? (
+                <Play className="size-4" aria-hidden="true" />
+              ) : (
+                <Pause className="size-4" aria-hidden="true" />
+              )
+            ) : live.isMuted ? (
+              <MicOff className="size-4" aria-hidden="true" />
+            ) : (
+              <Mic className="size-4" aria-hidden="true" />
+            )}
             {live.isMuted ? c.unmute : c.mute}
           </button>
         ) : data.blocked?.link ? (
@@ -829,7 +853,7 @@ function Controls({ data, live, on }: { data: VoxStatic; live: VoxLive; on: VoxH
         </button>
       ) : (
         <Link
-          href={`/scenarios/${s.id}`}
+          href={data.links?.quit ?? `/scenarios/${s.id}`}
           className="order-3 ml-auto inline-flex h-9 items-center rounded-lg sm:order-none sm:ml-0 border border-destructive/45 bg-destructive/10 px-3.5 text-[14px] font-medium text-destructive hover:bg-destructive/20"
         >
           {c.quit}

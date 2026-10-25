@@ -40,7 +40,7 @@ const CONCESSIONS: Record<Locale, string[]> = {
 };
 
 const OPEN_STARTS: Record<Locale, RegExp> = {
-  fr: /^(comment|pourquoi|qu['’]est-ce|quel(le)?s?\b|que\b|quoi\b|combien|où|dans quelle|racontez|expliquez|décrivez|parlez-moi|qu['’])/i,
+  fr: /^(comment|pourquoi|qu['’]est-ce|quel(le)?s?\b|que\b|quoi\b|qui\b|quand\b|combien|où|dans quelle|racontez|expliquez|décrivez|parlez-moi|qu['’])/i,
   en: /^(how|why|what|which|where|when|who|tell me|walk me|describe|talk me)/i,
 };
 

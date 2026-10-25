@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  customType,
   index,
   integer,
   jsonb,
@@ -383,6 +384,34 @@ export const auditLog = pgTable(
   },
   (t) => [index('audit_log_org_idx').on(t.organizationId, t.createdAt)],
 );
+
+// Octets bruts (bytea) : node-postgres rend un Buffer, PGlite un Uint8Array.
+const bytes = customType<{ data: Uint8Array; driverData: Uint8Array }>({ dataType: () => 'bytea' });
+
+// Démo publique de l'appel (page /demo) : voix retenues pour chaque rôle et, pour le vendeur, l'extrait de voix
+// fourni par l'équipe (jamais dans le dépôt, qui est public). Rempli par le serveur ou à la main.
+export const demoVoices = pgTable(
+  'demo_voices',
+  {
+    role: text('role').primaryKey(),
+    voiceId: text('voice_id'),
+    name: text('name'),
+    source: text('source'),
+    sample: bytes('sample'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [check('demo_voices_role_check', sql`${t.role} in ('seller', 'prospect:fr', 'prospect:en')`)],
+);
+
+// Répliques de la démo déjà synthétisées : la clé résume la voix, le modèle, les réglages et le texte, si bien
+// qu'un changement de voix ou de texte produit un nouvel enregistrement au lieu de servir l'ancien.
+export const demoAudio = pgTable('demo_audio', {
+  key: text('key').primaryKey(),
+  mime: text('mime').notNull(),
+  audio: bytes('audio').notNull(),
+  createdAt: createdAt(),
+});
 
 export type User = typeof users.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;

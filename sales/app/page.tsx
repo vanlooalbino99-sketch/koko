@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, BrainCircuit, MessageSquareQuote, Target } from 'lucide-react';
+import { ArrowRight, BrainCircuit, MessageSquareQuote, PlayCircle, Target } from 'lucide-react';
 import { Brand } from '@/components/brand';
 import { LanguageSwitch } from '@/components/shell/language-switch';
 import { Button } from '@/components/ui/button';
@@ -42,8 +42,13 @@ export default async function LandingPage() {
                   {auth ? t.nav.dashboard : l.ctaSignup} <ArrowRight />
                 </Link>
               </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/demo">
+                  <PlayCircle /> {l.ctaDemo}
+                </Link>
+              </Button>
               {!auth && (
-                <Button asChild size="lg" variant="outline">
+                <Button asChild size="lg" variant="ghost">
                   <Link href="/login">{l.ctaLogin}</Link>
                 </Button>
               )}

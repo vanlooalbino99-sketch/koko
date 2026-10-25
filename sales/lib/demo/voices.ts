@@ -61,12 +61,19 @@ export function pickSharedVoice(voices: SharedVoice[]): SharedVoice | null {
   return pool[0] ?? null;
 }
 
+// « Albino IA », « albino-ia » ou « Albino IA (FR) » désignent la même voix : casse, accents et ponctuation ignorés.
+const loose = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+
 function fromEnv(value: string | undefined, voices: AccountVoice[]): DemoVoice | null {
   const v = value?.trim();
   if (!v) return null;
-  const found = voices.find((x) => x.id === v) ?? voices.find((x) => x.name.toLowerCase() === v.toLowerCase());
+  const key = loose(v);
+  const found = voices.find((x) => x.id === v) ?? voices.find((x) => loose(x.name) === key) ?? voices.find((x) => loose(x.name).startsWith(key));
   if (found) return { id: found.id, name: found.name, source: 'env' };
-  return VOICE_ID.test(v) ? { id: v, name: v, source: 'env' } : null;
+  if (VOICE_ID.test(v)) return { id: v, name: v, source: 'env' };
+  const own = voices.filter((x) => x.category !== 'premade').map((x) => x.name);
+  console.error(`[demo] voix « ${v} » introuvable dans le compte ElevenLabs ; voix personnelles du compte : ${own.join(', ') || 'aucune'}`);
+  return null;
 }
 
 async function saved(db: Db, role: string, voices: AccountVoice[], only?: (source: string | null) => boolean) {

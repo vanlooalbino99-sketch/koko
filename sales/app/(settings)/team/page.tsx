@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Clock, Mic, Trophy, Users } from 'lucide-react';
 import { changeRoleAction, deleteMissionAction, removeMemberAction, revokeInvitationAction } from '@/app/actions/team';
 import { SkillRadar } from '@/components/charts/skill-radar';
+import { SettingsPanel } from '@/components/settings/settings-panel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,14 +64,11 @@ export default async function TeamPage({ searchParams }: Props) {
   const { totals } = overview;
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{tm.title}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{format(tm.subtitle, { org: auth.organization.name, days: TEAM_PERIOD_DAYS })}</p>
-        </div>
-        {limits.teamSpace && <p className="text-sm text-muted-foreground tabular-nums">{format(tm.seats, { used: seats, total: limits.seats })}</p>}
-      </div>
+    <SettingsPanel
+      title={tm.title}
+      subtitle={format(tm.subtitle, { org: auth.organization.name, days: TEAM_PERIOD_DAYS })}
+      actions={limits.teamSpace && <p className="text-sm text-muted-foreground tabular-nums">{format(tm.seats, { used: seats, total: limits.seats })}</p>}
+    >
 
       <FormAlert tone="success" message={done} />
       <FormAlert message={error} />
@@ -294,6 +292,6 @@ export default async function TeamPage({ searchParams }: Props) {
           )}
         </Card>
       )}
-    </div>
+    </SettingsPanel>
   );
 }

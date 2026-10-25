@@ -140,6 +140,26 @@
   color: var(--foreground);
 }
 
+.theme-settings {
+  --background: #f3f4f7;
+  --surface: #ffffff;
+  --surface-2: #f6f7f9;
+  --foreground: #17181c;
+  --muted-foreground: #62666f;
+  --primary: #1a5cf0;
+  --primary-foreground: #ffffff;
+  --teal: #0a7f5f;
+  --success: #0a7f5f;
+  --warning: #9a5c00;
+  --destructive: #c8304f;
+  --border: #e6e7ec;
+  --input: #d8dae1;
+  --ring: #4c84ff;
+  color-scheme: light;
+  background: var(--background);
+  color: var(--foreground);
+}
+
 @media print {
   .theme-light {
     background: #fff;

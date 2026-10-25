@@ -135,7 +135,7 @@ export async function leaveOrganizationAction() {
     await leaveOrganization(await getDb(), auth);
   } catch (error) {
     if (!(error instanceof TeamError)) throw error;
-    target = `/settings?error=${error.code}`;
+    target = `/settings/organization?error=${error.code}`;
   }
   revalidatePath('/', 'layout');
   redirect(target);

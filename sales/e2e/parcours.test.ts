@@ -377,7 +377,10 @@ test('parcours complet d\'un nouvel utilisateur', async () => {
 
   // Déconnexion puis reconnexion.
   await page.goto(`${BASE}/settings`);
+  await assert.doesNotReject(page.getByRole('heading', { name: 'Profil d\'entraînement' }).waitFor());
   await shot(page, '07-reglages');
+  await page.getByRole('navigation', { name: 'Sections des réglages' }).getByRole('link', { name: 'Compte' }).click();
+  await page.waitForURL(`${BASE}/settings/account`);
   await page.getByRole('main').getByRole('button', { name: 'Se déconnecter' }).click();
   await page.waitForURL(`${BASE}/login`);
   await page.getByLabel('E-mail').fill(email);
@@ -674,7 +677,7 @@ test('espace équipe : invitation par lien, inscription, mission attribuée, rô
   await assert.doesNotReject(guest.getByText('Manager · Équipe Tania').first().waitFor());
 
   // Deux espaces : Noah repasse dans son espace personnel depuis les réglages.
-  await guest.goto(`${BASE}/settings`);
+  await guest.goto(`${BASE}/settings/organization`);
   await assert.doesNotReject(guest.getByRole('heading', { name: 'Vos espaces' }).waitFor());
   await guest.getByRole('button', { name: 'Ouvrir' }).click();
   await guest.waitForURL(`${BASE}/dashboard`);

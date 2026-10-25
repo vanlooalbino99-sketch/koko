@@ -1,15 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { LogOut } from 'lucide-react';
-import { logOutAction } from '@/app/actions/auth';
 import { leaveOrganizationAction, switchOrganizationAction } from '@/app/actions/team';
-import { LanguageSwitch } from '@/components/shell/language-switch';
+import { SettingsPanel } from '@/components/settings/settings-panel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormAlert } from '@/components/ui/field';
 import { getDb } from '@/lib/db/client';
-import { can, type Experience, type Persona, type Role, type Skill } from '@/lib/domain';
+import { can, type Role } from '@/lib/domain';
 import { format, formatDate } from '@/lib/i18n';
 import { listMembers, listMyOrganizations, type TeamErrorCode } from '@/lib/organization/service';
 import { getI18n, requireOnboarded } from '@/lib/server/context';
@@ -17,11 +15,11 @@ import { RenameForm } from './rename-form';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
-  return { title: t.settings.title };
+  return { title: t.settings.organizationTitle };
 }
 
-export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { auth, profile } = await requireOnboarded();
+export default async function OrganizationPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { auth } = await requireOnboarded();
   const { t, locale } = await getI18n();
   const st = t.settings;
   const db = await getDb();
@@ -29,51 +27,33 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const { error } = await searchParams;
   const errorMessage = error && error in t.team.errors ? t.team.errors[error as TeamErrorCode] : undefined;
   return (
-    <div className="mx-auto grid max-w-4xl gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{st.title}</h1>
+    <SettingsPanel
+      title={st.organizationTitle}
+      subtitle={st.organizationSubtitle}
+      actions={
+        can(auth.role, 'team:view') && (
+          <Button asChild variant="outline" size="sm">
+            <Link href="/team">{st.manageTeam}</Link>
+          </Button>
+        )
+      }
+    >
       <FormAlert message={errorMessage} />
 
-      <Card>
-        <CardHeader>
-          <div>
-            <CardTitle>{st.profileTitle}</CardTitle>
-            <CardDescription className="mt-1">{st.profileText}</CardDescription>
-          </div>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/onboarding">{st.profileEdit}</Link>
-          </Button>
-        </CardHeader>
-        <dl className="grid gap-3 text-sm sm:grid-cols-[180px_1fr]">
-          <dt className="text-muted-foreground">{t.onboarding.personaQuestion}</dt>
-          <dd>{t.enums.persona[profile.persona as Persona]}</dd>
-          <dt className="text-muted-foreground">{t.onboarding.experienceQuestion}</dt>
-          <dd>{t.enums.experience[profile.experience as Experience]}</dd>
-          <dt className="text-muted-foreground">{t.dashboard.focusTitle}</dt>
-          <dd className="flex flex-wrap gap-1.5">
-            {profile.goals.map((g) => (
-              <Badge key={g} variant="outline" className="border-teal/30 bg-teal/10 text-foreground">
-                {t.enums.skill[g as Skill]}
-              </Badge>
-            ))}
-          </dd>
-          {profile.offerName && (
-            <>
-              <dt className="text-muted-foreground">{t.onboarding.offerName}</dt>
-              <dd>{profile.offerName}</dd>
-            </>
-          )}
-        </dl>
-      </Card>
-
-      <Card>
-        <CardHeader className="mb-0 items-center">
-          <CardTitle>{st.languageTitle}</CardTitle>
-          <LanguageSwitch locale={locale} label={st.languageTitle} />
-        </CardHeader>
-      </Card>
+      {can(auth.role, 'organization:edit') && <RenameForm name={auth.organization.name} labels={{ name: st.organizationName, submit: st.rename }} />}
+      <dl className="grid gap-3 text-sm sm:grid-cols-[200px_1fr]">
+        <dt className="text-muted-foreground">{st.organizationTitle}</dt>
+        <dd>{auth.organization.name}</dd>
+        <dt className="text-muted-foreground">{st.organizationKind}</dt>
+        <dd>{auth.organization.kind === 'team' ? st.kindTeam : st.kindPersonal}</dd>
+        <dt className="text-muted-foreground">{t.dashboard.plan}</dt>
+        <dd>{t.enums.plan[auth.organization.plan as 'free'] ?? auth.organization.plan}</dd>
+        <dt className="text-muted-foreground">{t.dashboard.role}</dt>
+        <dd>{t.enums.role[auth.role]}</dd>
+      </dl>
 
       {spaces.length > 1 && (
-        <Card>
+        <Card className="p-4 sm:p-5">
           <CardHeader>
             <div>
               <CardTitle>{st.workspacesTitle}</CardTitle>
@@ -116,31 +96,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{st.organizationTitle}</CardTitle>
-          {can(auth.role, 'team:view') && (
-            <Button asChild variant="outline" size="sm">
-              <Link href="/team">{st.manageTeam}</Link>
-            </Button>
-          )}
-        </CardHeader>
-        {can(auth.role, 'organization:edit') && (
-          <div className="mb-5">
-            <RenameForm name={auth.organization.name} labels={{ name: st.organizationName, submit: st.rename }} />
-          </div>
-        )}
-        <dl className="grid gap-3 text-sm sm:grid-cols-[180px_1fr]">
-          <dt className="text-muted-foreground">{t.settings.organizationTitle}</dt>
-          <dd>{auth.organization.name}</dd>
-          <dt className="text-muted-foreground">{st.organizationKind}</dt>
-          <dd>{auth.organization.kind === 'team' ? st.kindTeam : st.kindPersonal}</dd>
-          <dt className="text-muted-foreground">{t.dashboard.plan}</dt>
-          <dd>{t.enums.plan[auth.organization.plan as 'free'] ?? auth.organization.plan}</dd>
-          <dt className="text-muted-foreground">{t.dashboard.role}</dt>
-          <dd>{t.enums.role[auth.role]}</dd>
-        </dl>
-        <h3 className="mt-6 mb-3 text-sm font-semibold">{st.membersTitle}</h3>
+      <div>
+        <h2 className="mb-3 text-sm font-semibold">{st.membersTitle}</h2>
         {members === null ? (
           <p className="text-sm text-muted-foreground">{st.membersHidden}</p>
         ) : (
@@ -159,21 +116,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             ))}
           </ul>
         )}
-      </Card>
-
-      <Card>
-        <CardHeader className="mb-0 items-center">
-          <div>
-            <CardTitle>{st.accountTitle}</CardTitle>
-            <CardDescription className="mt-1">{format(st.signedInAs, { email: auth.user.email })}</CardDescription>
-          </div>
-          <form action={logOutAction}>
-            <Button type="submit" variant="outline" size="sm">
-              <LogOut /> {t.common.logout}
-            </Button>
-          </form>
-        </CardHeader>
-      </Card>
-    </div>
+      </div>
+    </SettingsPanel>
   );
 }

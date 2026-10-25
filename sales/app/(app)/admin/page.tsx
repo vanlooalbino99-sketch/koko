@@ -269,7 +269,7 @@ export default async function AdminPage({ searchParams }: Props) {
               <ArrowRight className="inline size-3.5 align-[-2px]" aria-hidden="true" />
             </a>
           </div>
-          <GlassTorus className="w-[40%] max-w-[170px] shrink-0 self-center" />
+          <GlassTorus className="w-[44%] max-w-[190px] shrink-0 self-center" />
         </section>
       </div>
 

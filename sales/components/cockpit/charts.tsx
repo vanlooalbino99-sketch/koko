@@ -427,10 +427,10 @@ export function GlassRing() {
     <svg viewBox="0 0 120 120" aria-hidden="true" className="h-auto w-[112px]">
       <defs>
         <linearGradient id="pulse-ring" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#c4b5fd" />
-          <stop offset="0.45" stopColor="#7b6cff" />
-          <stop offset="0.75" stopColor="#3fe0b5" />
-          <stop offset="1" stopColor="#4c7dff" />
+          <stop offset="0" stopColor="#b9a2ff" />
+          <stop offset="0.4" stopColor="#8f5cff" />
+          <stop offset="0.7" stopColor="#5f86ff" />
+          <stop offset="1" stopColor="#22d8e6" />
         </linearGradient>
       </defs>
       <ellipse cx="60" cy="62" rx="30" ry="44" fill="none" stroke="url(#pulse-ring)" strokeWidth="13" transform="rotate(-32 60 62)" opacity="0.9" />

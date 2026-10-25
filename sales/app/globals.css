@@ -290,6 +290,18 @@
   transform-box: view-box;
   animation: bs-needle 1.4s cubic-bezier(0.25, 0.8, 0.25, 1.05) both;
 }
+@keyframes bs-glow {
+  50% {
+    filter: drop-shadow(0 0 7px rgba(200, 175, 255, 0.7)) drop-shadow(0 0 22px rgba(130, 115, 255, 0.55))
+      drop-shadow(0 0 34px rgba(70, 220, 240, 0.32));
+  }
+}
+/* Halo de l'anneau de verre : il respire lentement. */
+.bs-glow {
+  filter: drop-shadow(0 0 5px rgba(190, 160, 255, 0.5)) drop-shadow(0 0 16px rgba(120, 110, 255, 0.4))
+    drop-shadow(0 0 26px rgba(70, 220, 240, 0.2));
+  animation: bs-glow 5s ease-in-out infinite;
+}
 .bs-unroll {
   transform-box: view-box;
   transform-origin: left;
@@ -305,6 +317,7 @@
   .bs-float,
   .bs-twinkle,
   .bs-needle,
+  .bs-glow,
   .bs-unroll {
     animation: none;
   }

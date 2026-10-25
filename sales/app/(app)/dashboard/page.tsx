@@ -330,7 +330,7 @@ export default async function DashboardPage({ searchParams }: Props) {
               <ArrowRight className="inline size-3.5 align-[-2px]" aria-hidden="true" />
             </Link>
           </div>
-          <GlassTorus className="w-[40%] max-w-[170px] shrink-0 self-center" />
+          <GlassTorus className="w-[44%] max-w-[190px] shrink-0 self-center" />
         </section>
       </div>
 

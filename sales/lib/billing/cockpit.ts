@@ -25,6 +25,7 @@ export const PERIODS = [7, 30, 90] as const;
 export type Period = (typeof PERIODS)[number];
 
 const DAY = 86_400_000;
+const GRID = 91;
 // Seuils des comptes à risque.
 const INACTIVE_DAYS = 14;
 const USAGE_ALERT = 0.9;
@@ -40,6 +41,8 @@ export type AccountRow = {
   plan: Plan;
   health: number;
   weekly: number[];
+  // Appels par jour sur six semaines, du plus ancien au plus récent.
+  daily: number[];
   lastActivity: Date | null;
   usage: number;
   mrr: number;
@@ -100,6 +103,7 @@ export async function cockpit(
     [analysisRates],
     [callRates],
     activity,
+    grid,
   ] = await Promise.all([
     platformUsage(db, now),
     db
@@ -190,6 +194,15 @@ export async function cockpit(
       .where(inArray(auditLog.action, ['user.signup', 'billing.subscription_synced', 'billing.subscription_changed', 'invitation.accepted', 'scenario.created', 'member.left']))
       .orderBy(desc(auditLog.createdAt))
       .limit(6),
+    // Grille de la maquette : la période découpée en 91 tranches égales.
+    db
+      .select({
+        cell: sql<number>`least(${GRID - 1}, floor(extract(epoch from (${simulations.createdAt} - ${since.toISOString()}::timestamptz)) / ${Math.max(1, (now.getTime() - since.getTime()) / 1000 / GRID)}))`.mapWith(Number),
+        n: count(),
+      })
+      .from(simulations)
+      .where(completedBetween(since, now))
+      .groupBy(sql`1`),
   ]);
 
   // Abonnements payants en cours : MRR par offre.
@@ -204,6 +217,12 @@ export async function cockpit(
   const mrrSeries = keys.map((k) =>
     active.filter((s) => dayKey(s.createdAt) <= k).reduce((n, s) => n + monthlyPrice(s.plan as PaidPlan, s.seats, opts.prices), 0),
   );
+
+  // Abonnés en cours à la fin de chacune des sept tranches de la période (date de souscription).
+  const subscribersBars = Array.from({ length: 7 }, (_, i) => {
+    const end = since.getTime() + ((i + 1) * (now.getTime() - since.getTime())) / 7;
+    return active.filter((s) => s.createdAt.getTime() <= end).length;
+  });
 
   // Conversion : part des espaces créés sur la période qui ont aujourd'hui un abonnement payant.
   const paidOrgs = new Set(active.map((s) => s.organizationId));
@@ -255,6 +274,8 @@ export async function cockpit(
     revenue,
     activeAccounts: { value: activeNow.n, previous: activePrev.n } satisfies Delta,
     callsByDay: series(keys, callsByDay),
+    callsGrid: Array.from({ length: GRID }, (_, i) => grid.find((g) => g.cell === i)?.n ?? 0),
+    subscribersBars,
     mrr: { value: mrr, previous: mrrPrevious, byPlan: mrrByPlan, series: mrrSeries, subscribers: active.length },
     conversion: { value: conversion(newOrgs), previous: conversion(prevOrgs), signupsByDay, signups: newOrgs.length },
     churn: { value: churn, canceled: canceled.n },
@@ -281,7 +302,7 @@ async function accountRows(
   subscriptions: { organizationId: string; plan: string | null; status: string | null; seats: number }[],
 ): Promise<AccountRow[]> {
   const sixWeeks = new Date(now.getTime() - 42 * DAY);
-  const [orgs, weekly, last, period, credits] = await Promise.all([
+  const [orgs, weekly, daily, last, period, credits] = await Promise.all([
     db
       .select({ id: organizations.id, name: organizations.name, plan: organizations.plan })
       .from(organizations)
@@ -293,6 +314,15 @@ async function accountRows(
       .select({
         organizationId: simulations.organizationId,
         week: sql<number>`floor(extract(epoch from (${now.toISOString()}::timestamptz - ${simulations.createdAt})) / ${7 * 86400})`.mapWith(Number),
+        n: count(),
+      })
+      .from(simulations)
+      .where(and(eq(simulations.status, 'completed'), gte(simulations.createdAt, sixWeeks)))
+      .groupBy(simulations.organizationId, sql`2`),
+    db
+      .select({
+        organizationId: simulations.organizationId,
+        day: sql<number>`floor(extract(epoch from (${now.toISOString()}::timestamptz - ${simulations.createdAt})) / 86400)`.mapWith(Number),
         n: count(),
       })
       .from(simulations)
@@ -344,6 +374,7 @@ async function accountRows(
       plan: org.plan as Plan,
       health: Math.max(0, health),
       weekly: weeklyCalls,
+      daily: Array.from({ length: 42 }, (_, i) => daily.find((d) => d.organizationId === org.id && d.day === 41 - i)?.n ?? 0),
       lastActivity,
       usage: Math.round(usage * 100),
       mrr: paying ? monthlyPrice(sub.plan as PaidPlan, sub.seats, prices) : 0,

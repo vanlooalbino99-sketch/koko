@@ -384,11 +384,14 @@ test('parcours complet d\'un nouvel utilisateur', async () => {
   await assert.doesNotReject(page.getByText(/Version 2/).waitFor());
 
   // Langue anglaise, enregistrée sur le compte.
-  await page.locator('header').getByRole('button', { name: 'en', exact: true }).click();
-  await assert.doesNotReject(page.getByRole('link', { name: 'Dashboard' }).first().waitFor());
+  // La langue se change dans le menu « ⋮ » du compte, en bas de la barre latérale.
+  await page.locator('aside').getByLabel('Menu du compte').click();
+  await page.locator('aside').getByRole('button', { name: 'en', exact: true }).click();
+  await assert.doesNotReject(page.getByRole('link', { name: 'Overview' }).first().waitFor());
   await page.goto(`${BASE}/dashboard`);
   await assert.doesNotReject(page.getByRole('heading', { name: 'Hello Albino' }).waitFor());
-  await page.locator('header').getByRole('button', { name: 'fr', exact: true }).click();
+  await page.locator('aside').getByLabel('Account menu').click();
+  await page.locator('aside').getByRole('button', { name: 'fr', exact: true }).click();
   await assert.doesNotReject(page.getByRole('heading', { name: 'Bonjour Albino' }).waitFor());
 
   // Déconnexion puis reconnexion.
@@ -602,7 +605,7 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   assert.match(await csv.text(), /Date \(UTC\),Scénario,Statut/);
   await shot(page, '29b-tableau-de-bord-rempli');
   await page.goto(`${BASE}/dashboard?period=7`);
-  await assert.doesNotReject(page.locator('a[aria-current="true"][href="/dashboard?period=7"]').waitFor({ state: 'attached' }));
+  await assert.doesNotReject(page.locator('a[aria-current="true"][href="/dashboard?period=7"]').first().waitFor({ state: 'attached' }));
   await page.setViewportSize({ width: 390, height: 844 });
   const dashOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   const dashWide = await page.evaluate(() =>
@@ -757,8 +760,8 @@ test('cockpit de l\'éditeur : chiffres réels de la plateforme, comptes à surv
   await shot(page, '18-cockpit');
 
   // Période et export.
-  await page.locator('summary', { hasText: '–' }).click();
-  await page.getByRole('link', { name: '7 derniers jours' }).click();
+  await page.locator('header summary', { hasText: '–' }).click();
+  await page.locator('header').getByRole('link', { name: '7 derniers jours' }).click();
   await page.waitForURL(`${BASE}/admin?period=7`);
   const csv = await page.request.get(`${BASE}/api/admin/export?period=7`);
   assert.equal(csv.status(), 200);

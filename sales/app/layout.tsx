@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import { getI18n } from '@/lib/server/context';
+import '@fontsource-variable/outfit';
 import './globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {

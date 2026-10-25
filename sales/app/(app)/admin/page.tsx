@@ -1,23 +1,13 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Sparkles, Upload } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Change } from '@/components/cockpit/change';
+import { AreaWave, Bars, Bubbles, DotMatrix, DottedLine, FunnelFlow, Gauge, HEX_COLORS, HexHealth, PLAN_COLORS, PlanDonut, rolling, TrendLine } from '@/components/cockpit/charts';
+import { GlassTorus } from '@/components/cockpit/glass-torus';
+import { InsightSpark } from '@/components/cockpit/insight-spark';
+import { card, CardTitle, KpiCard, LiveBadge, ViewAll } from '@/components/cockpit/panel';
+import { ParticleWave } from '@/components/cockpit/particle-wave';
 import { PeriodMenu } from '@/components/cockpit/period-menu';
-import {
-  AreaWave,
-  Bubbles,
-  DotGrid,
-  DottedLine,
-  DotWave,
-  FunnelFlow,
-  GlassRing,
-  HalfGauge,
-  HealthRing,
-  PLAN_COLORS,
-  PlanDonut,
-  SubscriptionBars,
-  TrendLine,
-} from '@/components/cockpit/charts';
 import { platformReport } from '@/lib/billing/admin';
 import { cockpit, PERIODS, type Period, type RiskFactor } from '@/lib/billing/cockpit';
 import { billingProviderFromEnv } from '@/lib/billing/stripe';
@@ -29,18 +19,21 @@ import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = { robots: { index: false } };
 
-type Props = { searchParams: Promise<{ period?: string }> };
+type Props = { searchParams: Promise<{ period?: string; accounts?: string }> };
 
+const DAY = 86_400_000;
+
+// Étiquettes « facteur de risque » de la maquette : rouge, orange encadré, vert, gris.
 const RISK_TONE: Record<RiskFactor, string> = {
-  past_due: 'bg-[#f06b8f]/15 text-[#ff8fab]',
-  inactive: 'bg-[#f5a524]/15 text-[#ffc15e]',
-  declining: 'bg-[#f5a524]/15 text-[#ffc15e]',
-  quota: 'bg-[#4c7dff]/15 text-[#8fb0ff]',
-  none: 'bg-white/5 text-muted-foreground',
+  past_due: 'bg-[#f0506e]/15 text-[#ff5a76]',
+  inactive: 'bg-[#f0506e]/15 text-[#ff5a76]',
+  declining: 'border border-[#f59e0b]/40 bg-[#f59e0b]/10 text-[#ff9f2e]',
+  quota: 'bg-[#2fd07a]/12 text-[#3fdc85]',
+  none: 'border border-white/10 bg-white/5 text-[#c9cdd8]',
 };
 
 function healthTone(score: number) {
-  return score >= 80 ? 'bg-[#3fe0b5]/15 text-[#5ff0c6]' : score >= 50 ? 'bg-[#f5a524]/15 text-[#ffc15e]' : 'bg-[#f06b8f]/15 text-[#ff8fab]';
+  return score >= 80 ? 'bg-[#2fd07a]/12 text-[#3fdc85]' : score >= 50 ? 'bg-[#f59e0b]/12 text-[#ff9f2e]' : 'bg-[#f0506e]/15 text-[#ff5a76]';
 }
 
 // Page de l'éditeur uniquement : pour tout autre compte, elle n'existe pas.
@@ -49,7 +42,8 @@ export default async function AdminPage({ searchParams }: Props) {
   if (!auth.user.isPlatformAdmin) notFound();
   const { t, locale } = await getI18n();
   const a = t.admin;
-  const requested = Number((await searchParams).period);
+  const params = await searchParams;
+  const requested = Number(params.period);
   const days: Period = (PERIODS as readonly number[]).includes(requested) ? (requested as Period) : 30;
   const db = await getDb();
   const provider = billingProviderFromEnv();
@@ -57,7 +51,7 @@ export default async function AdminPage({ searchParams }: Props) {
   const [prices, invoices] = provider
     ? await Promise.all([
         provider.prices().catch(() => null),
-        provider.paidInvoices(new Date(now.getTime() - 2 * days * 86_400_000)).catch((err) => {
+        provider.paidInvoices(new Date(now.getTime() - 2 * days * DAY)).catch((err) => {
           console.error('[cockpit] factures', err instanceof Error ? err.message : err);
           return null;
         }),
@@ -67,192 +61,172 @@ export default async function AdminPage({ searchParams }: Props) {
 
   const tag = locale === 'fr' ? 'fr-FR' : 'en-GB';
   const n = (v: number) => new Intl.NumberFormat(tag).format(v);
+  const pct = (v: number) => `${new Intl.NumberFormat(tag, { maximumFractionDigits: 1 }).format(v)} %`;
   const money = (cents: number, currency = 'eur') =>
     new Intl.NumberFormat(tag, { style: 'currency', currency: currency.toUpperCase(), maximumFractionDigits: cents % 100 === 0 ? 0 : 2 }).format(cents / 100);
-  const range = `${new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short' }).format(c.since)} – ${new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short' }).format(now)}`;
+  const short = new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short' });
+  const vs = `vs ${short.format(new Date(c.since.getTime() - days * DAY))} – ${short.format(new Date(c.since.getTime() - DAY))}`;
   const ago = (d: Date | null) => (d ? timeAgo(d, now, tag) : a.never);
-  const vs = a.vsPrevious;
-  const card = 'min-w-0 rounded-xl border border-border bg-surface p-4';
-  const kpiTitle = 'text-[13px] font-medium text-[#d9dce6]';
-  const kpiValue = 'mt-2 text-[22px] leading-none font-semibold tracking-tight tabular-nums';
+  const periodPill = <PeriodMenu path="/admin" current={days} periods={PERIODS} labels={a.periods} short={t.dashboard.periodsShort} srLabel={a.period} compact />;
   const funnelValues = [c.funnel.signups, c.funnel.onboarded, c.funnel.called, c.funnel.paying];
   const funnelKeys = ['signups', 'onboarded', 'called', 'paying'] as const;
   const mrrSegments = (['pro', 'team'] as const).map((key) => ({ key, value: c.mrr.byPlan[key] }));
   const maxScenario = Math.max(1, ...c.topScenarios.map((s) => s.n));
-  const accounts = c.accounts.slice(0, 8);
+  const showAll = params.accounts === 'all';
+  const accounts = showAll ? c.accounts : c.accounts.slice(0, 8);
 
   return (
-    <div className="grid gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{a.title}</h1>
-          <p className="text-[13px] text-muted-foreground">{a.subtitle}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <PeriodMenu path="/admin" range={range} current={days} periods={PERIODS} labels={a.periods} srLabel={a.period} />
-          <a
-            href={`/api/admin/export?period=${days}`}
-            download
-            className="flex h-9 items-center gap-2 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-white hover:bg-primary/90"
-          >
-            <Upload className="size-4" aria-hidden="true" /> {a.export}
-          </a>
-        </div>
-      </div>
+    <div className="grid gap-2.5">
+      <h1 className="sr-only">{a.title}</h1>
 
       {/* Indicateurs */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1.35fr_1fr_1fr_1fr_1fr_0.95fr]">
-        <section className={cn(card, 'grid content-between gap-2')}>
-          <div className="flex items-start justify-between gap-2">
-            <h2 className={kpiTitle}>{a.revenue}</h2>
-            <span className="rounded-full border border-[#3fe0b5]/30 bg-[#3fe0b5]/10 px-2 py-0.5 text-[10.5px] text-[#5ff0c6]">● {a.live}</span>
-          </div>
-          {c.revenue ? (
-            <>
-              <p className={cn(kpiValue, 'text-[26px]')}>{money(c.revenue.total, c.revenue.currency)}</p>
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1.6fr_1.15fr_1.08fr_0.98fr_0.94fr_0.9fr]">
+        <KpiCard
+          title={a.revenue}
+          badge={<LiveBadge label={a.live} />}
+          value={c.revenue ? money(c.revenue.total, c.revenue.currency) : <span className="text-[#9aa1b2]">{a.none}</span>}
+          big
+          delta={
+            c.revenue ? (
               <Change value={c.revenue.total} previous={c.revenue.previous} label={vs} tag={tag} />
-              <DotWave values={c.revenue.byDay} label={a.revenueChart} />
-            </>
-          ) : (
-            <>
-              <p className={cn(kpiValue, 'text-[26px] text-muted-foreground')}>{a.none}</p>
-              <p className="text-[11.5px] text-muted-foreground">{a.revenueNone}</p>
-              <DotWave values={c.callsByDay.map(() => 0)} label={a.revenueChart} />
-            </>
-          )}
-        </section>
+            ) : (
+              <p className="text-[11.5px] text-[#9aa1b2]">{a.revenueNone}</p>
+            )
+          }
+          bleed
+        >
+          <ParticleWave values={c.revenue ? c.revenue.byDay : []} label={a.revenueChart} />
+        </KpiCard>
 
-        <section className={cn(card, 'grid content-between gap-2')}>
-          <h2 className={kpiTitle}>{a.activeAccounts}</h2>
-          <p className={kpiValue}>{n(c.activeAccounts.value)}</p>
-          <Change value={c.activeAccounts.value} previous={c.activeAccounts.previous} label={vs} tag={tag} />
-          <DotGrid values={c.callsByDay} label={a.activeChart} />
-        </section>
+        <KpiCard title={a.activeAccounts} value={n(c.activeAccounts.value)} delta={<Change value={c.activeAccounts.value} previous={c.activeAccounts.previous} label={vs} tag={tag} />}>
+          <DotMatrix values={c.callsGrid} label={a.activeChart} />
+        </KpiCard>
 
-        <section className={cn(card, 'grid content-between gap-2')}>
-          <h2 className={kpiTitle}>{a.mrr}</h2>
-          <p className={kpiValue}>{money(c.mrr.value)}</p>
-          <Change value={c.mrr.value} previous={c.mrr.previous} label={format(a.mrrHint, { n: c.mrr.subscribers })} tag={tag} />
+        <KpiCard title={a.mrr} value={money(c.mrr.value)} delta={<Change value={c.mrr.value} previous={c.mrr.previous} label={format(a.mrrHint, { n: c.mrr.subscribers })} tag={tag} />} bleed>
           <AreaWave values={c.mrr.series} label={a.mrrChart} />
-        </section>
+        </KpiCard>
 
-        <section className={cn(card, 'grid content-between gap-2')}>
-          <h2 className={kpiTitle}>{a.conversion}</h2>
-          <p className={kpiValue}>{c.conversion.value === null ? a.none : `${n(c.conversion.value)} %`}</p>
-          <Change value={c.conversion.value} previous={c.conversion.previous} label={format(a.conversionHint, { n: c.conversion.signups })} points tag={tag} />
+        <KpiCard
+          title={a.conversion}
+          value={c.conversion.value === null ? a.none : pct(c.conversion.value)}
+          delta={<Change value={c.conversion.value} previous={c.conversion.previous} label={format(a.conversionHint, { n: c.conversion.signups })} points tag={tag} />}
+        >
           <DottedLine values={c.conversion.signupsByDay} label={a.conversionChart} />
-        </section>
+        </KpiCard>
 
-        <section className={cn(card, 'grid content-between gap-2')}>
-          <h2 className={kpiTitle}>{a.churn}</h2>
-          <p className={kpiValue}>{c.churn.value === null ? a.none : `${n(c.churn.value)} %`}</p>
-          <p className="text-[11.5px] text-muted-foreground">{format(a.churnHint, { n: c.churn.canceled })}</p>
-          <SubscriptionBars active={c.mrr.subscribers} canceled={c.churn.canceled} label={a.churnChart} />
-        </section>
+        <KpiCard
+          title={a.churn}
+          value={c.churn.value === null ? a.none : pct(c.churn.value)}
+          delta={<p className="text-[11.5px] text-[#9aa1b2]">{format(a.churnHint, { n: c.churn.canceled })}</p>}
+        >
+          <Bars values={c.subscribersBars} label={a.churnChart} />
+        </KpiCard>
 
-        <section className={cn(card, 'grid content-between gap-2')}>
-          <h2 className={kpiTitle}>{a.score}</h2>
-          <p className={kpiValue}>{c.score.value === null ? a.none : c.score.value}</p>
-          <Change value={c.score.value} previous={c.score.previous} label={format(a.scoreHint, { n: c.score.n })} points tag={tag} />
-          <HalfGauge value={c.score.value} label={a.score} />
-        </section>
+        <KpiCard
+          title={a.score}
+          value={c.score.value === null ? a.none : c.score.value}
+          delta={<Change value={c.score.value} previous={c.score.previous} label={format(a.scoreHint, { n: c.score.n })} points tag={tag} />}
+        >
+          <Gauge value={c.score.value} label={a.score} />
+        </KpiCard>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-[1fr_1.45fr_1fr]">
-        <section className={card}>
-          <h2 className="text-[14px] font-semibold">{a.mrrByPlan}</h2>
-          {c.mrr.value === 0 && <p className="mt-3 text-[13px] text-muted-foreground">{a.mrrEmpty}</p>}
-          <div className="mt-3 flex items-center gap-4">
-            <div className="w-[46%] shrink-0">
+      <div className="grid gap-2.5 xl:grid-cols-[1.15fr_1.45fr_1fr]">
+        <section className={cn(card, 'bs-rise')}>
+          <CardTitle action={periodPill}>{a.mrrByPlan}</CardTitle>
+          <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row">
+            <div className="w-[46%] max-w-[230px] shrink-0">
               <PlanDonut segments={mrrSegments} center={money(c.mrr.value)} caption={a.mrrTotal} />
             </div>
-            <ul className="grid flex-1 gap-3 text-[13px]">
-              {mrrSegments.map((s) => (
-                <li key={s.key} className="grid grid-cols-[auto_1fr_auto] items-start gap-x-2">
-                  <span aria-hidden="true" className="mt-1.5 size-2 rounded-full" style={{ background: PLAN_COLORS[s.key] }} />
-                  <span>
-                    {t.enums.plan[s.key]}
-                    <span className="block text-[12px] text-muted-foreground tabular-nums">{money(s.value)}</span>
-                  </span>
-                  <span className="text-muted-foreground tabular-nums">{c.mrr.value ? Math.round((s.value / c.mrr.value) * 100) : 0} %</span>
-                </li>
-              ))}
-            </ul>
+            {c.mrr.value === 0 ? (
+              <p className="text-[13px] text-[#9aa1b2]">{a.mrrEmpty}</p>
+            ) : (
+              <ul className="grid w-full flex-1 gap-4 text-[13px]">
+                {mrrSegments.map((s) => (
+                  <li key={s.key} className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.5">
+                    <span aria-hidden="true" className="mt-1 size-2.5 rounded-full" style={{ background: PLAN_COLORS[s.key] }} />
+                    <span className="min-w-0">
+                      <span className="block truncate text-[#eef0f5]">{t.enums.plan[s.key]}</span>
+                      <span className="mt-1 block text-[12px] text-[#9aa1b2] tabular-nums">{money(s.value)}</span>
+                    </span>
+                    <span className="self-end text-[12px] text-[#c9cdd8] tabular-nums">{pct(c.mrr.value ? (s.value / c.mrr.value) * 100 : 0)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
 
-        <section className={card}>
-          <h2 className="text-[14px] font-semibold">{a.funnel}</h2>
-          <ol className="mt-3 grid grid-cols-4 gap-2">
+        <section className={cn(card, 'bs-rise flex flex-col')}>
+          <CardTitle>{a.funnel}</CardTitle>
+          <ol className="mt-4 grid grid-cols-4 text-center">
             {funnelKeys.map((key, i) => (
-              <li key={key} className="min-w-0">
-                <p className="truncate text-[12px] text-muted-foreground">
+              <li key={key} className="grid min-w-0 justify-items-center gap-1.5 px-1">
+                <p className="max-w-full truncate text-[12px] text-[#d3d7e1]">
                   {i + 1}. {a.funnelSteps[key]}
                 </p>
-                <p className="mt-0.5 text-[18px] font-semibold tabular-nums">{n(funnelValues[i])}</p>
-                <span className="mt-1 inline-block rounded-md border border-border bg-surface-2 px-1.5 py-0.5 text-[11px] tabular-nums">
-                  {n(c.funnel.signups ? Math.round((funnelValues[i] / c.funnel.signups) * 1000) / 10 : 0)} %
+                <p className="text-[21px] leading-none font-semibold tabular-nums">{n(funnelValues[i])}</p>
+                <span className="mt-1 rounded-md border border-[#c9cdd8]/50 px-2.5 py-1 text-[11.5px] text-[#eef0f5] tabular-nums">
+                  {pct(i === 0 ? (funnelValues[0] ? 100 : 0) : funnelValues[i - 1] ? (funnelValues[i] / funnelValues[i - 1]) * 100 : 0)}
                 </span>
               </li>
             ))}
           </ol>
-          <div className="mt-3">
-            <FunnelFlow values={funnelValues} label={a.funnel} />
-          </div>
-          <p className="mt-2 flex justify-between border-t border-border pt-2 text-[12px] text-muted-foreground">
+          <FunnelFlow values={funnelValues} label={a.funnel} />
+          <p className="mt-3 flex items-center justify-between rounded-lg border border-border px-4 py-3 text-[12.5px] text-[#9aa1b2]">
             {a.funnelRate}
-            <span className="font-medium text-[#3fe0b5] tabular-nums">{n(c.funnel.signups ? Math.round((c.funnel.paying / c.funnel.signups) * 1000) / 10 : 0)} %</span>
+            <span className="font-medium text-[#3fe0b5] tabular-nums">{pct(c.funnel.signups ? (c.funnel.paying / c.funnel.signups) * 100 : 0)}</span>
           </p>
         </section>
 
-        <section className={card}>
-          <h2 className="text-[14px] font-semibold">{a.health}</h2>
+        <section className={cn(card, 'bs-rise')}>
+          <CardTitle>{a.health}</CardTitle>
           <div className="mt-2 grid justify-items-center">
-            <HealthRing facets={c.facets.map((f) => ({ label: a.facets[f.key], value: f.value }))} center={c.health} caption={a.healthCenter} />
+            <HexHealth facets={c.facets.map((f) => ({ label: a.facets[f.key], value: f.value }))} center={c.health} caption={a.healthCenter} />
           </div>
-          <ul className="mt-2 grid gap-1.5 text-[12.5px]">
-            {c.facets.map((f) => (
+          <ul className="mt-3 grid gap-1.5 text-[12px]">
+            {c.facets.map((f, i) => (
               <li key={f.key} className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <span aria-hidden="true" className={cn('size-2 rounded-full', f.value >= 85 ? 'bg-[#3fe0b5]' : f.value >= 60 ? 'bg-[#4c7dff]' : 'bg-[#7b6cff]')} />
-                  {a.facets[f.key]}
+                <span className="flex min-w-0 items-center gap-2.5 text-[#d3d7e1]">
+                  <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full" style={{ background: HEX_COLORS[i % HEX_COLORS.length] }} />
+                  <span className="truncate">{a.facets[f.key]}</span>
                 </span>
-                <span className="tabular-nums">{f.value}</span>
+                <span className="text-[#c9cdd8] tabular-nums">{f.value}</span>
               </li>
             ))}
           </ul>
         </section>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_0.85fr_1fr_1fr]">
-        <section className={card}>
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-[14px] font-semibold">{a.topScenarios}</h2>
-            <span className="text-[11.5px] text-muted-foreground">{a.calls}</span>
-          </div>
+      <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1.07fr_1.27fr]">
+        <section className={cn(card, 'bs-rise')}>
+          <CardTitle action={periodPill}>{a.topScenarios}</CardTitle>
           {c.topScenarios.length === 0 ? (
-            <p className="mt-3 text-[13px] text-muted-foreground">{a.empty}</p>
+            <p className="mt-3 text-[13px] text-[#9aa1b2]">{a.empty}</p>
           ) : (
-            <ul className="mt-3 grid gap-2.5">
-              {c.topScenarios.map((s) => (
-                <li key={s.id} className="grid grid-cols-[minmax(0,1fr)_88px_40px] items-center gap-2 text-[12.5px]">
-                  <span className="truncate" title={s.title}>
-                    {s.title}
-                  </span>
-                  <span aria-hidden="true" className="h-1.5 rounded-full bg-white/5">
-                    <span className="block h-full rounded-full bg-[linear-gradient(90deg,#7b6cff,#4c7dff)]" style={{ width: `${(s.n / maxScenario) * 100}%` }} />
-                  </span>
-                  <span className="text-right tabular-nums">{n(s.n)}</span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <p className="mt-2 text-right text-[11px] text-[#9aa1b2]">{a.calls}</p>
+              <ul className="mt-1.5 grid gap-3">
+                {c.topScenarios.map((s, i) => (
+                  <li key={s.id} className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_40px] items-center gap-3 text-[12.5px]">
+                    <span className="truncate text-[#d3d7e1]" title={s.title}>
+                      {s.title}
+                    </span>
+                    <span aria-hidden="true" className="h-[3px] rounded-full">
+                      <span className="bs-grow-x block h-full rounded-full bg-[#5c55f0]" style={{ width: `${(s.n / maxScenario) * 100}%`, animationDelay: `${i * 80}ms` }} />
+                    </span>
+                    <span className="text-right text-[#d3d7e1] tabular-nums">{n(s.n)}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </section>
 
-        <section className={card}>
-          <h2 className="text-[14px] font-semibold">{a.families}</h2>
+        <section className={cn(card, 'bs-rise')}>
+          <CardTitle muted>{a.families}</CardTitle>
           {c.families.length === 0 ? (
-            <p className="mt-3 text-[13px] text-muted-foreground">{a.empty}</p>
+            <p className="mt-3 text-[13px] text-[#9aa1b2]">{a.empty}</p>
           ) : (
             <>
               <Bubbles items={c.families.map((f) => ({ label: t.enums.family[f.family as Family] ?? f.family, value: f.n }))} />
@@ -261,90 +235,91 @@ export default async function AdminPage({ searchParams }: Props) {
           )}
         </section>
 
-        <section className={card}>
-          <h2 className="text-[14px] font-semibold">{a.activity}</h2>
+        <section className={cn(card, 'bs-rise')}>
+          <CardTitle>{a.activity}</CardTitle>
           {c.activity.length === 0 ? (
-            <p className="mt-3 text-[13px] text-muted-foreground">{a.activityEmpty}</p>
+            <p className="mt-3 text-[13px] text-[#9aa1b2]">{a.activityEmpty}</p>
           ) : (
-            <ul className="mt-3 grid gap-2.5">
-              {c.activity.map((e) => (
-                <li key={e.id} className="flex min-w-0 items-start justify-between gap-3 text-[12.5px]">
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">{e.organization ?? '—'}</span>
-                    <span className="block truncate text-muted-foreground">{a.actions[e.action as keyof typeof a.actions] ?? e.action}</span>
+            <ul className="mt-4 grid gap-4">
+              {c.activity.slice(0, 5).map((e) => (
+                <li key={e.id} className="flex min-w-0 items-center justify-between gap-3 text-[12px]">
+                  <span className="min-w-0 truncate text-[#d3d7e1]">
+                    {e.organization ?? '—'} · {a.actions[e.action as keyof typeof a.actions] ?? e.action}
                   </span>
-                  <span className="shrink-0 text-[11.5px] text-muted-foreground">{ago(e.createdAt)}</span>
+                  <span className="shrink-0 text-[11.5px] text-[#9aa1b2]">{ago(e.createdAt)}</span>
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        <section className={cn(card, 'relative overflow-hidden bg-[radial-gradient(120%_100%_at_100%_100%,#2b2468,#16171d_60%)]')}>
-          <h2 className="flex items-center gap-2 text-[14px] font-semibold">
-            <Sparkles className="size-4 text-[#a99dff]" aria-hidden="true" /> {a.insight}
-          </h2>
-          <p className="relative z-10 mt-3 max-w-[62%] text-[13px] leading-relaxed text-[#d9dce6]">
-            {c.insight.ready
-              ? format(a.insightText, { k: c.insight.threshold, a: c.insight.engagedRate, b: c.insight.othersRate })
-              : format(a.insightWaiting, { k: c.insight.threshold, min: c.insight.min, engaged: c.insight.engaged, others: c.insight.others })}
-          </p>
-          <a href="#risk-title" className="relative z-10 mt-3 inline-block text-[12.5px] text-[#a99dff] hover:underline">
-            {a.insightLink} →
-          </a>
-          <div className="absolute right-2 bottom-1">
-            <GlassRing />
+        <section className={cn(card, 'bs-rise relative flex min-h-[200px] overflow-hidden border-[#3a3b7a]/50 bg-[linear-gradient(135deg,#25274d,#222448_60%,#272a55)]')}>
+          <div className="relative z-10 flex min-w-0 flex-1 flex-col pr-2">
+            <h2 className="flex items-center gap-2.5 text-[15px] font-medium">
+              <InsightSpark /> {a.insight}
+            </h2>
+            <p className="mt-5 max-w-[34ch] text-[12.5px] leading-relaxed text-[#cfd2e6]">
+              {c.insight.ready
+                ? format(a.insightText, { k: c.insight.threshold, a: c.insight.engagedRate, b: c.insight.othersRate })
+                : format(a.insightWaiting, { k: c.insight.threshold, min: c.insight.min, engaged: c.insight.engaged, others: c.insight.others })}
+            </p>
+            <a href="#risk-title" className="mt-auto block pt-4 pl-3 text-[12.5px] text-[#d9d6ff] hover:text-white">
+              {a.insightLink}
+              {'\u00a0'}
+              <ArrowRight className="inline size-3.5 align-[-2px]" aria-hidden="true" />
+            </a>
           </div>
+          <GlassTorus className="w-[40%] max-w-[170px] shrink-0 self-center" />
         </section>
       </div>
 
-      <section aria-labelledby="risk-title" className={cn(card, 'overflow-x-auto')}>
-        <h2 id="risk-title" className="text-[14px] font-semibold">
+      <section aria-labelledby="risk-title" className={cn(card, 'bs-rise overflow-x-auto')}>
+        <CardTitle id="risk-title" action={!showAll && c.accounts.length > accounts.length && <ViewAll href={`/admin?period=${days}&accounts=all#risk-title`}>{a.viewAll}</ViewAll>}>
           {a.risk}
-        </h2>
+        </CardTitle>
         {accounts.length === 0 ? (
-          <p className="mt-3 text-[13px] text-muted-foreground">{a.riskEmpty}</p>
+          <p className="mt-3 text-[13px] text-[#9aa1b2]">{a.riskEmpty}</p>
         ) : (
-          <table className="mt-3 w-full min-w-[760px] text-[12.5px]">
-            <thead className="text-left text-[11px] tracking-wide text-muted-foreground uppercase">
-              <tr className="border-b border-border">
-                <th className="py-2 font-medium">{a.cols.account}</th>
+          <table className="mt-3 w-full min-w-[800px] text-[12px]">
+            <thead className="text-left text-[10.5px] tracking-[0.04em] text-[#c9cdd8] uppercase">
+              <tr className="border-b border-[#9aa1b2]/70">
+                <th className="px-3 py-2 font-medium">{a.cols.account}</th>
                 <th className="py-2 font-medium">{a.cols.health}</th>
                 <th className="py-2 font-medium">{a.cols.trend}</th>
                 <th className="py-2 font-medium">{a.cols.last}</th>
                 <th className="py-2 font-medium">{a.cols.usage}</th>
-                <th className="py-2 text-right font-medium">{a.cols.mrr}</th>
-                <th className="py-2 pl-6 font-medium">{a.cols.risk}</th>
+                <th className="py-2 font-medium">{a.cols.mrr}</th>
+                <th className="py-2 font-medium">{a.cols.risk}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody>
               {accounts.map((row) => {
                 const recent = row.weekly[4] + row.weekly[5];
                 const earlier = row.weekly[2] + row.weekly[3];
                 return (
                   <tr key={row.id}>
-                    <td className="max-w-[220px] truncate py-2.5 pr-3 font-medium">
+                    <td className="max-w-[240px] truncate px-3 py-2.5 text-[#eef0f5]">
                       {row.name}
-                      <span className="ml-2 text-[11px] font-normal text-muted-foreground">{t.enums.plan[row.plan]}</span>
+                      <span className="ml-2 text-[11px] text-[#9aa1b2]">{t.enums.plan[row.plan]}</span>
                     </td>
                     <td className="py-2.5">
-                      <span className={cn('rounded-md px-2 py-0.5 text-[11.5px] font-semibold tabular-nums', healthTone(row.health))}>{row.health}</span>
+                      <span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums', healthTone(row.health))}>{row.health}</span>
                     </td>
                     <td className="py-2.5">
-                      <TrendLine values={row.weekly} tone={recent > earlier ? 'up' : recent < earlier ? 'down' : 'flat'} />
+                      <TrendLine values={rolling(row.daily, 7)} tone={recent > earlier ? 'up' : recent < earlier ? 'down' : 'flat'} />
                     </td>
-                    <td className="py-2.5 text-muted-foreground">{ago(row.lastActivity)}</td>
+                    <td className="py-2.5 text-[#d3d7e1]">{ago(row.lastActivity)}</td>
                     <td className="py-2.5">
-                      <span className="flex items-center gap-2">
-                        <span aria-hidden="true" className="h-1.5 w-20 rounded-full bg-white/5">
-                          <span className="block h-full rounded-full bg-[linear-gradient(90deg,#7b6cff,#4c7dff)]" style={{ width: `${row.usage}%` }} />
+                      <span className="flex items-center gap-2.5">
+                        <span aria-hidden="true" className="h-1 w-20 rounded-full bg-[#e9ecf4]">
+                          <span className="bs-grow-x block h-full rounded-full bg-[linear-gradient(90deg,#4c7dff,#5ff0d6)]" style={{ width: `${row.usage}%` }} />
                         </span>
-                        <span className="tabular-nums">{row.usage} %</span>
+                        <span className="text-[#d3d7e1] tabular-nums">{row.usage} %</span>
                       </span>
                     </td>
-                    <td className="py-2.5 text-right tabular-nums">{row.mrr ? money(row.mrr) : a.none}</td>
-                    <td className="py-2.5 pl-6">
-                      <span className={cn('rounded-md px-2 py-0.5 text-[11.5px]', RISK_TONE[row.risk])}>{a.risks[row.risk]}</span>
+                    <td className="py-2.5 text-[#d3d7e1] tabular-nums">{row.mrr ? money(row.mrr) : a.none}</td>
+                    <td className="py-2.5">
+                      <span className={cn('rounded px-1.5 py-0.5 text-[11px]', RISK_TONE[row.risk])}>{a.risks[row.risk]}</span>
                     </td>
                   </tr>
                 );
@@ -355,25 +330,25 @@ export default async function AdminPage({ searchParams }: Props) {
       </section>
 
       <section className={cn(card, 'grid gap-3 sm:grid-cols-2 lg:grid-cols-4')} aria-label={a.costsTitle}>
-        <p className="text-[12.5px] text-muted-foreground sm:col-span-2 lg:col-span-4">{a.costsTitle}</p>
+        <p className="text-[12.5px] text-[#9aa1b2] sm:col-span-2 lg:col-span-4">{a.costsTitle}</p>
         <p className="text-[12.5px]">
-          <span className="block text-muted-foreground">{a.voiceTitle}</span>
+          <span className="block text-[#9aa1b2]">{a.voiceTitle}</span>
           <span className="text-[17px] font-semibold tabular-nums">
             {n(costs.usage.minutesThisMonth)} / {n(costs.usage.monthlyMinutes)}
           </span>
         </p>
         <p className="text-[12.5px]">
-          <span className="block text-muted-foreground">{a.analysesTitle}</span>
+          <span className="block text-[#9aa1b2]">{a.analysesTitle}</span>
           <span className="text-[17px] font-semibold tabular-nums">
             {n(costs.usage.analysesToday)} / {n(costs.usage.dailyAnalyses)}
           </span>
         </p>
         <p className="text-[12.5px]">
-          <span className="block text-muted-foreground">{a.elevenCost}</span>
+          <span className="block text-[#9aa1b2]">{a.elevenCost}</span>
           <span className="text-[17px] font-semibold tabular-nums">{n(costs.providerCost)}</span>
         </p>
         <p className="text-[12.5px]">
-          <span className="block text-muted-foreground">{a.tokens}</span>
+          <span className="block text-[#9aa1b2]">{a.tokens}</span>
           <span className="text-[17px] font-semibold tabular-nums">
             {n(costs.analyses.inputTokens)} / {n(costs.analyses.outputTokens)}
           </span>
@@ -382,4 +357,3 @@ export default async function AdminPage({ searchParams }: Props) {
     </div>
   );
 }
-

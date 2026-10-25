@@ -172,3 +172,144 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Espace d'entraînement et cockpit (maquette « RevenuePulse ») : graphite bleuté, panneaux #161a23, cartes
+   #1d212c, police Outfit. Contrastes AA vérifiés : muted (#9aa1b2) sur carte ≈ 6,4:1. */
+.theme-pulse {
+  --background: #0f1218;
+  --panel: #161a23;
+  --surface: #1d212c;
+  --surface-2: #252a36;
+  --foreground: #eef0f5;
+  --muted-foreground: #9aa1b2;
+  --primary: #5c55f0;
+  --border: #272c38;
+  --input: #2f3542;
+  --ring: #7d76ff;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Outfit Variable', var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: normal;
+}
+
+/* Animations des graphiques : entrée douce, puis mouvement lent pour la vague, l'entonnoir et les bulles. */
+@keyframes bs-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes bs-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes bs-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes bs-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+}
+@keyframes bs-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes bs-draw {
+  from {
+    stroke-dashoffset: var(--len, 400);
+  }
+}
+@keyframes bs-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@keyframes bs-twinkle {
+  0%,
+  100% {
+    opacity: var(--o, 1);
+  }
+  50% {
+    opacity: calc(var(--o, 1) * 0.45);
+  }
+}
+@keyframes bs-needle {
+  from {
+    transform: rotate(-90deg);
+  }
+}
+@keyframes bs-unroll {
+  from {
+    opacity: 0.3;
+    transform: scaleX(0.04);
+  }
+}
+.bs-rise {
+  animation: bs-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.bs-grow-y {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: bs-grow-y 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.bs-grow-x {
+  transform-origin: left;
+  animation: bs-grow-x 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.bs-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bs-pop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1.1) both;
+}
+.bs-fade {
+  animation: bs-fade 0.8s ease both;
+}
+.bs-draw {
+  stroke-dasharray: var(--len, 400);
+  animation: bs-draw 1.4s cubic-bezier(0.3, 0.6, 0.2, 1) both;
+}
+.bs-float {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bs-float 6s ease-in-out infinite;
+}
+.bs-twinkle {
+  animation: bs-twinkle 3.2s ease-in-out infinite;
+}
+.bs-needle {
+  transform-box: view-box;
+  animation: bs-needle 1.4s cubic-bezier(0.25, 0.8, 0.25, 1.05) both;
+}
+.bs-unroll {
+  transform-box: view-box;
+  transform-origin: left;
+  animation: bs-unroll 1.6s cubic-bezier(0.3, 0.6, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bs-rise,
+  .bs-grow-y,
+  .bs-grow-x,
+  .bs-pop,
+  .bs-fade,
+  .bs-draw,
+  .bs-float,
+  .bs-twinkle,
+  .bs-needle,
+  .bs-unroll {
+    animation: none;
+  }
+  /* Ondulation et reflet de l'entonnoir (animations SVG) : retirés, la bande fixe reste. */
+  .bs-flow {
+    display: none;
+  }
+}

@@ -12,6 +12,7 @@ import { SKILLS, type Skill } from '../domain.ts';
 export { PERIODS, type Period };
 
 const DAY = 86_400_000;
+const GRID = 91;
 // Issue d'un appel selon son analyse (« next_step_won » : le prospect a accepté une prochaine étape).
 const OUTCOMES = ['next_step_won', 'postponed', 'lost', 'unclear'] as const;
 export type Outcome = (typeof OUTCOMES)[number];
@@ -93,10 +94,15 @@ export async function trainingPulse(db: Db, auth: AuthContext, opts: { days: Per
   // Une case par jour de la période, du plus ancien au plus récent.
   const callsByDay = Array.from({ length: days }, () => 0);
   const minutesByDay = Array.from({ length: days }, () => 0);
+  // Grille de la maquette : la période découpée en 91 tranches égales (13 colonnes de 7 points).
+  const callsGrid = Array.from({ length: GRID }, () => 0);
+  const span = now.getTime() - since.getTime();
   for (const r of done(current)) {
-    const i = Math.min(days - 1, Math.floor((r.createdAt.getTime() - since.getTime()) / DAY));
+    const elapsed = r.createdAt.getTime() - since.getTime();
+    const i = Math.min(days - 1, Math.floor(elapsed / DAY));
     callsByDay[i] += 1;
     minutesByDay[i] += (r.durationSeconds ?? 0) / 60;
+    callsGrid[Math.min(GRID - 1, Math.floor((elapsed / Math.max(span, 1)) * GRID))] += 1;
   }
 
   const chronological = [...current].reverse();
@@ -154,7 +160,7 @@ export async function trainingPulse(db: Db, auth: AuthContext, opts: { days: Per
     days,
     since,
     minutes: { value: minutesOf(current), previous: minutesOf(previous), byDay: minutesByDay.map((m) => Math.round(m * 10) / 10) },
-    calls: { value: done(current).length, previous: done(previous).length, byDay: callsByDay },
+    calls: { value: done(current).length, previous: done(previous).length, byDay: callsByDay, grid: callsGrid },
     score: { value: avg(currentScores), previous: avg(previousScores), n: currentScores.length, series: currentScores },
     best: currentScores.length ? Math.max(...currentScores) : null,
     activeDays: { value: activeDays(current), previous: activeDays(previous) },

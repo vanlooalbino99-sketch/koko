@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CreditCard, Gauge, History, LayoutDashboard, Library, PlusCircle, Settings, Users } from 'lucide-react';
+import { CreditCard, FileText, Gauge, Grip, History, PlusCircle, Settings, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ICONS = {
-  dashboard: LayoutDashboard,
-  scenarios: Library,
+  dashboard: Grip,
+  scenarios: FileText,
   history: History,
   new: PlusCircle,
   settings: Settings,
@@ -16,7 +16,7 @@ const ICONS = {
   admin: Gauge,
 };
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };
-export type NavGroup = { title: string; items: NavItem[] };
+export type NavGroup = { title: string | null; items: NavItem[] };
 
 export function NavLinks({ groups }: { groups: NavGroup[] }) {
   const pathname = usePathname();
@@ -27,9 +27,9 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
   return (
     <nav className="grid gap-6">
-      {groups.map((group) => (
-        <div key={group.title} className="grid gap-0.5">
-          <p className="px-3 pb-1.5 text-[10.5px] font-medium tracking-[0.08em] text-muted-foreground uppercase">{group.title}</p>
+      {groups.map((group, gi) => (
+        <div key={group.title ?? gi} className="grid gap-0.5">
+          {group.title && <p className="px-3 pb-2 text-[10.5px] font-semibold tracking-[0.06em] text-[#e6e8ee] uppercase">{group.title}</p>}
           {group.items.map((item) => {
             const Icon = ICONS[item.icon];
             const isActive = item.href === active;
@@ -40,10 +40,10 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] transition-colors',
-                  isActive ? 'bg-[#2a2870] text-white ring-1 ring-[#4f49c9]/70' : 'text-[#c4c7d2] hover:bg-white/5 hover:text-foreground',
+                  isActive ? 'bg-[#29294b] font-medium text-[#8f88ff]' : 'text-[#d3d7e1] hover:bg-white/5 hover:text-white',
                 )}
               >
-                <Icon className={cn('size-4', isActive ? 'text-[#b3a9ff]' : 'text-muted-foreground')} aria-hidden="true" />
+                <Icon className={cn('size-4', isActive ? 'text-[#8f88ff]' : 'text-[#c3c8d4]')} aria-hidden="true" />
                 {item.label}
               </Link>
             );

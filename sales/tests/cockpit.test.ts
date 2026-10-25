@@ -90,7 +90,7 @@ test('cockpit : comptes actifs, MRR, conversion, entonnoir et comptes à risque 
 
 test('export CSV : les cellules qui ressemblent à une formule sont neutralisées', () => {
   const csv = accountsCsv(
-    [{ id: '1', name: '=HYPERLINK("x")', plan: 'free', health: 60, weekly: [], lastActivity: null, usage: 10, mrr: 0, callsInPeriod: 0, risk: 'inactive' }],
+    [{ id: '1', name: '=HYPERLINK("x")', plan: 'free', health: 60, weekly: [], daily: [], lastActivity: null, usage: 10, mrr: 0, callsInPeriod: 0, risk: 'inactive' }],
     ['Compte', 'Offre', 'Santé', 'Dernière activité', 'Appels', 'Usage', 'MRR', 'Risque'],
   );
   assert.match(csv, /^Compte,Offre/);

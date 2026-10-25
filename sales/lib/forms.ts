@@ -30,3 +30,8 @@ export function echo(formData: FormData, omit: string[] = []): Record<string, st
   }
   return out;
 }
+
+// Adresse de retour après connexion ou inscription : un chemin interne seulement, jamais un autre site.
+export function safeNext(value: unknown): string | null {
+  return typeof value === 'string' && /^\/(?!\/)[\w\-/?=&]*$/.test(value) ? value : null;
+}

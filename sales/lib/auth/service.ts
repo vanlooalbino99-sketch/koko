@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { and, asc, eq, gt, lt } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, lt, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { audit } from '../audit.ts';
 import type { Db } from '../db/client.ts';
@@ -94,12 +94,13 @@ export async function logIn(db: Db, email: string, password: string): Promise<{ 
     .limit(1);
   const valid = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !valid) return null;
-  // Organisation active : la première rejointe.
+  // Espace actif : celui d'une équipe s'il y en a un (on y a été invité pour s'y entraîner), sinon le premier rejoint.
   const [membership] = await db
     .select({ organizationId: memberships.organizationId })
     .from(memberships)
+    .innerJoin(organizations, eq(organizations.id, memberships.organizationId))
     .where(eq(memberships.userId, user.id))
-    .orderBy(asc(memberships.createdAt))
+    .orderBy(desc(sql`${organizations.kind} = 'team'`), asc(memberships.createdAt))
     .limit(1);
   if (!membership) return null;
   const token = await createSession(db, user.id, membership.organizationId);

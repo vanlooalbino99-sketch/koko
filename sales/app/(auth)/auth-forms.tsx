@@ -36,24 +36,25 @@ export function LoginForm({ labels, next }: { labels: Labels; next?: string }) {
       <Button type="submit" size="lg" disabled={pending} className="mt-2">
         {pending && <Loader2 className="animate-spin" />} {labels.submit}
       </Button>
-      <Link href="/signup" className="text-center text-sm text-muted-foreground hover:text-foreground">
+      <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : '/signup'} className="text-center text-sm text-muted-foreground hover:text-foreground">
         {labels.switchText}
       </Link>
     </form>
   );
 }
 
-export function SignupForm({ labels }: { labels: Labels }) {
+export function SignupForm({ labels, next, email }: { labels: Labels; next?: string; email?: string }) {
   const [state, action, pending] = useActionState(signUpAction, initialFormState);
   const errors = state.fieldErrors ?? {};
   return (
     <form action={action} className="grid gap-4" noValidate>
       <FormAlert message={state.error} />
+      {next && <input type="hidden" name="next" value={next} />}
       <Field id="name" label={labels.name} error={errors.name}>
         {(p) => <Input {...p} name="name" autoComplete="name" required defaultValue={value(state.values?.name)} />}
       </Field>
       <Field id="email" label={labels.email} error={errors.email}>
-        {(p) => <Input {...p} name="email" type="email" autoComplete="email" required defaultValue={value(state.values?.email)} />}
+        {(p) => <Input {...p} name="email" type="email" autoComplete="email" required defaultValue={value(state.values?.email) ?? email} />}
       </Field>
       <Field id="password" label={labels.password} hint={labels.passwordHint} error={errors.password}>
         {(p) => <Input {...p} name="password" type="password" autoComplete="new-password" minLength={10} required />}
@@ -62,7 +63,7 @@ export function SignupForm({ labels }: { labels: Labels }) {
         {pending && <Loader2 className="animate-spin" />} {labels.submit}
       </Button>
       {labels.terms && <p className="text-xs text-muted-foreground">{labels.terms}</p>}
-      <Link href="/login" className="text-center text-sm text-muted-foreground hover:text-foreground">
+      <Link href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'} className="text-center text-sm text-muted-foreground hover:text-foreground">
         {labels.switchText}
       </Link>
     </form>

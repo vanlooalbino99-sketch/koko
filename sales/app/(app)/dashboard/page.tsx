@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Clock, Library, Mic, Target, Trophy } from 'lucide-react';
+import { ArrowRight, ClipboardList, Clock, Library, Mic, Target, Trophy } from 'lucide-react';
 import { ScoreRing, ScoreTrend } from '@/components/charts/score-trend';
 import { ScenarioCard } from '@/components/scenarios/scenario-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Kpi } from '@/components/ui/kpi';
 import { getDashboard } from '@/lib/dashboard/service';
 import { getDb } from '@/lib/db/client';
 import { can, type Skill } from '@/lib/domain';
@@ -13,24 +14,12 @@ import { format, formatDate } from '@/lib/i18n';
 import { recommendScenarios } from '@/lib/scenarios/service';
 import { getI18n, requireOnboarded } from '@/lib/server/context';
 import { syncPendingSimulations } from '@/lib/simulations/service';
+import { listMyMissions } from '@/lib/team/service';
 import { voiceProviderFromEnv } from '@/lib/voice/provider';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
   return { title: t.nav.dashboard };
-}
-
-function Kpi({ icon, label, value, detail }: { icon: React.ReactNode; label: string; value: React.ReactNode; detail?: React.ReactNode }) {
-  return (
-    <Card className="flex flex-col gap-3">
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        {label}
-        <span className="grid size-8 place-items-center rounded-lg bg-surface-2 text-primary">{icon}</span>
-      </div>
-      <div className="text-3xl font-semibold tracking-tight tabular-nums">{value}</div>
-      {detail && <div className="text-xs text-muted-foreground">{detail}</div>}
-    </Card>
-  );
 }
 
 export default async function DashboardPage() {
@@ -40,7 +29,9 @@ export default async function DashboardPage() {
   const provider = voiceProviderFromEnv();
   // Appels restés sans transcription (onglet fermé pendant l'appel) : rattrapés avant d'afficher les chiffres.
   if (provider) await syncPendingSimulations(db, provider, auth).catch(() => undefined);
-  const [data, picks] = await Promise.all([getDashboard(db, auth), recommendScenarios(db, auth, profile, locale)]);
+  const [data, picks, missions] = await Promise.all([getDashboard(db, auth), recommendScenarios(db, auth, profile, locale), listMyMissions(db, auth)]);
+  // Missions à faire d'abord, puis les dernières remplies.
+  const shownMissions = [...missions.filter((m) => m.status !== 'done'), ...missions.filter((m) => m.status === 'done').slice(0, 3)];
   const d = t.dashboard;
   const firstName = auth.user.name.split(' ')[0];
 
@@ -131,6 +122,53 @@ export default async function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {shownMissions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="size-4 text-primary" aria-hidden="true" /> {d.missionsTitle}
+              </CardTitle>
+              <CardDescription className="mt-1">{d.missionsText}</CardDescription>
+            </div>
+          </CardHeader>
+          <ul className="divide-y divide-border rounded-xl border border-border" aria-label={d.missionsTitle}>
+            {shownMissions.map((m) => (
+              <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm" data-mission={m.status}>
+                <span className="min-w-0">
+                  <span className="block font-medium">{m.scenarioTitle}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {m.assignedByName && format(t.team.assignedBy, { name: m.assignedByName })}
+                    {m.dueAt && ` · ${format(t.team.dueOn, { date: formatDate(m.dueAt, locale) })}`}
+                  </span>
+                  {m.note && <span className="mt-1 block text-xs whitespace-pre-line">{m.note}</span>}
+                </span>
+                {m.status === 'done' && m.completedAt ? (
+                  <Badge variant="outline" className="border-success/30 bg-success/10 text-success">
+                    {m.score === null
+                      ? format(t.team.doneOn, { date: formatDate(m.completedAt, locale) })
+                      : format(t.team.doneScore, { date: formatDate(m.completedAt, locale), score: m.score })}
+                  </Badge>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    {m.status === 'overdue' && (
+                      <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
+                        {t.team.missionStatus.overdue}
+                      </Badge>
+                    )}
+                    <Button asChild size="sm">
+                      <Link href={`/scenarios/${m.scenarioId}`}>
+                        <Mic /> {d.missionStart}
+                      </Link>
+                    </Button>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <section aria-labelledby="reco" className="grid gap-4">
         <div className="flex flex-wrap items-end justify-between gap-3">

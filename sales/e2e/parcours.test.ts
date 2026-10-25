@@ -1,6 +1,7 @@
 // Parcours complet dans un vrai navigateur, contre « next start » et une base PGlite jetable :
 // inscription, onboarding, dashboard, catalogue, création et modification d'un scénario, langue,
-// déconnexion et reconnexion, puis isolation entre deux comptes ; appel vocal ; rapport d'analyse de Claude.
+// déconnexion et reconnexion, puis isolation entre deux comptes ; appel vocal ; rapport d'analyse de Claude ;
+// espace équipe (invitation, inscription par le lien, mission, rôle, changement d'espace).
 // Prérequis : npm run build. BS_SHOTS=dossier pour enregistrer des captures d'écran.
 import assert from 'node:assert/strict';
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -13,7 +14,8 @@ import { chromium, type Browser, type Page } from 'playwright';
 import type { ClaudeAnalysis } from '../lib/analysis/schema.ts';
 import { getAuthContext, signUp as createAccount } from '../lib/auth/service.ts';
 import { connectPglite } from '../lib/db/client.ts';
-import { simulations, type TranscriptTurn } from '../lib/db/schema.ts';
+import { eq } from 'drizzle-orm';
+import { billingAccounts, organizations, simulations, type TranscriptTurn } from '../lib/db/schema.ts';
 import type { Skill } from '../lib/domain.ts';
 import { OnboardingSchema, saveProfile } from '../lib/profile/service.ts';
 import { getPlayableVersion, listScenarios } from '../lib/scenarios/service.ts';
@@ -110,6 +112,29 @@ async function seedCompletedCall() {
   }
 }
 
+// Une équipe abonnée à l'offre Équipe (3 sièges), comme après le webhook Stripe.
+const team = { email: `tania.${Date.now()}@example.com`, invited: `noah.${Date.now()}@example.com` };
+async function seedTeam() {
+  const { db, close } = await connectPglite(dataDir);
+  try {
+    const res = await createAccount(db, { name: 'Tania Manager', email: team.email, password: 'motdepasse-solide', locale: 'fr' });
+    if (!res.ok) throw new Error(res.error);
+    const auth = (await getAuthContext(db, res.token))!;
+    await saveProfile(db, auth, OnboardingSchema.parse({ persona: 'team', experience: 'expert', goals: ['closing'] }));
+    await db.update(organizations).set({ plan: 'team', kind: 'team', name: 'Équipe Tania' }).where(eq(organizations.id, auth.organization.id));
+    await db.insert(billingAccounts).values({
+      organizationId: auth.organization.id,
+      stripeCustomerId: 'cus_e2e',
+      stripeSubscriptionId: 'sub_e2e',
+      plan: 'team',
+      status: 'active',
+      seats: 3,
+    });
+  } finally {
+    await close();
+  }
+}
+
 async function waitForHealth() {
   for (let i = 0; i < 120; i++) {
     try {
@@ -161,6 +186,7 @@ before(async () => {
   });
   await new Promise<void>((resolve) => mock.listen(MOCK_PORT, '127.0.0.1', resolve));
   await seedCompletedCall();
+  await seedTeam();
   // Groupe de processus à part : on arrête le serveur et ses enfants d'un coup à la fin.
   server = spawn('node_modules/.bin/next', ['start', '-p', String(PORT), '-H', '127.0.0.1'], {
     env: {
@@ -457,4 +483,103 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   assert.equal(admin?.status(), 404);
   assert.deepEqual(errors, [], 'aucune erreur JavaScript');
   await context.close();
+});
+
+test('espace équipe : invitation par lien, inscription, mission attribuée, rôle et changement d\'espace', async () => {
+  const ownerContext = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1440, height: 900 } });
+  ownerContext.setDefaultTimeout(20_000);
+  const owner = await ownerContext.newPage();
+  lastPage = owner;
+  const errors: string[] = [];
+  owner.on('pageerror', (e) => errors.push(e.message));
+
+  await owner.goto(`${BASE}/login`);
+  await owner.getByLabel('E-mail').fill(team.email);
+  await owner.getByLabel('Mot de passe').fill('motdepasse-solide');
+  await owner.getByRole('button', { name: 'Se connecter' }).click();
+  await owner.waitForURL(`${BASE}/dashboard`);
+  await owner.getByRole('link', { name: 'Équipe', exact: true }).first().click();
+  await owner.waitForURL(`${BASE}/team`);
+  await assert.doesNotReject(owner.getByText('Sièges occupés : 1 sur 3').waitFor());
+
+  // Invitation : le lien n'est affiché qu'une fois, l'invitation réserve un siège.
+  await owner.getByLabel('E-mail de la personne').fill(team.invited);
+  await owner.getByRole('button', { name: 'Créer le lien d’invitation' }).click();
+  const linkField = owner.getByLabel(`Lien d’invitation pour ${team.invited}`);
+  await linkField.waitFor();
+  const link = await linkField.inputValue();
+  assert.match(link, new RegExp(`^${BASE}/invite/[\\w-]{43}$`));
+  await shot(owner, '14-equipe-invitation');
+  await owner.reload();
+  await assert.doesNotReject(owner.getByText('Sièges occupés : 2 sur 3').waitFor());
+  await assert.doesNotReject(owner.getByText(team.invited).waitFor());
+  assert.equal(await owner.getByLabel(/Lien d’invitation/).count(), 0, 'le lien ne réapparaît pas');
+
+  // Ouvert avec un autre compte, le lien ne fait entrer personne.
+  await owner.goto(link);
+  await assert.doesNotReject(owner.getByText(`Vous êtes connecté avec ${team.email}`, { exact: false }).waitFor());
+  assert.equal(await owner.getByRole('button', { name: 'Rejoindre l’équipe' }).count(), 0);
+
+  // La personne invitée crée son compte depuis le lien, l'adresse est déjà remplie.
+  const guestContext = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1280, height: 860 } });
+  guestContext.setDefaultTimeout(20_000);
+  const guest = await guestContext.newPage();
+  guest.on('pageerror', (e) => errors.push(e.message));
+  await guest.goto(link);
+  await assert.doesNotReject(guest.getByRole('heading', { name: 'Rejoindre Équipe Tania' }).waitFor());
+  await assert.doesNotReject(guest.getByText('jamais vos transcriptions', { exact: false }).waitFor());
+  await shot(guest, '15-invitation');
+  await guest.getByRole('link', { name: 'Créer mon compte' }).click();
+  await guest.waitForURL(/\/signup\?/);
+  assert.equal(await guest.getByLabel('E-mail').inputValue(), team.invited);
+  await guest.getByLabel('Prénom et nom').fill('Noah Vendeur');
+  await guest.getByLabel('Mot de passe').fill('motdepasse-solide');
+  await guest.getByRole('button', { name: 'Créer mon compte' }).click();
+  await guest.waitForURL(link);
+  await guest.getByRole('button', { name: 'Rejoindre l’équipe' }).click();
+  await guest.waitForURL(`${BASE}/onboarding`);
+  await onboard(guest);
+  await assert.doesNotReject(guest.getByText('Membre · Équipe Tania').first().waitFor());
+  assert.equal(await guest.getByRole('link', { name: 'Équipe', exact: true }).count(), 0, 'un membre ne voit pas le tableau d\'équipe');
+  assert.equal((await guest.goto(`${BASE}/team`))?.status(), 404);
+
+  // Le responsable voit le nouveau membre et lui attribue un scénario.
+  await owner.goto(`${BASE}/team`);
+  const row = owner.locator(`li[data-member="${team.invited}"]`);
+  await assert.doesNotReject(row.waitFor());
+  await assert.doesNotReject(owner.getByText('Sièges occupés : 2 sur 3').waitFor());
+  const scenarioLabel = (await owner.getByLabel('Scénario').locator('option').first().textContent())!;
+  const scenarioTitle = scenarioLabel.replace(/ \((FR|EN)\)$/, '');
+  await owner.getByLabel('Pour').selectOption({ label: 'Noah Vendeur' });
+  await owner.getByRole('button', { name: 'Attribuer' }).click();
+  await assert.doesNotReject(owner.getByText('Missions attribuées : 1.').waitFor());
+  await owner.reload();
+  await assert.doesNotReject(owner.locator('li[data-mission="todo"]').getByText(scenarioTitle).waitFor());
+
+  await guest.goto(`${BASE}/dashboard`);
+  const mission = guest.locator('li[data-mission="todo"]');
+  await assert.doesNotReject(mission.getByText(scenarioTitle).waitFor());
+  await assert.doesNotReject(mission.getByText('Par Tania Manager').waitFor());
+  await shot(guest, '16-missions');
+
+  // Rôle : Noah devient manager et voit alors l'équipe.
+  await row.getByLabel('Rôle de Noah Vendeur').selectOption('manager');
+  await row.getByRole('button', { name: 'Appliquer' }).click();
+  await owner.waitForURL(`${BASE}/team?done=role`);
+  await assert.doesNotReject(owner.getByText('Rôle mis à jour.').waitFor());
+  await shot(owner, '17-equipe');
+  await guest.reload();
+  await assert.doesNotReject(guest.getByText('Manager · Équipe Tania').first().waitFor());
+
+  // Deux espaces : Noah repasse dans son espace personnel depuis les réglages.
+  await guest.goto(`${BASE}/settings`);
+  await assert.doesNotReject(guest.getByRole('heading', { name: 'Vos espaces' }).waitFor());
+  await guest.getByRole('button', { name: 'Ouvrir' }).click();
+  await guest.waitForURL(`${BASE}/dashboard`);
+  await assert.doesNotReject(guest.getByText('Propriétaire · Noah Vendeur').first().waitFor());
+  assert.equal(await guest.locator('li[data-mission]').count(), 0, 'les missions restent dans l\'espace de l\'équipe');
+
+  assert.deepEqual(errors, [], 'aucune erreur JavaScript');
+  await guestContext.close();
+  await ownerContext.close();
 });

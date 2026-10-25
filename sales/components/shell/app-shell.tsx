@@ -33,6 +33,7 @@ export function AppShell({ auth, t, locale, children }: { auth: AuthContext; t: 
       title: t.nav.account,
       items: [
         { href: '/settings', label: t.nav.settings, icon: 'settings' },
+        ...(can(auth.role, 'team:view') ? [{ href: '/team', label: t.nav.team, icon: 'team' as const }] : []),
         { href: '/billing', label: t.nav.billing, icon: 'billing' },
         ...(auth.user.isPlatformAdmin ? [{ href: '/admin', label: t.nav.admin, icon: 'admin' as const }] : []),
       ],

@@ -8,6 +8,8 @@ import { creditStatus, type CreditStatus } from './credits.ts';
 import { grantsAccess, TEAM_MAX_SEATS, TEAM_MIN_SEATS, type PaidPlan, type Plan } from './plans.ts';
 import type { BillingProvider, SubscriptionSnapshot } from './stripe.ts';
 
+type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+
 export type BillingErrorCode = 'forbidden' | 'already_subscribed' | 'no_subscription' | 'invalid_seats';
 
 export class BillingError extends Error {
@@ -32,7 +34,7 @@ export type BillingOverview = {
 };
 
 // Sièges occupés : les membres plus les invitations encore valables.
-export async function seatsInUse(db: Db, organizationId: string, now = new Date()): Promise<number> {
+export async function seatsInUse(db: Db | Tx, organizationId: string, now = new Date()): Promise<number> {
   const [[members], pending] = await Promise.all([
     db.select({ n: count() }).from(memberships).where(eq(memberships.organizationId, organizationId)),
     db

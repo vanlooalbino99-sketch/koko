@@ -76,13 +76,17 @@ export async function voxData(
       offer: { name: content.offer.name, price: content.offer.price },
     },
     voiceName,
-    remaining: configured ? format(c.remaining, { n: credits.remaining }) : null,
+    remaining: !configured
+      ? null
+      : credits.trialCalls !== null
+        ? format(c.remainingTrial, { n: credits.trialCallsLeft ?? 0, total: credits.trialCalls, minutes: credits.maxCallMinutes })
+        : format(c.remaining, { n: credits.remaining }),
     blocked: auth.demo
       ? { message: t.demo.callBlocked, link: { href: '/demo', label: t.demo.callBlockedLink } }
       : !configured
         ? { message: c.notConfigured }
         : credits.remaining < 1
-          ? { message: c.quotaExceeded, link: { href: '/billing', label: c.upgrade } }
+          ? { message: credits.trialCalls !== null ? c.quotaTrial : c.quotaExceeded, link: { href: '/billing', label: c.upgrade } }
           : null,
     locale,
     labels: c,

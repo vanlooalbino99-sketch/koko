@@ -175,7 +175,7 @@ export function Gauge({ value, label }: { value: number | null; label: string })
 }
 
 export const SERIES_COLORS = ['#5c55f0', '#7d76ff', '#5aa9ff', '#4fe3b5', '#a78bfa', '#f5a524', '#f06b8f', '#5ad1f0', '#8f96a8'] as const;
-export const PLAN_COLORS = { pro: SERIES_COLORS[0], team: SERIES_COLORS[2] } as const;
+export const PLAN_COLORS = { standard: SERIES_COLORS[2], advanced: SERIES_COLORS[0], premium: SERIES_COLORS[4] } as const;
 
 // Anneau épais : une part par segment (séparées par un fin espace), total au centre.
 export function Donut({ segments, center, caption }: { segments: { label: string; value: number; color: string }[]; center: string; caption: string }) {

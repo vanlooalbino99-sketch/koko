@@ -5,12 +5,12 @@ import type { Db } from '../db/client.ts';
 import { billingAccounts, invitations, memberships, organizations, stripeEvents, type BillingAccount } from '../db/schema.ts';
 import { can } from '../domain.ts';
 import { creditStatus, type CreditStatus } from './credits.ts';
-import { grantsAccess, TEAM_MAX_SEATS, TEAM_MIN_SEATS, type PaidPlan, type Plan } from './plans.ts';
+import { currencyFor, grantsAccess, planLimits, type PaidPlan, type Plan } from './plans.ts';
 import type { BillingProvider, SubscriptionSnapshot } from './stripe.ts';
 
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
-export type BillingErrorCode = 'forbidden' | 'already_subscribed' | 'no_subscription' | 'invalid_seats';
+export type BillingErrorCode = 'forbidden' | 'already_subscribed' | 'no_subscription' | 'too_many_members';
 
 export class BillingError extends Error {
   readonly code: BillingErrorCode;
@@ -80,10 +80,9 @@ async function ensureCustomer(db: Db, provider: BillingProvider, auth: AuthConte
   return (await getBillingAccount(db, auth.organization.id))!.stripeCustomerId;
 }
 
-function validSeats(plan: PaidPlan, seats: number, inUse: number): number | null {
-  if (plan === 'pro') return 1;
-  if (!Number.isInteger(seats) || seats < Math.max(TEAM_MIN_SEATS, inUse) || seats > TEAM_MAX_SEATS) return null;
-  return seats;
+// Une offre sans espace équipe suppose d'être seul dans l'espace (invitations en attente comprises).
+async function fitsPlan(db: Db, organizationId: string, plan: PaidPlan): Promise<boolean> {
+  return (await seatsInUse(db, organizationId)) <= planLimits(plan).seats;
 }
 
 export async function startCheckout(
@@ -91,21 +90,18 @@ export async function startCheckout(
   provider: BillingProvider,
   auth: AuthContext,
   plan: PaidPlan,
-  requestedSeats: number,
   urls: { success: string; cancel: string },
   locale: 'fr' | 'en',
 ): Promise<string> {
   if (!can(auth.role, 'billing:manage')) throw new BillingError('forbidden');
   const account = await getBillingAccount(db, auth.organization.id);
   if (account && grantsAccess(account.status)) throw new BillingError('already_subscribed');
-  const seats = validSeats(plan, requestedSeats, await seatsInUse(db, auth.organization.id));
-  if (seats === null) throw new BillingError('invalid_seats');
-  const prices = await provider.prices();
+  if (!(await fitsPlan(db, auth.organization.id, plan))) throw new BillingError('too_many_members');
+  const prices = await provider.prices(currencyFor(locale));
   const customerId = await ensureCustomer(db, provider, auth);
   const url = await provider.createCheckout({
     customerId,
     price: prices[plan],
-    seats,
     organizationId: auth.organization.id,
     successUrl: urls.success,
     cancelUrl: urls.cancel,
@@ -115,7 +111,7 @@ export async function startCheckout(
     action: 'billing.checkout_started',
     organizationId: auth.organization.id,
     actorUserId: auth.user.id,
-    metadata: { plan, seats },
+    metadata: { plan, currency: prices[plan].currency },
   });
   return url;
 }
@@ -131,24 +127,23 @@ export async function openPortal(db: Db, provider: BillingProvider, auth: AuthCo
   });
 }
 
-// Abonnement en cours : passer de Pro à Équipe (ou l'inverse) ou changer le nombre de sièges, au prorata.
-export async function changeSubscription(db: Db, provider: BillingProvider, auth: AuthContext, plan: PaidPlan, requested: number) {
+// Abonnement en cours : passer à une autre offre, au prorata, dans la monnaie de l'abonnement.
+export async function changeSubscription(db: Db, provider: BillingProvider, auth: AuthContext, plan: PaidPlan, locale: 'fr' | 'en') {
   if (!can(auth.role, 'billing:manage')) throw new BillingError('forbidden');
   const account = await getBillingAccount(db, auth.organization.id);
   if (!account?.stripeSubscriptionId || !grantsAccess(account.status)) throw new BillingError('no_subscription');
-  const inUse = await seatsInUse(db, auth.organization.id);
-  // Repasser en Pro (un seul siège) suppose de n'avoir plus qu'un membre.
-  const seats = plan === 'pro' ? (inUse <= 1 ? 1 : null) : validSeats('team', requested, inUse);
+  if (!(await fitsPlan(db, auth.organization.id, plan))) throw new BillingError('too_many_members');
   const current = await provider.getSubscription(account.stripeSubscriptionId);
-  if (seats === null || !current.itemId) throw new BillingError('invalid_seats');
-  const prices = await provider.prices();
-  const updated = await provider.updateSubscription(current.id, current.itemId, prices[plan].priceId, seats);
+  if (!current.itemId) throw new BillingError('no_subscription');
+  const currency = current.currency === 'usd' || current.currency === 'eur' ? current.currency : currencyFor(locale);
+  const prices = await provider.prices(currency);
+  const updated = await provider.updateSubscription(current.id, current.itemId, prices[plan].priceId);
   await applySubscription(db, updated);
   await audit(db, {
     action: 'billing.subscription_changed',
     organizationId: auth.organization.id,
     actorUserId: auth.user.id,
-    metadata: { plan, seats },
+    metadata: { plan },
   });
 }
 
@@ -178,6 +173,7 @@ export async function applySubscription(db: Db, snap: SubscriptionSnapshot): Pro
         plan: snap.plan,
         status: snap.status,
         seats: Math.max(1, snap.seats),
+        currency: snap.currency,
         currentPeriodEnd: snap.currentPeriodEnd,
         cancelAtPeriodEnd: snap.cancelAtPeriodEnd,
         updatedAt: new Date(),
@@ -187,7 +183,7 @@ export async function applySubscription(db: Db, snap: SubscriptionSnapshot): Pro
       .update(organizations)
       .set({
         plan: effective,
-        ...(effective === 'team' ? { kind: 'team' } : {}),
+        ...(planLimits(effective).teamSpace ? { kind: 'team' } : {}),
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, organizationId));

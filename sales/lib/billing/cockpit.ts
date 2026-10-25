@@ -15,7 +15,7 @@ import {
 } from '../db/schema.ts';
 import { toCsv } from '../csv.ts';
 import { monthStart, platformUsage } from './credits.ts';
-import { DEFAULT_PRICES, grantsAccess, planLimits, type PaidPlan, type Plan } from './plans.ts';
+import { DEFAULT_PRICES, grantsAccess, isOneOfPaid, planLimits, type Currency, type PaidPlan, type Plan } from './plans.ts';
 import type { PaidInvoice, PlanPrice } from './stripe.ts';
 
 // Cockpit de l'éditeur : chiffres de toute la plateforme sur une période (7, 30 ou 90 jours), comparés à la
@@ -45,7 +45,9 @@ export type AccountRow = {
   daily: number[];
   lastActivity: Date | null;
   usage: number;
+  // Revenu mensuel du compte, dans la monnaie de son abonnement.
   mrr: number;
+  currency: Currency;
   callsInPeriod: number;
   risk: RiskFactor;
 };
@@ -67,15 +69,19 @@ function series(keys: string[], rows: { day: string; n: number }[]) {
 
 const dayOf = (column: unknown) => sql<string>`to_char(date_trunc('day', ${column} at time zone 'UTC'), 'YYYY-MM-DD')`;
 
-// Prix mensuel d'un abonnement (centimes) : prix Stripe s'ils sont lus, sinon prix de lancement de l'application.
-function monthlyPrice(plan: PaidPlan, seats: number, prices: Record<PaidPlan, PlanPrice> | null) {
-  const unit = prices?.[plan].amount ?? DEFAULT_PRICES[plan].amount;
-  return plan === 'team' ? unit * seats : unit;
+// Prix des offres lus chez Stripe, par monnaie.
+export type CockpitPrices = Partial<Record<Currency, Record<PaidPlan, PlanPrice>>> | null;
+
+const currencyOf = (value: string | null): Currency => (value === 'usd' ? 'usd' : 'eur');
+
+// Prix mensuel d'un abonnement (centimes, dans sa monnaie) : prix Stripe s'ils sont lus, sinon prix de lancement.
+function monthlyPrice(plan: PaidPlan, currency: Currency, prices: CockpitPrices) {
+  return prices?.[currency]?.[plan].amount ?? DEFAULT_PRICES[plan].amount;
 }
 
 export async function cockpit(
   db: Db,
-  opts: { days: Period; now?: Date; prices: Record<PaidPlan, PlanPrice> | null; invoices: PaidInvoice[] | null },
+  opts: { days: Period; now?: Date; prices: CockpitPrices; invoices: PaidInvoice[] | null },
 ) {
   const now = opts.now ?? new Date();
   const days = opts.days;
@@ -119,6 +125,7 @@ export async function cockpit(
         plan: billingAccounts.plan,
         status: billingAccounts.status,
         seats: billingAccounts.seats,
+        currency: billingAccounts.currency,
         createdAt: billingAccounts.createdAt,
       })
       .from(billingAccounts)
@@ -205,18 +212,18 @@ export async function cockpit(
       .groupBy(sql`1`),
   ]);
 
-  // Abonnements payants en cours : MRR par offre.
-  const active = subscriptions.filter((s) => grantsAccess(s.status) && (s.plan === 'pro' || s.plan === 'team'));
-  const mrrByPlan: Record<PaidPlan, number> = { pro: 0, team: 0 };
-  for (const s of active) mrrByPlan[s.plan as PaidPlan] += monthlyPrice(s.plan as PaidPlan, s.seats, opts.prices);
-  const mrr = mrrByPlan.pro + mrrByPlan.team;
-  const mrrPrevious = active
-    .filter((s) => s.createdAt < since)
-    .reduce((n, s) => n + monthlyPrice(s.plan as PaidPlan, s.seats, opts.prices), 0);
+  // Abonnements payants en cours : MRR par offre, en euros. Les abonnements en dollars ne sont pas convertis :
+  // leur total est donné à part.
+  const subscribed = subscriptions.filter((s) => grantsAccess(s.status) && isOneOfPaid(s.plan));
+  const active = subscribed.filter((s) => currencyOf(s.currency) === 'eur');
+  const price = (s: (typeof subscribed)[number]) => monthlyPrice(s.plan as PaidPlan, currencyOf(s.currency), opts.prices);
+  const mrrByPlan: Record<PaidPlan, number> = { standard: 0, advanced: 0, premium: 0 };
+  for (const s of active) mrrByPlan[s.plan as PaidPlan] += price(s);
+  const mrr = mrrByPlan.standard + mrrByPlan.advanced + mrrByPlan.premium;
+  const mrrUsd = subscribed.filter((s) => currencyOf(s.currency) === 'usd').reduce((n, s) => n + price(s), 0);
+  const mrrPrevious = active.filter((s) => s.createdAt < since).reduce((n, s) => n + price(s), 0);
   // Base des abonnés actuels au fil de la période (date de souscription).
-  const mrrSeries = keys.map((k) =>
-    active.filter((s) => dayKey(s.createdAt) <= k).reduce((n, s) => n + monthlyPrice(s.plan as PaidPlan, s.seats, opts.prices), 0),
-  );
+  const mrrSeries = keys.map((k) => active.filter((s) => dayKey(s.createdAt) <= k).reduce((n, s) => n + price(s), 0));
 
   // Abonnés en cours à la fin de chacune des sept tranches de la période (date de souscription).
   const subscribersBars = Array.from({ length: 7 }, (_, i) => {
@@ -276,7 +283,7 @@ export async function cockpit(
     callsByDay: series(keys, callsByDay),
     callsGrid: Array.from({ length: GRID }, (_, i) => grid.find((g) => g.cell === i)?.n ?? 0),
     subscribersBars,
-    mrr: { value: mrr, previous: mrrPrevious, byPlan: mrrByPlan, series: mrrSeries, subscribers: active.length },
+    mrr: { value: mrr, usd: mrrUsd, previous: mrrPrevious, byPlan: mrrByPlan, series: mrrSeries, subscribers: subscribed.length },
     conversion: { value: conversion(newOrgs), previous: conversion(prevOrgs), signupsByDay, signups: newOrgs.length },
     churn: { value: churn, canceled: canceled.n },
     score: { value: score.avg, previous: scorePrev.avg, n: score.n },
@@ -298,8 +305,8 @@ async function accountRows(
   db: Db,
   now: Date,
   since: Date,
-  prices: Record<PaidPlan, PlanPrice> | null,
-  subscriptions: { organizationId: string; plan: string | null; status: string | null; seats: number }[],
+  prices: CockpitPrices,
+  subscriptions: { organizationId: string; plan: string | null; status: string | null; seats: number; currency: string | null }[],
 ): Promise<AccountRow[]> {
   const sixWeeks = new Date(now.getTime() - 42 * DAY);
   const [orgs, weekly, daily, last, period, credits] = await Promise.all([
@@ -351,11 +358,11 @@ async function accountRows(
 
   const rows = orgs.map((org): AccountRow => {
     const sub = subBy.get(org.id);
-    const paying = sub && grantsAccess(sub.status) && (sub.plan === 'pro' || sub.plan === 'team');
+    const paying = sub && grantsAccess(sub.status) && isOneOfPaid(sub.plan);
     // Six semaines, de la plus ancienne à la plus récente.
     const weeklyCalls = Array.from({ length: 6 }, (_, i) => weekly.find((w) => w.organizationId === org.id && w.week === 5 - i)?.n ?? 0);
     const lastActivity = lastBy.get(org.id) ?? null;
-    const limits = planLimits(org.plan as Plan, sub?.seats ?? 1);
+    const limits = planLimits(org.plan as Plan);
     const usage = limits.monthlyCredits ? Math.min(1, (usedBy.get(org.id) ?? 0) / limits.monthlyCredits) : 0;
     const inactive = !lastActivity || now.getTime() - lastActivity.getTime() >= INACTIVE_DAYS * DAY;
     const recent = weeklyCalls[4] + weeklyCalls[5];
@@ -377,7 +384,8 @@ async function accountRows(
       daily: Array.from({ length: 42 }, (_, i) => daily.find((d) => d.organizationId === org.id && d.day === 41 - i)?.n ?? 0),
       lastActivity,
       usage: Math.round(usage * 100),
-      mrr: paying ? monthlyPrice(sub.plan as PaidPlan, sub.seats, prices) : 0,
+      mrr: paying ? monthlyPrice(sub.plan as PaidPlan, currencyOf(sub.currency), prices) : 0,
+      currency: currencyOf(sub?.currency ?? null),
       callsInPeriod: periodBy.get(org.id) ?? 0,
       risk: pastDue ? 'past_due' : inactive ? 'inactive' : declining ? 'declining' : quota ? 'quota' : 'none',
     };
@@ -421,7 +429,7 @@ export function accountsCsv(rows: AccountRow[], header: string[]) {
       r.lastActivity ? r.lastActivity.toISOString().slice(0, 10) : '',
       r.callsInPeriod,
       `${r.usage}%`,
-      (r.mrr / 100).toFixed(2),
+      `${(r.mrr / 100).toFixed(2)}${r.mrr ? ` ${r.currency.toUpperCase()}` : ''}`,
       r.risk,
     ]),
   ]);

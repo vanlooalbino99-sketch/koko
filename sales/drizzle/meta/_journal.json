@@ -50,6 +50,20 @@
       "when": 1792946567567,
       "tag": "0006_demo",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792962954129,
+      "tag": "0007_offres",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792963495395,
+      "tag": "0008_devise",
+      "breakpoints": true
     }
   ]
 }

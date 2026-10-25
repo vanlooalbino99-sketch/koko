@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   const requested = Number(new URL(req.url).searchParams.get('period'));
   const days: Period = (PERIODS as readonly number[]).includes(requested) ? (requested as Period) : 30;
   const provider = billingProviderFromEnv();
-  const prices = provider ? await provider.prices().catch(() => null) : null;
+  const prices = provider ? await Promise.all([provider.prices('eur'), provider.prices('usd')]).then(([eur, usd]) => ({ eur, usd })).catch(() => null) : null;
   const data = await cockpit(await getDb(), { days, prices, invoices: null });
   const t = getDictionary(auth.user.locale === 'en' ? 'en' : 'fr');
   const day = new Date().toISOString().slice(0, 10);

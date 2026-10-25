@@ -147,7 +147,7 @@ async function seedCompletedCall() {
   }
 }
 
-// Une équipe abonnée à l'offre Équipe (3 sièges), comme après le webhook Stripe.
+// Une équipe abonnée à l'offre Premium (espace équipe), comme après le webhook Stripe.
 const team = { email: `tania.${Date.now()}@example.com`, invited: `noah.${Date.now()}@example.com` };
 async function seedTeam() {
   const { db, close } = await connectPglite(dataDir);
@@ -156,14 +156,14 @@ async function seedTeam() {
     if (!res.ok) throw new Error(res.error);
     const auth = (await getAuthContext(db, res.token))!;
     await saveProfile(db, auth, OnboardingSchema.parse({ persona: 'team', experience: 'expert', goals: ['closing'] }));
-    await db.update(organizations).set({ plan: 'team', kind: 'team', name: 'Équipe Tania' }).where(eq(organizations.id, auth.organization.id));
+    await db.update(organizations).set({ plan: 'premium', kind: 'team', name: 'Équipe Tania' }).where(eq(organizations.id, auth.organization.id));
     await db.insert(billingAccounts).values({
       organizationId: auth.organization.id,
       stripeCustomerId: 'cus_e2e',
       stripeSubscriptionId: 'sub_e2e',
-      plan: 'team',
+      plan: 'premium',
       status: 'active',
-      seats: 3,
+      currency: 'eur',
     });
   } finally {
     await close();
@@ -486,7 +486,7 @@ test('appel vocal : prospect créé côté serveur, échec de connexion géré, 
   await page.getByRole('link', { name: /plombier/ }).click();
   await page.getByRole('link', { name: "Démarrer l'appel" }).click();
   await page.waitForURL(/\/call$/);
-  await assert.doesNotReject(page.getByText('15 min de voix restantes ce mois-ci').waitFor());
+  await assert.doesNotReject(page.getByText('Essai gratuit : 2 sur 2 appels restants, 5 min maximum chacun').waitFor());
   await assert.doesNotReject(page.getByText('Voix : Thomas').waitFor());
   // La consigne du prospect (faits cachés) ne quitte jamais le serveur.
   assert.equal((await page.content()).includes("dizaine d'appels"), false);
@@ -525,7 +525,7 @@ test('appel vocal : prospect créé côté serveur, échec de connexion géré, 
   await page.goto(`${BASE}/scenarios?language=fr`);
   await page.getByRole('link', { name: /plombier/ }).click();
   await page.getByRole('link', { name: "Démarrer l'appel" }).click();
-  await assert.doesNotReject(page.getByText('15 min de voix restantes ce mois-ci').waitFor());
+  await assert.doesNotReject(page.getByText('Essai gratuit : 2 sur 2 appels restants, 5 min maximum chacun').waitFor());
 
   // Écran en pleine conversation (aperçu des tests) : mêmes mesures que pendant un vrai appel.
   await page.setViewportSize({ width: 1440, height: 1024 });
@@ -656,12 +656,16 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   await shot(page, '29c-tableau-de-bord-mobile');
   await page.setViewportSize({ width: 1440, height: 900 });
 
-  // Abonnement : offre gratuite et crédits réels ; sans clé Stripe, aucun bouton de paiement n'est affiché.
+  // Abonnement : essai gratuit et appels réels ; sans clé Stripe, aucun bouton de paiement n'est affiché.
   await page.getByRole('link', { name: 'Abonnement' }).first().click();
   await page.waitForURL(`${BASE}/billing`);
-  await assert.doesNotReject(page.getByText('15 restants').waitFor());
+  await assert.doesNotReject(page.getByText(/appels? d’essai restants?/).first().waitFor());
   await assert.doesNotReject(page.getByText('Le paiement en ligne ouvre très bientôt.', { exact: false }).waitFor());
-  assert.equal(await page.getByRole('button', { name: /Passer/ }).count(), 0, 'pas de faux bouton de paiement');
+  assert.equal(await page.getByRole('button', { name: /Passer|Choisir/ }).count(), 0, 'pas de faux bouton de paiement');
+  // Les offres : Avancé mise en avant, Entreprise sur devis, prix en euros.
+  await assert.doesNotReject(page.getByText('Recommandé', { exact: true }).waitFor());
+  await assert.doesNotReject(page.getByText('29,99 €').waitFor());
+  await assert.doesNotReject(page.getByText('Sur devis').waitFor());
   const freeCard = page.locator('section[aria-labelledby="plans-title"] > div > *').first();
   await assert.doesNotReject(freeCard.getByText('Votre offre').waitFor());
   await shot(page, '13-abonnement');
@@ -687,7 +691,7 @@ test('espace équipe : invitation par lien, inscription, mission attribuée, rô
   await owner.waitForURL(`${BASE}/dashboard`);
   await owner.getByRole('link', { name: 'Équipe', exact: true }).first().click();
   await owner.waitForURL(`${BASE}/team`);
-  await assert.doesNotReject(owner.getByText('Sièges occupés : 1 sur 3').waitFor());
+  await assert.doesNotReject(owner.getByText('Sièges occupés : 1 sur 10').waitFor());
 
   // Invitation : le lien n'est affiché qu'une fois, l'invitation réserve un siège.
   await owner.getByLabel('E-mail de la personne').fill(team.invited);
@@ -698,7 +702,7 @@ test('espace équipe : invitation par lien, inscription, mission attribuée, rô
   assert.match(link, new RegExp(`^${BASE}/invite/[\\w-]{43}$`));
   await shot(owner, '14-equipe-invitation');
   await owner.reload();
-  await assert.doesNotReject(owner.getByText('Sièges occupés : 2 sur 3').waitFor());
+  await assert.doesNotReject(owner.getByText('Sièges occupés : 2 sur 10').waitFor());
   await assert.doesNotReject(owner.getByText(team.invited).waitFor());
   assert.equal(await owner.getByLabel(/Lien d’invitation/).count(), 0, 'le lien ne réapparaît pas');
 
@@ -734,7 +738,7 @@ test('espace équipe : invitation par lien, inscription, mission attribuée, rô
   await owner.goto(`${BASE}/team`);
   const row = owner.locator(`li[data-member="${team.invited}"]`);
   await assert.doesNotReject(row.waitFor());
-  await assert.doesNotReject(owner.getByText('Sièges occupés : 2 sur 3').waitFor());
+  await assert.doesNotReject(owner.getByText('Sièges occupés : 2 sur 10').waitFor());
   const scenarioLabel = (await owner.getByLabel('Scénario').locator('option').first().textContent())!;
   const scenarioTitle = scenarioLabel.replace(/ \((FR|EN)\)$/, '');
   await owner.getByLabel('Pour').selectOption({ label: 'Noah Vendeur' });
@@ -829,9 +833,9 @@ test('cockpit de l\'éditeur : chiffres réels de la plateforme, comptes à surv
   await page.waitForURL(`${BASE}/admin`);
   await assert.doesNotReject(page.getByRole('heading', { name: 'Cockpit', level: 1 }).waitFor());
 
-  // MRR : l'abonnement Équipe de Tania (3 sièges au prix de lancement de 25 €), sans Stripe pas d'encaissé inventé.
+  // MRR : l'abonnement Premium de Tania au prix de lancement (79,99 €), sans Stripe pas d'encaissé inventé.
   const mrr = page.locator('section', { has: page.getByRole('heading', { name: 'MRR', exact: true }) });
-  await assert.doesNotReject(mrr.getByText(/^75\s€$/).first().waitFor());
+  await assert.doesNotReject(mrr.getByText(/^79,99\s€$/).first().waitFor());
   await assert.doesNotReject(page.getByText('Stripe n’est pas encore connecté', { exact: false }).waitFor());
   // Comptes à surveiller : les espaces qui ont appelé ou payé, avec leur santé.
   const risk = page.locator('section[aria-labelledby="risk-title"]');

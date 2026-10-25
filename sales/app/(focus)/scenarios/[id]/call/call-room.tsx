@@ -48,6 +48,7 @@ function Room({ data }: { data: VoxStatic }) {
   const [interrupted, setInterrupted] = useState(false);
 
   const simulationId = useRef<string | null>(null);
+  const maxSeconds = useRef(Infinity);
   const finished = useRef(false);
   const connected = useRef(false);
   const startedAt = useRef(0);
@@ -155,6 +156,8 @@ function Room({ data }: { data: VoxStatic }) {
       s.elapsed = (performance.now() - startedAt.current) / 1000;
       history.current.push({ v: Math.max(input, output), who: prospect ? 'p' : seller ? 's' : '-' });
       setElapsed(s.elapsed);
+      // Durée maximale de l'offre (5 minutes pendant l'essai) : l'appel raccroche tout seul.
+      if (s.elapsed >= maxSeconds.current) conv.endSession();
       setDb(input > 0.001 ? Math.max(-60, Math.round(20 * Math.log10(input))) : -60);
       setStats({ ...s });
     }, SAMPLE_SECONDS * 1000);
@@ -203,6 +206,7 @@ function Room({ data }: { data: VoxStatic }) {
       return;
     }
     simulationId.current = res.simulationId;
+    maxSeconds.current = res.maxSeconds;
     finished.current = false;
     connected.current = false;
     startedAt.current = 0;

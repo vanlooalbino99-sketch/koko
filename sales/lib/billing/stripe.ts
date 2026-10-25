@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { DEFAULT_PRICES, PAID_PLANS, type PaidPlan } from './plans.ts';
+import { CURRENCIES, DEFAULT_PRICES, lookupKey, PAID_PLANS, type Currency, type PaidPlan } from './plans.ts';
 
 // Ce dont l'application a besoin de Stripe. Les tests utilisent un faux fournisseur.
 export type PlanPrice = {
@@ -17,6 +17,7 @@ export type SubscriptionSnapshot = {
   status: string;
   priceId: string | null;
   plan: PaidPlan | null;
+  currency: string | null;
   itemId: string | null;
   seats: number;
   currentPeriodEnd: Date | null;
@@ -43,12 +44,12 @@ export type PaidInvoice = { amount: number; currency: string; paidAt: Date };
 export class WebhookSignatureError extends Error {}
 
 export interface BillingProvider {
-  prices(): Promise<Record<PaidPlan, PlanPrice>>;
+  // Prix des offres dans une monnaie : euros pour l'interface en français, dollars en anglais.
+  prices(currency: Currency): Promise<Record<PaidPlan, PlanPrice>>;
   createCustomer(input: { name: string; email: string; organizationId: string }): Promise<string>;
   createCheckout(input: {
     customerId: string;
     price: PlanPrice;
-    seats: number;
     organizationId: string;
     successUrl: string;
     cancelUrl: string;
@@ -57,8 +58,8 @@ export interface BillingProvider {
   getCheckout(sessionId: string): Promise<CheckoutSnapshot>;
   createPortal(input: { customerId: string; returnUrl: string; locale: 'fr' | 'en' }): Promise<string>;
   getSubscription(subscriptionId: string): Promise<SubscriptionSnapshot>;
-  // Change l'offre (prix) et le nombre de sièges d'un abonnement en cours, au prorata.
-  updateSubscription(subscriptionId: string, itemId: string, priceId: string, seats: number): Promise<SubscriptionSnapshot>;
+  // Change l'offre (prix) d'un abonnement en cours, au prorata.
+  updateSubscription(subscriptionId: string, itemId: string, priceId: string): Promise<SubscriptionSnapshot>;
   parseWebhook(body: string, signature: string): WebhookEvent;
   // Factures payées depuis une date (2 000 au plus), pour le chiffre d'affaires encaissé.
   paidInvoices(since: Date): Promise<PaidInvoice[]>;
@@ -71,10 +72,11 @@ function idOf(value: string | { id: string } | null | undefined): string | null 
   return typeof value === 'string' ? value : value.id;
 }
 
-function planOfPrice(price: Stripe.Price | null | undefined, known: Record<PaidPlan, PlanPrice> | null): PaidPlan | null {
+function planOfPrice(price: Stripe.Price | null | undefined, known: Record<PaidPlan, PlanPrice>[]): PaidPlan | null {
   if (!price) return null;
   for (const plan of PAID_PLANS) {
-    if (known?.[plan].priceId === price.id || price.lookup_key === DEFAULT_PRICES[plan].lookupKey || price.metadata?.bs_plan === plan) return plan;
+    if (known.some((k) => k[plan].priceId === price.id)) return plan;
+    if (CURRENCIES.some((c) => price.lookup_key === lookupKey(plan, c)) || price.metadata?.bs_plan === plan) return plan;
   }
   return null;
 }
@@ -84,7 +86,7 @@ export function stripeProvider(secretKey: string, webhookSecret: string | null):
     maxNetworkRetries: 2,
     timeout: 20_000,
   });
-  let cachedPrices: { at: number; value: Record<PaidPlan, PlanPrice> } | null = null;
+  const cachedPrices = new Map<Currency, { at: number; value: Record<PaidPlan, PlanPrice> }>();
   let portalConfiguration: string | null = null;
 
   const toPlanPrice = (plan: PaidPlan, price: Stripe.Price): PlanPrice => ({
@@ -96,38 +98,37 @@ export function stripeProvider(secretKey: string, webhookSecret: string | null):
     interval: price.recurring?.interval ?? 'month',
   });
 
-  // Prix d'une offre : l'identifiant fourni (STRIPE_PRICE_PRO / STRIPE_PRICE_TEAM), sinon celui créé par
-  // l'application sous sa clé de recherche, créé au premier besoin.
-  async function priceFor(plan: PaidPlan): Promise<PlanPrice> {
-    const configured = process.env[plan === 'pro' ? 'STRIPE_PRICE_PRO' : 'STRIPE_PRICE_TEAM']?.trim();
+  // Prix d'une offre dans une monnaie : l'identifiant fourni (STRIPE_PRICE_STANDARD_EUR, …_USD, etc.), sinon
+  // celui créé par l'application sous sa clé de recherche, au premier besoin. Un produit par offre.
+  async function priceFor(plan: PaidPlan, currency: Currency): Promise<PlanPrice> {
+    const configured = process.env[`STRIPE_PRICE_${plan.toUpperCase()}_${currency.toUpperCase()}`]?.trim();
     if (configured) return toPlanPrice(plan, await stripe.prices.retrieve(configured));
     const spec = DEFAULT_PRICES[plan];
-    const found = await stripe.prices.list({
-      lookup_keys: [spec.lookupKey],
-      active: true,
-      limit: 1,
-    });
+    const found = await stripe.prices.list({ lookup_keys: [lookupKey(plan, currency)], active: true, limit: 1 });
     if (found.data[0]) return toPlanPrice(plan, found.data[0]);
-    const product = await stripe.products.create({
-      name: spec.name,
-      metadata: { bs_plan: plan },
-    });
+    const products = await stripe.products.search({ query: `metadata['bs_plan']:'${plan}' AND active:'true'`, limit: 1 });
+    const product = products.data[0] ?? (await stripe.products.create({ name: spec.name, metadata: { bs_plan: plan } }));
     const price = await stripe.prices.create({
       product: product.id,
-      currency: 'eur',
+      currency,
       unit_amount: spec.amount,
       recurring: { interval: 'month' },
-      lookup_key: spec.lookupKey,
+      lookup_key: lookupKey(plan, currency),
       tax_behavior: 'inclusive',
       metadata: { bs_plan: plan },
     });
     return toPlanPrice(plan, price);
   }
 
-  async function prices() {
-    if (cachedPrices && Date.now() - cachedPrices.at < 10 * 60 * 1000) return cachedPrices.value;
-    const value = { pro: await priceFor('pro'), team: await priceFor('team') };
-    cachedPrices = { at: Date.now(), value };
+  async function prices(currency: Currency) {
+    const cached = cachedPrices.get(currency);
+    if (cached && Date.now() - cached.at < 10 * 60 * 1000) return cached.value;
+    const value = {
+      standard: await priceFor('standard', currency),
+      advanced: await priceFor('advanced', currency),
+      premium: await priceFor('premium', currency),
+    };
+    cachedPrices.set(currency, { at: Date.now(), value });
     return value;
   }
 
@@ -138,7 +139,8 @@ export function stripeProvider(secretKey: string, webhookSecret: string | null):
       customerId: idOf(sub.customer)!,
       status: sub.status,
       priceId: item?.price.id ?? null,
-      plan: planOfPrice(item?.price, await prices().catch(() => null)),
+      currency: item?.price.currency ?? null,
+      plan: planOfPrice(item?.price, [...cachedPrices.values()].map((c) => c.value)),
       itemId: item?.id ?? null,
       seats: item?.quantity ?? 1,
       currentPeriodEnd: item?.current_period_end ? new Date(item.current_period_end * 1000) : null,
@@ -194,12 +196,12 @@ export function stripeProvider(secretKey: string, webhookSecret: string | null):
       });
       return customer.id;
     },
-    async createCheckout({ customerId, price, seats, organizationId, successUrl, cancelUrl, locale }) {
+    async createCheckout({ customerId, price, organizationId, successUrl, cancelUrl, locale }) {
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         customer: customerId,
         client_reference_id: organizationId,
-        line_items: [{ price: price.priceId, quantity: seats }],
+        line_items: [{ price: price.priceId, quantity: 1 }],
         subscription_data: { metadata: { organizationId } },
         metadata: { organizationId },
         allow_promotion_codes: true,
@@ -231,10 +233,10 @@ export function stripeProvider(secretKey: string, webhookSecret: string | null):
     async getSubscription(subscriptionId) {
       return snapshot(await stripe.subscriptions.retrieve(subscriptionId));
     },
-    async updateSubscription(subscriptionId, itemId, priceId, seats) {
+    async updateSubscription(subscriptionId, itemId, priceId) {
       return snapshot(
         await stripe.subscriptions.update(subscriptionId, {
-          items: [{ id: itemId, price: priceId, quantity: seats }],
+          items: [{ id: itemId, price: priceId, quantity: 1 }],
           proration_behavior: 'create_prorations',
         }),
       );

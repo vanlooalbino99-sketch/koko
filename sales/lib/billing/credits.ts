@@ -1,6 +1,6 @@
-import { and, count, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, count, eq, gte, inArray, notInArray, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { billingAccounts, creditDebits, simulationAnalyses, simulations, type Simulation } from '../db/schema.ts';
+import { creditDebits, simulationAnalyses, simulations, type Simulation } from '../db/schema.ts';
 import { isOneOf } from '../domain.ts';
 import { PLANS, planLimits, platformLimits, type Plan, type PlanLimits } from './plans.ts';
 
@@ -25,39 +25,50 @@ export type CreditStatus = PlanLimits & {
   used: number;
   remaining: number;
   activeCalls: number;
+  // Essai : appels déjà passés et appels restants ; null pour les offres payantes.
+  trialCallsUsed: number | null;
+  trialCallsLeft: number | null;
 };
 
-export async function orgLimits(db: Db | Tx, org: { id: string; plan: string }): Promise<{ plan: Plan; limits: PlanLimits }> {
+export async function orgLimits(_db: Db | Tx, org: { id: string; plan: string }): Promise<{ plan: Plan; limits: PlanLimits }> {
   const plan: Plan = isOneOf(PLANS, org.plan) ? org.plan : 'free';
-  if (plan !== 'team') return { plan, limits: planLimits(plan) };
-  const [account] = await db
-    .select({ seats: billingAccounts.seats })
-    .from(billingAccounts)
-    .where(eq(billingAccounts.organizationId, org.id))
-    .limit(1);
-  return { plan, limits: planLimits(plan, account?.seats ?? 1) };
+  return { plan, limits: planLimits(plan) };
 }
 
 export async function creditStatus(db: Db | Tx, org: { id: string; plan: string }, now = new Date()): Promise<CreditStatus> {
   const { plan, limits } = await orgLimits(db, org);
-  const [[used], [active]] = await Promise.all([
+  const trial = limits.trialCalls !== null;
+  // Les minutes de l'essai ne se renouvellent pas ; celles des offres payantes, chaque mois.
+  const since = trial ? new Date(0) : monthStart(now);
+  const [[used], [active], [calls]] = await Promise.all([
     db
       .select({
         credits: sql<number>`coalesce(sum(${creditDebits.credits}), 0)`.mapWith(Number),
       })
       .from(creditDebits)
-      .where(and(eq(creditDebits.organizationId, org.id), gte(creditDebits.createdAt, monthStart(now)))),
+      .where(and(eq(creditDebits.organizationId, org.id), gte(creditDebits.createdAt, since))),
     db
       .select({ n: count() })
       .from(simulations)
       .where(and(eq(simulations.organizationId, org.id), inArray(simulations.status, ['connecting', 'in_progress']))),
+    // Un appel qui n'a jamais abouti (échec de connexion, annulé avant de sonner) ne compte pas dans l'essai.
+    trial
+      ? db
+          .select({ n: count() })
+          .from(simulations)
+          .where(and(eq(simulations.organizationId, org.id), notInArray(simulations.status, ['failed', 'cancelled'])))
+      : Promise.resolve([{ n: 0 }]),
   ]);
+  const trialCallsLeft = trial ? Math.max(0, limits.trialCalls! - calls.n) : null;
   return {
     ...limits,
     plan,
     used: used.credits,
-    remaining: Math.max(0, limits.monthlyCredits - used.credits),
+    // Essai épuisé (deux appels passés) : plus de minutes, même s'il en reste sur le papier.
+    remaining: trialCallsLeft === 0 ? 0 : Math.max(0, limits.monthlyCredits - used.credits),
     activeCalls: active.n,
+    trialCallsUsed: trial ? calls.n : null,
+    trialCallsLeft,
   };
 }
 

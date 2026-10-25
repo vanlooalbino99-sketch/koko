@@ -22,10 +22,11 @@ import {
   type SubscriptionSnapshot,
   type WebhookEvent,
 } from '../lib/billing/stripe.ts';
+import { PAID_PLANS, type Currency, type PaidPlan } from '../lib/billing/plans.ts';
 import type { Db } from '../lib/db/client.ts';
-import { auditLog, billingAccounts, organizations } from '../lib/db/schema.ts';
+import { auditLog, billingAccounts, organizations, simulations } from '../lib/db/schema.ts';
 import { ScenarioInputSchema } from '../lib/scenarios/content.ts';
-import { createScenario, PlanLimitError } from '../lib/scenarios/service.ts';
+import { createScenario, getPlayableVersion, listScenarios, PlanLimitError } from '../lib/scenarios/service.ts';
 import { joinOrg, newUser, testDb } from './helpers.ts';
 
 let db: Db;
@@ -33,24 +34,18 @@ let close: () => Promise<void>;
 before(async () => ({ db, close } = await testDb()));
 after(() => close());
 
-const PRICES: Record<'pro' | 'team', PlanPrice> = {
-  pro: {
-    plan: 'pro',
-    priceId: 'price_pro',
-    productId: 'prod_pro',
-    amount: 2900,
-    currency: 'eur',
+const AMOUNTS: Record<PaidPlan, number> = { standard: 2999, advanced: 5999, premium: 7999 };
+function PRICES(currency: Currency): Record<PaidPlan, PlanPrice> {
+  const price = (plan: PaidPlan): PlanPrice => ({
+    plan,
+    priceId: `price_${plan}_${currency}`,
+    productId: `prod_${plan}`,
+    amount: AMOUNTS[plan],
+    currency,
     interval: 'month',
-  },
-  team: {
-    plan: 'team',
-    priceId: 'price_team',
-    productId: 'prod_team',
-    amount: 2500,
-    currency: 'eur',
-    interval: 'month',
-  },
-};
+  });
+  return { standard: price('standard'), advanced: price('advanced'), premium: price('premium') };
+}
 
 // Faux Stripe : garde les clients, sessions et abonnements en mémoire, au format des instantanés.
 let fakes = 0;
@@ -64,8 +59,8 @@ class FakeStripe implements BillingProvider {
   sessions = new Map<string, CheckoutSnapshot>();
   subscriptions = new Map<string, SubscriptionSnapshot>();
   failSubscription = false;
-  async prices() {
-    return PRICES;
+  async prices(currency: Currency) {
+    return PRICES(currency);
   }
   async createCustomer(input: { name: string; email: string; organizationId: string }) {
     this.customers.push(input);
@@ -93,12 +88,11 @@ class FakeStripe implements BillingProvider {
     if (!sub) throw new Error(`no such subscription ${id}`);
     return sub;
   }
-  async updateSubscription(id: string, _itemId: string, priceId: string, seats: number) {
+  async updateSubscription(id: string, _itemId: string, priceId: string) {
     const sub = {
       ...(await this.getSubscription(id)),
       priceId,
-      plan: priceId === 'price_team' ? ('team' as const) : ('pro' as const),
-      seats,
+      plan: PAID_PLANS.find((p) => priceId.startsWith(`price_${p}_`)) ?? null,
     };
     this.subscriptions.set(id, sub);
     return sub;
@@ -108,16 +102,17 @@ class FakeStripe implements BillingProvider {
     return JSON.parse(body) as WebhookEvent;
   }
   // Ce que Stripe crée au paiement : un abonnement actif rattaché au client.
-  subscribe(customerId: string, plan: 'pro' | 'team', seats = 1, status = 'active') {
+  subscribe(customerId: string, plan: PaidPlan, status = 'active', currency: Currency = 'eur') {
     const id = `sub_${this.prefix}_${this.subscriptions.size + 1}`;
     this.subscriptions.set(id, {
       id,
       customerId,
       status,
-      priceId: PRICES[plan].priceId,
+      priceId: PRICES(currency)[plan].priceId,
       plan,
+      currency,
       itemId: `si_${id}`,
-      seats,
+      seats: 1,
       currentPeriodEnd: new Date(Date.now() + 30 * 86_400_000),
       cancelAtPeriodEnd: false,
       organizationId: null,
@@ -140,11 +135,14 @@ function webhook(fake: FakeStripe, event: WebhookEvent, signature = 'signature-v
   return handleWebhook(db, fake, JSON.stringify(event), signature);
 }
 
-test('offre gratuite : 15 crédits par mois et 3 scénarios privés au plus', async () => {
+test("essai gratuit : 2 appels de 5 minutes en tout et 3 scénarios privés au plus", async () => {
   const { auth } = await newUser(db, 'Gaspard');
   const credits = await creditStatus(db, auth.organization);
   assert.equal(credits.plan, 'free');
-  assert.equal(credits.monthlyCredits, 15);
+  assert.equal(credits.trialCalls, 2);
+  assert.equal(credits.trialCallsLeft, 2);
+  assert.equal(credits.maxCallMinutes, 5);
+  assert.equal(credits.monthlyCredits, 10);
   assert.equal(credits.concurrentCalls, 1);
   const input = ScenarioInputSchema.parse({
     meta: {
@@ -188,23 +186,48 @@ test('offre gratuite : 15 crédits par mois et 3 scénarios privés au plus', as
   await assert.rejects(createScenario(db, auth, input), PlanLimitError);
 });
 
-test('paiement : seuls propriétaire et administrateurs passent en caisse ; sièges contrôlés', async () => {
+test("essai gratuit : épuisé après deux appels aboutis, même s'il reste des minutes ; un appel échoué ne compte pas", async () => {
+  const { auth } = await newUser(db, 'Gilles');
+  const [scenario] = await listScenarios(db, auth, { scope: 'catalog', language: 'fr', family: 'cold_call' });
+  const playable = (await getPlayableVersion(db, auth, scenario.id))!;
+  const call = (status: 'completed' | 'failed', durationSeconds: number) =>
+    db.insert(simulations).values({
+      organizationId: auth.organization.id,
+      userId: auth.user.id,
+      scenarioVersionId: playable.versionId,
+      status,
+      durationSeconds,
+    });
+  await call('failed', 0);
+  await call('completed', 60);
+  let credits = await creditStatus(db, auth.organization);
+  assert.equal(credits.trialCallsLeft, 1);
+  assert.equal(credits.remaining, 10, 'aucun débit enregistré : les minutes restent entières');
+  await call('completed', 90);
+  credits = await creditStatus(db, auth.organization);
+  assert.equal(credits.trialCallsUsed, 2);
+  assert.equal(credits.trialCallsLeft, 0);
+  assert.equal(credits.remaining, 0);
+});
+
+test('paiement : seuls propriétaire et administrateurs passent en caisse ; une offre solo refuse un espace à plusieurs', async () => {
   const fake = new FakeStripe();
   const owner = await newUser(db, 'Hélène');
   const member = await joinOrg(db, owner.auth.organization.id, 'member', 'Igor');
   const manager = await joinOrg(db, owner.auth.organization.id, 'manager', 'Jade');
   for (const auth of [member, manager]) {
-    await assert.rejects(startCheckout(db, fake, auth, 'pro', 1, URLS, 'fr'), (e) => e instanceof BillingError && e.code === 'forbidden');
+    await assert.rejects(startCheckout(db, fake, auth, 'standard', URLS, 'fr'), (e) => e instanceof BillingError && e.code === 'forbidden');
   }
-  // Trois personnes dans l'espace : une équipe de 2 sièges ne suffit pas.
-  await assert.rejects(startCheckout(db, fake, owner.auth, 'team', 2, URLS, 'fr'), (e) => e instanceof BillingError && e.code === 'invalid_seats');
-  const url = await startCheckout(db, fake, owner.auth, 'team', 3, URLS, 'fr');
+  // Trois personnes dans l'espace : seule l'offre Premium (espace équipe) convient.
+  for (const plan of ['standard', 'advanced'] as const) {
+    await assert.rejects(startCheckout(db, fake, owner.auth, plan, URLS, 'fr'), (e) => e instanceof BillingError && e.code === 'too_many_members');
+  }
+  const url = await startCheckout(db, fake, owner.auth, 'premium', URLS, 'fr');
   assert.equal(url, 'https://checkout.stripe.test/1');
-  assert.equal(fake.checkouts[0].seats, 3);
-  assert.equal(fake.checkouts[0].price.priceId, 'price_team');
+  assert.equal(fake.checkouts[0].price.priceId, 'price_premium_eur');
   assert.equal(fake.checkouts[0].organizationId, owner.auth.organization.id);
   // Un seul client Stripe par organisation, même après plusieurs passages en caisse.
-  await startCheckout(db, fake, owner.auth, 'pro', 1, URLS, 'fr');
+  await startCheckout(db, fake, owner.auth, 'premium', URLS, 'fr');
   assert.equal(fake.customers.length, 1);
   assert.equal(fake.customers[0].email, owner.email);
   await assert.rejects(openPortal(db, fake, member, URLS.cancel, 'fr'), (e) => e instanceof BillingError && e.code === 'forbidden');
@@ -213,9 +236,9 @@ test('paiement : seuls propriétaire et administrateurs passent en caisse ; siè
 test('webhook : un abonnement test ouvre réellement les droits, une seule fois, puis la résiliation les retire', async () => {
   const fake = new FakeStripe();
   const { auth } = await newUser(db, 'Karim');
-  await startCheckout(db, fake, auth, 'pro', 1, URLS, 'fr');
+  await startCheckout(db, fake, auth, 'standard', URLS, 'fr');
   const [account] = await db.select().from(billingAccounts).where(eq(billingAccounts.organizationId, auth.organization.id));
-  const subId = fake.subscribe(account.stripeCustomerId, 'pro');
+  const subId = fake.subscribe(account.stripeCustomerId, 'standard');
 
   await assert.rejects(
     webhook(
@@ -239,7 +262,7 @@ test('webhook : un abonnement test ouvre réellement les droits, une seule fois,
     }),
     'applied',
   );
-  assert.equal((await orgPlan(auth.organization.id)).plan, 'pro');
+  assert.equal((await orgPlan(auth.organization.id)).plan, 'standard');
   const fresh = (await getAuthContext(db, (await newSessionToken(auth)) ?? ''))!;
   assert.equal((await creditStatus(db, fresh.organization)).monthlyCredits, 60);
   assert.equal(
@@ -287,10 +310,10 @@ async function newSessionToken(auth: { user: { email: string } }) {
 test("webhook : la fin d'un ancien abonnement ne retire pas les droits du nouveau", async () => {
   const fake = new FakeStripe();
   const { auth } = await newUser(db, 'Léon');
-  await startCheckout(db, fake, auth, 'pro', 1, URLS, 'fr');
+  await startCheckout(db, fake, auth, 'standard', URLS, 'fr');
   const [account] = await db.select().from(billingAccounts).where(eq(billingAccounts.organizationId, auth.organization.id));
-  const oldSub = fake.subscribe(account.stripeCustomerId, 'pro', 1, 'canceled');
-  const newSub = fake.subscribe(account.stripeCustomerId, 'pro');
+  const oldSub = fake.subscribe(account.stripeCustomerId, 'standard', 'canceled');
+  const newSub = fake.subscribe(account.stripeCustomerId, 'standard');
   await webhook(fake, {
     id: `evt_${newSub}`,
     type: 'customer.subscription.created',
@@ -304,16 +327,16 @@ test("webhook : la fin d'un ancien abonnement ne retire pas les droits du nouvea
     }),
     'ignored',
   );
-  assert.equal((await orgPlan(auth.organization.id)).plan, 'pro');
+  assert.equal((await orgPlan(auth.organization.id)).plan, 'standard');
 });
 
 test("retour de paiement : seule la session de sa propre organisation active l'offre", async () => {
   const fake = new FakeStripe();
   const a = await newUser(db, 'Manon');
   const b = await newUser(db, 'Nils');
-  await startCheckout(db, fake, a.auth, 'pro', 1, URLS, 'fr');
+  await startCheckout(db, fake, a.auth, 'standard', URLS, 'fr');
   const [account] = await db.select().from(billingAccounts).where(eq(billingAccounts.organizationId, a.auth.organization.id));
-  const subId = fake.subscribe(account.stripeCustomerId, 'pro');
+  const subId = fake.subscribe(account.stripeCustomerId, 'standard');
   fake.sessions.set('cs_test_a', {
     organizationId: a.auth.organization.id,
     customerId: account.stripeCustomerId,
@@ -322,28 +345,44 @@ test("retour de paiement : seule la session de sa propre organisation active l'o
   assert.equal(await confirmCheckout(db, fake, b.auth, 'cs_test_a'), false);
   assert.equal((await orgPlan(b.auth.organization.id)).plan, 'free');
   assert.equal(await confirmCheckout(db, fake, a.auth, 'cs_test_a'), true);
-  assert.equal((await orgPlan(a.auth.organization.id)).plan, 'pro');
+  assert.equal((await orgPlan(a.auth.organization.id)).plan, 'standard');
 });
 
-test("changement d'offre : Pro vers Équipe au prorata, retour en Pro refusé tant que l'équipe compte plusieurs membres", async () => {
+test('monnaie : euros pour l’interface en français, dollars en anglais', async () => {
+  const fake = new FakeStripe();
+  const fr = await newUser(db, 'Quentin');
+  const en = await newUser(db, 'Rose');
+  await startCheckout(db, fake, fr.auth, 'premium', URLS, 'fr');
+  await startCheckout(db, fake, en.auth, 'premium', URLS, 'en');
+  assert.deepEqual(
+    fake.checkouts.map((c) => [c.price.priceId, c.price.amount, c.locale]),
+    [
+      ['price_premium_eur', 7999, 'fr'],
+      ['price_premium_usd', 7999, 'en'],
+    ],
+  );
+});
+
+test("changement d'offre : Standard vers Premium au prorata dans la monnaie de l'abonnement, retour refusé tant que l'équipe compte plusieurs membres", async () => {
   const fake = new FakeStripe();
   const owner = await newUser(db, 'Oscar');
-  await startCheckout(db, fake, owner.auth, 'pro', 1, URLS, 'fr');
+  await startCheckout(db, fake, owner.auth, 'standard', URLS, 'en');
   const [account] = await db.select().from(billingAccounts).where(eq(billingAccounts.organizationId, owner.auth.organization.id));
-  const subId = fake.subscribe(account.stripeCustomerId, 'pro');
+  const subId = fake.subscribe(account.stripeCustomerId, 'standard', 'active', 'usd');
   await applySubscription(db, fake.subscriptions.get(subId)!);
-  await changeSubscription(db, fake, owner.auth, 'team', 3);
+  // Interface passée en français entre-temps : l'abonnement reste en dollars.
+  await changeSubscription(db, fake, owner.auth, 'premium', 'fr');
+  assert.equal(fake.subscriptions.get(subId)!.priceId, 'price_premium_usd');
   const org = await orgPlan(owner.auth.organization.id);
-  assert.deepEqual(org, { plan: 'team', kind: 'team' });
+  assert.deepEqual(org, { plan: 'premium', kind: 'team' });
   const credits = await creditStatus(db, {
     id: owner.auth.organization.id,
     plan: org.plan,
   });
-  assert.equal(credits.seats, 3);
-  assert.equal(credits.monthlyCredits, 180);
+  assert.equal(credits.seats, 10);
+  assert.equal(credits.monthlyCredits, 300);
   await joinOrg(db, owner.auth.organization.id, 'member', 'Pia');
-  await assert.rejects(changeSubscription(db, fake, owner.auth, 'pro', 1), (e) => e instanceof BillingError && e.code === 'invalid_seats');
-  await assert.rejects(changeSubscription(db, fake, owner.auth, 'team', 1), (e) => e instanceof BillingError && e.code === 'invalid_seats');
+  await assert.rejects(changeSubscription(db, fake, owner.auth, 'advanced', 'fr'), (e) => e instanceof BillingError && e.code === 'too_many_members');
 });
 
 test('vrai client Stripe : la signature du webhook est vérifiée sur le corps brut', () => {

@@ -1,14 +1,24 @@
-// Offres et limites. 1 crédit = 1 minute de simulation, analyse comprise (plan de la phase 1).
+// Offres et limites. 1 crédit = 1 minute de simulation, analyse comprise.
 // Les quantités se règlent par variables d'environnement ; les prix affichés viennent de Stripe.
 
-export const PLANS = ['free', 'pro', 'team'] as const;
+// Essai gratuit, trois offres mensuelles et l'offre Entreprise, sur devis (hors Stripe).
+export const PLANS = ['free', 'standard', 'advanced', 'premium'] as const;
 export type Plan = (typeof PLANS)[number];
-export const PAID_PLANS = ['pro', 'team'] as const;
+export const PAID_PLANS = ['standard', 'advanced', 'premium'] as const;
 export type PaidPlan = (typeof PAID_PLANS)[number];
+export function isOneOfPaid(value: string | null | undefined): value is PaidPlan {
+  return (PAID_PLANS as readonly string[]).includes(value ?? '');
+}
 
-// Une équipe compte au moins deux sièges ; au-delà de vingt, c'est un devis.
-export const TEAM_MIN_SEATS = 2;
-export const TEAM_MAX_SEATS = 20;
+// Mise en avant sur la page des offres.
+export const RECOMMENDED_PLAN: PaidPlan = 'advanced';
+
+// Même prix affiché dans les deux monnaies : en euros en français, en dollars américains en anglais.
+export const CURRENCIES = ['eur', 'usd'] as const;
+export type Currency = (typeof CURRENCIES)[number];
+export function currencyFor(locale: 'fr' | 'en'): Currency {
+  return locale === 'en' ? 'usd' : 'eur';
+}
 
 // Durée maximale d'un appel, quel que soit le scénario : borne le coût d'une seule simulation.
 export const MAX_CALL_MINUTES = 15;
@@ -21,8 +31,13 @@ function envInt(name: string, fallback: number): number {
 }
 
 export type PlanLimits = {
-  // Crédits du mois civil pour toute l'organisation.
+  // Crédits (minutes) : du mois civil pour les offres payantes, de tout l'essai pour l'offre gratuite.
   monthlyCredits: number;
+  // Essai : nombre d'appels possibles en tout ; null pour les offres payantes.
+  trialCalls: number | null;
+  // Durée maximale d'un appel de cette offre.
+  maxCallMinutes: number;
+  // Membres de l'espace, invitations en attente comprises.
   seats: number;
   // Appels simultanés dans l'organisation.
   concurrentCalls: number;
@@ -32,28 +47,48 @@ export type PlanLimits = {
   teamSpace: boolean;
 };
 
-export function planLimits(plan: Plan, seats = 1): PlanLimits {
-  if (plan === 'pro') {
+export function planLimits(plan: Plan): PlanLimits {
+  if (plan === 'standard') {
     return {
-      monthlyCredits: envInt('PLAN_PRO_MINUTES', 60),
+      monthlyCredits: envInt('PLAN_STANDARD_MINUTES', 60),
+      trialCalls: null,
+      maxCallMinutes: MAX_CALL_MINUTES,
+      seats: 1,
+      concurrentCalls: 1,
+      privateScenarios: 5,
+      teamSpace: false,
+    };
+  }
+  if (plan === 'advanced') {
+    return {
+      monthlyCredits: envInt('PLAN_ADVANCED_MINUTES', 150),
+      trialCalls: null,
+      maxCallMinutes: MAX_CALL_MINUTES,
       seats: 1,
       concurrentCalls: 1,
       privateScenarios: null,
       teamSpace: false,
     };
   }
-  if (plan === 'team') {
-    const n = Math.min(TEAM_MAX_SEATS, Math.max(TEAM_MIN_SEATS, seats));
+  if (plan === 'premium') {
+    const seats = Math.max(2, envInt('PLAN_PREMIUM_SEATS', 10));
     return {
-      monthlyCredits: envInt('PLAN_TEAM_MINUTES_PER_SEAT', 60) * n,
-      seats: n,
-      concurrentCalls: Math.min(n, 5),
+      monthlyCredits: envInt('PLAN_PREMIUM_MINUTES', 300),
+      trialCalls: null,
+      maxCallMinutes: MAX_CALL_MINUTES,
+      seats,
+      concurrentCalls: Math.min(seats, 3),
       privateScenarios: null,
       teamSpace: true,
     };
   }
+  // Essai : 2 appels de 5 minutes, une seule fois.
+  const calls = envInt('TRIAL_CALLS', 2);
+  const minutes = Math.max(1, envInt('TRIAL_CALL_MINUTES', 5));
   return {
-    monthlyCredits: envInt('PLAN_FREE_MINUTES', envInt('VOICE_FREE_MONTHLY_MINUTES', 15)),
+    monthlyCredits: calls * minutes,
+    trialCalls: calls,
+    maxCallMinutes: minutes,
     seats: 1,
     concurrentCalls: 1,
     privateScenarios: 3,
@@ -70,19 +105,17 @@ export function platformLimits() {
   };
 }
 
-// Prix créés dans Stripe si aucun identifiant de prix n'est fourni (en centimes, TTC).
-export const DEFAULT_PRICES: Record<PaidPlan, { lookupKey: string; amount: number; name: string }> = {
-  pro: {
-    lookupKey: 'bs_sales_pro_monthly',
-    amount: envInt('PLAN_PRO_PRICE_CENTS', 2900),
-    name: 'Blackstart Sales Intelligence · Pro',
-  },
-  team: {
-    lookupKey: 'bs_sales_team_seat_monthly',
-    amount: envInt('PLAN_TEAM_SEAT_PRICE_CENTS', 2500),
-    name: 'Blackstart Sales Intelligence · Équipe (par siège)',
-  },
+// Prix créés dans Stripe si aucun identifiant de prix n'est fourni (en centimes, TTC), le même montant en euros
+// et en dollars. Une clé de recherche par offre et par monnaie.
+export const DEFAULT_PRICES: Record<PaidPlan, { amount: number; name: string }> = {
+  standard: { amount: envInt('PLAN_STANDARD_PRICE_CENTS', 2999), name: 'Blackstart Sales Intelligence · Standard' },
+  advanced: { amount: envInt('PLAN_ADVANCED_PRICE_CENTS', 5999), name: 'Blackstart Sales Intelligence · Avancé' },
+  premium: { amount: envInt('PLAN_PREMIUM_PRICE_CENTS', 7999), name: 'Blackstart Sales Intelligence · Premium' },
 };
+
+export function lookupKey(plan: PaidPlan, currency: Currency): string {
+  return `bs_sales_${plan}_monthly_${currency}`;
+}
 
 // Abonnement Stripe qui ouvre les droits de l'offre. past_due garde l'accès pendant les relances de paiement.
 export function grantsAccess(status: string | null | undefined): boolean {

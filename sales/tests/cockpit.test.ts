@@ -36,14 +36,14 @@ test('cockpit : comptes actifs, MRR, conversion, entonnoir et comptes à risque 
   // Un compte Pro actif qui appelle, un compte Équipe en retard de paiement et inactif, un compte gratuit récent.
   const pro = await newUser(db, 'Paula');
   await saveProfile(db, pro.auth, OnboardingSchema.parse({ persona: 'freelance', experience: 'intermediate', goals: ['closing'] }));
-  await db.update(organizations).set({ plan: 'pro' }).where(eq(organizations.id, pro.auth.organization.id));
-  await db.insert(billingAccounts).values({ organizationId: pro.auth.organization.id, stripeCustomerId: 'cus_pro', stripeSubscriptionId: 'sub_pro', plan: 'pro', status: 'active', seats: 1 });
+  await db.update(organizations).set({ plan: 'standard' }).where(eq(organizations.id, pro.auth.organization.id));
+  await db.insert(billingAccounts).values({ organizationId: pro.auth.organization.id, stripeCustomerId: 'cus_pro', stripeSubscriptionId: 'sub_pro', plan: 'standard', status: 'active', seats: 1 });
   const scenario = await call(pro.auth, 1, 70);
   await call(pro.auth, 3, 50);
 
   const team = await newUser(db, 'Tom');
-  await db.update(organizations).set({ plan: 'team', kind: 'team' }).where(eq(organizations.id, team.auth.organization.id));
-  await db.insert(billingAccounts).values({ organizationId: team.auth.organization.id, stripeCustomerId: 'cus_team', stripeSubscriptionId: 'sub_team', plan: 'team', status: 'past_due', seats: 3 });
+  await db.update(organizations).set({ plan: 'premium', kind: 'team' }).where(eq(organizations.id, team.auth.organization.id));
+  await db.insert(billingAccounts).values({ organizationId: team.auth.organization.id, stripeCustomerId: 'cus_team', stripeSubscriptionId: 'sub_team', plan: 'premium', status: 'past_due', seats: 1 });
   await call(team.auth, 40, 30);
 
   await newUser(db, 'Fanny');
@@ -51,8 +51,9 @@ test('cockpit : comptes actifs, MRR, conversion, entonnoir et comptes à risque 
   const c = await cockpit(db, { days: 30, now, prices: null, invoices: null });
   assert.equal(c.revenue, null, 'sans Stripe, pas de chiffre d’affaires inventé');
   assert.equal(c.activeAccounts.value, 1);
-  assert.equal(c.mrr.byPlan.pro, DEFAULT_PRICES.pro.amount);
-  assert.equal(c.mrr.byPlan.team, DEFAULT_PRICES.team.amount * 3);
+  assert.equal(c.mrr.byPlan.standard, DEFAULT_PRICES.standard.amount);
+  assert.equal(c.mrr.byPlan.premium, DEFAULT_PRICES.premium.amount);
+  assert.equal(c.mrr.byPlan.advanced, 0);
   assert.equal(c.mrr.subscribers, 2);
   assert.equal(c.score.value, 60);
   assert.equal(c.callsByDay.reduce((a, b) => a + b, 0), 2);
@@ -90,7 +91,7 @@ test('cockpit : comptes actifs, MRR, conversion, entonnoir et comptes à risque 
 
 test('export CSV : les cellules qui ressemblent à une formule sont neutralisées', () => {
   const csv = accountsCsv(
-    [{ id: '1', name: '=HYPERLINK("x")', plan: 'free', health: 60, weekly: [], daily: [], lastActivity: null, usage: 10, mrr: 0, callsInPeriod: 0, risk: 'inactive' }],
+    [{ id: '1', name: '=HYPERLINK("x")', plan: 'free', health: 60, weekly: [], daily: [], lastActivity: null, usage: 10, mrr: 0, currency: 'eur', callsInPeriod: 0, risk: 'inactive' }],
     ['Compte', 'Offre', 'Santé', 'Dernière activité', 'Appels', 'Usage', 'MRR', 'Risque'],
   );
   assert.match(csv, /^Compte,Offre/);

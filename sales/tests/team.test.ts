@@ -26,12 +26,12 @@ after(() => close());
 
 const DAY = 24 * 60 * 60 * 1000;
 
-// Une organisation abonnée à l'offre Équipe, comme après le webhook Stripe.
-async function teamOrg(name: string, seats: number) {
+// Une organisation abonnée à l'offre Premium (espace équipe), comme après le webhook Stripe.
+async function teamOrg(name: string) {
   const owner = await newUser(db, name);
   const orgId = owner.auth.organization.id;
-  await db.update(organizations).set({ plan: 'team', kind: 'team', name: `Équipe ${name}` }).where(eq(organizations.id, orgId));
-  await db.insert(billingAccounts).values({ organizationId: orgId, stripeCustomerId: `cus_${orgId}`, stripeSubscriptionId: `sub_${orgId}`, plan: 'team', status: 'active', seats });
+  await db.update(organizations).set({ plan: 'premium', kind: 'team', name: `Équipe ${name}` }).where(eq(organizations.id, orgId));
+  await db.insert(billingAccounts).values({ organizationId: orgId, stripeCustomerId: `cus_${orgId}`, stripeSubscriptionId: `sub_${orgId}`, plan: 'premium', status: 'active', seats: 1 });
   return { ...owner, auth: (await getAuthContext(db, owner.token))!, orgId };
 }
 
@@ -39,11 +39,14 @@ async function rejects(promise: Promise<unknown>, code: string) {
   await assert.rejects(promise, (err) => err instanceof TeamError && err.code === code);
 }
 
-test('invitations : offre Équipe exigée, sièges comptés, lien remplacé, rôles autorisés', async () => {
+test('invitations : offre Premium exigée, sièges comptés, lien remplacé, rôles autorisés', async (t) => {
+  // Trois places dans l'espace pour atteindre la limite en deux invitations.
+  process.env.PLAN_PREMIUM_SEATS = '3';
+  t.after(() => delete process.env.PLAN_PREMIUM_SEATS);
   const solo = await newUser(db, 'Solène');
   await rejects(createInvitation(db, solo.auth, { email: 'x@example.com', role: 'member' }), 'plan_required');
 
-  const { auth, orgId } = await teamOrg('Hugo', 3);
+  const { auth, orgId } = await teamOrg('Hugo');
   const first = await createInvitation(db, auth, { email: 'Ana@Example.com'.toLowerCase(), role: 'member' });
   await createInvitation(db, auth, { email: 'ben@example.com', role: 'manager' });
   assert.equal(await seatsInUse(db, orgId), 3);
@@ -73,7 +76,7 @@ test('invitations : offre Équipe exigée, sièges comptés, lien remplacé, rô
 });
 
 test('invitations : acceptées par le bon compte seulement, une seule fois, avant expiration', async () => {
-  const { auth, orgId } = await teamOrg('Iris', 5);
+  const { auth, orgId } = await teamOrg('Iris');
   const invited = await newUser(db, 'Jade');
   const other = await newUser(db, 'Karl');
   const token = await createInvitation(db, auth, { email: invited.email, role: 'manager' });
@@ -105,11 +108,11 @@ test('invitations : acceptées par le bon compte seulement, une seule fois, avan
   const lateToken = await createInvitation(db, auth, { email: late.email, role: 'member' });
   await db.update(organizations).set({ plan: 'free' }).where(eq(organizations.id, orgId));
   await rejects(acceptInvitation(db, late.auth, lateToken), 'plan_required');
-  await db.update(organizations).set({ plan: 'team' }).where(eq(organizations.id, orgId));
+  await db.update(organizations).set({ plan: 'premium' }).where(eq(organizations.id, orgId));
 });
 
 test('rôles : le propriétaire nomme les admins, un admin gère managers et membres, personne ne se modifie', async () => {
-  const { auth: owner, orgId } = await teamOrg('Mia', 6);
+  const { auth: owner, orgId } = await teamOrg('Mia');
   const admin = await joinOrg(db, orgId, 'admin', 'Nora');
   const admin2 = await joinOrg(db, orgId, 'admin', 'Omar');
   const manager = await joinOrg(db, orgId, 'manager', 'Paul');
@@ -144,7 +147,7 @@ test('rôles : le propriétaire nomme les admins, un admin gère managers et mem
 });
 
 test('missions : attribuées par un responsable, remplies par un appel terminé après attribution', async () => {
-  const { auth: owner, orgId } = await teamOrg('Rose', 6);
+  const { auth: owner, orgId } = await teamOrg('Rose');
   const manager = await joinOrg(db, orgId, 'manager', 'Sam');
   const member = await joinOrg(db, orgId, 'member', 'Théo');
   const member2 = await joinOrg(db, orgId, 'member', 'Ugo');
@@ -188,7 +191,7 @@ test('missions : attribuées par un responsable, remplies par un appel terminé 
 });
 
 test('tableau d\'équipe : appels, minutes, score moyen et compétence la plus faible des 30 derniers jours', async () => {
-  const { auth: owner, orgId } = await teamOrg('Xavier', 4);
+  const { auth: owner, orgId } = await teamOrg('Xavier');
   const member = await joinOrg(db, orgId, 'member', 'Yasmine');
   await joinOrg(db, orgId, 'member', 'Zoé');
   const [scenario] = await listScenarios(db, owner, { scope: 'catalog', language: 'fr' });

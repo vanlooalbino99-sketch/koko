@@ -19,7 +19,7 @@ test("l'espace de démo : une équipe fictive complète, des rapports valides, p
   const auth = await getAuthContext(db, token);
   assert.equal(auth?.user.name, 'Camille Roux');
   assert.equal(auth?.role, 'owner');
-  assert.equal(auth?.organization.plan, 'team');
+  assert.equal(auth?.organization.plan, 'premium');
   assert.ok(auth?.user.email.endsWith('.invalid'), 'adresses fictives, impossibles à joindre');
 
   const results = await db.select({ result: simulationAnalyses.result }).from(simulationAnalyses);

@@ -315,7 +315,7 @@ function transcriptOf(template: Template, seconds: number): TranscriptTurn[] {
 
 export async function seedDemoSpace(db: Db, now = new Date()): Promise<{ token: string; organizationId: string }> {
   const rand = prng('blackstart-demo');
-  const [org] = await db.insert(organizations).values({ name: 'Horizon Conseil', kind: 'team', plan: 'team' }).returning({ id: organizations.id });
+  const [org] = await db.insert(organizations).values({ name: 'Horizon Conseil', kind: 'team', plan: 'premium' }).returning({ id: organizations.id });
   const members = await db
     .insert(users)
     .values(
@@ -348,9 +348,9 @@ export async function seedDemoSpace(db: Db, now = new Date()): Promise<{ token: 
     organizationId: org.id,
     stripeCustomerId: 'cus_demo_horizon',
     stripeSubscriptionId: 'sub_demo_horizon',
-    plan: 'team',
+    plan: 'premium',
     status: 'active',
-    seats: 8,
+    currency: 'eur',
     currentPeriodEnd: new Date(now.getTime() + 18 * DAY),
   });
 
@@ -434,7 +434,7 @@ export async function seedDemoSpace(db: Db, now = new Date()): Promise<{ token: 
 // Reconstruit chaque jour pour que les dates restent récentes.
 const REBUILD_MS = DAY;
 // À changer quand les données fictives changent : le schéma demo est alors reconstruit au démarrage suivant.
-const SEED_VERSION = 1;
+const SEED_VERSION = 2;
 
 type Rows = { rows: Record<string, unknown>[] };
 const rows = async (db: Db, query: SQL) => ((await db.execute(query)) as unknown as Rows).rows;

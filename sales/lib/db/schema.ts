@@ -53,7 +53,7 @@ export const organizations = pgTable(
   },
   (t) => [
     check('organizations_kind_check', sql`${t.kind} in ('personal', 'team')`),
-    check('organizations_plan_check', sql`${t.plan} in ('free', 'pro', 'team')`),
+    check('organizations_plan_check', sql`${t.plan} in ('free', 'standard', 'advanced', 'premium')`),
   ],
 );
 
@@ -300,6 +300,8 @@ export const billingAccounts = pgTable(
     // Statut Stripe tel quel : active, trialing, past_due, canceled, unpaid, incomplete…
     status: text('status'),
     seats: integer('seats').notNull().default(1),
+    // Monnaie de l'abonnement : eur (interface en français) ou usd (en anglais).
+    currency: text('currency'),
     currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
     cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
     createdAt: createdAt(),
@@ -308,7 +310,7 @@ export const billingAccounts = pgTable(
   (t) => [
     uniqueIndex('billing_accounts_customer_key').on(t.stripeCustomerId),
     uniqueIndex('billing_accounts_subscription_key').on(t.stripeSubscriptionId),
-    check('billing_accounts_plan_check', sql`${t.plan} is null or ${t.plan} in ('pro', 'team')`),
+    check('billing_accounts_plan_check', sql`${t.plan} is null or ${t.plan} in ('standard', 'advanced', 'premium')`),
     check('billing_accounts_seats_check', sql`${t.seats} >= 1`),
   ],
 );
@@ -363,6 +365,24 @@ export const missions = pgTable(
 );
 
 // Webhooks Stripe déjà traités : Stripe peut renvoyer le même événement plusieurs fois.
+// Demandes de devis pour l'offre Entreprise, lues par l'éditeur dans son cockpit.
+export const quoteRequests = pgTable(
+  'quote_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'set null' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    company: text('company').notNull(),
+    email: text('email').notNull(),
+    seats: integer('seats').notNull(),
+    message: text('message').notNull().default(''),
+    createdAt: createdAt(),
+  },
+  (t) => [index('quote_requests_created_idx').on(t.createdAt)],
+);
+
+export type QuoteRequest = typeof quoteRequests.$inferSelect;
+
 export const stripeEvents = pgTable('stripe_events', {
   id: text('id').primaryKey(),
   type: text('type').notNull(),

@@ -50,7 +50,9 @@ export default async function AdminPage({ searchParams }: Props) {
   const now = new Date();
   const [prices, invoices] = provider
     ? await Promise.all([
-        provider.prices().catch(() => null),
+        Promise.all([provider.prices('eur'), provider.prices('usd')])
+          .then(([eur, usd]) => ({ eur, usd }))
+          .catch(() => null),
         provider.paidInvoices(new Date(now.getTime() - 2 * days * DAY)).catch((err) => {
           console.error('[cockpit] factures', err instanceof Error ? err.message : err);
           return null;
@@ -70,7 +72,7 @@ export default async function AdminPage({ searchParams }: Props) {
   const periodPill = <PeriodMenu path="/admin" current={days} periods={PERIODS} labels={a.periods} short={t.dashboard.periodsShort} srLabel={a.period} compact />;
   const funnelValues = [c.funnel.signups, c.funnel.onboarded, c.funnel.called, c.funnel.paying];
   const funnelKeys = ['signups', 'onboarded', 'called', 'paying'] as const;
-  const mrrSegments = (['pro', 'team'] as const).map((key) => ({ key, value: c.mrr.byPlan[key] }));
+  const mrrSegments = (['standard', 'advanced', 'premium'] as const).map((key) => ({ key, value: c.mrr.byPlan[key] }));
   const maxScenario = Math.max(1, ...c.topScenarios.map((s) => s.n));
   const showAll = params.accounts === 'all';
   const accounts = showAll ? c.accounts : c.accounts.slice(0, 8);
@@ -155,6 +157,7 @@ export default async function AdminPage({ searchParams }: Props) {
               </ul>
             )}
           </div>
+          {c.mrr.usd > 0 && <p className="mt-3 text-[12px] text-[#9aa1b2]">{format(a.mrrUsd, { amount: money(c.mrr.usd, 'usd') })}</p>}
         </section>
 
         <section className={cn(card, 'bs-rise flex flex-col')}>
@@ -317,7 +320,7 @@ export default async function AdminPage({ searchParams }: Props) {
                         <span className="text-[#d3d7e1] tabular-nums">{row.usage} %</span>
                       </span>
                     </td>
-                    <td className="py-2.5 text-[#d3d7e1] tabular-nums">{row.mrr ? money(row.mrr) : a.none}</td>
+                    <td className="py-2.5 text-[#d3d7e1] tabular-nums">{row.mrr ? money(row.mrr, row.currency) : a.none}</td>
                     <td className="py-2.5">
                       <span className={cn('rounded px-1.5 py-0.5 text-[11px]', RISK_TONE[row.risk])}>{a.risks[row.risk]}</span>
                     </td>

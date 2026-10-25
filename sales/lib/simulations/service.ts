@@ -38,7 +38,7 @@ export async function ensureVoiceAgent(db: Db, provider: VoiceProvider, playable
 }
 
 export type StartResult =
-  | { ok: true; simulationId: string; token: string }
+  | { ok: true; simulationId: string; token: string; maxSeconds: number }
   | { ok: false; error: 'not_found' | 'quota_exceeded' | 'concurrent_limit' | 'platform_saturated' | 'provider_error' };
 
 export async function startSimulation(
@@ -93,7 +93,8 @@ export async function startSimulation(
       targetId: sim.id,
       metadata: { scenarioId, version: playable.versionNumber },
     });
-    return { ok: true, simulationId: sim.id, token };
+    // L'essai coupe l'appel plus tôt (5 minutes) : l'écran d'appel raccroche à cette limite.
+    return { ok: true, simulationId: sim.id, token, maxSeconds: Math.min(credits.maxCallMinutes, credits.remaining) * 60 };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('[voice] jeton de conversation refusé', message);

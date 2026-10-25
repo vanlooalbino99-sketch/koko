@@ -633,6 +633,7 @@ export const en: Dictionary = {
     switchTo: 'Switch to this plan',
     trialTitle: 'Free trial',
     trialLeft: '{n} trial calls left',
+    trialUsed: '{used} of {total} used',
     trialHint: 'The trial includes {calls} calls of up to {minutes} minutes, once. The call hangs up by itself at the limit.',
     paymentMethods: 'Secure payment by Stripe: card, Apple Pay, Google Pay and PayPal.',
     enterprise: {
@@ -833,6 +834,15 @@ export const en: Dictionary = {
     insightLink: 'See accounts',
     risk: 'Accounts at risk',
     riskEmpty: 'No active account yet.',
+    quotes: {
+      title: 'Enterprise quote requests',
+      empty: 'No quote request yet.',
+      company: 'Company',
+      email: 'Email',
+      seats: 'Users',
+      message: 'Needs',
+      date: 'Received',
+    },
     cols: {
       account: 'Account',
       health: 'Health',

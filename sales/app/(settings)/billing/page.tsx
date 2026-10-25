@@ -98,8 +98,10 @@ export default async function BillingPage({ searchParams }: Props) {
 
   const { credits, account, canManage, seatsInUse } = overview;
   const subscribed = Boolean(account?.stripeSubscriptionId && grantsAccess(account.status));
-  const usedPct = credits.monthlyCredits ? Math.min(100, Math.round((credits.used / credits.monthlyCredits) * 100)) : 100;
   const trial = credits.trialCallsLeft !== null;
+  // Essai : la jauge compte les appels passés ; offres payantes : les minutes du mois.
+  const [usedValue, usedMax] = trial ? [Math.min(credits.trialCallsUsed ?? 0, credits.trialCalls ?? 0), credits.trialCalls ?? 0] : [credits.used, credits.monthlyCredits];
+  const usedPct = usedMax ? Math.min(100, Math.round((usedValue / usedMax) * 100)) : 100;
 
   // Prix affiché : celui de Stripe ; sans Stripe, le prix que l'application créera à l'ouverture du paiement
   // (sauf si un identifiant de prix Stripe est imposé, qu'on ne peut pas lire sans clé).
@@ -246,15 +248,15 @@ export default async function BillingPage({ searchParams }: Props) {
               <span className="text-2xl font-semibold tabular-nums">
                 {trial ? format(b.trialLeft, { n: credits.trialCallsLeft ?? 0 }) : format(b.creditsLeft, { n: credits.remaining })}
               </span>
-              <span className="text-xs text-muted-foreground tabular-nums">{format(b.creditsUsed, { used: credits.used, total: credits.monthlyCredits })}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{format(trial ? b.trialUsed : b.creditsUsed, { used: usedValue, total: usedMax })}</span>
             </div>
             <div
               className="h-2 rounded-full bg-[#e9ebef]"
               role="progressbar"
               aria-valuemin={0}
-              aria-valuemax={credits.monthlyCredits}
-              aria-valuenow={credits.used}
-              aria-label={b.creditsTitle}
+              aria-valuemax={usedMax}
+              aria-valuenow={usedValue}
+              aria-label={trial ? b.trialTitle : b.creditsTitle}
             >
               <div
                 className={cn('h-2 rounded-full', usedPct >= 90 ? 'bg-destructive' : usedPct >= 70 ? 'bg-warning' : 'bg-primary')}

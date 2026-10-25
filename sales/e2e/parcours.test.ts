@@ -669,9 +669,22 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   const freeCard = page.locator('section[aria-labelledby="plans-title"] > div > *').first();
   await assert.doesNotReject(freeCard.getByText('Votre offre').waitFor());
   await shot(page, '13-abonnement');
+  // Entreprise : la demande de devis est enregistrée pour l'éditeur.
+  await page.locator('#quote-company').fill('Plomberie Durand & Fils');
+  await page.locator('#quote-seats').fill('25');
+  await page.locator('#quote-message').fill('Former 25 commerciaux terrain.');
+  await page.getByRole('button', { name: 'Demander un devis' }).click();
+  await assert.doesNotReject(page.getByText('Demande envoyée.', { exact: false }).waitFor());
   // La page des coûts de la plateforme n'existe pas pour un client.
   const admin = await page.goto(`${BASE}/admin`);
   assert.equal(admin?.status(), 404);
+  // En anglais, les mêmes offres en dollars américains.
+  await page.goto(`${BASE}/billing`);
+  await page.getByRole('button', { name: 'en', exact: true }).click();
+  await assert.doesNotReject(page.getByText('$29.99').waitFor());
+  await assert.doesNotReject(page.getByText('$59.99').waitFor());
+  await assert.doesNotReject(page.getByText('Custom quote').waitFor());
+  await shot(page, '13b-abonnement-anglais');
   assert.deepEqual(errors, [], 'aucune erreur JavaScript');
   await context.close();
 });
@@ -841,6 +854,10 @@ test('cockpit de l\'éditeur : chiffres réels de la plateforme, comptes à surv
   const risk = page.locator('section[aria-labelledby="risk-title"]');
   await assert.doesNotReject(risk.getByText('Équipe Tania').waitFor());
   await assert.doesNotReject(risk.getByText('Romain Rapport', { exact: false }).first().waitFor());
+  // Demandes de devis Entreprise envoyées depuis la page Abonnement.
+  const quotes = page.locator('section[aria-labelledby="quotes-title"]');
+  await assert.doesNotReject(quotes.getByText('Plomberie Durand & Fils').waitFor());
+  await assert.doesNotReject(quotes.getByText('Former 25 commerciaux terrain.').waitFor());
   await shot(page, '18-cockpit');
 
   // Période et export.

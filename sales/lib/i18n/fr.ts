@@ -643,6 +643,7 @@ export const fr = {
     switchTo: 'Passer à cette offre',
     trialTitle: 'Essai gratuit',
     trialLeft: '{n} appels d’essai restants',
+    trialUsed: '{used} sur {total} utilisés',
     trialHint: 'L’essai offre {calls} appels de {minutes} minutes au plus, une seule fois. L’appel raccroche tout seul à la limite.',
     paymentMethods: 'Paiement sécurisé par Stripe : carte bancaire, Apple Pay, Google Pay et PayPal.',
     enterprise: {
@@ -843,6 +844,15 @@ export const fr = {
     insightLink: 'Voir les comptes',
     risk: 'Comptes à surveiller',
     riskEmpty: 'Aucun compte actif pour l’instant.',
+    quotes: {
+      title: 'Demandes de devis Entreprise',
+      empty: 'Aucune demande de devis pour l’instant.',
+      company: 'Entreprise',
+      email: 'E-mail',
+      seats: 'Utilisateurs',
+      message: 'Besoin',
+      date: 'Reçue',
+    },
     cols: {
       account: 'Compte',
       health: 'Santé',

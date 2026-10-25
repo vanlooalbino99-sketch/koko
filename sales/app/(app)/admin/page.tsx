@@ -9,6 +9,7 @@ import { card, CardTitle, KpiCard, LiveBadge, ViewAll } from '@/components/cockp
 import { ParticleWave } from '@/components/cockpit/particle-wave';
 import { PeriodMenu } from '@/components/cockpit/period-menu';
 import { platformReport } from '@/lib/billing/admin';
+import { recentQuoteRequests } from '@/lib/billing/quotes';
 import { cockpit, PERIODS, type Period, type RiskFactor } from '@/lib/billing/cockpit';
 import { billingProviderFromEnv } from '@/lib/billing/stripe';
 import { getDb } from '@/lib/server/db';
@@ -59,7 +60,7 @@ export default async function AdminPage({ searchParams }: Props) {
         }),
       ])
     : [null, null];
-  const [c, costs] = await Promise.all([cockpit(db, { days, now, prices, invoices }), platformReport(db, now)]);
+  const [c, costs, quotes] = await Promise.all([cockpit(db, { days, now, prices, invoices }), platformReport(db, now), recentQuoteRequests(db)]);
 
   const tag = locale === 'fr' ? 'fr-FR' : 'en-GB';
   const n = (v: number) => new Intl.NumberFormat(tag).format(v);
@@ -327,6 +328,40 @@ export default async function AdminPage({ searchParams }: Props) {
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section aria-labelledby="quotes-title" className={cn(card, 'bs-rise overflow-x-auto')}>
+        <CardTitle id="quotes-title">{a.quotes.title}</CardTitle>
+        {quotes.length === 0 ? (
+          <p className="mt-3 text-[13px] text-[#9aa1b2]">{a.quotes.empty}</p>
+        ) : (
+          <table className="mt-3 w-full min-w-[720px] text-[12px]">
+            <thead className="text-left text-[10.5px] tracking-[0.04em] text-[#c9cdd8] uppercase">
+              <tr className="border-b border-[#9aa1b2]/70">
+                <th className="px-3 py-2 font-medium">{a.quotes.company}</th>
+                <th className="py-2 font-medium">{a.quotes.email}</th>
+                <th className="py-2 font-medium">{a.quotes.seats}</th>
+                <th className="py-2 font-medium">{a.quotes.message}</th>
+                <th className="py-2 font-medium">{a.quotes.date}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {quotes.map((q) => (
+                <tr key={q.id} className="align-top">
+                  <td className="max-w-[200px] truncate px-3 py-2.5 text-[#eef0f5]">{q.company}</td>
+                  <td className="py-2.5 text-[#d3d7e1]">
+                    <a href={`mailto:${q.email}`} className="underline-offset-2 hover:underline">
+                      {q.email}
+                    </a>
+                  </td>
+                  <td className="py-2.5 text-[#d3d7e1] tabular-nums">{n(q.seats)}</td>
+                  <td className="max-w-[320px] py-2.5 whitespace-pre-line text-[#d3d7e1]">{q.message || a.none}</td>
+                  <td className="py-2.5 text-[#d3d7e1]">{ago(q.createdAt)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}

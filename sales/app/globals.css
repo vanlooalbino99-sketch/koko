@@ -118,6 +118,34 @@
     var(--surface);
 }
 
+/* Pages claires (rapport de session, réglages) : blanc, lavande et violet. Contrastes AA vérifiés sur blanc :
+   muted 6:1, primary 5.6:1, teal 4.9:1, warning 5.3:1, destructive 5:1. */
+.theme-light {
+  --background: #f4f2fa;
+  --surface: #ffffff;
+  --surface-2: #f6f5fb;
+  --foreground: #1d1b2c;
+  --muted-foreground: #5d6074;
+  --primary: #6a47e6;
+  --primary-foreground: #ffffff;
+  --teal: #0a7f5f;
+  --success: #0a7f5f;
+  --warning: #9a5c00;
+  --destructive: #c8304f;
+  --border: #e8e6f0;
+  --input: #d9d6e6;
+  --ring: #7c5cf0;
+  color-scheme: light;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@media print {
+  .theme-light {
+    background: #fff;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

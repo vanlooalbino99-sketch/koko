@@ -188,6 +188,29 @@ export async function analyzeSimulation(db: Db, analyzer: Analyzer, simulationId
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('[analyse] échec', simulationId, message.slice(0, 300));
+    // Une nouvelle analyse demandée qui échoue laisse le rapport précédent en place.
+    if (claimed.result) return finish({ status: 'completed', error: message.slice(0, 500) });
     return finish({ status: 'failed', error: message.slice(0, 500) });
   }
+}
+
+// Nouvelle analyse demandée par le vendeur : possible tant que le plafond de tentatives n'est pas atteint
+// (chaque analyse compte aussi dans le plafond quotidien de la plateforme). L'analyse repart à la visite suivante.
+export async function requestReanalysis(db: Db, simulationId: string): Promise<boolean> {
+  const rows = await db
+    .update(simulationAnalyses)
+    .set({ status: 'failed', error: 'regenerate', updatedAt: new Date() })
+    .where(
+      and(
+        eq(simulationAnalyses.simulationId, simulationId),
+        eq(simulationAnalyses.status, 'completed'),
+        lt(simulationAnalyses.attempts, MAX_ATTEMPTS),
+      ),
+    )
+    .returning({ id: simulationAnalyses.simulationId });
+  return rows.length > 0;
+}
+
+export function canReanalyze(analysis: SimulationAnalysis | null): boolean {
+  return analysis?.status === 'completed' && analysis.attempts < MAX_ATTEMPTS;
 }

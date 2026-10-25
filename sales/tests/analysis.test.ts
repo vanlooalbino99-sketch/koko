@@ -6,7 +6,8 @@ import { strictJsonSchema } from '../lib/analysis/json-schema.ts';
 import { analysisPrompt } from '../lib/analysis/prompt.ts';
 import type { AnalysisResult, ClaudeAnalysis } from '../lib/analysis/schema.ts';
 import { ClaudeAnalysisSchema } from '../lib/analysis/schema.ts';
-import { analyzeSimulation, hasEnoughSpeech } from '../lib/analysis/service.ts';
+import { BENCHMARK_MIN, scenarioBenchmark, tierOf } from '../lib/analysis/benchmark.ts';
+import { analyzeSimulation, canReanalyze, getAnalysis, hasEnoughSpeech, requestReanalysis } from '../lib/analysis/service.ts';
 import type { Db } from '../lib/db/client.ts';
 import { simulations, type TranscriptTurn } from '../lib/db/schema.ts';
 import type { Skill } from '../lib/domain.ts';
@@ -173,4 +174,50 @@ test('sortie structurée : schéma accepté par l\'API (énumérations gardées,
   assert.equal(/"(minimum|maximum|maxItems|minLength|maxLength|\$schema)"/.test(schema), false);
   assert.match(schema, /"enum":\["next_step_won","postponed","lost","unclear"\]/);
   assert.ok(!schema.includes('"additionalProperties":true'));
+});
+
+test('rapport : régénérer relance Claude dans la limite des tentatives, un échec garde le rapport précédent', async () => {
+  const { sim, weights } = await completedSimulation('Bérénice');
+  let fail = false;
+  const { analyzer, calls } = fakeAnalyzer(() => (fail ? new AnalyzerError('panne') : analysisFor(weights)));
+  await analyzeSimulation(db, analyzer, sim.id);
+  assert.ok(canReanalyze(await getAnalysis(db, sim.id)));
+
+  assert.equal(await requestReanalysis(db, sim.id), true);
+  assert.equal((await getAnalysis(db, sim.id))?.status, 'failed', 'le rapport attend la nouvelle analyse');
+  const second = await analyzeSimulation(db, analyzer, sim.id);
+  assert.equal(second?.status, 'completed');
+  assert.equal(second?.attempts, 2);
+  assert.equal(calls.length, 2);
+
+  fail = true;
+  assert.equal(await requestReanalysis(db, sim.id), true);
+  const third = await analyzeSimulation(db, analyzer, sim.id);
+  assert.equal(third?.status, 'completed', 'le rapport précédent reste affiché');
+  assert.ok((third?.result as AnalysisResult).overallScore > 0);
+  assert.equal(canReanalyze(third!), false, 'plafond de trois analyses atteint');
+  assert.equal(await requestReanalysis(db, sim.id), false);
+});
+
+test('rapport : centile et moyennes du scénario seulement à partir de cinq autres appels analysés', async () => {
+  const first = await completedSimulation('Capucine');
+  const { analyzer } = fakeAnalyzer(() => analysisFor(first.weights));
+  const scenarioId = first.playable.scenario.id;
+  const others = async () => (await scenarioBenchmark(db, scenarioId, first.sim.id, 50)).n;
+  while ((await others()) < BENCHMARK_MIN) {
+    const next = await completedSimulation(`Vendeur ${await others()}`);
+    await analyzeSimulation(db, analyzer, next.sim.id);
+  }
+  const low = await scenarioBenchmark(db, scenarioId, first.sim.id, 0);
+  const high = await scenarioBenchmark(db, scenarioId, first.sim.id, 101);
+  assert.equal(low.percentile, 0);
+  assert.equal(high.percentile, 100);
+  const skill = Object.keys(first.weights)[0];
+  assert.equal(typeof high.skillAverages[skill], 'number');
+  // Un autre scénario n'a pas encore d'appels : rien n'est inventé.
+  const empty = await scenarioBenchmark(db, '00000000-0000-0000-0000-000000000000', first.sim.id, 50);
+  assert.deepEqual(empty, { n: 0, percentile: null, skillAverages: {} });
+  assert.equal(tierOf(80), 'excellent');
+  assert.equal(tierOf(79), 'good');
+  assert.equal(tierOf(39), 'poor');
 });

@@ -15,7 +15,7 @@ import type { ClaudeAnalysis } from '../lib/analysis/schema.ts';
 import { getAuthContext, signUp as createAccount } from '../lib/auth/service.ts';
 import { connectPglite } from '../lib/db/client.ts';
 import { eq } from 'drizzle-orm';
-import { billingAccounts, organizations, simulations, type TranscriptTurn } from '../lib/db/schema.ts';
+import { billingAccounts, organizations, simulationAnalyses, simulations, type TranscriptTurn } from '../lib/db/schema.ts';
 import type { Skill } from '../lib/domain.ts';
 import { OnboardingSchema, saveProfile } from '../lib/profile/service.ts';
 import { getPlayableVersion, listScenarios } from '../lib/scenarios/service.ts';
@@ -91,6 +91,41 @@ async function seedCompletedCall() {
     claudeAnswer = JSON.stringify(answer);
     const total = skills.reduce((n, k) => n + weights[k]!, 0);
     report.expectedScore = Math.round(skills.reduce((n, k, i) => n + (35 + i * 9) * weights[k]!, 0) / total);
+    // Séances précédentes du même scénario, déjà analysées : elles alimentent la courbe des scores,
+    // le centile et la moyenne du scénario (calculés par le serveur comme en production).
+    for (const [i, base] of [38, 44, 41, 52, 47].entries()) {
+      const overall = base === report.expectedScore ? base + 1 : base;
+      const day = new Date(Date.now() - (20 - i * 4) * 86_400_000);
+      const [old] = await db
+        .insert(simulations)
+        .values({
+          organizationId: auth.organization.id,
+          userId: auth.user.id,
+          scenarioVersionId: playable.versionId,
+          status: 'completed',
+          endReason: 'user',
+          transcript: TRANSCRIPT,
+          durationSeconds: 30,
+          overallScore: overall,
+          createdAt: day,
+          startedAt: day,
+          endedAt: day,
+        })
+        .returning();
+      await db.insert(simulationAnalyses).values({
+        simulationId: old.id,
+        status: 'completed',
+        attempts: 1,
+        createdAt: day,
+        result: {
+          ...answer,
+          overallScore: overall,
+          skills: answer.skills.map((sk, j) => ({ ...sk, score: Math.min(100, overall - 10 + j * 6), evidence: [] })),
+          recommendedScenarioIds: [],
+          locale: 'fr',
+        },
+      });
+    }
     const [sim] = await db
       .insert(simulations)
       .values({
@@ -479,9 +514,18 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   assert.equal(await overall.getByText(String(report.expectedScore), { exact: true }).count(), 1, 'score global pondéré par le serveur');
   await assert.doesNotReject(page.getByText('Décision repoussée').waitFor());
   await assert.doesNotReject(page.getByRole('img', { name: 'Compétences' }).waitFor());
+  // Courbe et centile calculés sur les cinq séances précédentes, réellement enregistrées.
+  await assert.doesNotReject(page.getByRole('img', { name: 'Score au fil des sessions' }).waitFor());
+  await assert.doesNotReject(page.getByText('des autres appels sur ce scénario', { exact: false }).waitFor());
+  await shot(page, '12-rapport');
+  const tabs = page.getByRole('navigation', { name: 'Sections du rapport' });
   // Seules les citations réellement prononcées par le vendeur sont affichées.
+  await tabs.getByRole('link', { name: 'Compétences' }).click();
+  await page.waitForURL(/tab=skills/);
   await assert.doesNotReject(page.getByText("« Combien d'appels pensez-vous rater par semaine »").waitFor());
   assert.equal(await page.getByText('Citation inventée qui ne figure nulle part').count(), 0);
+  await tabs.getByRole('link', { name: 'Recommandations' }).click();
+  await page.waitForURL(/tab=recommendations/);
   await assert.doesNotReject(page.getByText('« Je vous propose une démo de vingt minutes jeudi »').waitFor());
   assert.equal(await page.getByText('Phrase jamais prononcée par le vendeur').count(), 0);
   // Exercices suivants : d'autres scénarios du catalogue, jamais celui qui vient d'être joué.
@@ -489,7 +533,25 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   assert.ok((await next.count()) > 0, 'au moins un exercice recommandé');
   const hrefs = await next.evaluateAll((links) => links.map((a) => a.getAttribute('href')));
   assert.ok(!hrefs.includes(`/scenarios/${report.scenarioId}`));
-  await shot(page, '12-rapport');
+  await shot(page, '12b-rapport-recommandations');
+  // Élocution : chiffres calculés sur la transcription réelle.
+  await tabs.getByRole('link', { name: 'Élocution' }).click();
+  await page.waitForURL(/tab=speech/);
+  await assert.doesNotReject(page.getByText('Temps de parole').first().waitFor());
+  await tabs.getByRole('link', { name: 'Vue d’ensemble' }).click();
+  await page.waitForURL((url) => !url.search.includes('tab='));
+  // Sur téléphone, le rapport tient dans la largeur de l'écran.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await shot(page, '12c-rapport-mobile');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  const wide = await page.evaluate(() =>
+    [...document.querySelectorAll('body *')]
+      .filter((el) => el.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+      .slice(0, 6)
+      .map((el) => `${el.tagName}.${String(el.className).slice(0, 60)}`),
+  );
+  assert.ok(overflow <= 0, `débordement horizontal de ${overflow}px : ${wide.join(' | ')}`);
+  await page.setViewportSize({ width: 1440, height: 900 });
 
   const claude = mockCalls.filter((c) => c.url.startsWith('/v1/messages'));
   assert.equal(claude.length - before, 1, 'un seul appel à Claude');

@@ -39,6 +39,8 @@
     'html[data-scheme="light"] #bs-orbite-fond.vague{background:linear-gradient(180deg,#f6f8ff,#eef1fb)}',
     'html[data-scheme="light"] #bs-orbite-fond.vague canvas{filter:none;opacity:.7}',
     'html[data-scheme="light"] #bs-orbite-fond.vague::after{background:none}',
+    'html.bs-vague:not([data-scheme="light"]){--aur-glass:color-mix(in srgb,var(--surface) 50%,transparent);--aur-glass-2:color-mix(in srgb,var(--surface) 64%,transparent);--aur-blur:blur(2px) saturate(1.25)}',
+    'html.bs-vague:not([data-scheme="light"]) .topbar{background:linear-gradient(180deg,rgb(var(--bg-rgb)/.45),rgb(var(--bg-rgb)/.2))}',
     'html.bs-orbite #bs-orbite-fond{opacity:1}',
     'html.bs-orbite body{background:transparent}',
     'html.bs-orbite #bs-amb{display:none!important}',
@@ -90,6 +92,7 @@
     if (arret) { try { arret(); } catch (e) { /* déjà arrêté */ } }
     arret = null;
     if (boite) { boite.remove(); boite = null; }
+    H.classList.remove('bs-vague');
     marquer(false);
   }
   // html.bs-orbite : le fond 3D est à l'écran. Ambiance retire alors l'image de la bannière (rien que l'animation).
@@ -116,9 +119,10 @@
     }
     // Rubans : position verticale (part de la hauteur), amplitude, longueur d'onde, début et fin en largeur, épaisseur.
     var RUBANS = [
-      { y: 0.8, amp: 0.07, onde: 1.15, x0: -0.05, x1: 1.05, ep: 0.05, phase: 0, n: 1700 },
-      { y: 0.8, amp: 0.07, onde: 1.15, x0: -0.05, x1: 1.05, ep: 0.045, phase: 2.2, n: 1500 },
-      { y: 0.09, amp: 0.045, onde: 0.9, x0: 0.3, x1: 1.05, ep: 0.035, phase: 1, n: 1300, monte: 0.07 },
+      { y: 0.8, amp: 0.07, onde: 1.15, x0: -0.05, x1: 1.05, ep: 0.05, phase: 0, n: 2300 },
+      { y: 0.8, amp: 0.07, onde: 1.15, x0: -0.05, x1: 1.05, ep: 0.045, phase: 2.2, n: 2000 },
+      { y: 0.09, amp: 0.045, onde: 0.9, x0: 0.3, x1: 1.05, ep: 0.035, phase: 1, n: 1800, monte: 0.07 },
+      { y: 0.98, amp: 0.05, onde: 1.4, x0: -0.05, x1: 1.05, ep: 0.04, phase: 4, n: 2400, monte: 0.8 },
     ];
     var points = [];
     RUBANS.forEach(function (r, i) {
@@ -153,9 +157,11 @@
         var u = (p.u + t * 0.006) % 1, x = (r.x0 + (r.x1 - r.x0) * u) * W;
         var yc = (r.y - (r.monte || 0) * u) * Hh + r.amp * Hh * Math.sin(6.283 * u / r.onde + t * 0.22 + r.phase);
         var y = yc + p.off * r.ep * Hh;
-        ctx.globalAlpha = Math.max(0, 0.9 - Math.abs(p.off) * 0.5) * (0.55 + 0.45 * Math.sin(t * 0.9 + p.sc));
+        ctx.globalAlpha = Math.min(1, Math.max(0, 1 - Math.abs(p.off) * 0.45) * (0.7 + 0.3 * Math.sin(t * 0.9 + p.sc)));
         ctx.fillStyle = p.c;
         ctx.fillRect(x, y, p.t, p.t);
+        // Halo autour des points les plus gros : la vague brille comme sur les maquettes.
+        if (p.t > 2) { ctx.globalAlpha *= 0.22; ctx.fillRect(x - 2, y - 2, p.t + 4, p.t + 4); }
       }
       ctx.globalAlpha = 1;
     }
@@ -170,7 +176,7 @@
     image = requestAnimationFrame(boucle);
     window.addEventListener('resize', taille);
     arret = function () { fini = true; cancelAnimationFrame(image); window.removeEventListener('resize', taille); };
-    marquer(true); surveiller(id);
+    H.classList.add('bs-vague'); marquer(true); surveiller(id);
   }
 
   function demarrer() {

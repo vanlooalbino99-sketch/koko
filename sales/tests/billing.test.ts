@@ -23,6 +23,7 @@ import {
   type WebhookEvent,
 } from '../lib/billing/stripe.ts';
 import { PAID_PLANS, type Currency, type PaidPlan } from '../lib/billing/plans.ts';
+import { syncUnlimited } from '../lib/billing/unlimited.ts';
 import type { Db } from '../lib/db/client.ts';
 import { auditLog, billingAccounts, organizations, simulations } from '../lib/db/schema.ts';
 import { ScenarioInputSchema } from '../lib/scenarios/content.ts';
@@ -236,6 +237,19 @@ test('accès illimité offert : ni essai ni plafond de minutes, droits de Premiu
   // Un espace ordinaire n'en profite pas.
   const other = await newUser(db, 'Inès');
   assert.equal((await creditStatus(db, other.auth.organization)).unlimited, false);
+});
+
+test('accès illimité : recopié depuis la liste des e-mails pour les espaces possédés, retiré quand l’e-mail sort de la liste', async () => {
+  const owner = await newUser(db, 'Jules');
+  const member = await joinOrg(db, owner.auth.organization.id, 'member', 'Katia');
+  const unlimited = async (id: string) => (await db.select({ u: organizations.unlimited }).from(organizations).where(eq(organizations.id, id)))[0].u;
+  // Simple membre de l'espace : sa présence dans la liste n'ouvre rien.
+  await syncUnlimited(db, [member.user.email]);
+  assert.equal(await unlimited(owner.auth.organization.id), false);
+  await syncUnlimited(db, [owner.email.toUpperCase()]);
+  assert.equal(await unlimited(owner.auth.organization.id), true);
+  await syncUnlimited(db, []);
+  assert.equal(await unlimited(owner.auth.organization.id), false);
 });
 
 test('paiement : seuls propriétaire et administrateurs passent en caisse ; une offre solo refuse un espace à plusieurs', async () => {

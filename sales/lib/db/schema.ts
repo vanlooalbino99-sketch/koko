@@ -48,8 +48,8 @@ export const organizations = pgTable(
     kind: text('kind').notNull().default('personal'),
     // Forfait en vigueur, tenu à jour par les webhooks Stripe (lib/billing). free tant qu'aucun abonnement n'est actif.
     plan: text('plan').notNull().default('free'),
-    // Accès sans limite offert par l'éditeur (son propre compte, un partenaire). Réglé à la main en base, jamais par
-    // l'application : aucun écran ne permet de le modifier.
+    // Accès sans limite offert par l'éditeur (son propre compte, un partenaire) : recopié au démarrage depuis
+    // UNLIMITED_EMAILS (lib/billing/unlimited.ts). Aucun écran ne permet de le modifier.
     unlimited: boolean('unlimited').notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

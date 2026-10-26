@@ -92,16 +92,19 @@ test('simulateur : Claude joue le prospect avec la fiche, la conversation et le 
 
 test('simulateur : la note de l’appel arrive en JSON structuré, bornée à 10', async () => {
   demandes.length = 0;
-  const note = { note: 14, verdict: 'Bon appel.', objectif_atteint: true, points_forts: ['Présentation claire'], a_ameliorer: ['a', 'b', 'c'], objections: [{ objection: 'Pas le temps', bien_traitee: true, conseil: 'OK' }], phrase_a_essayer: 'Mardi ou jeudi ?' };
+  const note = { note: 14, verdict: 'Bon appel.', objectif_atteint: true, points_forts: ['Présentation claire'], a_ameliorer: ['a', 'b', 'c'], objections: [{ objection: 'Pas le temps', bien_traitee: true, conseil: 'OK' }], phrase_a_essayer: 'Mardi ou jeudi ?', competences: { ouverture: 140, ecoute: 55.4, questions: -3, valeur: 60, objections: 70, conclusion: 90 } };
   prochaine = { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(note) }] };
   const r = await call(marie, 'POST', '/api/ia/simulation/noter', { fiche: FICHE, duree: 185, messages: [{ de: 'prospect', texte: 'Allô ?' }, { de: 'vendeur', texte: 'Bonjour !' }] });
   assert.equal(r.status, 200);
   const b = await r.json();
   assert.equal(b.note, 10);
   assert.equal(b.objectif_atteint, true);
+  // Six compétences bornées de 0 à 100, pour les barres de l'analyse de performance.
+  assert.deepEqual(b.competences, { ouverture: 100, ecoute: 55, questions: 0, valeur: 60, objections: 70, conclusion: 90 });
   const p = demandes[0];
   assert.equal(p.output_config.format.type, 'json_schema');
   assert.equal(p.output_config.format.schema.additionalProperties, false);
+  assert.deepEqual(p.output_config.format.schema.properties.competences.required, ['ouverture', 'ecoute', 'questions', 'valeur', 'objections', 'conclusion']);
   assert.match(p.messages[0].content, /Vendeur : Bonjour !/);
   assert.match(p.messages[0].content, /3 min/);
 });

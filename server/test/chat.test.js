@@ -130,6 +130,28 @@ test('pièces jointes : envoi, message, lecture réservée aux membres', async (
   fm.close();
 });
 
+test('fichiers d’une conversation et activité de la semaine : membres seulement', async () => {
+  const f = await marie('GET', '/api/chat/conversations/equipe/fichiers');
+  assert.equal(f.status, 200);
+  assert.deepEqual(f.body.fichiers.map((x) => x.name), ['x.html', 'devis Dupont.png'], 'du plus récent au plus ancien');
+  assert.equal(f.body.fichiers[1].author, 'Albino');
+  assert.equal(f.body.fichiers[1].size, 7);
+  const g = (await admin('GET', '/api/chat')).body.conversations.find((c) => c.name === 'Privé');
+  assert.equal((await paul('GET', `/api/chat/conversations/${g.id}/fichiers`)).status, 404);
+  assert.equal((await admin('GET', `/api/chat/conversations/${g.id}/fichiers`)).body.fichiers.length, 1);
+  const a = await paul('GET', '/api/chat/activite');
+  assert.equal(a.status, 200);
+  assert.equal(a.body.jours.length, 7);
+  assert.equal(a.body.jours[6].date, new Date().toISOString().slice(0, 10));
+  // Paul voit l'Équipe (3 messages écrits aujourd'hui) mais pas le groupe privé.
+  assert.equal(a.body.semaine, 3);
+  assert.equal(a.body.jours[6].n, 3);
+  assert.equal(a.body.moi, 0);
+  const b = (await admin('GET', '/api/chat/activite')).body;
+  assert.equal(b.semaine, 4);
+  assert.equal(b.moi, 4);
+});
+
 test('organigramme : postes, responsable, pas de boucle', async () => {
   const st = await marie('GET', '/api/chat');
   assert.ok(st.body.postes.includes('CEO'));

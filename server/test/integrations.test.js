@@ -56,7 +56,7 @@ test('Téléphone et Entraînement suivent les accès choisis par l’administra
 test('les deux rubriques sont branchées dans le CRM (menu, pages, outils)', () => {
   const app = readFileSync(new URL('../../app/core/app.min.js', import.meta.url), 'utf8');
   const html = readFileSync(new URL('../../app/index.html', import.meta.url), 'utf8');
-  for (const bout of ['"visio","entrainement","telephone","mail"', '{id:"telephone",label:"Téléphone",icon:"phoneCall"}', '{id:"entrainement",label:"Entraînement",icon:"target"}',
+  for (const bout of ['"visio","entrainement","telephone","mail"', '{id:"telephone",label:"Téléphone",icon:"phoneCall"}', '{id:"today",label:"Aujourd\'hui",icon:"phone"},{id:"entrainement",label:"Simulations IA",icon:"target"}',
     'window.bsTelephone.monter(bsEl)', 'window.bsEntrainement.monter(bsEl)', 'url:"#/entrainement"', 'url:"#/telephone"']) assert.ok(app.includes(bout), bout);
   assert.match(html, /modules\/bs-telephone\.js/);
   assert.match(html, /modules\/bs-entrainement\.js/);

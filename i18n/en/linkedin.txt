@@ -33,7 +33,7 @@ Hors zone ⇒ Outside the area
 Grande entreprise ⇒ Large company
 Entreprise vérifiée ⇒ Verified company
 À écarter : ⇒ To exclude:
-Claude n'est pas encore branché : un administrateur doit coller la clé Claude dans Équipe › Entraînement. ⇒ Claude isn't connected yet: an administrator must paste the Claude key in Team › Training.
+Claude n'est pas encore branché : un administrateur doit coller la clé Claude dans Simulations IA. ⇒ Claude isn't connected yet: an administrator must paste the Claude key in AI simulations.
 Claude n'a pas pu qualifier ces leads. ⇒ Claude couldn't qualify these leads.
 lead qualifié par Claude ⇒ lead qualified by Claude
 leads qualifiés par Claude ⇒ leads qualified by Claude

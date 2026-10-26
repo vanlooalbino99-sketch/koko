@@ -146,6 +146,7 @@ Messages ⇒ Messages
 Groupes ⇒ Groups
 Visio ⇒ Video call
 Entraînement ⇒ Training
+Simulations IA ⇒ AI simulations
 Analyse ⇒ Analytics
 Tableau de bord ⇒ Dashboard
 Rapports ⇒ Reports

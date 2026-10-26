@@ -156,7 +156,6 @@ Téléphone (Ringover) ⇒ Phone (Ringover)
 Campagnes (séquences de mails) ⇒ Campaigns (email sequences)
 Modèles de messages ⇒ Message templates
 Contenu (publications) ⇒ Content (posts)
-Entraînement (Pitchbase) ⇒ Training (Pitchbase)
 Marché (potentiel, nouvelles entreprises, concurrence) ⇒ Market (potential, new companies, competitors)
 Autres ⇒ Others
 Données (sauvegarde, restauration) ⇒ Data (backup, restore)

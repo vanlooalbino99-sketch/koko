@@ -146,7 +146,7 @@
       .then(function (b) { l.push({ de: 'ia', texte: b.texte || '…', at: Date.now(), actions: Array.isArray(b.actions) ? b.actions : [], refs: ctx.refs }); })
       .catch(function (e) {
         var t = e.code === 'SANS_CLE'
-          ? (USER && USER.role === 'admin' ? 'Claude n’est pas encore branché. Collez votre clé Claude dans Entraînement (réglage « Claude »), puis reposez votre question.' : 'Claude n’est pas encore branché : demandez à un administrateur de coller la clé Claude dans Entraînement.')
+          ? (USER && USER.role === 'admin' ? 'Claude n’est pas encore branché. Collez votre clé Claude dans Simulations IA (lien « Clé Claude »), puis reposez votre question.' : 'Claude n’est pas encore branché : demandez à un administrateur de coller la clé Claude dans Simulations IA.')
           : e.message;
         l.push({ de: 'ia', texte: t, at: Date.now(), info: true });
       })
@@ -404,8 +404,8 @@
           (estAdmin ? '<div class="bsasp-acces"><span>' + ic('users', 14) + esc(compteAcces(a)) + '</span><button type="button" data-acces="' + esc(a.id) + '">Gérer l’accès</button></div>' : '') +
           '</article>';
       }).join('');
-    var bandeau = S.ia === false && CONF ? '<div class="bsasp-bandeau">' + ic('info', 16) + '<span>' + (estAdmin ? 'Pour que les assistants répondent, collez une fois votre clé Claude dans Entraînement (réglage « Claude »).' : 'Les assistants répondront dès qu’un administrateur aura branché Claude.') + '</span>' +
-      (estAdmin ? '<a href="#/entrainement">Ouvrir Entraînement</a>' : '') + '</div>' : '';
+    var bandeau = S.ia === false && CONF ? '<div class="bsasp-bandeau">' + ic('info', 16) + '<span>' + (estAdmin ? 'Pour que les assistants répondent, collez une fois votre clé Claude dans Simulations IA.' : 'Les assistants répondront dès qu’un administrateur aura branché Claude.') + '</span>' +
+      (estAdmin ? '<a href="#/entrainement">Ouvrir Simulations IA</a>' : '') + '</div>' : '';
     var garde = el.querySelector('[data-z=chat]');
     if (!garde) {
       el.innerHTML = '<div class="bsasp"><header class="bsasp-tete"><h1>Assistants IA</h1><p>Votre équipe IA : chacun a son rôle et 6 compétences métier, avec la méthode d’un expert. Posez une question ou lancez une compétence ; les actions proposées s’appliquent quand vous cliquez sur « Appliquer ».</p></header>' +
@@ -484,7 +484,7 @@
     });
     document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && P.acces && P.racine && P.racine.isConnected) { P.acces = null; dessinerPage(); } });
     abonnes.push(dessinerPage);
-    // La page relit la liste : une clé Claude collée entre-temps dans Entraînement est prise en compte.
+    // La page relit la liste : une clé Claude collée entre-temps dans Simulations IA est prise en compte.
     dessinerPage(); charger(true);
   }
 

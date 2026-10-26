@@ -17,7 +17,7 @@
   // Même liste que server/src/acces.js (ACCES), dans le même ordre.
   var RUBRIQUES = [
     { groupe: 'Prospection', items: [
-      { id: 'today', label: 'Aujourd’hui' }, { id: 'agenda', label: 'Agenda' }, { id: 'prospects', label: 'Prospects' },
+      { id: 'today', label: 'Aujourd’hui' }, { id: 'entrainement', label: 'Simulations IA' }, { id: 'agenda', label: 'Agenda' }, { id: 'prospects', label: 'Prospects' },
       { id: 'leads', label: 'Nouveaux leads', serveur: true }, { id: 'pipeline', label: 'Pipeline' }, { id: 'tasks', label: 'Tâches' }] },
     { groupe: 'Ventes', items: [
       { id: 'telephone', label: 'Téléphone (Ringover)' }, { id: 'mail', label: 'Mail', serveur: true }, { id: 'devis', label: 'Devis & factures' }, { id: 'clients', label: 'Clients' }, { id: 'payments', label: 'Paiements' }] },
@@ -26,7 +26,7 @@
     { groupe: 'Automatisation', items: [
       { id: 'assistants', label: 'Assistants IA', serveur: true }, { id: 'automatisations', label: 'Automatisations' }] },
     { groupe: 'Équipe', items: [
-      { id: 'messages', label: 'Messages', serveur: true }, { id: 'groupes', label: 'Groupes', serveur: true }, { id: 'visio', label: 'Visio', serveur: true }, { id: 'entrainement', label: 'Entraînement (Pitchbase)' }] },
+      { id: 'messages', label: 'Messages', serveur: true }, { id: 'groupes', label: 'Groupes', serveur: true }, { id: 'visio', label: 'Visio', serveur: true }] },
     { groupe: 'Analyse', items: [
       { id: 'dashboard', label: 'Tableau de bord' }, { id: 'reports', label: 'Rapports' }, { id: 'carte', label: 'Carte clients' }, { id: 'marche', label: 'Marché (potentiel, nouvelles entreprises, concurrence)' }] },
     { groupe: 'Autres', items: [

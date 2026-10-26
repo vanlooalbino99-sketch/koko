@@ -48,7 +48,7 @@
     { id: 'messages', label: 'Messages', def: 'message-circle' },
     { id: 'groupes', label: 'Groupes', def: 'users' },
     { id: 'visio', label: 'Visio', def: 'video' },
-    { id: 'entrainement', label: 'Entraînement', def: 'target' },
+    { id: 'entrainement', label: 'Simulations IA', def: 'target' },
     { group: 'Analyse' },
     { id: 'dashboard', label: 'Tableau de bord', def: 'dashboard' },
     { id: 'reports', label: 'Rapports', def: 'lineChart' },

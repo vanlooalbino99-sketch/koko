@@ -775,7 +775,7 @@
         });
       });
     }, Promise.resolve()).catch(function (e) {
-      IA.msg = e && e.code === 'SANS_CLE' ? 'Claude n’est pas encore branché : un administrateur doit coller la clé Claude dans Équipe › Entraînement.' : (e && e.message) || 'Claude n’a pas pu qualifier ces leads.';
+      IA.msg = e && e.code === 'SANS_CLE' ? 'Claude n’est pas encore branché : un administrateur doit coller la clé Claude dans Simulations IA.' : (e && e.message) || 'Claude n’a pas pu qualifier ces leads.';
     }).then(function () { IA.enCours = false; if (fait && !IA.msg) toast(pluriel(fait, 'lead qualifié par Claude', 'leads qualifiés par Claude')); redessiner(); });
   }
 

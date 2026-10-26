@@ -34,7 +34,11 @@ Règles :
 const COACH = `Tu es un coach commercial exigeant mais bienveillant. Tu notes un appel de prospection B2B en français qui vient d'être fait en simulation face à un prospect joué par une IA.
 Juge le vendeur seulement (pas le prospect) : accroche et présentation, découverte (questions sur le besoin), écoute et reformulation, traitement de chaque objection, clarté de la proposition, demande d'engagement (rendez-vous avec date et heure), ton et longueur des répliques.
 Note sur 10 : 5 = correct sans plus, 7 = bon, 9 ou 10 = excellent et objectif atteint proprement. Un appel très court ou abandonné ne dépasse pas 3.
+Donne aussi un score de 0 à 100 pour six compétences : ouverture (accroche, présentation), écoute active (reformule, rebondit), questions (découverte du besoin), proposition de valeur (bénéfices concrets pour ce prospect), objections (chacune traitée), conclusion (demande d'engagement claire).
 Écris en français, en vouvoyant le vendeur, avec des phrases courtes et concrètes, en citant ses mots quand c'est utile.`;
+
+// Les six barres de l'analyse de performance (page Simulations IA).
+const COMPETENCES = ['ouverture', 'ecoute', 'questions', 'valeur', 'objections', 'conclusion'];
 
 const NOTE = {
   type: 'object',
@@ -49,8 +53,13 @@ const NOTE = {
       items: { type: 'object', properties: { objection: { type: 'string' }, bien_traitee: { type: 'boolean' }, conseil: { type: 'string' } }, required: ['objection', 'bien_traitee', 'conseil'], additionalProperties: false },
     },
     phrase_a_essayer: { type: 'string', description: 'Une phrase que le vendeur peut dire au prochain appel' },
+    competences: {
+      type: 'object', description: 'Score de 0 à 100 par compétence',
+      properties: Object.fromEntries(COMPETENCES.map((k) => [k, { type: 'integer' }])),
+      required: COMPETENCES, additionalProperties: false,
+    },
   },
-  required: ['note', 'verdict', 'objectif_atteint', 'points_forts', 'a_ameliorer', 'objections', 'phrase_a_essayer'],
+  required: ['note', 'verdict', 'objectif_atteint', 'points_forts', 'a_ameliorer', 'objections', 'phrase_a_essayer', 'competences'],
   additionalProperties: false,
 };
 
@@ -218,6 +227,8 @@ export function iaRoutes({ db, dataDir, creer = (apiKey) => new Anthropic({ apiK
       let n;
       try { n = JSON.parse(textes(rep)); } catch { return res.status(502).json({ error: 'La note de Claude est illisible : réessayez.' }); }
       n.note = Math.max(0, Math.min(10, Math.round(Number(n.note) || 0)));
+      const comp = n.competences && typeof n.competences === 'object' ? n.competences : {};
+      n.competences = Object.fromEntries(COMPETENCES.map((k) => [k, Math.max(0, Math.min(100, Math.round(Number(comp[k]) || 0)))]));
       res.json(n);
     } catch (e) { echec(res, e); }
   });

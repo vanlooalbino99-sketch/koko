@@ -1,8 +1,8 @@
 # Assistants IA (bs-assistants), carte (bs-carte), présentation (bs-anim), ambiance (bs-ambiance, bs-galerie, bs-orbite).
 Le serveur ne répond pas : réessayez. ⇒ The server isn't responding: try again.
 L'assistant IA fonctionne avec la version en ligne du CRM (connexion de l'équipe). ⇒ The AI assistant works with the online version of the CRM (team login).
-Claude n'est pas encore branché. Collez votre clé Claude dans Entraînement (réglage « Claude »), puis reposez votre question. ⇒ Claude isn't connected yet. Paste your Claude key in Training ("Claude" setting), then ask your question again.
-Claude n'est pas encore branché : demandez à un administrateur de coller la clé Claude dans Entraînement. ⇒ Claude isn't connected yet: ask an administrator to paste the Claude key in Training.
+Claude n'est pas encore branché. Collez votre clé Claude dans Simulations IA (lien « Clé Claude »), puis reposez votre question. ⇒ Claude isn't connected yet. Paste your Claude key in AI simulations ("Claude key" link), then ask your question again.
+Claude n'est pas encore branché : demandez à un administrateur de coller la clé Claude dans Simulations IA. ⇒ Claude isn't connected yet: ask an administrator to paste the Claude key in AI simulations.
 script d'appel ⇒ call script
 sans titre ⇒ untitled
 Date à choisir ⇒ Date to choose
@@ -45,9 +45,9 @@ Administrateurs + ⇒ Administrators +
 Administrateurs seulement ⇒ Administrators only
 Les assistants IA fonctionnent avec la version en ligne du CRM. ⇒ AI assistants work with the online version of the CRM.
 Gérer l'accès ⇒ Manage access
-Pour que les assistants répondent, collez une fois votre clé Claude dans Entraînement (réglage « Claude »). ⇒ For the assistants to answer, paste your Claude key once in Training ("Claude" setting).
+Pour que les assistants répondent, collez une fois votre clé Claude dans Simulations IA. ⇒ For the assistants to answer, paste your Claude key once in AI simulations.
 Les assistants répondront dès qu'un administrateur aura branché Claude. ⇒ The assistants will answer as soon as an administrator connects Claude.
-Ouvrir Entraînement ⇒ Open Training
+Ouvrir Simulations IA ⇒ Open AI simulations
 Chargement de l'équipe… ⇒ Loading the team…
 Chaque membre, y compris les futurs, a accès à cet assistant. ⇒ Every member, including future ones, has access to this assistant.
 Administrateur : toujours accès ⇒ Administrator: always has access

@@ -20,6 +20,7 @@
     pret: false, err: '', me: null, users: [], online: [], convs: {}, msgs: {}, more: {}, chargement: {},
     actif: null, root: null, mobileListe: true, filtre: '', brouillons: {}, modal: null,
     mode: 'messages', dernier: {}, ecrit: {}, ecritEnvoi: 0, envois: {}, emojis: false, reagir: null, reagirTout: false, postes: [], // rubrique affichée (messages, groupes, visio) et dernière conversation ouverte dans chacune
+    vue: 'tout', onglet: 'conversation', fichiers: {}, activite: null, // filtre de la liste, onglet du fil, fichiers partagés par conversation, activité de la semaine
   };
   var es = null;
 
@@ -174,6 +175,7 @@
   function retirerMessage(cid, id) {
     var arr = S.msgs[cid];
     if (arr) for (var i = arr.length - 1; i >= 0; i--) if (arr[i].id === id) arr.splice(i, 1);
+    delete S.fichiers[cid];
     rendre();
   }
   function heure(iso) { var d = new Date(iso); return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
@@ -339,11 +341,23 @@
   function visible() { return S.root && document.body.contains(S.root) && !document.hidden; }
 
   // ------------------------------------------------------------------ données et temps réel
+  function chargerFichiers(cid) {
+    if (S.fichiers[cid] !== undefined) return;
+    S.fichiers[cid] = 'charge';
+    api('GET', '/conversations/' + encodeURIComponent(cid) + '/fichiers').then(function (b) { S.fichiers[cid] = b.fichiers; rendre(); })
+      .catch(function () { S.fichiers[cid] = []; rendre(); });
+  }
+  var activiteT = null;
+  function chargerActivite(delai) {
+    clearTimeout(activiteT);
+    activiteT = setTimeout(function () { api('GET', '/activite').then(function (b) { S.activite = b; rendre(); }).catch(function () { /* l'encart reste caché */ }); }, delai || 0);
+  }
   function charger() {
     return api('GET', '').then(function (b) {
       S.me = b.me; S.users = b.users; S.online = b.online; S.convs = {}; S.postes = b.postes || [];
       b.conversations.forEach(function (c) { S.convs[c.id] = c; });
       S.pret = true; S.err = '';
+      chargerActivite();
       choisirActif();
       majBadge(); rendre();
       if (visible() && S.actif) ouvrir(S.actif, true);
@@ -420,6 +434,8 @@
     var arr = S.msgs[m.conversationId];
     if (arr && !arr.some(function (x) { return x.id === m.id; })) arr.push(m);
     c.last = m;
+    if (m.file) delete S.fichiers[m.conversationId];
+    if (m.kind === 'texte') chargerActivite(4000);
     var lu = S.mode !== 'visio' && S.actif === m.conversationId && visible();
     if (m.userId === S.me) c.unread = 0;
     else if (lu) marquerLu(c);
@@ -827,7 +843,7 @@
       return;
     }
     var c = S.convs[S.actif];
-    root.innerHTML = '<div class="bsm-shell card' + (S.mobileListe ? ' liste' : ' fil') + '">' + rendreListe() + (c ? rendreFil(c) : rendreAucun()) + '</div>' + (S.modal ? rendreModal() : '');
+    root.innerHTML = '<div class="bsm-shell' + (S.mobileListe ? ' liste' : ' fil') + (c ? ' det' : '') + '">' + rendreListe() + (c ? rendreFil(c) + rendreDetails(c) : rendreAucun()) + '</div>' + (S.modal ? rendreModal() : '');
 
     var nb = root.querySelector('.bsm-scroll');
     if (nb) nb.scrollTop = (enBas || etaitEnBas) ? nb.scrollHeight : garde;
@@ -840,8 +856,13 @@
   }
   function rendreListe() {
     var q = S.filtre.toLowerCase();
-    var items = liste().filter(function (c) { return modeDe(c) === S.mode && (!q || titre(c).toLowerCase().indexOf(q) >= 0); });
-    var grp = S.mode === 'groupes';
+    var tous = liste().filter(function (c) { return modeDe(c) === S.mode && (!q || titre(c).toLowerCase().indexOf(q) >= 0); });
+    var grp = S.mode === 'groupes', vue = grp ? 'tout' : S.vue;
+    var VUES = { tout: function () { return true; }, nonlus: function (c) { return c.unread > 0; }, directs: function (c) { return c.kind === 'direct'; }, groupes: function (c) { return c.kind !== 'direct'; } };
+    var items = tous.filter(VUES[vue] || VUES.tout);
+    var puces = grp ? '' : '<div class="bsm-vues" role="group" aria-label="Afficher">' + [['tout', 'Tout', tous.length], ['nonlus', 'Non lus', tous.filter(VUES.nonlus).length], ['directs', 'Directs', 0], ['groupes', 'Groupes', 0]].map(function (v) {
+      return '<button type="button" class="bsm-vue' + (vue === v[0] ? ' on' : '') + '" data-vue="' + v[0] + '" aria-pressed="' + (vue === v[0]) + '">' + v[1] + (v[2] ? '<i>' + v[2] + '</i>' : '') + '</button>';
+    }).join('') + '</div>';
     var ligne = function (c) {
       var l = c.last, apercu = l ? (l.kind === 'texte' ? (l.userId === S.me ? 'Vous : ' : (c.kind === 'direct' ? '' : l.author.split(' ')[0] + ' : ')) + resume(l) : l.body) : (c.kind === 'direct' ? 'Démarrez la conversation' : 'Aucun message');
       var live = c.call && c.call.length;
@@ -852,14 +873,14 @@
     var sec = function (titreSec, arr) { return arr.length ? '<div class="bsm-sec">' + titreSec + '</div>' + arr.map(ligne).join('') : ''; };
     var eq = items.filter(function (c) { return c.kind === 'equipe'; }), gr = items.filter(function (c) { return c.kind === 'groupe'; }), di = items.filter(function (c) { return c.kind === 'direct'; });
     var enLigne = S.users.filter(function (u) { return u.id !== S.me && S.online.indexOf(u.id) >= 0; });
-    return '<aside class="bsm-side"><div class="bsm-side-head"><div><h1 class="page-title">' + (grp ? 'Groupes' : 'Messages') + '</h1><p class="page-sub">' + (grp ? gr.length + ' groupe' + (gr.length > 1 ? 's' : '') : enLigne.length ? enLigne.length + ' en ligne' : 'Personne en ligne') + '</p></div>' +
+    return '<aside class="bsm-side card"><div class="bsm-side-head"><div><h1 class="page-title">' + (grp ? 'Groupes' : 'Messages') + '</h1><p class="page-sub">' + (grp ? gr.length + ' groupe' + (gr.length > 1 ? 's' : '') : enLigne.length ? enLigne.length + ' en ligne' : 'Personne en ligne') + '</p></div>' +
       '<div class="bsm-side-act">' + (grp ? '<button type="button" class="btn btn-primary btn-sm" data-act="groupe">' + ic('plus', 14) + 'Nouveau groupe</button>'
         : '<button type="button" class="btn btn-primary btn-sm" data-act="direct">' + ic('plus', 14) + 'Nouveau message</button>') +
         '<button type="button" class="icon-btn" data-act="organigramme" title="Organigramme de l’équipe" aria-label="Organigramme de l’équipe">' + ic('organi', 18) + '</button></div></div>' +
-      '<label class="bsm-search">' + ic('search', 15) + '<input name="bsm-filtre" placeholder="' + (grp ? 'Rechercher un groupe' : 'Rechercher une conversation') + '" value="' + esc(S.filtre) + '" autocomplete="off"></label>' +
+      puces + '<label class="bsm-search">' + ic('search', 15) + '<input name="bsm-filtre" placeholder="' + (grp ? 'Rechercher un groupe' : 'Rechercher une conversation') + '" value="' + esc(S.filtre) + '" autocomplete="off"></label>' +
       (enLigne.length && !grp ? '<div class="bsm-online">' + enLigne.map(function (u) { return '<button type="button" data-dm="' + esc(u.id) + '" title="Écrire à ' + esc(u.name) + (u.poste ? ' (' + esc(u.poste) + ')' : '') + '">' + avatar(u.id, u.name) + '<span>' + esc(u.name.split(' ')[0]) + '</span></button>'; }).join('') + '</div>' : '') +
       '<nav class="bsm-convs">' + sec('Équipe', eq) + sec(grp ? 'Vos groupes' : 'Groupes', gr) + sec('Messages directs', di) +
-      (items.length ? '' : '<p class="bsm-rien">' + (q ? 'Aucun résultat.' : grp ? 'Aucun groupe pour l’instant.' : 'Aucune conversation.') + '</p>') + '</nav></aside>';
+      (items.length ? '' : '<p class="bsm-rien">' + (q ? 'Aucun résultat.' : vue === 'nonlus' ? 'Tout est lu.' : grp ? 'Aucun groupe pour l’instant.' : 'Aucune conversation.') + '</p>') + '</nav>' + rendreActivite() + '</aside>';
   }
   function rendreFil(c) {
     var arr = S.msgs[c.id];
@@ -871,7 +892,7 @@
       '<div class="bsm-stack">' + membres.slice(0, 5).map(function (id) { return avatar(id, nomDe(id), 'xs'); }).join('') + (membres.length > 5 ? '<span class="bsm-av xs plus">+' + (membres.length - 5) + '</span>' : '') + '</div>' +
       (dedans ? '<button type="button" class="btn btn-secondary btn-md" data-act="agrandir">' + ic('video', 16) + '<span class="btn-label">Retour à la visio</span></button>'
         : '<button type="button" class="btn ' + (live ? 'btn-success' : 'btn-primary') + ' btn-md bsm-visio" data-act="visio">' + ic('video', 16) + '<span class="btn-label">' + (live ? 'Rejoindre la visio (' + c.call.length + ')' : 'Visio') + '</span></button>') +
-      (c.kind === 'groupe' ? '<button type="button" class="icon-btn" data-act="reglages" title="Réglages du groupe" aria-label="Réglages du groupe">' + ic('settings', 18) + '</button>' : '') + '</header>';
+      (c.kind === 'groupe' ? '<button type="button" class="icon-btn" data-act="reglages" title="Réglages du groupe" aria-label="Réglages du groupe">' + ic('settings', 18) + '</button>' : '') + '</header>' + onglets(c);
     var corps;
     if (!arr) corps = '<div class="bsm-vide"><span class="bsm-spin"></span></div>';
     else if (!arr.length) corps = '<div class="bsm-vide bsm-debut">' + convIcon(c) + '<h2>' + esc(titre(c)) + '</h2><p>' + (c.kind === 'direct' ? 'Début de votre conversation avec ' + esc(titre(c)) + '.' : 'Écrivez le premier message, ou lancez une visio pour une réunion.') + '</p></div>';
@@ -908,10 +929,76 @@
       }).join('') + '</div>' : '') +
       '<textarea class="bsm-input" rows="1" maxlength="4000" placeholder="Écrire à ' + esc(titre(c)) + '…" aria-label="Message"></textarea>' +
       '<button type="submit" class="bsm-send" aria-label="Envoyer">' + ic('send', 18) + '</button></form><p class="bsm-hint">Entrée pour envoyer · Maj + Entrée pour aller à la ligne · glissez un fichier ou collez une image pour l’envoyer</p>';
-    return '<section class="bsm-main">' + head + '<div class="bsm-scroll" role="log" aria-live="polite">' + corps + '</div>' + foot + '</section>';
+    if (S.onglet === 'fichiers') return '<section class="bsm-main card">' + head + '<div class="bsm-scroll bsm-fics">' + listeFichiers(c) + '</div>' + chiffres() + '</section>';
+    return '<section class="bsm-main card">' + head + '<div class="bsm-scroll" role="log" aria-live="polite">' + corps + '</div>' + foot + chiffres() + '</section>';
+  }
+  function onglets(c) {
+    var f = S.fichiers[c.id];
+    if (f === undefined) chargerFichiers(c.id);
+    return '<div class="bsm-onglets" role="tablist">' + [['conversation', 'Conversation'], ['fichiers', 'Fichiers' + (Array.isArray(f) && f.length ? ' (' + f.length + ')' : '')]].map(function (o) {
+      return '<button type="button" role="tab" data-onglet="' + o[0] + '" class="' + (S.onglet === o[0] ? 'on' : '') + '" aria-selected="' + (S.onglet === o[0]) + '">' + o[1] + '</button>';
+    }).join('') + '</div>';
+  }
+  function ficIcone(f) { var g = genre(f.mime); return ic(g === 'image' ? 'image' : g === 'video' ? 'video' : g === 'audio' ? 'note' : 'doc', 18); }
+  function ligneFichier(f) {
+    var url = API + '/fichiers/' + encodeURIComponent(f.id), g = genre(f.mime);
+    return '<a class="bsm-fic" href="' + url + (g === 'autre' ? '?telecharger' : '') + '" data-voir="' + esc(f.id) + '" target="_blank" rel="noopener"><span class="bsm-fic-ic g-' + g + '">' + ficIcone(f) + '</span>' +
+      '<span class="bsm-fic-t"><b>' + esc(f.name) + '</b><small>' + esc(taillef(f.size) + ' · ' + f.author + ' · ' + quand(f.at)) + '</small></span>' + ic(g === 'autre' ? 'telecharger' : 'maximize', 15) + '</a>';
+  }
+  function listeFichiers(c) {
+    var f = S.fichiers[c.id];
+    if (!Array.isArray(f)) return '<div class="bsm-vide"><span class="bsm-spin"></span></div>';
+    if (!f.length) return '<div class="bsm-vide bsm-debut">' + ic('doc', 26) + '<h2>Aucun fichier</h2><p>Les fichiers envoyés dans cette conversation s’afficheront ici.</p></div>';
+    return f.map(ligneFichier).join('');
+  }
+  // Chiffres réels sous le fil : messages de la semaine (serveur) et rendez-vous / leads du CRM.
+  function chiffres() {
+    var a = S.activite, ps = ((window.__bsStore && window.__bsStore.get && window.__bsStore.get()) || {}).prospects || [];
+    var n = function (st) { return ps.filter(function (p) { return p.statut === st; }).length; };
+    var evo = a && a.avant ? Math.round((a.semaine - a.avant) / a.avant * 100) : null;
+    var cases = [['Messages (7 jours)', a ? a.semaine : '–', evo === null ? '' : (evo >= 0 ? '+' : '') + evo + ' %'], ['Vos messages', a ? a.moi : '–', ''],
+      ['Rendez-vous pris', n('rdv_pris'), ''], ['Leads à appeler', n('a_appeler'), '']];
+    return '<div class="bsm-chiffres">' + cases.map(function (x) { return '<div><small>' + x[0] + '</small><b>' + x[1] + (x[2] ? '<em class="' + (x[2].charAt(0) === '-' ? 'bas' : '') + '">' + x[2] + '</em>' : '') + '</b></div>'; }).join('') + '</div>';
+  }
+  function rendreActivite() {
+    var a = S.activite;
+    if (!a || !a.jours || a.jours.length < 2) return '';
+    var max = Math.max.apply(null, a.jours.map(function (j) { return j.n; }).concat([1]));
+    var pts = a.jours.map(function (j, k) { return [Math.round(k * 200 / (a.jours.length - 1)), Math.round(44 - j.n / max * 38)]; });
+    var ligne = pts.map(function (p) { return p.join(','); }).join(' ');
+    var evo = a.avant ? Math.round((a.semaine - a.avant) / a.avant * 100) : null;
+    return '<div class="bsm-act"><div class="bsm-act-t"><b>Activité de l’équipe</b><small>' + a.semaine + ' message' + (a.semaine > 1 ? 's' : '') + ' en 7 jours</small></div>' +
+      (evo !== null ? '<em class="' + (evo < 0 ? 'bas' : '') + '">' + (evo >= 0 ? '+' : '') + evo + ' %<small>vs semaine dernière</small></em>' : '') +
+      '<svg viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="bsm-act-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>' +
+      '<polygon points="0,48 ' + ligne + ' 200,48" fill="url(#bsm-act-g)"/><polyline points="' + ligne + '" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg></div>';
+  }
+  // Colonne de droite : la personne (message direct) ou les membres (Équipe, groupe), puis les fichiers partagés.
+  function rendreDetails(c) {
+    var h = '<aside class="bsm-det card" aria-label="Détails de la conversation">';
+    if (c.kind === 'direct') {
+      var o = autre(c), u = user(o), on = S.online.indexOf(o) >= 0, chef = u && u.managerId && u.managerId !== o ? nomDe(u.managerId) : '';
+      h += '<div class="bsm-det-pp">' + avatar(o, nomDe(o), 'xl') + '<b>' + esc(nomDe(o)) + '</b><span>' + esc(posteDe(o) || (u && u.role === 'admin' ? 'Administrateur' : 'Membre de l’équipe')) + '</span>' +
+        '<em class="' + (on ? 'on' : '') + '">' + (on ? 'En ligne' : 'Hors ligne') + '</em></div>' +
+        '<div class="bsm-det-act"><button type="button" class="btn btn-primary btn-sm" data-act="visio">' + ic('video', 15) + 'Visio</button><button type="button" class="btn btn-secondary btn-sm" data-act="organigramme">' + ic('organi', 15) + 'Organigramme</button></div>' +
+        (chef ? '<dl class="bsm-det-dl"><dt>Responsable</dt><dd>' + esc(chef) + '</dd></dl>' : '');
+    } else {
+      var membres = c.kind === 'equipe' ? S.users.map(function (x) { return x.id; }) : (c.members || []);
+      var tri = membres.slice().sort(function (a, b) { return (S.online.indexOf(b) >= 0) - (S.online.indexOf(a) >= 0) || nomDe(a).localeCompare(nomDe(b)); });
+      var nb = membres.filter(function (id) { return S.online.indexOf(id) >= 0; }).length;
+      h += '<div class="bsm-det-pp">' + convIcon(c) + '<b>' + esc(titre(c)) + '</b><span>' + (c.kind === 'equipe' ? 'Canal de toute l’équipe' : 'Groupe') + ' · ' + membres.length + ' membre' + (membres.length > 1 ? 's' : '') + '</span></div>' +
+        '<h4>Membres<small>' + nb + ' en ligne</small></h4><div class="bsm-det-membres">' + tri.slice(0, 12).map(function (id) {
+          var moi = id === S.me;
+          return '<button type="button"' + (moi ? ' disabled' : ' data-dm="' + esc(id) + '" title="Écrire à ' + esc(nomDe(id)) + '"') + '>' + avatar(id, nomDe(id)) + '<span><b>' + esc(nomDe(id)) + (moi ? ' (vous)' : '') + '</b><small>' + esc(posteDe(id)) + '</small></span></button>';
+        }).join('') + '</div>' + (tri.length > 12 ? '<p class="bsm-det-vide">Et ' + (tri.length - 12) + ' autres membres.</p>' : '') +
+        (c.kind === 'groupe' ? '<div class="bsm-det-act"><button type="button" class="btn btn-secondary btn-sm" data-act="reglages">' + ic('settings', 15) + 'Réglages du groupe</button></div>' : '');
+    }
+    var f = S.fichiers[c.id];
+    h += '<h4>Fichiers partagés' + (Array.isArray(f) && f.length > 4 ? '<button type="button" class="bsm-lien" data-onglet="fichiers">Voir tout</button>' : '') + '</h4>' +
+      (!Array.isArray(f) ? '<p class="bsm-det-vide">Chargement…</p>' : f.length ? '<div class="bsm-det-fics">' + f.slice(0, 4).map(ligneFichier).join('') + '</div>' : '<p class="bsm-det-vide">Aucun fichier dans cette conversation.</p>');
+    return h + '</aside>';
   }
   function rendreAucun() {
-    return '<section class="bsm-main"><div class="bsm-vide bsm-debut"><span class="bsm-av bsm-av-grp" style="--h:250">' + ic('users', 26) + '</span><h2>Créez votre premier groupe</h2>' +
+    return '<section class="bsm-main card"><div class="bsm-vide bsm-debut"><span class="bsm-av bsm-av-grp" style="--h:250">' + ic('users', 26) + '</span><h2>Créez votre premier groupe</h2>' +
       '<p>Un espace pour une partie de l’équipe : les commerciaux, un client, un projet. Messages et visio réservés à ses membres.</p>' +
       '<button type="button" class="btn btn-primary btn-md" data-act="groupe">' + ic('plus', 16) + 'Nouveau groupe</button></div></section>';
   }
@@ -1116,7 +1203,9 @@
         S.brouillons[S.actif] = ta.value; taille(ta);
         return;
       }
-      if ((id = b.getAttribute('data-conv'))) { S.mobileListe = false; S.emojis = false; ouvrir(id); return; }
+      if ((id = b.getAttribute('data-vue'))) { S.vue = id; rendre(); return; }
+      if ((id = b.getAttribute('data-onglet'))) { S.onglet = id; S.emojis = false; rendre(id === 'conversation'); return; }
+      if ((id = b.getAttribute('data-conv'))) { S.mobileListe = false; S.emojis = false; S.onglet = 'conversation'; ouvrir(id); return; }
       if ((id = b.getAttribute('data-dm'))) {
         S.modal = null;
         api('POST', '/directs', { userId: id }).then(function (r) { S.convs[r.conversation.id] = r.conversation; aller(r.conversation.id); })
@@ -1489,7 +1578,42 @@
   // ------------------------------------------------------------------ styles
   var CSS = [
     '.bsm-root{min-width:0}',
-    '.bsm-shell{display:grid;grid-template-columns:320px minmax(0,1fr);height:calc(100dvh - var(--topbar-h,60px) - 56px);min-height:460px;padding:0!important;overflow:hidden}',
+    '.bsm-shell{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;height:calc(100dvh - var(--topbar-h,60px) - 56px);min-height:460px}',
+    '.bsm-shell>.card{padding:0!important;overflow:hidden;min-height:0}',
+    '.bsm-det{display:none}',
+    '@media (min-width:1400px){.bsm-shell.det{grid-template-columns:316px minmax(0,1fr) 316px}.bsm-shell>.bsm-det.card{display:flex;flex-direction:column;gap:6px;overflow-y:auto!important;padding:18px 16px!important}}',
+    '.bsm-vues{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}',
+    '.bsm-vue{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);font:inherit;font-size:.8em;font-weight:650;cursor:pointer}',
+    '.bsm-vue i{font-style:normal;font-size:.9em;padding:0 6px;border-radius:6px;background:rgb(255 255 255/.12)}',
+    '.bsm-vue.on{background:linear-gradient(135deg,var(--neon,var(--accent)),color-mix(in srgb,var(--neon,var(--accent)) 70%,#1e3a8a));border-color:transparent;color:#fff}',
+    '.bsm-act{position:relative;margin:8px 12px 12px;padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--surface-2);display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:start}',
+    '.bsm-act-t{display:flex;flex-direction:column;gap:2px;min-width:0}.bsm-act-t b{font-size:.86em}.bsm-act-t small{font-size:.72em;color:var(--text-3)}',
+    '.bsm-act em{font-style:normal;font-weight:800;font-size:1.05em;color:#22c55e;text-align:right;display:flex;flex-direction:column}.bsm-act em small{font-size:.6em;font-weight:600;color:var(--text-3)}.bsm-act em.bas{color:#f59e0b}',
+    '.bsm-act svg{grid-column:1/-1;width:100%;height:48px;margin-top:6px}',
+    '.bsm-onglets{display:flex;gap:4px;padding:0 18px;border-bottom:1px solid var(--aur-hair,var(--border))}',
+    '.bsm-onglets button{border:0;background:none;color:var(--text-2);font:inherit;font-size:.86em;font-weight:650;padding:10px 12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}',
+    '.bsm-onglets button.on{color:var(--text);border-bottom-color:var(--neon,var(--accent))}',
+    '.bsm-fics{gap:6px}',
+    '.bsm-fic{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);text-decoration:none;min-width:0}',
+    '.bsm-fic:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--border))}',
+    '.bsm-fic>svg{flex:none;color:var(--text-3)}',
+    '.bsm-fic-ic{width:36px;height:36px;flex:none;border-radius:10px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#6366f1,#3b82f6)}.bsm-fic-ic.g-pdf{background:linear-gradient(135deg,#ef4444,#f97316)}.bsm-fic-ic.g-image{background:linear-gradient(135deg,#14b8a6,#0ea5e9)}.bsm-fic-ic.g-audio,.bsm-fic-ic.g-video{background:linear-gradient(135deg,#8b5cf6,#d946ef)}',
+    '.bsm-fic-t{flex:1;min-width:0;display:flex;flex-direction:column}.bsm-fic-t b{font-size:.86em;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bsm-fic-t small{font-size:.72em;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.bsm-chiffres{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:4px 16px 14px;padding-top:10px;border-top:1px solid var(--aur-hair,var(--border))}',
+    '.bsm-chiffres div{display:flex;flex-direction:column;gap:2px;min-width:0}.bsm-chiffres small{font-size:.68em;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bsm-chiffres b{font-size:1.15em;font-weight:800;display:flex;align-items:baseline;gap:6px}',
+    '.bsm-chiffres em{font-style:normal;font-size:.62em;font-weight:700;color:#22c55e}.bsm-chiffres em.bas{color:#f59e0b}',
+    '.bsm-det h4{display:flex;align-items:center;gap:8px;margin:14px 0 4px;font-size:.8em;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)}.bsm-det h4 small{margin-left:auto;font-size:.95em;text-transform:none;letter-spacing:0;font-weight:600;color:#22c55e}',
+    '.bsm-det-pp{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:6px 0 8px}.bsm-det-pp .bsm-av{width:76px;height:76px;border-radius:24px;font-size:1.5em;margin-bottom:6px}.bsm-det-pp .bsm-av .bsm-pres{width:14px;height:14px}',
+    '.bsm-det-pp b{font-size:1.1em}.bsm-det-pp span{font-size:.82em;color:var(--text-2)}.bsm-det-pp em{font-style:normal;font-size:.76em;font-weight:650;color:var(--text-3)}.bsm-det-pp em.on{color:#22c55e}',
+    '.bsm-det-act{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0}.bsm-det-act .btn{gap:6px}',
+    '.bsm-det-dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:10px 0 0;font-size:.84em}.bsm-det-dl dt{color:var(--text-3)}.bsm-det-dl dd{margin:0}',
+    '.bsm-det-membres{display:flex;flex-direction:column;gap:2px}',
+    '.bsm-det-membres button{display:flex;align-items:center;gap:10px;width:100%;padding:6px 8px;border-radius:10px;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer}.bsm-det-membres button:hover:not(:disabled){background:var(--surface-2)}.bsm-det-membres button:disabled{cursor:default}',
+    '.bsm-det-membres .bsm-av{width:32px;height:32px;border-radius:50%;font-size:.68em}',
+    '.bsm-det-membres span{display:flex;flex-direction:column;min-width:0}.bsm-det-membres b{font-size:.86em;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bsm-det-membres small{font-size:.72em;color:var(--text-3)}',
+    '.bsm-det-fics{display:flex;flex-direction:column;gap:6px}',
+    '.bsm-det-vide{margin:2px 0;font-size:.82em;color:var(--text-3)}',
+    '.bsm-lien{margin-left:auto;border:0;background:none;padding:0;font:inherit;font-size:.95em;text-transform:none;letter-spacing:0;color:var(--accent-text,var(--accent));cursor:pointer}',
     '.bsm-side{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--aur-hair,var(--border))}',
     '.bsm-side-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:18px 16px 10px}',
     '.bsm-side-head .page-title{font-size:1.45em}',
@@ -1851,7 +1975,7 @@
     '[data-motion=reduced] .bsm-rec,[data-motion=reduced] .bsm-carte,[data-motion=reduced] .bsm-call{animation:none}',
     '@media (prefers-reduced-motion:reduce){.bsm-rec,.bsm-carte,.bsm-call{animation:none}}',
     // Téléphone : une colonne à la fois
-    '@media (max-width:820px){.bsm-shell{grid-template-columns:1fr;height:calc(100dvh - var(--topbar-h,60px) - 110px)}.bsm-shell.liste .bsm-main{display:none}.bsm-shell.fil .bsm-side{display:none}.bsm-back{display:inline-flex}.bsm-stack,.bsm-hint{display:none}.bsm-visio .btn-label{display:none}.bsm-msg{max-width:92%}.bsm-scroll{padding:14px 12px 8px}.bsm-compose{margin:8px 10px 10px}}',
+    '@media (max-width:820px){.bsm-shell{grid-template-columns:1fr;gap:0;height:calc(100dvh - var(--topbar-h,60px) - 110px)}.bsm-chiffres{grid-template-columns:repeat(2,minmax(0,1fr));margin:4px 12px 10px}.bsm-act{display:none}.bsm-shell.liste .bsm-main{display:none}.bsm-shell.fil .bsm-side{display:none}.bsm-back{display:inline-flex}.bsm-stack,.bsm-hint{display:none}.bsm-visio .btn-label{display:none}.bsm-msg{max-width:92%}.bsm-scroll{padding:14px 12px 8px}.bsm-compose{margin:8px 10px 10px}}',
   ].join('\n');
   function ensureCss() {
     if (document.getElementById('bs-messages-css')) return;

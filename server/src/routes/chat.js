@@ -185,6 +185,35 @@ export function chatRoutes({ db, hub = chatHub() }) {
     res.json({ messages: await Promise.all(rows.reverse().map((m) => toMsg(m, reactions))), more: rows.length === PAGE });
   });
 
+  // Fichiers partagés dans une conversation (ceux dont le message existe encore), du plus récent au plus ancien.
+  r.get('/conversations/:id/fichiers', async (req, res) => {
+    const c = await conv(req.params.id);
+    if (!(await canSee(c, req.user.id))) return res.status(404).json({ error: 'Conversation introuvable.' });
+    const rows = await db.all(`SELECT f.id, f.name, f.mime, f.size, m.created_at AS at, m.author FROM chat_files f JOIN chat_messages m ON m.file_id = f.id
+                               WHERE m.conversation_id = ? ORDER BY m.id DESC LIMIT 100`, c.id);
+    res.json({ fichiers: rows.map((f) => ({ id: f.id, name: f.name, mime: f.mime, size: Number(f.size), at: f.at, author: f.author })) });
+  });
+
+  // Activité de l'équipe : messages écrits par jour sur les 7 derniers jours, dans les conversations que le membre voit.
+  r.get('/activite', async (req, res) => {
+    const list = await visible(req.user.id);
+    const jours = [];
+    const debut = new Date(); debut.setUTCHours(0, 0, 0, 0); debut.setUTCDate(debut.getUTCDate() - 13);
+    for (let i = 0; i < 14; i++) jours.push(new Date(debut.getTime() + i * 86400000).toISOString().slice(0, 10));
+    const n = Object.fromEntries(jours.map((j) => [j, 0]));
+    let moi = 0;
+    if (list.length) {
+      const rows = await db.all(`SELECT created_at, user_id FROM chat_messages WHERE kind = 'texte' AND created_at >= ? AND conversation_id IN (${list.map(() => '?').join(', ')})`,
+        debut.toISOString(), ...list.map((c) => c.id));
+      for (const m of rows) {
+        const j = String(m.created_at).slice(0, 10);
+        if (j in n) { n[j]++; if (m.user_id === req.user.id && jours.indexOf(j) >= 7) moi++; }
+      }
+    }
+    const semaine = jours.slice(7).reduce((a, j) => a + n[j], 0), avant = jours.slice(0, 7).reduce((a, j) => a + n[j], 0);
+    res.json({ jours: jours.slice(7).map((j) => ({ date: j, n: n[j] })), semaine, avant, moi });
+  });
+
   // ---------------------------------------------------------------- écriture
   r.post('/conversations/:id/messages', async (req, res) => {
     const c = await conv(req.params.id);

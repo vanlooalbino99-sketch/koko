@@ -17,6 +17,7 @@ import type { Locale } from '../domain.ts';
 import { ScenarioMetaSchema } from '../scenarios/content.ts';
 import { getPlayableVersion, type PlayableVersion } from '../scenarios/service.ts';
 import { agentPayload, payloadHash } from '../voice/agent-config.ts';
+import type { VoiceDefaults } from '../voice/voices.ts';
 import type { ProviderConversation, VoiceProvider } from '../voice/provider.ts';
 
 const ACTIVE = ['connecting', 'in_progress', 'processing'] as const;
@@ -25,7 +26,7 @@ const LOST_AFTER_MS = 45 * 60 * 1000;
 
 // Prospect vocal de la version : réutilisé tant que la configuration ne change pas. Le verrou évite que deux
 // premiers appels simultanés créent chacun un agent.
-export async function ensureVoiceAgent(db: Db, provider: VoiceProvider, playable: PlayableVersion, voices: Partial<Record<Locale, string>> = {}) {
+export async function ensureVoiceAgent(db: Db, provider: VoiceProvider, playable: PlayableVersion, voices: VoiceDefaults = {}) {
   const payload = agentPayload(
     ScenarioMetaSchema.parse(playable.scenario),
     playable.content,
@@ -107,7 +108,7 @@ export async function startSimulation(
   provider: VoiceProvider,
   auth: AuthContext,
   scenarioId: string,
-  voices: Partial<Record<Locale, string>> = {},
+  voices: VoiceDefaults = {},
   drillRequest?: DrillRequest,
 ): Promise<StartResult> {
   const playable = await getPlayableVersion(db, auth, scenarioId);

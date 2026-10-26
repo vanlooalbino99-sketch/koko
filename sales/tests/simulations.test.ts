@@ -6,6 +6,8 @@ import type { Db } from '../lib/db/client.ts';
 import { getPlayableVersion, listScenarios } from '../lib/scenarios/service.ts';
 import { ScenarioMetaSchema } from '../lib/scenarios/content.ts';
 import { agentPayload } from '../lib/voice/agent-config.ts';
+import { guessGender } from '../lib/voice/gender.ts';
+import { completeVoices } from '../lib/voice/voices.ts';
 import { analysisPrompt } from '../lib/analysis/prompt.ts';
 import {
   finishSimulation,
@@ -356,4 +358,30 @@ test('reprise : proposée seulement après une coupure récente de son propre ap
   // Trois heures plus tard, c'est trop tard.
   const later = new Date(Date.now() + 3 * 60 * 60 * 1000);
   assert.equal(await prepareDrill(db, auth, scenario.id, { kind: 'resume', from }, later), null);
+});
+
+test('prospect vocal : une prospecte a automatiquement une voix de femme', async () => {
+  const { auth } = await newUser(db, 'Inès');
+  const scenario = await firstCatalogScenario(auth);
+  const playable = (await getPlayableVersion(db, auth, scenario.id))!;
+  const meta = ScenarioMetaSchema.parse(playable.scenario);
+  const version = { id: playable.versionId, number: playable.versionNumber };
+  const account = [
+    { id: 'voixHomme01', name: 'Adam', previewUrl: null, hint: '', gender: 'male', accent: 'american' },
+    { id: 'voixFemme01', name: 'Bella', previewUrl: null, hint: '', gender: 'female', accent: 'american' },
+    { id: 'voixFemmeFr', name: 'Claire', previewUrl: null, hint: '', gender: 'female', accent: 'french' },
+  ];
+  const voices = completeVoices({ fr: 'voixHomme01' }, account);
+  const as = (name: string) => agentPayload(meta, { ...playable.content, prospect: { ...playable.content.prospect, name } }, version, voices).conversation_config.tts.voice_id;
+  assert.equal(guessGender('Aminata Koné'), 'female');
+  assert.equal(guessGender('Léa Mbemba-Martin'), 'female');
+  assert.equal(guessGender('Marc Lefèvre'), 'male');
+  assert.equal(as('Nathalie Roux'), 'voixFemmeFr');
+  assert.equal(as('Marc Lefèvre'), 'voixHomme01');
+  // Sans voix par défaut : seule la prospecte reçoit une voix, l'homme garde celle d'ElevenLabs.
+  const bare = completeVoices({}, account);
+  assert.equal(bare.fr_female, 'voixFemmeFr');
+  assert.equal(bare.fr_male, undefined);
+  // Une voix choisie dans le scénario passe toujours en premier.
+  assert.equal(agentPayload(meta, { ...playable.content, voiceId: 'voixScenario1', prospect: { ...playable.content.prospect, name: 'Sophie Martin' } }, version, voices).conversation_config.tts.voice_id, 'voixScenario1');
 });

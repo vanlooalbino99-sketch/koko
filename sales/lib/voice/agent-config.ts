@@ -2,7 +2,9 @@ import { createHash } from 'node:crypto';
 import { MAX_CALL_MINUTES } from '../billing/plans.ts';
 import type { Locale } from '../domain.ts';
 import type { ScenarioContent, ScenarioMeta } from '../scenarios/content.ts';
+import { guessGender } from './gender.ts';
 import type { AgentPayload } from './provider.ts';
+import { defaultVoice, type VoiceDefaults } from './voices.ts';
 
 // Modèle de consigne versionné : changer ce numéro (ou la consigne) recrée les prospects vocaux existants.
 export const PROMPT_TEMPLATE_VERSION = 1;
@@ -103,9 +105,9 @@ export function agentPayload(
   meta: ScenarioMeta,
   content: ScenarioContent,
   version: { id: string; number: number },
-  voices: Partial<Record<Locale, string>> = {},
+  voices: VoiceDefaults = {},
 ): AgentPayload {
-  const voiceId = content.voiceId ?? voices[meta.language];
+  const voiceId = content.voiceId ?? defaultVoice(voices, meta.language, guessGender(content.prospect.name));
   return {
     name: `Blackstart · ${meta.title.slice(0, 60)} · v${version.number}`,
     tags: ['blackstart-sales', `scenario-version-${version.id}`],

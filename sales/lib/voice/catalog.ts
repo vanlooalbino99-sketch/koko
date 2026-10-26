@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Voix disponibles dans le compte ElevenLabs (voix prêtes à l'emploi et voix ajoutées par le compte), pour
 // choisir celle du prospect d'un scénario. La liste est gardée 10 minutes en mémoire ; la clé reste côté serveur.
-export type Voice = { id: string; name: string; previewUrl: string | null; hint: string };
+export type Voice = { id: string; name: string; previewUrl: string | null; hint: string; gender: string | null; accent: string | null };
 
 const VoicesSchema = z.object({
   voices: z.array(
@@ -38,6 +38,8 @@ export async function listVoices(): Promise<Voice[]> {
           .filter((x): x is string => Boolean(x))
           .join(', ')
           .slice(0, 80),
+        gender: v.labels?.gender?.toLowerCase() ?? null,
+        accent: v.labels?.accent?.toLowerCase() ?? null,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
     cache.__bsVoices = { at: Date.now(), voices };

@@ -8,7 +8,8 @@ import { voxData } from '@/lib/server/vox';
 import { prepareDrill, type DrillRequest } from '@/lib/simulations/service';
 import type { Locale } from '@/lib/domain';
 import { voiceName } from '@/lib/voice/catalog';
-import { configuredVoices } from '@/lib/voice/voices';
+import { guessGender } from '@/lib/voice/gender';
+import { defaultVoice, resolvedVoices } from '@/lib/voice/voices';
 import { CallRoomLoader } from './call-room-loader';
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ exercice?: string; moment?: string; reprise?: string }> };
@@ -26,7 +27,8 @@ export default async function CallPage({ params, searchParams }: Props) {
   const db = await getDb();
   const detail = await getScenario(db, auth, (await params).id);
   if (!detail || detail.scenario.status !== 'active') notFound();
-  const voice = await voiceName(detail.content.voiceId ?? configuredVoices()[detail.scenario.language as Locale]);
+  const language = detail.scenario.language as Locale;
+  const voice = await voiceName(detail.content.voiceId ?? defaultVoice(await resolvedVoices(), language, guessGender(detail.content.prospect.name)));
   // ?exercice=<appel>&moment=<n> rejoue un moment d'un appel ; ?reprise=<appel> reprend un appel coupé.
   const q = await searchParams;
   const ref: DrillRequest | null = q.exercice

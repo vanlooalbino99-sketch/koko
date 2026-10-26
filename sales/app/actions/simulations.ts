@@ -19,7 +19,7 @@ import {
 import { scheduleAnalysis } from '@/lib/server/analysis';
 import { isDemo, refuseInDemo, requireAuth } from '@/lib/server/context';
 import { voiceProviderFromEnv } from '@/lib/voice/provider';
-import { configuredVoices } from '@/lib/voice/voices';
+import { resolvedVoices } from '@/lib/voice/voices';
 
 export async function startSimulationAction(scenarioId: string, drill?: DrillRequest): Promise<StartResult | { ok: false; error: 'not_configured' }> {
   const auth = await requireAuth();
@@ -33,7 +33,7 @@ export async function startSimulationAction(scenarioId: string, drill?: DrillReq
       : drill?.kind === 'resume'
         ? { kind: 'resume', from: String(drill.from) }
         : undefined;
-  return startSimulation(await getDb(), provider, auth, String(scenarioId), configuredVoices(), request);
+  return startSimulation(await getDb(), provider, auth, String(scenarioId), await resolvedVoices(), request);
 }
 
 export async function markConnectedAction(simulationId: string, conversationId: string): Promise<boolean> {

@@ -34,8 +34,8 @@
     if (m && m[1] && typeof D[m[1]] === 'string') return D[m[1]] + m[2];
     m = /^([·•—–\-+(]\s*)(.+?)(\s*[)·•])?$/.exec(s);
     if (m && typeof D[m[2]] === 'string') return m[1] + D[m[2]] + (m[3] || '');
-    // Morceaux séparés par « · » ou « — » : chacun traduit à part (noms et nombres gardés).
-    var sep = / · | — | : /.exec(s) && s.split(/( · | — | : )/);
+    // Morceaux séparés par « · », « • » ou « — » : chacun traduit à part (noms et nombres gardés).
+    var sep = / · | • | — | : /.exec(s) && s.split(/( · | • | — | : )/);
     if (sep && sep.length > 1) {
       var fait = false;
       for (var k = 0; k < sep.length; k += 2) { var y = sep[k] && brut(sep[k]); if (y != null) { sep[k] = y; fait = true; } }
@@ -88,6 +88,13 @@
   motif(/^, (\S+ %) des prospects deviennent clients\.$/, function (_, x) { return ', ' + x + ' of prospects become clients.'; });
   motif(/^La source est celle de la fiche du prospect\. Dépense = budget mensuel × (\S+) mois\.$/, function (_, x) { return "The source is the one on the prospect's record. Spend = monthly budget × " + x + ' months.'; });
   motif(/^(Tendances?) (.+)$/, function (_, k, x) { return (k === 'Tendance' ? 'Trend ' : 'Trends ') + x.replace(/période/g, 'period').replace(/\bRDV\b/g, 'Meetings'); });
+  motif(/^Mise à jour le (.+)$/, function (_, x) { return 'Updated on ' + x; });
+  motif(/^Marquer « (.+) » comme faite$/, function (_, x) { return 'Mark "' + x + '" as done'; });
+  motif(/^Nouvelle tâche pour (.+?)(…)?$/, function (_, x, e) { return 'New task for ' + x + (e || ''); });
+  motif(/^Notes de la fiche (.+)$/, function (_, x) { return 'Record notes: ' + x; });
+  motif(/^(Aujourd'hui|Demain|Hier) à (\S+)$/, function (_, j, h) { return D[j] + ' at ' + h; });
+  motif(/^secteur (.+)$/, function (_, x) { var r = brut(x); return 'sector ' + (r == null ? x : r); });
+  motif(/^(.+) \/ mois$/, function (_, x) { return x + ' / month'; });
   motif(/^Semaine du (.+)$/, function (_, x) { return 'Week of ' + x; });
   motif(/^(\S+) sur (\S+)$/, function (_, a, b) { return /\d/.test(a) && /\d/.test(b) ? a + ' of ' + b : null; });
   motif(/^Module (\d+) sur (\d+)$/, function (_, a, b) { return 'Module ' + a + ' of ' + b; });

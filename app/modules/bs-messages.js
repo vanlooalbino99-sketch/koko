@@ -39,8 +39,31 @@
     telecharger: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
     chevG: '<path d="m15 18-6-6 6-6"/>',
     chevD: '<path d="m9 18 6-6-6-6"/>',
+    chevB: '<path d="m6 9 6 6 6-6"/>',
     lecture: '<polygon points="7 4 20 12 7 20 7 4" fill="currentColor"/>',
     note: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    micro: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/>',
+    tel: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    camera: '<path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+    points: '<circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>',
+    plusRond: '<circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>',
+    trier: '<path d="M3 6h18"/><path d="M6 12h12"/><path d="M10 18h4"/>',
+    texte: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 9h8M12 9v8"/>',
+    modele: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+    epingle: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+    etoile: '<path d="M11.5 2.9a.6.6 0 0 1 1 0l2.6 5.3 5.8.8a.6.6 0 0 1 .3 1l-4.2 4.1 1 5.8a.6.6 0 0 1-.8.6L12 17.8l-5.2 2.7a.6.6 0 0 1-.8-.6l1-5.8-4.2-4.1a.6.6 0 0 1 .3-1l5.8-.8z"/>',
+    crayon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+    lieu: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    horloge: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+    batiment: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>',
+    tag: '<path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+    contact: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h2M15 12h2M7 16a3 3 0 0 1 4 0"/>',
+    calendrier: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    coche: '<path d="M20 6 9 17l-5-5"/>',
+    lien: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    pause: '<rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/>',
+    stop: '<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>',
   };
   // Sélecteur d'émojis : une sélection courante, par thème.
   var EMOJIS = [
@@ -435,7 +458,7 @@
     if (arr && !arr.some(function (x) { return x.id === m.id; })) arr.push(m);
     c.last = m;
     if (m.file) delete S.fichiers[m.conversationId];
-    if (m.kind === 'texte') chargerActivite(4000);
+    if (m.kind === 'texte') chargerActivite(1500);
     var lu = S.mode !== 'visio' && S.actif === m.conversationId && visible();
     if (m.userId === S.me) c.unread = 0;
     else if (lu) marquerLu(c);
@@ -836,6 +859,8 @@
     var focus = champ && document.activeElement === champ;
     if (champ && S.actif) S.brouillons[S.actif] = champ.value;
     var filtreFocus = document.activeElement && document.activeElement.name === 'bsm-filtre';
+    var noteFocus = document.activeElement && /^bsm-note/.test(document.activeElement.name || '') ? document.activeElement.name : '';
+    if (noteFocus && S.root.contains(document.activeElement) && !S.forcer) return; // pas de redessin pendant la saisie d'une note
 
     if (S.mode === 'visio') {
       root.innerHTML = rendreSalle() + (S.modal ? rendreModal() : '');
@@ -858,46 +883,58 @@
     var q = S.filtre.toLowerCase();
     var tous = liste().filter(function (c) { return modeDe(c) === S.mode && (!q || titre(c).toLowerCase().indexOf(q) >= 0); });
     var grp = S.mode === 'groupes', vue = grp ? 'tout' : S.vue;
-    var VUES = { tout: function () { return true; }, nonlus: function (c) { return c.unread > 0; }, directs: function (c) { return c.kind === 'direct'; }, groupes: function (c) { return c.kind !== 'direct'; } };
+    var pins = prefs('bsm-epingles'), favs = prefs('bsm-favoris');
+    var VUES = { tout: function () { return true; }, nonlus: function (c) { return c.unread > 0; }, epingles: function (c) { return !!pins[c.id]; }, favoris: function (c) { return !!favs[c.id]; } };
     var items = tous.filter(VUES[vue] || VUES.tout);
-    var puces = grp ? '' : '<div class="bsm-vues" role="group" aria-label="Afficher">' + [['tout', 'Tout', tous.length], ['nonlus', 'Non lus', tous.filter(VUES.nonlus).length], ['directs', 'Directs', 0], ['groupes', 'Groupes', 0]].map(function (v) {
+    // Épinglés en haut, puis les plus récents (ou les non lus d'abord, au choix du bouton de tri).
+    var ordre = {}; items.forEach(function (c, i) { ordre[c.id] = i; });
+    items.sort(function (a, b) { return (!!pins[b.id]) - (!!pins[a.id]) || (S.tri === 'nonlus' ? (b.unread > 0) - (a.unread > 0) : 0) || ordre[a.id] - ordre[b.id]; });
+    var nTout = tous.reduce(function (n, c) { return n + (c.unread || 0); }, 0), nNonLus = tous.filter(VUES.nonlus).length;
+    var puces = grp ? '' : '<div class="bsm-vues" role="group" aria-label="Afficher">' + [['tout', 'Tout', nTout], ['nonlus', 'Non lus', nNonLus], ['epingles', 'Épinglés', 0], ['favoris', 'Favoris', 0]].map(function (v) {
       return '<button type="button" class="bsm-vue' + (vue === v[0] ? ' on' : '') + '" data-vue="' + v[0] + '" aria-pressed="' + (vue === v[0]) + '">' + v[1] + (v[2] ? '<i>' + v[2] + '</i>' : '') + '</button>';
-    }).join('') + '</div>';
+    }).join('') + '<button type="button" class="bsm-tri' + (S.tri === 'nonlus' ? ' on' : '') + '" data-act="tri" title="' + (S.tri === 'nonlus' ? 'Tri : non lus d’abord' : 'Tri : plus récents d’abord') + '" aria-label="Changer le tri">' + ic('trier', 17) + '</button></div>';
     var ligne = function (c) {
       var l = c.last, apercu = l ? (l.kind === 'texte' ? (l.userId === S.me ? 'Vous : ' : (c.kind === 'direct' ? '' : l.author.split(' ')[0] + ' : ')) + resume(l) : l.body) : (c.kind === 'direct' ? 'Démarrez la conversation' : 'Aucun message');
-      var live = c.call && c.call.length;
+      var live = c.call && c.call.length, nbm = c.kind === 'equipe' ? S.users.length : (c.members || []).length;
       return '<button type="button" class="bsm-conv' + (c.id === S.actif ? ' on' : '') + (c.unread ? ' nl' : '') + '" data-conv="' + esc(c.id) + '">' + convIcon(c) +
-        '<span class="bsm-conv-t"><span class="bsm-conv-l1"><b>' + esc(titre(c)) + '</b><time>' + esc(quand(l && l.at)) + '</time></span>' +
+        '<span class="bsm-conv-t"><span class="bsm-conv-l1"><b>' + esc(titre(c)) + '</b>' + (pins[c.id] ? '<span class="bsm-pin" title="Épinglée">' + ic('epingle', 12) + '</span>' : '') + (favs[c.id] ? '<span class="bsm-fav" title="Favori">' + ic('etoile', 12) + '</span>' : '') + '<time>' + esc(quand(l && l.at)) + '</time></span>' +
+        (c.kind !== 'direct' && c.id === S.actif ? '<span class="bsm-conv-m">' + nbm + ' membre' + (nbm > 1 ? 's' : '') + ' • ' + (c.kind === 'equipe' ? 'Canal d’équipe' : 'Groupe') + '</span>' : '') +
         '<span class="bsm-conv-l2"><span>' + (live ? '<em class="bsm-live">' + ic('video', 12) + ' Visio en cours</em>' : esc(apercu)) + '</span>' + (c.unread ? '<i class="bsm-nl">' + c.unread + '</i>' : '') + '</span></span></button>';
     };
-    var sec = function (titreSec, arr) { return arr.length ? '<div class="bsm-sec">' + titreSec + '</div>' + arr.map(ligne).join('') : ''; };
-    var eq = items.filter(function (c) { return c.kind === 'equipe'; }), gr = items.filter(function (c) { return c.kind === 'groupe'; }), di = items.filter(function (c) { return c.kind === 'direct'; });
+    var gr = items.filter(function (c) { return c.kind === 'groupe'; });
     var enLigne = S.users.filter(function (u) { return u.id !== S.me && S.online.indexOf(u.id) >= 0; });
     return '<aside class="bsm-side card"><div class="bsm-side-head"><div><h1 class="page-title">' + (grp ? 'Groupes' : 'Messages') + '</h1>' + (grp ? '<p class="page-sub">' + gr.length + ' groupe' + (gr.length > 1 ? 's' : '') + '</p>' : '') + '</div>' +
       '<div class="bsm-side-act">' + (grp ? '<button type="button" class="btn btn-primary btn-sm" data-act="groupe">' + ic('plus', 14) + 'Nouveau groupe</button>'
-        : '<button type="button" class="btn btn-primary btn-sm" data-act="direct">' + ic('plus', 14) + 'Nouveau message</button>') +
-        '<button type="button" class="icon-btn" data-act="organigramme" title="Organigramme de l’équipe" aria-label="Organigramme de l’équipe">' + ic('organi', 18) + '</button></div></div>' +
-      puces + '<label class="bsm-search">' + ic('search', 15) + '<input name="bsm-filtre" placeholder="' + (grp ? 'Rechercher un groupe' : 'Rechercher une conversation') + '" value="' + esc(S.filtre) + '" autocomplete="off"></label>' +
+        : '<button type="button" class="btn btn-primary btn-sm" data-act="direct">' + ic('plus', 14) + 'Nouveau message</button>') + '</div></div>' +
+      puces + '<label class="bsm-search">' + ic('search', 15) + '<input name="bsm-filtre" placeholder="' + (grp ? 'Rechercher un groupe…' : 'Rechercher une conversation…') + '" value="' + esc(S.filtre) + '" autocomplete="off"></label>' +
       (enLigne.length && !grp ? '<div class="bsm-online">' + enLigne.map(function (u) { return '<button type="button" data-dm="' + esc(u.id) + '" title="Écrire à ' + esc(u.name) + (u.poste ? ' (' + esc(u.poste) + ')' : '') + '">' + avatar(u.id, u.name) + '<span>' + esc(u.name.split(' ')[0]) + '</span></button>'; }).join('') + '</div>' : '') +
-      '<nav class="bsm-convs">' + sec('Équipe', eq) + sec(grp ? 'Vos groupes' : 'Groupes', gr) + sec('Messages directs', di) +
-      (items.length ? '' : '<p class="bsm-rien">' + (q ? 'Aucun résultat.' : vue === 'nonlus' ? 'Tout est lu.' : grp ? 'Aucun groupe pour l’instant.' : 'Aucune conversation.') + '</p>') + '</nav>' + rendreActivite() + '</aside>';
+      '<nav class="bsm-convs">' + items.map(ligne).join('') +
+      (items.length ? '' : '<p class="bsm-rien">' + (q ? 'Aucun résultat.' : vue === 'nonlus' ? 'Tout est lu.' : vue === 'epingles' ? 'Aucune conversation épinglée : menu « … » d’une conversation › Épingler.' : vue === 'favoris' ? 'Aucun favori : menu « … » d’une conversation › Ajouter aux favoris.' : grp ? 'Aucun groupe pour l’instant.' : 'Aucune conversation.') + '</p>') + '</nav>' + rendreActivite() + '</aside>';
   }
   function rendreFil(c) {
     var arr = S.msgs[c.id];
     var membres = c.kind === 'equipe' ? S.users.map(function (u) { return u.id; }) : (c.members || []);
-    var sous = c.kind === 'direct' ? (posteDe(autre(c)) ? posteDe(autre(c)) + ' · ' : '') + (S.online.indexOf(autre(c)) >= 0 ? 'En ligne' : 'Hors ligne') : membres.length + ' membre' + (membres.length > 1 ? 's' : '');
-    var live = c.call && c.call.length, dedans = Appel.conv === c.id;
+    var sous = c.kind === 'direct' ? (posteDe(autre(c)) ? posteDe(autre(c)) + ' • ' : '') + (S.online.indexOf(autre(c)) >= 0 ? 'En ligne' : 'Hors ligne') : membres.length + ' membre' + (membres.length > 1 ? 's' : '') + ' • ' + (c.kind === 'equipe' ? 'Canal d’équipe' : 'Groupe');
+    var live = c.call && c.call.length, dedans = Appel.conv === c.id, pins = prefs('bsm-epingles'), favs = prefs('bsm-favoris');
+    var menu = S.menu ? '<div class="bsm-menu" role="menu">' +
+      '<button type="button" role="menuitem" data-act="epingler">' + ic('epingle', 15) + (pins[c.id] ? 'Désépingler' : 'Épingler') + '</button>' +
+      '<button type="button" role="menuitem" data-act="favori">' + ic('etoile', 15) + (favs[c.id] ? 'Retirer des favoris' : 'Ajouter aux favoris') + '</button>' +
+      '<button type="button" role="menuitem" data-act="lier">' + ic('lien', 15) + 'Lier un prospect</button>' +
+      (prefs('bsm-liens')[c.id] && prefs('bsm-liens')[c.id] !== 'aucun' ? '<button type="button" role="menuitem" data-act="delier">' + ic('x', 15) + 'Délier le prospect</button>' : '') +
+      '<button type="button" role="menuitem" data-act="organigramme">' + ic('organi', 15) + 'Organigramme</button>' +
+      (c.kind === 'groupe' ? '<button type="button" role="menuitem" data-act="reglages">' + ic('settings', 15) + 'Réglages du groupe</button>' : '') + '</div>' : '';
     var head = '<header class="bsm-head"><button type="button" class="icon-btn bsm-back" data-act="retour" aria-label="Retour aux conversations">' + ic('chevronLeft', 20) + '</button>' + convIcon(c) +
-      '<div class="bsm-head-t"><b>' + esc(titre(c)) + '</b><span>' + esc(sous) + '</span></div>' +
-      '<div class="bsm-stack">' + membres.slice(0, 5).map(function (id) { return avatar(id, nomDe(id), 'xs'); }).join('') + (membres.length > 5 ? '<span class="bsm-av xs plus">+' + (membres.length - 5) + '</span>' : '') + '</div>' +
-      (dedans ? '<button type="button" class="btn btn-secondary btn-md" data-act="agrandir">' + ic('video', 16) + '<span class="btn-label">Retour à la visio</span></button>'
-        : '<button type="button" class="btn ' + (live ? 'btn-success' : 'btn-primary') + ' btn-md bsm-visio" data-act="visio">' + ic('video', 16) + '<span class="btn-label">' + (live ? 'Rejoindre la visio (' + c.call.length + ')' : 'Visio') + '</span></button>') +
-      (c.kind === 'groupe' ? '<button type="button" class="icon-btn" data-act="reglages" title="Réglages du groupe" aria-label="Réglages du groupe">' + ic('settings', 18) + '</button>' : '') + '</header>' + onglets(c);
+      '<div class="bsm-head-t"><b>' + esc(titre(c)) + '</b><span>' + esc(sous) + '</span>' +
+      (c.kind !== 'direct' ? '<div class="bsm-stack">' + membres.slice(0, 4).map(function (id) { return avatar(id, nomDe(id), 'xs'); }).join('') + (membres.length > 4 ? '<span class="bsm-av xs plus">+' + (membres.length - 4) + '</span>' : '') + '</div>' : '') + '</div>' +
+      '<div class="bsm-head-b">' + (dedans ? '<button type="button" class="bsm-rond on" data-act="agrandir" title="Retour à la visio" aria-label="Retour à la visio">' + ic('maximize', 18) + '</button>'
+        : '<button type="button" class="bsm-rond" data-act="appel-audio" title="Appel audio" aria-label="Appel audio">' + ic('tel', 18) + '</button>' +
+          '<button type="button" class="bsm-rond' + (live ? ' live' : '') + '" data-act="visio" title="' + (live ? 'Rejoindre la visio (' + c.call.length + ')' : 'Visio') + '" aria-label="' + (live ? 'Rejoindre la visio' : 'Visio') + '">' + ic('camera', 18) + (live ? '<i>' + c.call.length + '</i>' : '') + '</button>') +
+      '<button type="button" class="bsm-rond' + (S.menu ? ' on' : '') + '" data-act="menu" title="Plus d’options" aria-label="Plus d’options" aria-expanded="' + !!S.menu + '">' + ic('points', 18) + '</button>' + menu + '</div></header>' + onglets(c);
     var corps;
     if (!arr) corps = '<div class="bsm-vide"><span class="bsm-spin"></span></div>';
     else if (!arr.length) corps = '<div class="bsm-vide bsm-debut">' + convIcon(c) + '<h2>' + esc(titre(c)) + '</h2><p>' + (c.kind === 'direct' ? 'Début de votre conversation avec ' + esc(titre(c)) + '.' : 'Écrivez le premier message, ou lancez une visio pour une réunion.') + '</p></div>';
     else {
-      var html = [], prev = null, prevJour = '';
+      var html = [], prev = null, prevJour = '', moiNom = nomDe(S.me);
       if (S.more[c.id]) html.push('<div class="bsm-more"><button type="button" class="btn btn-ghost btn-sm" data-act="plus">' + (S.chargement[c.id] ? 'Chargement…' : 'Messages précédents') + '</button></div>');
       arr.forEach(function (m) {
         var j = jour(m.at);
@@ -909,9 +946,11 @@
         }
         var moi = m.userId === S.me;
         var suite = prev && prev.userId === m.userId && (new Date(m.at) - new Date(prev.at)) < 5 * 60000;
-        html.push('<div class="bsm-msg' + (moi ? ' moi' : '') + (suite ? ' suite' : '') + '" data-mid="' + m.id + '">' + (moi ? '' : (suite ? '<span class="bsm-av-sp"></span>' : avatar(m.userId, m.author))) +
-          '<div class="bsm-col">' + paletteHtml(m) + '<div class="bsm-bulle">' + (suite || moi || c.kind === 'direct' ? '' : '<b class="bsm-auteur" style="--h:' + teinte(m.userId) + '">' + esc(m.author) + (posteDe(m.userId) ? '<small>' + esc(posteDe(m.userId)) + '</small>' : '') + '</b>') +
-          piece(m.file) + (m.body ? '<div class="bsm-txt">' + texte(m.body) + '</div>' : '') + '<time>' + heure(m.at) + '</time></div>' + reactionsHtml(m) + '</div>' +
+        var meta = moi || suite ? '' : '<div class="bsm-meta"><b>' + esc(m.author) + '</b><time>' + heure(m.at) + '</time></div>';
+        html.push('<div class="bsm-msg' + (moi ? ' moi' : '') + (suite ? ' suite' : '') + '" data-mid="' + m.id + '">' + (suite ? '<span class="bsm-av-sp"></span>' : avatar(m.userId, moi ? moiNom : m.author)) +
+          '<div class="bsm-col">' + meta + paletteHtml(m) + '<div class="bsm-bulle' + (estVocal(m.file) ? ' vocal' : '') + '">' +
+          (estVocal(m.file) ? lecteurVoix(m.file) : piece(m.file)) + (m.body ? '<div class="bsm-txt">' + texte(m.body) + '</div>' : '') +
+          (moi ? '<time>' + heure(m.at) + ' <span class="bsm-lu" aria-label="Envoyé">✓✓</span></time>' : '') + '</div>' + reactionsHtml(m) + '</div>' +
           '<button type="button" class="bsm-reag' + (S.reagir === m.id ? ' on' : '') + '" data-reag="' + m.id + '" title="Réagir" aria-label="Réagir à ce message" aria-expanded="' + (S.reagir === m.id) + '">' + ic('sourire', 15) + '</button>' +
           (peutSupprimer(m) ? '<button type="button" class="bsm-suppr" data-suppr="' + m.id + '" title="Supprimer ce message" aria-label="Supprimer ce message">' + ic('trash', 15) + '</button>' : '') + '</div>');
         prev = m;
@@ -920,24 +959,77 @@
     }
     if (arr) corps += bulleEcrit(c.id);
     var envois = (S.envois[c.id] || []).map(function (n) { return '<div class="bsm-envoi"><span class="bsm-spin"></span>Envoi de « ' + esc(n) + ' »…</div>'; }).join('');
-    var foot = envois + '<form class="bsm-compose" autocomplete="off">' +
-      '<button type="button" class="bsm-outil' + (S.emojis ? ' on' : '') + '" data-act="emojis" title="Émojis" aria-label="Émojis" aria-expanded="' + !!S.emojis + '">' + ic('sourire', 19) + '</button>' +
-      '<button type="button" class="bsm-outil" data-act="joindre" title="Joindre un fichier (10 Mo au plus)" aria-label="Joindre un fichier">' + ic('trombone', 19) + '</button>' +
-      '<input type="file" class="bsm-fichier" multiple hidden>' +
-      (S.emojis ? '<div class="bsm-emojis" role="dialog" aria-label="Émojis">' + EMOJIS.map(function (g) {
-        return '<div class="bsm-emo-t">' + g[0] + '</div><div class="bsm-emo-g">' + g[1].split(' ').map(function (e) { return '<button type="button" data-emoji="' + e + '">' + e + '</button>'; }).join('') + '</div>';
-      }).join('') + '</div>' : '') +
-      '<textarea class="bsm-input" rows="1" maxlength="4000" placeholder="Écrire à ' + esc(titre(c)) + '…" aria-label="Message"></textarea>' +
-      '<button type="submit" class="bsm-send" aria-label="Envoyer">' + ic('send', 18) + '</button></form><p class="bsm-hint">Entrée pour envoyer · Maj + Entrée pour aller à la ligne · glissez un fichier ou collez une image pour l’envoyer</p>';
-    if (S.onglet === 'fichiers') return '<section class="bsm-main card">' + head + '<div class="bsm-scroll bsm-fics">' + listeFichiers(c) + '</div>' + chiffres() + '</section>';
+    var enreg = !!Rec.rec;
+    var modeles = (crm().templates || []).filter(function (t) { return t && (t.body || t.label); });
+    var pop = S.emojis ? '<div class="bsm-emojis" role="dialog" aria-label="Émojis">' + EMOJIS.map(function (g) {
+      return '<div class="bsm-emo-t">' + g[0] + '</div><div class="bsm-emo-g">' + g[1].split(' ').map(function (e) { return '<button type="button" data-emoji="' + e + '">' + e + '</button>'; }).join('') + '</div>';
+    }).join('') + '</div>' : S.modeles ? '<div class="bsm-emojis bsm-modeles" role="dialog" aria-label="Modèles de message"><div class="bsm-emo-t">Modèles de message</div>' +
+      (modeles.length ? modeles.map(function (t, i) { return '<button type="button" data-modele="' + i + '"><b>' + esc(t.label || 'Modèle ' + (i + 1)) + '</b><small>' + esc(String(t.body || '').slice(0, 90)) + '</small></button>'; }).join('')
+        : '<p class="bsm-det-vide">Aucun modèle. Créez-en dans Réglages › Modèles de messages.</p>') + '</div>' : '';
+    var foot = envois + '<div class="bsm-ecrire"><form class="bsm-compose' + (enreg ? ' rec' : '') + '" autocomplete="off">' + pop +
+      (enreg ? '<span class="bsm-rec"><i></i>Enregistrement… <time>' + duree(Date.now() - Rec.debut) + '</time></span><button type="button" class="bsm-outil" data-act="rec-annuler" title="Annuler" aria-label="Annuler l’enregistrement">' + ic('x', 18) + '</button>'
+        : '<button type="button" class="bsm-outil rond' + (S.emojis ? ' on' : '') + '" data-act="emojis" title="Émojis" aria-label="Émojis" aria-expanded="' + !!S.emojis + '">' + ic('plusRond', 20) + '</button>' +
+          '<button type="button" class="bsm-outil" data-act="joindre" title="Joindre un fichier (10 Mo au plus)" aria-label="Joindre un fichier">' + ic('trombone', 19) + '</button>' +
+          '<textarea class="bsm-input" rows="1" maxlength="4000" placeholder="' + esc(trad('Écrivez votre message…')) + '" aria-label="Message" title="Entrée pour envoyer · Maj + Entrée pour aller à la ligne · glissez un fichier ou collez une image pour l’envoyer"></textarea>' +
+          '<button type="button" class="bsm-outil" data-act="micro" title="Enregistrer un message vocal" aria-label="Enregistrer un message vocal">' + ic('micro', 19) + '</button>') +
+      '<input type="file" class="bsm-fichier" multiple hidden></form>' +
+      '<button type="button" class="bsm-send" ' + (enreg ? 'data-act="rec-envoyer" aria-label="Envoyer le message vocal"' : 'data-act="envoyer" aria-label="Envoyer"') + '>' + ic('send', 20) + '</button></div>' +
+      '<div class="bsm-types">' +
+      '<button type="button" class="bsm-type' + (!enreg && !S.modeles ? ' on' : '') + '" data-act="texte">' + ic('texte', 15) + 'Texte</button>' +
+      '<button type="button" class="bsm-type' + (enreg ? ' on' : '') + '" data-act="micro">' + ic('micro', 15) + 'Audio</button>' +
+      '<button type="button" class="bsm-type" data-act="joindre">' + ic('doc', 15) + 'Fichier</button>' +
+      '<button type="button" class="bsm-type' + (S.modeles ? ' on' : '') + '" data-act="modeles">' + ic('modele', 15) + 'Modèle</button>' +
+      '<button type="button" class="bsm-type rond' + (S.plusOutils ? ' on' : '') + '" data-act="plus-outils" title="Plus d’actions" aria-label="Plus d’actions" aria-expanded="' + !!S.plusOutils + '">' + ic('chevD', 15) + '</button>' +
+      (S.plusOutils ? '<div class="bsm-plus-outils"><button type="button" data-onglet="taches">' + ic('coche', 15) + 'Nouvelle tâche</button><button type="button" data-act="lier">' + ic('lien', 15) + 'Lier un prospect</button><button type="button" data-act="visio">' + ic('camera', 15) + 'Lancer une visio</button></div>' : '') +
+      '</div>';
+    var panneau = { fichiers: '<div class="bsm-scroll bsm-fics">' + listeFichiers(c) + '</div>', taches: vueTaches(c), evenements: vueEvenements(c), notes: vueNotes(c) }[S.onglet];
+    if (panneau) return '<section class="bsm-main card">' + head + panneau + chiffres() + '</section>';
     return '<section class="bsm-main card">' + head + '<div class="bsm-scroll" role="log" aria-live="polite">' + corps + '</div>' + foot + chiffres() + '</section>';
   }
   function onglets(c) {
     var f = S.fichiers[c.id];
     if (f === undefined) chargerFichiers(c.id);
-    return '<div class="bsm-onglets" role="tablist">' + [['conversation', 'Conversation'], ['fichiers', 'Fichiers' + (Array.isArray(f) && f.length ? ' (' + f.length + ')' : '')]].map(function (o) {
-      return '<button type="button" role="tab" data-onglet="' + o[0] + '" class="' + (S.onglet === o[0] ? 'on' : '') + '" aria-selected="' + (S.onglet === o[0]) + '">' + o[1] + '</button>';
+    var t = tachesDe(c).length, e = evenements().length;
+    return '<div class="bsm-onglets" role="tablist">' + [['conversation', 'Conversation'], ['fichiers', 'Fichiers', Array.isArray(f) ? f.length : 0], ['taches', 'Tâches', t], ['evenements', 'Événements', e], ['notes', 'Notes']].map(function (o) {
+      return '<button type="button" role="tab" data-onglet="' + o[0] + '" class="' + (S.onglet === o[0] ? 'on' : '') + '" aria-selected="' + (S.onglet === o[0]) + '">' + o[1] + (o[2] ? '<i>' + o[2] + '</i>' : '') + '</button>';
     }).join('') + '</div>';
+  }
+  // Onglet Tâches : les tâches ouvertes du CRM (celles du prospect lié d'abord), cochables et à créer d'ici.
+  function tachesDe(c) {
+    var p = prospectLie(c), ts = (crm().tasks || []).filter(function (t) { return !t.done; });
+    if (p) ts = ts.filter(function (t) { return t.prospectId === p.id; }).concat(ts.filter(function (t) { return t.prospectId !== p.id; }));
+    return ts;
+  }
+  function vueTaches(c) {
+    var p = prospectLie(c), ts = tachesDe(c), auj = aujIso();
+    return '<div class="bsm-scroll bsm-panneau"><form class="bsm-tache-n" autocomplete="off"><input name="tache" maxlength="200" placeholder="Nouvelle tâche' + (p ? ' pour ' + esc(p.entreprise || p.contact) : '') + '…" aria-label="Nouvelle tâche"><input type="date" name="echeance" value="' + auj + '" aria-label="Échéance"><button type="submit" class="btn btn-primary btn-sm">' + ic('plus', 14) + 'Ajouter</button></form>' +
+      (ts.length ? '<ul class="bsm-liste">' + ts.slice(0, 60).map(function (t) {
+        var pr = t.prospectId ? prospectId(t.prospectId) : null, retard = t.due && t.due < auj;
+        return '<li><button type="button" class="bsm-case" data-tache-fait="' + esc(t.id) + '" title="Marquer comme faite" aria-label="Marquer « ' + esc(t.title) + ' » comme faite"></button><span class="bsm-liste-t"><b>' + esc(t.title) + '</b><small>' +
+          (t.due ? '<em class="' + (retard ? 'retard' : '') + '">' + (t.due === auj ? 'Aujourd’hui' : retard ? 'En retard · ' + dateFr(t.due) : dateFr(t.due)) + (t.heure ? ' à ' + esc(t.heure) : '') + '</em>' : '') +
+          (pr ? ' · <button type="button" class="bsm-lien" data-fiche="' + esc(pr.id) + '">' + esc(pr.entreprise || pr.contact) + '</button>' : '') + '</small></span></li>';
+      }).join('') + '</ul>' : '<div class="bsm-vide bsm-debut">' + ic('coche', 26) + '<h2>Aucune tâche ouverte</h2><p>Ajoutez une tâche ci-dessus : elle apparaît aussi dans la page Tâches du CRM.</p></div>') + '</div>';
+  }
+  // Onglet Événements : rendez-vous et relances à venir, d'après l'agenda des prospects du CRM.
+  function evenements() {
+    var auj = aujIso();
+    return prospectsCrm().filter(function (p) { return p.prochaineRelance && p.prochaineRelance >= auj && ['client_signe', 'perdu', 'resilie'].indexOf(p.statut) < 0; })
+      .sort(function (a, b) { return (a.prochaineRelance + (a.prochaineRelanceHeure || '99')).localeCompare(b.prochaineRelance + (b.prochaineRelanceHeure || '99')); });
+  }
+  function vueEvenements(c) {
+    var ev = evenements(), auj = aujIso(), dem = aujIso(new Date(Date.now() + 86400000)), p = prospectLie(c), dernier = '';
+    if (!ev.length) return '<div class="bsm-scroll bsm-panneau"><div class="bsm-vide bsm-debut">' + ic('calendrier', 26) + '<h2>Aucun événement à venir</h2><p>Les rendez-vous et relances planifiés sur les fiches prospects s’affichent ici.</p></div></div>';
+    return '<div class="bsm-scroll bsm-panneau"><ul class="bsm-liste ev">' + ev.slice(0, 40).map(function (x) {
+      var d = x.prochaineRelance, titreJ = d === auj ? 'Aujourd’hui' : d === dem ? 'Demain' : new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      var h = d !== dernier ? '<li class="bsm-liste-j">' + esc(titreJ) + '</li>' : ''; dernier = d;
+      return h + '<li class="' + (p && p.id === x.id ? 'lie' : '') + '"><span class="bsm-ev-h">' + esc(x.prochaineRelanceHeure || 'Journée') + '</span><span class="bsm-liste-t"><b>' + (x.statut === 'rdv_pris' ? 'Rendez-vous' : 'Relance') + ' · ' + esc(x.entreprise || x.contact) + '</b><small>' + esc([x.contact, statutDe(x.statut)[1]].filter(Boolean).join(' · ')) + '</small></span><button type="button" class="btn btn-ghost btn-sm" data-fiche="' + esc(x.id) + '">Fiche</button></li>';
+    }).join('') + '</ul></div>';
+  }
+  // Onglet Notes : vos notes sur la conversation (cet appareil) et, si un prospect est lié, les notes de sa fiche (partagées).
+  function vueNotes(c) {
+    var p = prospectLie(c), n = prefs('bsm-notes')[c.id] || '';
+    return '<div class="bsm-scroll bsm-panneau"><label class="bsm-note"><span>Vos notes sur cette conversation <small>visibles par vous seul, sur cet appareil</small></span><textarea name="bsm-note" rows="6" maxlength="5000" placeholder="' + esc(trad('Points à retenir, décisions, suites à donner…')) + '">' + esc(n) + '</textarea></label>' +
+      (p ? '<label class="bsm-note"><span>Notes de la fiche ' + esc(p.entreprise || p.contact) + ' <small>partagées avec l’équipe dans le CRM</small></span><textarea name="bsm-note-prospect" data-pid="' + esc(p.id) + '" rows="6" maxlength="5000" placeholder="' + esc(trad('Notes sur ce prospect…')) + '">' + esc(p.notes || '') + '</textarea></label>' : '') + '</div>';
   }
   function ficIcone(f) { var g = genre(f.mime); return ic(g === 'image' ? 'image' : g === 'video' ? 'video' : g === 'audio' ? 'note' : 'doc', 18); }
   function ligneFichier(f) {
@@ -951,29 +1043,43 @@
     if (!f.length) return '<div class="bsm-vide bsm-debut">' + ic('doc', 26) + '<h2>Aucun fichier</h2><p>Les fichiers envoyés dans cette conversation s’afficheront ici.</p></div>';
     return f.map(ligneFichier).join('');
   }
-  // Chiffres réels sous le fil : messages de la semaine (serveur) et rendez-vous / leads du CRM.
+  // Chiffres réels sous le fil : messages de l'équipe (serveur), rendez-vous, leads et appels du CRM, sur 7 jours glissants.
   function chiffres() {
-    var a = S.activite, ps = ((window.__bsStore && window.__bsStore.get && window.__bsStore.get()) || {}).prospects || [];
-    var n = function (st) { return ps.filter(function (p) { return p.statut === st; }).length; };
-    var evo = a && a.avant ? Math.round((a.semaine - a.avant) / a.avant * 100) : null;
-    var cases = [['Messages (7 jours)', a ? a.semaine : '–', evo === null ? '' : (evo >= 0 ? '+' : '') + evo + ' %'], ['Vos messages', a ? a.moi : '–', ''],
-      ['Rendez-vous pris', n('rdv_pris'), ''], ['Leads à appeler', n('a_appeler'), '']];
-    return '<div class="bsm-chiffres">' + cases.map(function (x) { return '<div><small>' + x[0] + '</small><b>' + x[1] + (x[2] ? '<em class="' + (x[2].charAt(0) === '-' ? 'bas' : '') + '">' + x[2] + '</em>' : '') + '</b></div>'; }).join('') + '</div>';
+    var a = S.activite, ps = prospectsCrm(), now = Date.now(), J = 86400000;
+    var dans = function (d, de, a2) { var t = new Date(String(d).slice(0, 10) + 'T12:00:00').getTime(); return t > now - de * J && t <= now - a2 * J; };
+    var appels = [], ev = function (x) { return x; };
+    ps.forEach(function (p) { (p.callLog || []).forEach(function (l) { if (l && l.date) appels.push(l); }); });
+    var sem = appels.filter(function (l) { return dans(l.date, 7, 0); }), avant = appels.filter(function (l) { return dans(l.date, 14, 7); });
+    var rdv = function (l) { return l.outcome === 'rdv_pris'; }, joint = function (l) { return l.outcome && l.outcome !== 'injoignable'; };
+    var pct = function (x, y) { return y ? Math.round((x - y) / y * 100) : null; };
+    var taux = sem.length ? Math.round(sem.filter(joint).length / sem.length * 100) : null, tauxAv = avant.length ? Math.round(avant.filter(joint).length / avant.length * 100) : null;
+    var delta = function (v, suffixe) { return v === null || v === 0 ? '' : (v > 0 ? '+' : '') + v + suffixe; };
+    var cases = [
+      ['Messages envoyés', a ? a.semaine : '–', a ? delta(pct(a.semaine, a.avant), ' %') : '', 'Messages de l’équipe sur 7 jours, comparés aux 7 jours précédents'],
+      ['Rendez-vous planifiés', ps.filter(function (p) { return p.statut === 'rdv_pris'; }).length, delta(sem.filter(rdv).length, ''), 'Prospects au statut RDV pris ; en vert, les RDV obtenus en appel ces 7 derniers jours'],
+      ['Leads en cours', ps.filter(function (p) { return EN_COURS.indexOf(p.statut) >= 0; }).length, '', 'RDV pris, audit réalisé ou proposition envoyée'],
+      ['Taux de réponse', taux === null ? '–' : taux + ' %', taux === null || tauxAv === null ? '' : delta(taux - tauxAv, ' pts'), 'Appels décrochés sur les 7 derniers jours'],
+    ];
+    void ev;
+    return '<div class="bsm-chiffres">' + cases.map(function (x) { return '<div title="' + esc(x[3]) + '"><small>' + x[0] + '</small><b>' + x[1] + (x[2] ? '<em class="' + (x[2].charAt(0) === '-' ? 'bas' : '') + '">' + x[2] + '</em>' : '') + '</b></div>'; }).join('') + '</div>';
   }
   function rendreActivite() {
     var a = S.activite;
     if (!a || !a.jours || a.jours.length < 2) return '';
     var max = Math.max.apply(null, a.jours.map(function (j) { return j.n; }).concat([1]));
-    var pts = a.jours.map(function (j, k) { return [Math.round(k * 200 / (a.jours.length - 1)), Math.round(44 - j.n / max * 38)]; });
-    var ligne = pts.map(function (p) { return p.join(','); }).join(' ');
+    var pts = a.jours.map(function (j, k) { return [Math.round(k * 200 / (a.jours.length - 1)), Math.round(40 - j.n / max * 32)]; });
+    var ligne = pts.map(function (p) { return p.join(','); }).join(' '), der = pts[pts.length - 1];
     var evo = a.avant ? Math.round((a.semaine - a.avant) / a.avant * 100) : null;
-    return '<div class="bsm-act"><div class="bsm-act-t"><b>Activité de l’équipe</b><small>' + a.semaine + ' message' + (a.semaine > 1 ? 's' : '') + ' en 7 jours</small></div>' +
-      (evo !== null ? '<em class="' + (evo < 0 ? 'bas' : '') + '">' + (evo >= 0 ? '+' : '') + evo + ' %<small>vs semaine dernière</small></em>' : '') +
-      '<svg viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="bsm-act-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>' +
-      '<polygon points="0,48 ' + ligne + ' 200,48" fill="url(#bsm-act-g)"/><polyline points="' + ligne + '" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg></div>';
+    return '<div class="bsm-act"><b class="bsm-act-titre">Activité de l’équipe</b>' +
+      '<svg viewBox="0 0 200 48" preserveAspectRatio="none" aria-label="' + a.semaine + ' message' + (a.semaine > 1 ? 's' : '') + ' en 7 jours"><defs><linearGradient id="bsm-act-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".45"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>' +
+      '<polygon points="0,48 ' + ligne + ' 200,48" fill="url(#bsm-act-g)"/><polyline points="' + ligne + '" fill="none" stroke="var(--neon,var(--accent))" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>' +
+      '<span class="bsm-act-pt" style="left:' + (der[0] / 2) + '%;top:' + (der[1] / 48 * 100) + '%"></span>' +
+      '<em class="' + (evo !== null && evo < 0 ? 'bas' : '') + '">' + (evo === null ? a.semaine : (evo >= 0 ? '+' : '') + evo + ' %') + '<small>' + (evo === null ? 'messages en 7 jours' : 'vs. semaine dernière') + '</small></em></div>';
   }
-  // Colonne de droite : la personne (message direct) ou les membres (Équipe, groupe), puis les fichiers partagés.
+  // Colonne de droite : la fiche du prospect lié à la conversation (comme la maquette), sinon la personne ou les membres.
   function rendreDetails(c) {
+    var p = prospectLie(c);
+    if (p) return '<aside class="bsm-det card" aria-label="Fiche du prospect">' + ficheProspect(p, c) + '</aside>';
     var h = '<aside class="bsm-det card" aria-label="Détails de la conversation">';
     if (c.kind === 'direct') {
       var o = autre(c), u = user(o), on = S.online.indexOf(o) >= 0, chef = u && u.managerId && u.managerId !== o ? nomDe(u.managerId) : '';
@@ -992,11 +1098,211 @@
         }).join('') + '</div>' + (tri.length > 12 ? '<p class="bsm-det-vide">Et ' + (tri.length - 12) + ' autres membres.</p>' : '') +
         (c.kind === 'groupe' ? '<div class="bsm-det-act"><button type="button" class="btn btn-secondary btn-sm" data-act="reglages">' + ic('settings', 15) + 'Réglages du groupe</button></div>' : '');
     }
+    h += choixProspect();
     var f = S.fichiers[c.id];
     h += '<h4>Fichiers partagés' + (Array.isArray(f) && f.length > 4 ? '<button type="button" class="bsm-lien" data-onglet="fichiers">Voir tout</button>' : '') + '</h4>' +
       (!Array.isArray(f) ? '<p class="bsm-det-vide">Chargement…</p>' : f.length ? '<div class="bsm-det-fics">' + f.slice(0, 4).map(ligneFichier).join('') + '</div>' : '<p class="bsm-det-vide">Aucun fichier dans cette conversation.</p>');
     return h + '</aside>';
   }
+  // Lier un prospect du CRM à la conversation : recherche par entreprise ou contact.
+  function choixProspect() {
+    var q = (S.lienQ || '').toLowerCase(), ps = prospectsCrm();
+    var res = ps.filter(function (p) { return !q || (p.entreprise + ' ' + p.contact + ' ' + p.ville).toLowerCase().indexOf(q) >= 0; }).slice(0, 6);
+    return '<div class="bsm-lier"><h4>' + ic('lien', 14) + 'Prospect lié</h4><p class="bsm-det-vide">Citez une entreprise du CRM dans la conversation, ou choisissez-la ici : sa fiche s’affiche dans cette colonne.</p>' +
+      (ps.length ? '<label class="bsm-search">' + ic('search', 15) + '<input name="bsm-lien-q" placeholder="Rechercher un prospect…" value="' + esc(S.lienQ || '') + '" autocomplete="off"></label>' +
+        '<div class="bsm-lier-l">' + res.map(function (p) { return '<button type="button" data-lier="' + esc(p.id) + '"><b>' + esc(p.entreprise || p.contact) + '</b><small>' + esc([p.contact, p.ville].filter(Boolean).join(' · ')) + '</small></button>'; }).join('') + '</div>'
+        : '<p class="bsm-det-vide">Aucun prospect dans le CRM pour l’instant.</p>') + '</div>';
+  }
+  function ficheProspect(p, c) {
+    var sc = scoreDe(p), st = statutDe(p.statut), memeSecteur = prospectsCrm().filter(function (x) { return x.secteur === p.secteur; });
+    var conv = memeSecteur.length ? Math.round(memeSecteur.filter(function (x) { return x.statut === 'client_signe'; }).length / memeSecteur.length * 100) : null;
+    var niveau = sc === null ? '' : sc >= 80 ? 'Très haut' : sc >= 60 ? 'Haut' : sc >= 40 ? 'Moyen' : 'Faible';
+    var stage = ['a_appeler', 'injoignable'].indexOf(p.statut) >= 0;
+    var tz = (function () { try { var x = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', timeZoneName: 'shortOffset' }).formatToParts(new Date()).filter(function (y) { return y.type === 'timeZoneName'; })[0]; return x ? x.value.replace('UTC', 'GMT') + ' (Paris)' : 'Heure de Paris'; } catch (e) { return 'Heure de Paris'; } })();
+    var onglet = S.ficheOnglet || 'infos';
+    var acts = [];
+    (p.callLog || []).forEach(function (l) { acts.push({ t: (l.date || '') + 'T' + (l.time || '00:00'), i: 'tel', c: 'vert', titre: 'Appel' + (l.duration ? ' · ' + Math.floor(l.duration / 60) + ' min ' + (l.duration % 60) + ' s' : ''), sous: RESULTATS[l.outcome] || l.outcome || '' }); });
+    (p.events || []).forEach(function (e) { acts.push({ t: e.ts || ((e.date || '') + 'T' + (e.time || '00:00')), i: /mail|email/i.test(e.type + e.text) ? 'mail' : /relance|rdv/i.test(e.type) ? 'calendrier' : 'doc', c: /mail|email/i.test(e.type + e.text) ? 'bleu' : 'violet', titre: e.text || e.type, sous: '' }); });
+    acts.sort(function (a, b) { return String(b.t).localeCompare(String(a.t)); });
+    var quandAct = function (t) { var d = String(t).slice(0, 10), h = String(t).slice(11, 16); return (d === aujIso() ? 'Aujourd’hui' : d === aujIso(new Date(Date.now() - 86400000)) ? 'Hier' : dateFr(d)) + (h && h !== '00:00' ? ' • ' + h : ''); };
+    var tags = (p.tags || []).slice(0, 8);
+    var panneaux = {
+      infos: '<div class="bsm-pc-2"><div class="bsm-pc-box"><h5>' + ic('contact', 15) + 'Coordonnées</h5>' +
+        [['mail', 'Email', p.email], ['tel', 'Téléphone', p.telephone], ['lieu', 'Localisation', [p.ville, francais(p) ? 'France' : ''].filter(Boolean).join(', ')], ['calendrier', 'Secteur', p.secteur], ['horloge', 'Fuseau horaire', francais(p) ? tz : '']].filter(function (x) { return x[2]; }).map(function (x) {
+          return '<div class="bsm-pc-l">' + ic(x[0], 16) + '<span><small>' + x[1] + '</small>' + (x[0] === 'mail' ? '<a href="mailto:' + esc(x[2]) + '">' + esc(x[2]) + '</a>' : x[0] === 'tel' ? '<a href="tel:' + esc(String(x[2]).replace(/\s/g, '')) + '">' + esc(x[2]) + '</a>' : esc(x[2])) + '</span></div>';
+        }).join('') + '</div><div class="bsm-pc-col"><div class="bsm-pc-box"><h5>' + ic('tag', 15) + 'Tags</h5><div class="bsm-pc-tags">' +
+        (tags.length || francais(p) ? tags.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') + '<span>' + esc(st[1]) + '</span>' + (francais(p) ? '<span>France</span>' : '') : '<small class="bsm-det-vide">Aucun tag</small>') + '</div></div>' +
+        '<div class="bsm-pc-box"><h5>' + ic('batiment', 15) + 'Entreprise</h5><div class="bsm-pc-ent"><span class="bsm-pc-logo">' + esc(initiales(p.entreprise || '?')) + '</span><span><b>' + esc(p.entreprise || '—') + '</b><small>' + esc(p.secteur || '') + '</small>' + (p.site ? '<a href="' + esc(/^https?:/.test(p.site) ? p.site : 'https://' + p.site) + '" target="_blank" rel="noopener">' + esc(p.site) + '</a>' : '') + '</span></div>' +
+        '<button type="button" class="btn btn-secondary btn-sm bsm-pc-voir" data-fiche="' + esc(p.id) + '">Voir la fiche entreprise</button></div></div></div>',
+      entreprise: '<dl class="bsm-det-dl bsm-pc-dl">' + [['Entreprise', p.entreprise], ['Secteur', p.secteur], ['Adresse', p.adresse], ['Ville', p.ville], ['SIRET', p.siret], ['Site', p.site], ['Canal', p.canal], ['Dans le CRM depuis', dateFr(p.createdAt)]].filter(function (x) { return x[1]; }).map(function (x) { return '<dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>',
+      comportement: (function () {
+        var cl = p.callLog || [], joints = cl.filter(function (l) { return l.outcome && l.outcome !== 'injoignable'; }).length, der = cl[0];
+        return '<dl class="bsm-det-dl bsm-pc-dl"><dt>Appels</dt><dd>' + cl.length + '</dd><dt>Décrochés</dt><dd>' + joints + (cl.length ? ' (' + Math.round(joints / cl.length * 100) + ' %)' : '') + '</dd>' +
+          (der ? '<dt>Dernier appel</dt><dd>' + esc(dateFr(der.date) + ' · ' + (RESULTATS[der.outcome] || der.outcome || '')) + '</dd>' : '') +
+          '<dt>Étape</dt><dd>' + esc(st[1]) + '</dd>' + (p.prochaineRelance ? '<dt>Prochaine relance</dt><dd>' + esc(dateFr(p.prochaineRelance) + (p.prochaineRelanceHeure ? ' à ' + p.prochaineRelanceHeure : '')) + '</dd>' : '') +
+          (p.priorite ? '<dt>Priorité</dt><dd>' + esc(p.priorite) + '</dd>' : '') + '</dl>';
+      })(),
+      notes: '<label class="bsm-note"><span>Notes de la fiche <small>partagées avec l’équipe</small></span><textarea name="bsm-note-prospect" data-pid="' + esc(p.id) + '" rows="7" maxlength="5000" placeholder="' + esc(trad('Notes sur ce prospect…')) + '">' + esc(p.notes || '') + '</textarea></label>',
+    };
+    return '<div class="bsm-pc"><div class="bsm-pc-cover" aria-hidden="true"><svg viewBox="0 0 400 110" preserveAspectRatio="xMidYMax slice"><defs><linearGradient id="bsm-ciel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d3a8a"/><stop offset="1" stop-color="#0a1433"/></linearGradient></defs><rect width="400" height="110" fill="url(#bsm-ciel)"/>' +
+      '<g fill="#081129" opacity=".95"><rect x="150" y="30" width="26" height="80"/><rect x="180" y="12" width="30" height="98"/><rect x="214" y="40" width="22" height="70"/><rect x="240" y="22" width="34" height="88"/><rect x="278" y="48" width="20" height="62"/><rect x="302" y="8" width="28" height="102"/><rect x="334" y="36" width="24" height="74"/><rect x="362" y="26" width="38" height="84"/></g>' +
+      '<g fill="#60a5fa" opacity=".55">' + [186, 194, 202, 246, 254, 262, 308, 316, 368, 378, 388].map(function (x, i) { return '<rect x="' + x + '" y="' + (30 + (i * 13) % 50) + '" width="3" height="4"/><rect x="' + x + '" y="' + (48 + (i * 7) % 40) + '" width="3" height="4"/>'; }).join('') + '</g></svg></div>' +
+      '<div class="bsm-pc-id"><span class="bsm-pc-av" style="--h:' + teinte(p.id) + '">' + esc(initiales(p.contact || p.entreprise)) + '</span><div><b>' + esc(p.contact || p.entreprise) + (francais(p) ? ' <span class="bsm-drap" title="France">🇫🇷</span>' : '') + '</b>' +
+      '<span>' + esc([p.secteur, p.entreprise].filter(Boolean).join(' - ')) + '</span><div class="bsm-pc-badges"><em class="st t-' + st[2] + '"><i></i>' + esc(st[1]) + '</em>' + (sc !== null && sc >= 80 ? '<em class="prem">' + ic('etoile', 12) + 'Premium lead</em>' : p.priorite === 'haute' ? '<em class="prem">' + ic('etoile', 12) + 'Prioritaire</em>' : '') + '</div></div></div></div>' +
+      '<div class="bsm-pc-act"><div class="bsm-pc-pipe"><button type="button" class="btn btn-primary" data-act="etapes">' + (stage ? 'Ajouter au pipeline' : 'Étape : ' + esc(st[1])) + '</button><button type="button" class="btn btn-primary" data-act="etapes" aria-label="Choisir l’étape">' + ic('chevB', 16) + '</button>' +
+      (S.etapes ? '<div class="bsm-menu" role="menu">' + STATUTS.map(function (x) { return '<button type="button" role="menuitemradio" aria-checked="' + (x[0] === p.statut) + '" data-etape="' + x[0] + '" data-pid="' + esc(p.id) + '"><i class="pt t-' + x[2] + '"></i>' + esc(x[1]) + (x[0] === p.statut ? ic('coche', 14) : '') + '</button>'; }).join('') + '</div>' : '') + '</div>' +
+      '<button type="button" class="bsm-carre" data-fiche="' + esc(p.id) + '" title="Ouvrir la fiche" aria-label="Ouvrir la fiche">' + ic('crayon', 18) + '</button>' +
+      (p.email ? '<a class="bsm-carre" href="mailto:' + esc(p.email) + '" title="Écrire un e-mail" aria-label="Écrire un e-mail">' + ic('mail', 18) + '</a>' : '') +
+      (p.telephone ? '<a class="bsm-carre" href="tel:' + esc(String(p.telephone).replace(/\s/g, '')) + '" title="Appeler" aria-label="Appeler">' + ic('tel', 18) + '</a>' : '') + '</div>' +
+      '<div class="bsm-pc-kpi"><div class="bsm-pc-k anneau"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18" fill="none" stroke="rgb(255 255 255/.1)" stroke-width="4"/>' + (sc !== null ? '<circle cx="22" cy="22" r="18" fill="none" stroke="url(#bsm-sc-g)" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + (sc / 100 * 113.1).toFixed(1) + ' 113.1" transform="rotate(-90 22 22)"/>' : '') + '<defs><linearGradient id="bsm-sc-g"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs></svg>' +
+      '<span><small>Score potentiel</small><b>' + (sc === null ? '–' : sc + '<i>/100</i>') + '</b><em>' + niveau + '</em></span></div>' +
+      '<div class="bsm-pc-k"><small>Taux de conversion</small><b>' + (conv === null ? '–' : conv + ' %') + '</b><em class="gris">secteur ' + esc(p.secteur || '') + '</em></div>' +
+      '<div class="bsm-pc-k"><small>Valeur estimée</small><b>' + (p.dealValue ? Math.round(p.dealValue).toLocaleString('fr-FR') + ' €' : '–') + '</b><em class="gris">' + (p.mrrValue ? Math.round(p.mrrValue).toLocaleString('fr-FR') + ' € / mois' : 'à renseigner sur la fiche') + '</em></div></div>' +
+      '<div class="bsm-pc-tabs" role="tablist">' + [['infos', 'Informations'], ['entreprise', 'Entreprise'], ['comportement', 'Comportement'], ['notes', 'Notes']].map(function (o) { return '<button type="button" role="tab" data-fiche-onglet="' + o[0] + '" class="' + (onglet === o[0] ? 'on' : '') + '" aria-selected="' + (onglet === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="bsm-pc-pan">' + panneaux[onglet] + '</div>' +
+      '<div class="bsm-pc-box"><h5>' + ic('calendrier', 15) + 'Dernières activités<button type="button" class="bsm-lien" data-fiche="' + esc(p.id) + '">Voir tout ' + ic('chevD', 12) + '</button></h5>' +
+      (acts.length ? acts.slice(0, 3).map(function (x) { return '<div class="bsm-pc-a"><span class="ico ' + x.c + '">' + ic(x.i, 15) + '</span><span><b>' + esc(x.titre) + (x.sous ? ' <small>· ' + esc(x.sous) + '</small>' : '') + '</b><small>' + esc(quandAct(x.t)) + '</small></span></div>'; }).join('') : '<p class="bsm-det-vide">Aucune activité enregistrée.</p>') + '</div>' +
+      '<div class="bsm-pc-box"><h5>' + ic('doc', 15) + 'Notes<button type="button" class="bsm-lien" data-fiche-onglet="notes" aria-label="Modifier les notes">' + ic('crayon', 14) + '</button></h5><p class="bsm-pc-note">' + (p.notes ? esc(p.notes).replace(/\n/g, '<br>') : 'Aucune note sur cette fiche.') + '</p>' +
+      '<small class="bsm-det-vide">' + (p.updatedAt ? 'Mise à jour le ' + esc(dateFr(p.updatedAt)) : '') + '</small></div>';
+  }
+  // ------------------------------------------------------------------ préférences de cet appareil
+  // Épinglés, favoris, prospect lié à une conversation et notes personnelles : gardés dans ce navigateur.
+  // Les zones de saisie ne sont pas traduites par bs-langue : leurs textes d'aide passent par ici.
+  function trad(x) { return window.bsLangue && window.bsLangue.t ? window.bsLangue.t(x) : x; }
+  function prefs(k) { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } }
+  function garderPrefs(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* stockage bloqué */ } }
+  function bascule(k, id) { var o = prefs(k); if (o[id]) delete o[id]; else o[id] = Date.now(); garderPrefs(k, o); }
+
+  // ------------------------------------------------------------------ données du CRM (prospects, tâches)
+  function crm() { return (window.__bsStore && window.__bsStore.get && window.__bsStore.get()) || {}; }
+  function prospectsCrm() { return crm().prospects || []; }
+  function prospectId(id) { return prospectsCrm().filter(function (p) { return p.id === id; })[0] || null; }
+  function majCrm(f) { if (window.__bsStore && window.__bsStore.set) window.__bsStore.set(f); }
+  function majProspect(id, f) {
+    majCrm(function (st) { return { prospects: (st.prospects || []).map(function (x) { return x.id === id ? Object.assign({}, x, f(x), { updatedAt: aujIso() }) : x; }) }; });
+  }
+  function aujIso(d) { d = d || new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function dateFr(iso) { if (!iso) return ''; var x = String(iso).slice(0, 10).split('-'); return x.length === 3 ? x[2] + '/' + x[1] + '/' + x[0] : String(iso); }
+  function ouvrirFiche(id) {
+    var Y = window.__bsY; if (!Y || !Y.set || !id) return;
+    Y.set(function (st) { return { overlays: (st.overlays || []).concat([{ key: 'bsm' + Date.now().toString(36), type: 'prospect', id: id }]) }; });
+  }
+  var STATUTS = [['a_appeler', 'À appeler', 'blue'], ['injoignable', 'Injoignable', 'orange'], ['rdv_pris', 'RDV pris', 'sky'], ['audit_realise', 'Audit réalisé', 'violet'],
+    ['proposition_envoyee', 'Proposition envoyée', 'indigo'], ['client_signe', 'Client actif', 'emerald'], ['resilie', 'Résilié', 'rose'], ['perdu', 'Perdu / Refus', 'slate']];
+  function statutDe(id) { return STATUTS.filter(function (x) { return x[0] === id; })[0] || STATUTS[0]; }
+  var EN_COURS = ['rdv_pris', 'audit_realise', 'proposition_envoyee'];
+  var RESULTATS = { injoignable: 'Injoignable', rappel: 'À rappeler', rdv_pris: 'RDV obtenu', audit_realise: 'Audit réalisé', proposition_envoyee: 'Proposition envoyée', client_signe: 'Client signé', perdu: 'Refus' };
+  function scoreDe(p) { return window.bsAujourdhui && window.bsAujourdhui.score ? window.bsAujourdhui.score(p) : null; }
+  function francais(p) { var t = String(p.telephone || '').replace(/\s/g, ''); return /^(\+33|0033|0[1-9])/.test(t); }
+
+  // Prospect lié : choisi dans le menu « … », sinon le dernier prospect du CRM cité dans la conversation.
+  function prospectLie(c) {
+    var id = prefs('bsm-liens')[c.id];
+    if (id === 'aucun') return null;
+    if (id) { var choisi = prospectId(id); if (choisi) return choisi; }
+    var arr = S.msgs[c.id] || [], ps = prospectsCrm().filter(function (p) { return (p.entreprise || '').length >= 4 || (p.contact || '').indexOf(' ') > 0; });
+    for (var i = arr.length - 1; i >= 0 && i >= arr.length - 80; i--) {
+      var t = String(arr[i].body || '').toLowerCase();
+      if (!t) continue;
+      for (var k = 0; k < ps.length; k++) {
+        var e = (ps[k].entreprise || '').toLowerCase(), n = (ps[k].contact || '').toLowerCase();
+        if ((e.length >= 4 && t.indexOf(e) >= 0) || (n.indexOf(' ') > 0 && t.indexOf(n) >= 0)) return ps[k];
+      }
+    }
+    return null;
+  }
+
+  // ------------------------------------------------------------------ messages vocaux
+  // Lecture : un seul lecteur pour toute la page, qui survit aux redessins. L'onde vient du vrai son (décodé une fois).
+  var Voix = {
+    audio: null, id: null, ondes: {}, file: [], ctx: null,
+    lire: function (id) {
+      var self = this;
+      if (!self.audio) {
+        self.audio = new Audio();
+        self.audio.addEventListener('timeupdate', function () { self.peindre(); });
+        self.audio.addEventListener('ended', function () { self.id = null; self.peindre(); rendre(); });
+        self.audio.addEventListener('pause', function () { rendre(); });
+      }
+      if (self.id === id && !self.audio.paused) { self.audio.pause(); return; }
+      if (self.id !== id) { self.id = id; self.audio.src = API + '/fichiers/' + encodeURIComponent(id); }
+      self.audio.play().then(function () { rendre(); }, function () { self.id = null; rendre(); });
+    },
+    joue: function (id) { return this.id === id && this.audio && !this.audio.paused; },
+    peindre: function () {
+      if (!this.audio || !this.id || !S.root) return;
+      var el = S.root.querySelector('[data-voix="' + this.id + '"]'), d = this.audio.duration;
+      if (!el || !d || !isFinite(d)) return;
+      el.style.setProperty('--p', Math.min(100, this.audio.currentTime / d * 100).toFixed(1) + '%');
+      var t = el.querySelector('time'); if (t) t.textContent = duree(this.audio.currentTime * 1000);
+    },
+    // Décode les sons visibles, un à la fois, pour dessiner leur onde et donner leur durée.
+    preparer: function (id) {
+      if (this.ondes[id] || this.file.indexOf(id) >= 0) return;
+      this.file.push(id); this.suivant();
+    },
+    suivant: function () {
+      var self = this;
+      if (self.encours || !self.file.length) return;
+      var id = self.file.shift(); self.encours = true;
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      var fini = function (o) { self.ondes[id] = o; self.encours = false; var el = S.root && S.root.querySelector('[data-voix="' + id + '"]'); if (el) rendre(); self.suivant(); };
+      if (!Ctx) { fini({ barres: null, duree: 0 }); return; }
+      fetch(API + '/fichiers/' + encodeURIComponent(id), { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error('son'); return r.arrayBuffer(); })
+        .then(function (buf) {
+          self.ctx = self.ctx || new Ctx();
+          return new Promise(function (ok, ko) { self.ctx.decodeAudioData(buf, ok, ko); });
+        }).then(function (b) {
+          var data = b.getChannelData(0), n = 42, pas = Math.floor(data.length / n) || 1, barres = [], max = 0;
+          for (var i = 0; i < n; i++) { var m = 0; for (var j = i * pas; j < (i + 1) * pas && j < data.length; j += 16) { var v = Math.abs(data[j]); if (v > m) m = v; } barres.push(m); if (m > max) max = m; }
+          fini({ barres: barres.map(function (v) { return max ? Math.max(0.12, v / max) : 0.12; }), duree: b.duration });
+        }).catch(function () { fini({ barres: null, duree: 0 }); });
+    },
+  };
+  function lecteurVoix(f) {
+    var o = Voix.ondes[f.id], joue = Voix.joue(f.id);
+    if (!o) Voix.preparer(f.id);
+    var barres = (o && o.barres) || Array.apply(null, Array(42)).map(function () { return 0.18; });
+    return '<div class="bsm-voix' + (joue ? ' joue' : '') + '" data-voix="' + esc(f.id) + '"><button type="button" class="bsm-voix-play" data-jouer="' + esc(f.id) + '" aria-label="' + (joue ? 'Mettre en pause' : 'Écouter le message vocal') + '">' + ic(joue ? 'pause' : 'lecture', 14) + '</button>' +
+      '<span class="bsm-onde" aria-hidden="true">' + barres.map(function (h) { return '<i style="height:' + Math.round(h * 100) + '%"></i>'; }).join('') + '</span>' +
+      '<time>' + (o && o.duree ? duree(o.duree * 1000) : '0:00') + '</time></div>';
+  }
+  function estVocal(f) { return f && genre(f.mime) === 'audio' && /^Message vocal/i.test(f.name || ''); }
+
+  // Enregistrement d'un message vocal (micro du navigateur), envoyé comme une pièce jointe audio.
+  var Rec = {
+    rec: null, flux: null, debut: 0, chrono: null, annule: false,
+    demarrer: function () {
+      var self = this, md = navigator.mediaDevices;
+      if (self.rec) return;
+      if (!md || !md.getUserMedia || !window.MediaRecorder) { carte({ titre: 'Micro indisponible', sous: 'Ce navigateur ne permet pas d’enregistrer un message vocal.', icone: 'info', bouton: 'OK', action: function () {}, force: true }); return; }
+      md.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }).then(function (flux) {
+        var types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'], type = types.filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0] || '';
+        var r = type ? new MediaRecorder(flux, { mimeType: type }) : new MediaRecorder(flux), morceaux = [];
+        self.rec = r; self.flux = flux; self.debut = Date.now(); self.annule = false;
+        r.ondataavailable = function (e) { if (e.data && e.data.size) morceaux.push(e.data); };
+        r.onstop = function () {
+          flux.getTracks().forEach(function (t) { t.stop(); });
+          clearInterval(self.chrono); self.rec = null; self.flux = null;
+          if (!self.annule && morceaux.length) {
+            var base = (r.mimeType || type || 'audio/webm').split(';')[0], ext = base.indexOf('mp4') >= 0 ? '.m4a' : base.indexOf('ogg') >= 0 ? '.ogg' : '.webm';
+            var nom = 'Message vocal ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h') + ext;
+            envoyerFichiers([new File(morceaux, nom, { type: base })]);
+          }
+          rendre();
+        };
+        r.start(250);
+        self.chrono = setInterval(function () {
+          var el = S.root && S.root.querySelector('.bsm-rec time'); if (el) el.textContent = duree(Date.now() - self.debut);
+          if (Date.now() - self.debut > 180000) self.arreter(); // 3 minutes au plus
+        }, 250);
+        rendre();
+      }).catch(function () { carte({ titre: 'Micro refusé', sous: 'Autorisez le micro dans le navigateur pour envoyer un message vocal.', icone: 'info', bouton: 'OK', action: function () {}, force: true }); });
+    },
+    arreter: function () { if (this.rec && this.rec.state !== 'inactive') this.rec.stop(); },
+    annuler: function () { this.annule = true; this.arreter(); },
+  };
+
   function rendreAucun() {
     return '<section class="bsm-main card"><div class="bsm-vide bsm-debut"><span class="bsm-av bsm-av-grp" style="--h:250">' + ic('users', 26) + '</span><h2>Créez votre premier groupe</h2>' +
       '<p>Un espace pour une partie de l’équipe : les commerciaux, un client, un projet. Messages et visio réservés à ses membres.</p>' +
@@ -1195,6 +1501,8 @@
       if (t.closest('[data-act="fermer-fond"]') && !t.closest('.bsm-modal')) { S.modal = null; rendre(); return; }
       var b = t.closest('button');
       if (!b || !root.contains(b)) return;
+      // Un choix dans un menu déroulant le referme (sinon le clic suivant redessine la page sous la souris).
+      if (b.closest('.bsm-menu,.bsm-plus-outils')) { S.menu = false; S.etapes = false; S.plusOutils = false; }
       var id;
       if ((id = b.getAttribute('data-emoji'))) {
         var ta = root.querySelector('.bsm-input'), v = ta.value, a = ta.selectionStart == null ? v.length : ta.selectionStart, z = ta.selectionEnd == null ? v.length : ta.selectionEnd;
@@ -1204,8 +1512,8 @@
         return;
       }
       if ((id = b.getAttribute('data-vue'))) { S.vue = id; rendre(); return; }
-      if ((id = b.getAttribute('data-onglet'))) { S.onglet = id; S.emojis = false; rendre(id === 'conversation'); return; }
-      if ((id = b.getAttribute('data-conv'))) { S.mobileListe = false; S.emojis = false; S.onglet = 'conversation'; ouvrir(id); return; }
+      if ((id = b.getAttribute('data-onglet'))) { S.onglet = id; S.emojis = false; S.plusOutils = false; rendre(id === 'conversation'); return; }
+      if ((id = b.getAttribute('data-conv'))) { S.mobileListe = false; S.emojis = false; S.menu = false; S.etapes = false; S.onglet = 'conversation'; ouvrir(id); return; }
       if ((id = b.getAttribute('data-dm'))) {
         S.modal = null;
         api('POST', '/directs', { userId: id }).then(function (r) { S.convs[r.conversation.id] = r.conversation; aller(r.conversation.id); })
@@ -1222,7 +1530,41 @@
           .catch(function (e) { S.err = e.message; rendre(); });
         return;
       }
+      if ((id = b.getAttribute('data-jouer'))) { Voix.lire(id); return; }
+      if ((id = b.getAttribute('data-fiche'))) { ouvrirFiche(id); return; }
+      if ((id = b.getAttribute('data-fiche-onglet'))) { S.ficheOnglet = id; rendre(); return; }
+      if ((id = b.getAttribute('data-lier'))) { var li = prefs('bsm-liens'); li[S.actif] = id; garderPrefs('bsm-liens', li); S.lienQ = ''; rendre(); return; }
+      if ((id = b.getAttribute('data-tache-fait'))) { majCrm(function (st) { return { tasks: (st.tasks || []).map(function (x) { return x.id === id ? Object.assign({}, x, { done: true, doneAt: aujIso() }) : x; }) }; }); rendre(); return; }
+      if ((id = b.getAttribute('data-etape'))) {
+        var pid = b.getAttribute('data-pid'), lab = statutDe(id)[1]; S.etapes = false;
+        majProspect(pid, function (x) { return { statut: id, events: [{ id: 'e' + Date.now().toString(36), ts: new Date().toISOString(), date: aujIso(), time: new Date().toTimeString().slice(0, 5), type: 'statut', text: 'Étape : ' + lab }].concat(x.events || []).slice(0, 200) }; });
+        rendre(); return;
+      }
+      if ((id = b.getAttribute('data-modele'))) {
+        var tp = (crm().templates || []).filter(function (t) { return t && (t.body || t.label); })[Number(id)], pl = S.convs[S.actif] && prospectLie(S.convs[S.actif]);
+        if (tp) {
+          var corpsT = String(tp.body || '').replace(/\{(\w+)\}/g, function (m0, k) { var v = k === 'expediteur' ? nomDe(S.me) : pl ? pl[k] : ''; return v ? String(v) : m0; });
+          S.brouillons[S.actif] = corpsT; S.modeles = false; rendre();
+          var tm = root.querySelector('.bsm-input'); if (tm) { tm.focus(); tm.setSelectionRange(tm.value.length, tm.value.length); }
+        }
+        return;
+      }
       var act = b.getAttribute('data-act');
+      if (act === 'menu') { S.menu = !S.menu; rendre(); return; }
+      if (act === 'tri') { S.tri = S.tri === 'nonlus' ? 'recent' : 'nonlus'; rendre(); return; }
+      if (act === 'epingler') { bascule('bsm-epingles', S.actif); S.menu = false; rendre(); return; }
+      if (act === 'favori') { bascule('bsm-favoris', S.actif); S.menu = false; rendre(); return; }
+      if (act === 'lier') { S.menu = false; S.plusOutils = false; var l0 = prefs('bsm-liens'); l0[S.actif] = 'aucun'; garderPrefs('bsm-liens', l0); rendre(); var lq = root.querySelector('[name=bsm-lien-q]'); if (lq) lq.focus(); return; }
+      if (act === 'delier') { var l1 = prefs('bsm-liens'); l1[S.actif] = 'aucun'; garderPrefs('bsm-liens', l1); S.menu = false; rendre(); return; }
+      if (act === 'etapes') { S.etapes = !S.etapes; rendre(); return; }
+      if (act === 'appel-audio') { Appel.rejoindre(S.actif, true); return; }
+      if (act === 'micro') { if (Rec.rec) Rec.arreter(); else Rec.demarrer(); return; }
+      if (act === 'rec-envoyer') { Rec.arreter(); return; }
+      if (act === 'rec-annuler') { Rec.annuler(); return; }
+      if (act === 'texte') { S.modeles = false; S.emojis = false; rendre(); var tx = root.querySelector('.bsm-input'); if (tx) tx.focus(); return; }
+      if (act === 'modeles') { S.modeles = !S.modeles; S.emojis = false; rendre(); return; }
+      if (act === 'plus-outils') { S.plusOutils = !S.plusOutils; rendre(); return; }
+      if (act === 'envoyer') { var te = root.querySelector('.bsm-input'); if (te) { var vv = te.value; te.value = ''; taille(te); envoyer(vv); } return; }
       if (act === 'organigramme') { orgV.auto = true; S.modal = { type: 'organigramme' }; rendre(); return; }
       if (act === 'regler-equipe') { S.modal = null; location.hash = '#/settings'; if (window.bsEquipe && window.bsEquipe.ouvrirEquipe) window.bsEquipe.ouvrirEquipe(); return; }
       if (act === 'reactions-tout') { S.reagirTout = true; rendre(); return; }
@@ -1248,6 +1590,14 @@
     root.addEventListener('submit', function (ev) {
       ev.preventDefault();
       var f = ev.target;
+      if (f.classList.contains('bsm-tache-n')) {
+        var tt = f.querySelector('[name=tache]').value.trim(), due = f.querySelector('[name=echeance]').value || aujIso(), pc = S.convs[S.actif] && prospectLie(S.convs[S.actif]);
+        if (!tt) return;
+        var nt = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: tt.slice(0, 200), prospectId: pc ? pc.id : null, due: due, heure: '', priorite: '', notes: '', done: false, createdAt: aujIso() };
+        majCrm(function (st) { return { tasks: [nt].concat(st.tasks || []) }; });
+        rendre(); var ni = S.root.querySelector('.bsm-tache-n [name=tache]'); if (ni) ni.focus();
+        return;
+      }
       if (f.classList.contains('bsm-compose')) { var ta = f.querySelector('textarea'); var v = ta.value; ta.value = ''; taille(ta); envoyer(v); return; }
       if (!f.classList.contains('bsm-modal')) return;
       var nom = f.querySelector('[name=nom]'), sel = [].slice.call(f.querySelectorAll('[name=m]:checked:not(:disabled)')).map(function (x) { return x.value; });
@@ -1303,6 +1653,9 @@
     // Le sélecteur d'émojis se ferme quand on clique ailleurs.
     document.addEventListener('pointerdown', function (ev) {
       if (S.emojis && !(ev.target.closest && ev.target.closest('.bsm-emojis,[data-act="emojis"]'))) { S.emojis = false; rendre(); }
+      if (S.modeles && !(ev.target.closest && ev.target.closest('.bsm-modeles,[data-act="modeles"]'))) { S.modeles = false; rendre(); }
+      if (S.menu && !(ev.target.closest && ev.target.closest('.bsm-menu,[data-act="menu"]'))) { S.menu = false; rendre(); }
+      if (S.etapes && !(ev.target.closest && ev.target.closest('.bsm-menu,[data-act="etapes"]'))) { S.etapes = false; rendre(); }
       if (S.reagir && !(ev.target.closest && ev.target.closest('.bsm-palette,[data-reag],.bsm-reac'))) { S.reagir = null; S.reagirTout = false; rendre(); }
     });
     document.addEventListener('keydown', function (ev) {
@@ -1312,6 +1665,12 @@
       var t = ev.target;
       if (t.classList.contains('bsm-input')) { taille(t); S.brouillons[S.actif] = t.value; jEcris(t); }
       if (t.name === 'bsm-filtre') { S.filtre = t.value; rendre(); }
+      if (t.name === 'bsm-lien-q') { S.lienQ = t.value; rendre(); var lq2 = S.root.querySelector('[name=bsm-lien-q]'); if (lq2) { lq2.focus(); lq2.setSelectionRange(lq2.value.length, lq2.value.length); } }
+      if (t.name === 'bsm-note') { var no = prefs('bsm-notes'); no[S.actif] = t.value; garderPrefs('bsm-notes', no); }
+      if (t.name === 'bsm-note-prospect') {
+        var npid = t.getAttribute('data-pid'), nv = t.value;
+        clearTimeout(t.__bsm); t.__bsm = setTimeout(function () { majProspect(npid, function () { return { notes: nv }; }); }, 600);
+      }
     });
     root.addEventListener('scroll', function (ev) {
       if (ev.target.classList && ev.target.classList.contains('bsm-scroll') && ev.target.scrollTop < 40 && S.more[S.actif]) plusAnciens();
@@ -1358,8 +1717,9 @@
   // ------------------------------------------------------------------ visio (WebRTC)
   var Appel = {
     conv: null, local: null, ecran: null, pcs: {}, flux: {}, etats: {}, ice: [], reduit: false, micro: true, camera: true, el: null, chrono: null, debut: 0,
-    rejoindre: function (cid) {
+    rejoindre: function (cid, audioSeul) {
       var self = this;
+      self.audioSeul = !!audioSeul;
       if (self.conv === cid) { self.agrandir(); return; }
       if (self.conv && !confirm('Quitter la visio en cours pour rejoindre celle-ci ?')) return;
       if (self.conv) self.quitter();
@@ -1382,7 +1742,7 @@
       var self = this;
       var md = navigator.mediaDevices;
       if (!md || !md.getUserMedia) return Promise.reject(new Error('Ce navigateur ne permet pas la visio (connexion HTTPS requise).'));
-      return md.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: { width: { ideal: 1280 }, height: { ideal: 720 } } })
+      return md.getUserMedia(self.audioSeul ? { audio: { echoCancellation: true, noiseSuppression: true } } : { audio: { echoCancellation: true, noiseSuppression: true }, video: { width: { ideal: 1280 }, height: { ideal: 720 } } })
         .catch(function () { self.camera = false; return md.getUserMedia({ audio: true }); })
         .catch(function () { self.micro = false; self.camera = false; return new MediaStream(); })
         .then(function (s) { self.local = s; self.micro = !!s.getAudioTracks().length; self.camera = !!s.getVideoTracks().length; });
@@ -1975,6 +2335,132 @@
     '[data-motion=reduced] .bsm-rec,[data-motion=reduced] .bsm-carte,[data-motion=reduced] .bsm-call{animation:none}',
     '@media (prefers-reduced-motion:reduce){.bsm-rec,.bsm-carte,.bsm-call{animation:none}}',
     // Téléphone : une colonne à la fois
+    // ---- Maquette Messages (26 octobre 2026) : trois colonnes, fiche prospect, barre d'écriture complète
+    '@media (min-width:1400px){.bsm-shell.det{grid-template-columns:320px minmax(0,1fr) 370px}}',
+    '@media (min-width:1500px){.bsm-shell.det{grid-template-columns:336px minmax(0,1fr) 410px}}',
+    '.bsm-shell>.card{border-radius:18px}',
+    '.bsm-vues{align-items:center}',
+    '.bsm-vue{height:32px;border-radius:9px;background:color-mix(in srgb,var(--surface-2) 80%,transparent)}',
+    '.bsm-vue i{background:rgb(255 255 255/.16)}',
+    '.bsm-tri{flex:none;margin-left:auto;width:32px;height:32px;display:grid;place-items:center;border-radius:9px;border:0;background:none;color:var(--text-2);cursor:pointer}.bsm-tri:hover,.bsm-tri.on{color:var(--text);background:var(--surface-2)}',
+    '.bsm-convs{padding:2px 10px 12px}',
+    '.bsm-conv{gap:12px;padding:11px 10px;border-radius:14px;border:1px solid transparent;margin-bottom:2px}',
+    '.bsm-conv .bsm-av{width:46px;height:46px;border-radius:50%;font-size:.86em}',
+    '.bsm-conv .bsm-av .bsm-pres{width:11px;height:11px}',
+    '.bsm-conv.on{background:linear-gradient(135deg,color-mix(in srgb,var(--neon,var(--accent)) 30%,transparent),color-mix(in srgb,var(--neon,var(--accent)) 12%,transparent));border-color:color-mix(in srgb,var(--neon,var(--accent)) 70%,transparent);box-shadow:0 10px 30px -14px var(--neon,var(--accent))}',
+    '.bsm-conv-m{font-size:.76em;color:var(--text-2)}',
+    '.bsm-conv-l1 b{font-size:.96em}',
+    '.bsm-nl{min-width:20px;height:20px;border-radius:50%!important;display:inline-grid!important;place-items:center;background:var(--neon,var(--accent))!important;color:#fff!important;font-style:normal;font-size:.7em!important;font-weight:750}',
+    '.bsm-pin,.bsm-fav{flex:none;color:var(--text-3);display:inline-flex}.bsm-fav{color:#facc15}',
+    '.bsm-act{display:block;position:relative;padding:14px 16px 12px;border-radius:16px;background:color-mix(in srgb,var(--surface-2) 75%,transparent)}',
+    '.bsm-act-titre{display:block;font-size:.92em;font-weight:700;margin-bottom:6px}',
+    '.bsm-act svg{width:62%;height:44px;margin:0;display:block}',
+    '.bsm-act-pt{position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#fff;box-shadow:0 0 10px var(--neon,var(--accent));transform:translate(calc(-38% * 0),0)}',
+    '.bsm-act .bsm-act-pt{left:auto!important;right:calc(38% + 12px)!important;top:auto!important;bottom:22px}',
+    '.bsm-act em{position:absolute;right:16px;top:50%;transform:translateY(-30%);font-style:normal;font-size:1.5em;font-weight:800;color:#22c55e;text-align:right;display:flex;flex-direction:column;line-height:1.05}',
+    '.bsm-act em small{font-size:.42em;font-weight:600;color:var(--text-3);margin-top:4px}',
+    '.bsm-head{align-items:flex-start;padding:16px 18px 12px}',
+    '.bsm-head>.bsm-av{width:54px;height:54px;border-radius:50%}',
+    '.bsm-head-t b{font-size:1.12em}',
+    '.bsm-head-t .bsm-stack{margin-top:6px;padding-left:6px}',
+    '.bsm-stack .bsm-av.xs{width:28px;height:28px;border-radius:50%;margin-left:-7px;box-shadow:0 0 0 2px var(--bg,#0a1220)}',
+    '.bsm-head-b{position:relative;display:flex;gap:8px;align-items:center}',
+    '.bsm-rond{position:relative;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--neon-line-hi,var(--border));background:color-mix(in srgb,var(--surface-2) 70%,transparent);color:var(--text);cursor:pointer;transition:background .15s,border-color .15s}',
+    '.bsm-rond:hover,.bsm-rond.on{background:color-mix(in srgb,var(--neon,var(--accent)) 22%,transparent);border-color:var(--neon,var(--accent))}',
+    '.bsm-rond.live{background:#16a34a;border-color:#16a34a;color:#fff}.bsm-rond i{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#ef4444;color:#fff;font-style:normal;font-size:.68em;font-weight:800;display:grid;place-items:center}',
+    '.bsm-menu{position:absolute;top:calc(100% + 8px);right:0;z-index:30;min-width:220px;padding:6px;border-radius:14px;background:var(--surface);border:1px solid var(--border);box-shadow:0 18px 40px -16px rgb(0 0 0/.6);display:flex;flex-direction:column}',
+    '.bsm-menu button{display:flex;align-items:center;gap:10px;padding:9px 10px;border:0;border-radius:9px;background:none;color:var(--text);font:inherit;font-size:.88em;text-align:left;cursor:pointer}.bsm-menu button:hover{background:var(--surface-2)}',
+    '.bsm-menu button .ic:last-child:not(:first-child){margin-left:auto;color:#22c55e}',
+    '.bsm-onglets{gap:0;padding:0 14px;justify-content:space-between}',
+    '.bsm-onglets button{flex:1;padding:12px 6px;font-size:.88em;white-space:nowrap;color:var(--text-2)}',
+    '.bsm-onglets button.on{color:var(--neon,var(--accent));border-bottom-width:3px;text-shadow:0 0 18px color-mix(in srgb,var(--neon,var(--accent)) 60%,transparent)}',
+    '.bsm-onglets button i{font-style:normal;margin-left:5px;font-size:.78em;padding:1px 6px;border-radius:8px;background:var(--surface-2);color:var(--text-2)}',
+    '.bsm-jour span{padding:5px 16px;background:color-mix(in srgb,var(--surface-2) 80%,transparent);border-color:var(--neon-line,var(--border));text-transform:none;font-size:.78em;color:var(--text)}',
+    '.bsm-msg{align-items:flex-start;gap:12px;max-width:min(560px,92%);margin-top:14px}',
+    '.bsm-msg .bsm-av{width:38px;height:38px;border-radius:50%;font-size:.72em}',
+    '.bsm-av-sp{width:38px}',
+    '.bsm-meta{display:flex;align-items:baseline;gap:10px;margin:0 0 6px 2px}.bsm-meta b{font-size:.88em;font-weight:700}.bsm-meta time{font-size:.74em;color:var(--text-3)}',
+    '.bsm-bulle{padding:11px 14px 10px;border-radius:14px;background:color-mix(in srgb,#13244a 78%,transparent);border-color:var(--neon-line,var(--border))}',
+    '.bsm-msg.suite .bsm-bulle{border-radius:14px}',
+    '.bsm-msg.moi .bsm-bulle{border-radius:16px;background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 12px 28px -14px #2563eb}',
+    '.bsm-msg.moi.suite .bsm-bulle{border-radius:16px}',
+    '.bsm-bulle time{display:flex;justify-content:flex-end;align-items:center;gap:4px;opacity:.8}.bsm-lu{letter-spacing:-.25em;margin-right:.2em}',
+    '.bsm-reacs{margin-top:6px;padding:0;gap:6px}',
+    '.bsm-reac{height:28px;padding:0 10px;border-radius:9px;background:color-mix(in srgb,var(--surface-2) 85%,transparent);border-color:var(--neon-line,var(--border))}',
+    '.bsm-doc{display:flex;align-items:center;gap:12px;margin:8px 0 2px;padding:12px;border-radius:12px;border:1px solid var(--neon-line,var(--border));background:rgb(0 0 0/.18);color:inherit;text-decoration:none;min-width:min(300px,60vw)}',
+    '.bsm-doc-ic{position:relative;flex:none;width:40px;height:44px;border-radius:8px;display:grid;place-items:center;background:#e11d48;color:#fff}.bsm-doc-ic i{display:none}',
+    '.bsm-doc-t{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}',
+    '.bsm-bulle.vocal{min-width:min(330px,62vw)}',
+    '.bsm-voix{--p:0%;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgb(0 0 0/.18);border:1px solid var(--neon-line,var(--border))}',
+    '.bsm-voix-play{flex:none;width:28px;height:28px;border-radius:50%;border:0;display:grid;place-items:center;background:var(--neon,var(--accent));color:#fff;cursor:pointer}',
+    '.bsm-onde{flex:1;display:flex;align-items:center;gap:2px;height:26px;background:linear-gradient(90deg,var(--neon,var(--accent)) var(--p),color-mix(in srgb,var(--neon,var(--accent)) 45%,#9fb4d9) var(--p));-webkit-background-clip:text;background-clip:text}',
+    '.bsm-onde i{flex:1;min-width:2px;border-radius:2px;background:color-mix(in srgb,var(--neon,var(--accent)) 70%,#c7d6ff)}',
+    '.bsm-voix.joue .bsm-onde i{background:var(--neon,var(--accent))}',
+    '.bsm-voix time{font-size:.78em;color:var(--text-2);min-width:34px;text-align:right}',
+    '.bsm-ecrire{display:flex;align-items:flex-end;gap:10px;margin:10px 16px 0}',
+    '.bsm-ecrire .bsm-compose{flex:1;margin:0;padding:6px 8px 6px 8px;border-radius:14px;background:color-mix(in srgb,var(--surface-2) 75%,transparent);border-color:var(--neon-line,var(--border))}',
+    '.bsm-compose.rec{border-color:#ef4444}',
+    '.bsm-outil.rond svg{color:var(--text-2)}',
+    '.bsm-send{width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 12px 26px -12px #2563eb;border:0;cursor:pointer}',
+    '.bsm-rec{flex:1;display:flex;align-items:center;gap:10px;padding:8px 6px;font-size:.92em;color:var(--text)}.bsm-rec i{width:10px;height:10px;border-radius:50%;background:#ef4444;animation:bsm-dot 1s infinite}',
+    '.bsm-types{position:relative;display:flex;gap:8px;margin:10px 16px 4px;flex-wrap:wrap}',
+    '.bsm-type{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--neon-line,var(--border));background:color-mix(in srgb,var(--surface-2) 70%,transparent);color:var(--text);font:inherit;font-size:.86em;font-weight:600;cursor:pointer}',
+    '.bsm-type:hover,.bsm-type.on{border-color:var(--neon,var(--accent));background:color-mix(in srgb,var(--neon,var(--accent)) 16%,transparent)}',
+    '.bsm-type.rond{width:36px;padding:0;justify-content:center;border-radius:50%}',
+    '.bsm-plus-outils{position:absolute;bottom:calc(100% + 6px);right:0;z-index:20;display:flex;flex-direction:column;padding:6px;border-radius:14px;background:var(--surface);border:1px solid var(--border);box-shadow:0 18px 40px -16px rgb(0 0 0/.6)}',
+    '.bsm-plus-outils button{display:flex;align-items:center;gap:8px;padding:8px 10px;border:0;border-radius:8px;background:none;color:var(--text);font:inherit;font-size:.86em;cursor:pointer}.bsm-plus-outils button:hover{background:var(--surface-2)}',
+    '.bsm-modeles{display:flex;flex-direction:column;gap:4px}.bsm-modeles button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:0;border-radius:10px;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer}.bsm-modeles button:hover{background:var(--surface-2)}.bsm-modeles small{font-size:.76em;color:var(--text-3)}',
+    '.bsm-chiffres{margin:8px 16px 14px;padding:12px 14px;border:1px solid var(--neon-line,var(--border));border-radius:14px;background:color-mix(in srgb,var(--surface-2) 55%,transparent)}',
+    '.bsm-chiffres div+div{border-left:1px solid var(--neon-line,var(--border));padding-left:12px}',
+    '.bsm-chiffres b{font-size:1.4em;white-space:nowrap;flex-wrap:wrap}.bsm-chiffres small{white-space:normal!important;line-height:1.2;min-height:2.4em}.bsm-chiffres em{font-size:.5em!important}',
+    '.bsm-types{flex-wrap:nowrap;gap:6px;overflow:visible}.bsm-type{padding:0 11px;flex:none}',
+    '.bsm-panneau{padding:14px 18px}',
+    '.bsm-tache-n{display:flex;gap:8px;margin-bottom:12px}.bsm-tache-n input{flex:1;min-width:0;height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font:inherit;font-size:.88em}.bsm-tache-n input[type=date]{flex:none;width:140px}',
+    '.bsm-liste{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}',
+    '.bsm-liste li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--neon-line,var(--border));background:color-mix(in srgb,var(--surface-2) 60%,transparent)}',
+    '.bsm-liste li.lie{border-color:var(--neon,var(--accent))}',
+    '.bsm-liste li.bsm-liste-j{border:0;background:none;padding:8px 2px 0;font-size:.74em;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3)}',
+    '.bsm-liste-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.bsm-liste-t b{font-size:.9em;font-weight:650}.bsm-liste-t small{font-size:.76em;color:var(--text-3)}.bsm-liste-t em{font-style:normal}.bsm-liste-t em.retard{color:#f87171}',
+    '.bsm-case{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid var(--neon,var(--accent));background:none;cursor:pointer}.bsm-case:hover{background:color-mix(in srgb,var(--neon,var(--accent)) 30%,transparent)}',
+    '.bsm-ev-h{flex:none;min-width:58px;font-size:.82em;font-weight:700;color:var(--neon,var(--accent))}',
+    '.bsm-note{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}.bsm-note span{font-size:.86em;font-weight:650}.bsm-note small{font-weight:500;color:var(--text-3)}',
+    '.bsm-note textarea{width:100%;resize:vertical;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font:inherit;font-size:.9em;line-height:1.45}',
+    '.bsm-lien{border:0;background:none;color:var(--neon,var(--accent));font:inherit;font-size:.92em;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:2px}',
+    '.bsm-lier{margin-top:10px}.bsm-lier .bsm-search{margin:8px 0}.bsm-lier-l{display:flex;flex-direction:column;gap:4px}.bsm-lier-l button{display:flex;flex-direction:column;align-items:flex-start;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font:inherit;text-align:left;cursor:pointer}.bsm-lier-l button:hover{border-color:var(--neon,var(--accent))}.bsm-lier-l small{font-size:.76em;color:var(--text-3)}',
+    // Fiche prospect
+    '.bsm-shell>.bsm-det.card{gap:12px}',
+    '.bsm-pc{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--neon-line,var(--border));flex:none}',
+    '.bsm-pc-cover{height:96px}.bsm-pc-cover svg{width:100%;height:100%;display:block}',
+    '.bsm-pc-id{position:absolute;inset:auto 0 0 0;top:18px;display:flex;align-items:center;gap:14px;padding:0 14px}',
+    '.bsm-pc-av{flex:none;width:84px;height:84px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.5em;color:#fff;background:linear-gradient(140deg,hsl(var(--h) 70% 55%),hsl(calc(var(--h) + 40) 70% 40%));border:3px solid #fff;box-shadow:0 10px 24px -8px rgb(0 0 0/.6)}',
+    '.bsm-pc-id>div{display:flex;flex-direction:column;gap:3px;min-width:0;text-shadow:0 2px 8px rgb(0 0 0/.5)}.bsm-pc-id b{font-size:1.15em;font-weight:800}.bsm-pc-id>div>span{font-size:.84em;color:#dbe6ff}',
+    '.bsm-pc-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.bsm-pc-badges em{display:inline-flex;align-items:center;gap:6px;font-style:normal;font-size:.76em;font-weight:650;padding:4px 10px;border-radius:8px;background:rgb(10 20 50/.7);border:1px solid var(--neon-line,var(--border));text-shadow:none}',
+    '.bsm-pc-badges em i{width:8px;height:8px;border-radius:50%;background:currentColor}.bsm-pc-badges em.prem{color:#93c5fd}',
+    '.t-blue{color:#60a5fa}.t-orange{color:#fb923c}.t-sky{color:#38bdf8}.t-violet{color:#a78bfa}.t-indigo{color:#818cf8}.t-emerald{color:#34d399}.t-rose{color:#fb7185}.t-slate{color:#94a3b8}',
+    '.bsm-pc{min-height:150px;background:linear-gradient(180deg,transparent 60%,rgb(5 12 32/.9))}',
+    '.bsm-pc-act{display:flex;gap:10px;align-items:stretch;flex:none}',
+    '.bsm-pc-pipe{position:relative;flex:1;display:flex;min-width:0}.bsm-pc-pipe .btn{height:44px;border-radius:12px 0 0 12px;flex:1;min-width:0}.bsm-pc-pipe .btn+.btn{flex:none;width:42px;border-radius:0 12px 12px 0;border-left:1px solid rgb(255 255 255/.25);padding:0}',
+    '.bsm-pc-pipe .bsm-menu{left:0;right:auto}.bsm-menu .pt{width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}',
+    '.bsm-carre{flex:none;width:52px;height:44px;border-radius:12px;display:grid;place-items:center;border:1px solid var(--neon-line-hi,var(--border));background:color-mix(in srgb,var(--surface-2) 70%,transparent);color:var(--text);cursor:pointer}.bsm-carre:hover{border-color:var(--neon,var(--accent))}',
+    '.bsm-pc-kpi{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:8px;flex:none}',
+    '.bsm-pc-k{display:flex;flex-direction:column;gap:4px;padding:12px;border-radius:14px;border:1px solid var(--neon-line,var(--border));background:color-mix(in srgb,var(--surface-2) 60%,transparent);min-width:0}',
+    '.bsm-pc-k small{font-size:.7em;color:var(--text-2)}.bsm-pc-k b{font-size:1.3em;font-weight:800}.bsm-pc-k b i{font-style:normal;font-size:.6em;color:var(--text-2)}.bsm-pc-k em{font-style:normal;font-size:.72em;font-weight:700;color:#22c55e}.bsm-pc-k em.gris{color:var(--text-3);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.bsm-pc-k.anneau{flex-direction:row;align-items:center;gap:10px}.bsm-pc-k.anneau svg{flex:none;width:58px;height:58px}.bsm-pc-k.anneau span{display:flex;flex-direction:column;gap:2px}',
+    '.bsm-pc-tabs{display:flex;gap:4px;border-bottom:1px solid var(--neon-line,var(--border));flex:none}',
+    '.bsm-pc-tabs button{flex:1;border:0;background:none;color:var(--text-2);font:inherit;font-size:.86em;font-weight:600;padding:10px 4px;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap}.bsm-pc-tabs button.on{color:var(--text);border-bottom-color:var(--neon,var(--accent));background:color-mix(in srgb,var(--neon,var(--accent)) 12%,transparent);border-radius:8px 8px 0 0}',
+    '.bsm-pc-pan{flex:none}',
+    '.bsm-pc-2{display:grid;grid-template-columns:1.1fr 1fr;gap:8px}.bsm-pc-col{display:flex;flex-direction:column;gap:8px;min-width:0}',
+    '.bsm-pc-box{padding:12px;border-radius:14px;border:1px solid var(--neon-line,var(--border));background:color-mix(in srgb,var(--surface-2) 55%,transparent);min-width:0;flex:none}',
+    '.bsm-pc-box h5{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:.9em;font-weight:700}.bsm-pc-box h5 .bsm-lien{margin-left:auto;font-size:.8em}',
+    '.bsm-pc-l{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;min-width:0}.bsm-pc-l>svg{flex:none;margin-top:3px;color:var(--text-2)}.bsm-pc-l span{display:flex;flex-direction:column;min-width:0;font-size:.8em}.bsm-pc-l small{font-size:.86em;color:var(--text-3)}.bsm-pc-l a{color:var(--text);text-decoration:none;overflow-wrap:anywhere}',
+    '.bsm-pc-tags{display:flex;flex-wrap:wrap;gap:6px}.bsm-pc-tags span{font-size:.78em;font-weight:650;padding:5px 10px;border-radius:8px;background:color-mix(in srgb,var(--neon,var(--accent)) 30%,transparent);border:1px solid color-mix(in srgb,var(--neon,var(--accent)) 60%,transparent)}',
+    '.bsm-pc-ent{display:flex;gap:10px;align-items:center;margin-bottom:10px}.bsm-pc-ent>span:last-child{display:flex;flex-direction:column;min-width:0;font-size:.8em}.bsm-pc-ent small{color:var(--text-3)}.bsm-pc-ent a{color:var(--neon,var(--accent));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.bsm-pc-logo{flex:none;width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:.8em;background:linear-gradient(160deg,#334155,#0f172a);color:#cbd5e1}',
+    '.bsm-pc-voir{width:100%;justify-content:center;border-color:var(--neon,var(--accent))!important;white-space:normal;height:auto;min-height:32px;line-height:1.25;padding-block:6px;text-align:center}',
+    '.bsm-pc-dl{grid-template-columns:auto 1fr;font-size:.82em}',
+    '.bsm-pc-a{display:flex;gap:10px;align-items:center;margin-bottom:10px}.bsm-pc-a span:last-child{display:flex;flex-direction:column;min-width:0}.bsm-pc-a b{font-size:.84em;font-weight:600}.bsm-pc-a b small{font-weight:500;color:var(--text-2)}.bsm-pc-a>span:last-child>small{font-size:.76em;color:var(--neon,var(--accent))}',
+    '.bsm-pc-a .ico{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff}.ico.vert{background:#16a34a}.ico.bleu{background:#2563eb}.ico.violet{background:#7c3aed}',
+    '.bsm-pc-note{margin:0 0 6px;font-size:.84em;line-height:1.5;color:var(--text)}',
     '@media (max-width:820px){.bsm-shell{grid-template-columns:1fr;gap:0;height:calc(100dvh - var(--topbar-h,60px) - 110px)}.bsm-chiffres{grid-template-columns:repeat(2,minmax(0,1fr));margin:4px 12px 10px}.bsm-act{display:none}.bsm-shell.liste .bsm-main{display:none}.bsm-shell.fil .bsm-side{display:none}.bsm-back{display:inline-flex}.bsm-stack,.bsm-hint{display:none}.bsm-visio .btn-label{display:none}.bsm-msg{max-width:92%}.bsm-scroll{padding:14px 12px 8px}.bsm-compose{margin:8px 10px 10px}}',
   ].join('\n');
   function ensureCss() {

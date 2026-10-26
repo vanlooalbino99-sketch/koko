@@ -74,7 +74,9 @@ test('image du groupe à la création et dans les réglages, suppression d’un 
   assert.ok(!(await msgs.json()).messages.some((m) => m.body === 'Message à supprimer'));
 
   // Réglages du groupe : changer l'image l'enregistre tout de suite, sans perdre le nom modifié.
-  await page.locator('[data-act="reglages"]').first().click();
+  // Réglages du groupe : dans le menu « … » de la conversation.
+  await page.click('.bsm-head [data-act="menu"]');
+  await page.locator('.bsm-menu [data-act="reglages"]').click();
   await page.fill('.bsm-modal [name=nom]', 'Équipe vente');
   const avant = await page.evaluate((i) => window.bsMessages.etat().convs[i].photo, id);
   await page.setInputFiles('.bsm-modal .bsm-gfichier', await png(page, '#10b981'));

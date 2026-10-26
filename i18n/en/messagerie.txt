@@ -327,3 +327,101 @@ au serveur. ⇒ to the server.
 Supprimer cet enregistrement du serveur ? (La copie sur l'appareil de son auteur reste.) ⇒ Delete this recording from the server? (The copy on its author's device stays.)
 Enregistrement supprimé du serveur. ⇒ Recording deleted from the server.
 Aucun enregistrement sur le serveur. ⇒ No recordings on the server.
+# Messages, copie de la maquette (26 octobre 2026) : filtres, menu « … », onglets, barre d'écriture, fiche du prospect.
+Non lus ⇒ Unread
+Épinglés ⇒ Pinned
+Favoris ⇒ Favorites
+Favori ⇒ Favorite
+Tri ⇒ Sort
+non lus d'abord ⇒ unread first
+plus récents d'abord ⇒ newest first
+Changer le tri ⇒ Change sorting
+membre ⇒ member
+membres ⇒ members
+Canal d'équipe ⇒ Team channel
+Groupe ⇒ Group
+Tout est lu. ⇒ Everything is read.
+Aucune conversation épinglée : menu « … » d'une conversation › Épingler. ⇒ No pinned conversation: a conversation's "…" menu › Pin.
+Aucun favori : menu « … » d'une conversation › Ajouter aux favoris. ⇒ No favorites: a conversation's "…" menu › Add to favorites.
+Rechercher une conversation… ⇒ Search a conversation…
+Rechercher un groupe… ⇒ Search a group…
+Épingler ⇒ Pin
+Retirer des favoris ⇒ Remove from favorites
+Ajouter aux favoris ⇒ Add to favorites
+Lier un prospect ⇒ Link a prospect
+Délier le prospect ⇒ Unlink the prospect
+Rejoindre la visio ⇒ Join the video call
+Lancer une visio ⇒ Start a video call
+Appel audio ⇒ Audio call
+Plus d'options ⇒ More options
+Plus d'actions ⇒ More actions
+Modèles de message ⇒ Message templates
+Aucun modèle. Créez-en dans Réglages › Modèles de messages. ⇒ No template. Create some in Settings › Message templates.
+Audio ⇒ Audio
+Conversation ⇒ Conversation
+Fichiers ⇒ Files
+Événements ⇒ Events
+Aucun fichier ⇒ No files
+Les fichiers envoyés dans cette conversation s'afficheront ici. ⇒ Files sent in this conversation will show here.
+Enregistrer un message vocal ⇒ Record a voice message
+Envoyer le message vocal ⇒ Send the voice message
+Annuler l'enregistrement ⇒ Cancel the recording
+Écouter le message vocal ⇒ Play the voice message
+Message vocal ⇒ Voice message
+Ce navigateur ne permet pas d'enregistrer un message vocal. ⇒ This browser cannot record a voice message.
+Micro refusé ⇒ Microphone blocked
+Autorisez le micro dans le navigateur pour envoyer un message vocal. ⇒ Allow the microphone in the browser to send a voice message.
+Marquer comme faite ⇒ Mark as done
+Aucune tâche ouverte ⇒ No open task
+Ajoutez une tâche ci-dessus : elle apparaît aussi dans la page Tâches du CRM. ⇒ Add a task above: it also shows in the CRM Tasks page.
+Aucun événement à venir ⇒ No upcoming event
+Les rendez-vous et relances planifiés sur les fiches prospects s'affichent ici. ⇒ Meetings and follow-ups scheduled on prospect records show here.
+Rendez-vous ⇒ Meeting
+Vos notes sur cette conversation ⇒ Your notes on this conversation
+visibles par vous seul, sur cet appareil ⇒ visible only to you, on this device
+Notes de la fiche ⇒ Record notes
+partagées avec l'équipe dans le CRM ⇒ shared with the team in the CRM
+partagées avec l'équipe ⇒ shared with the team
+Messages de l'équipe sur 7 jours, comparés aux 7 jours précédents ⇒ Team messages over 7 days, compared with the previous 7 days
+Prospects au statut RDV pris ; en vert, les RDV obtenus en appel ces 7 derniers jours ⇒ Prospects with status Meeting booked; in green, meetings won on calls over the last 7 days
+Leads en cours ⇒ Active leads
+RDV pris, audit réalisé ou proposition envoyée ⇒ Meeting booked, audit done or proposal sent
+Taux de réponse ⇒ Answer rate
+Appels décrochés sur les 7 derniers jours ⇒ Calls answered over the last 7 days
+Activité de l'équipe ⇒ Team activity
+messages en 7 jours ⇒ messages in 7 days
+vs. semaine dernière ⇒ vs. last week
+Citez une entreprise du CRM dans la conversation, ou choisissez-la ici : sa fiche s'affiche dans cette colonne. ⇒ Mention a CRM company in the conversation, or pick it here: its record shows in this column.
+Rechercher un prospect… ⇒ Search a prospect…
+Aucun prospect dans le CRM pour l'instant. ⇒ No prospect in the CRM yet.
+Très haut ⇒ Very high
+Haut ⇒ High
+Moyen ⇒ Medium
+Heure de Paris ⇒ Paris time
+Localisation ⇒ Location
+Fuseau horaire ⇒ Time zone
+Aucun tag ⇒ No tags
+Site ⇒ Website
+Dans le CRM depuis ⇒ In the CRM since
+Décrochés ⇒ Answered
+Étape ⇒ Stage
+Choisir l'étape ⇒ Choose the stage
+Premium lead ⇒ Premium lead
+Prioritaire ⇒ Priority
+Ajouter au pipeline ⇒ Add to pipeline
+Score potentiel ⇒ Potential score
+Taux de conversion ⇒ Conversion rate
+Valeur estimée ⇒ Estimated value
+à renseigner sur la fiche ⇒ to fill in on the record
+Informations ⇒ Information
+Comportement ⇒ Behavior
+Voir la fiche entreprise ⇒ View the company record
+Voir tout ⇒ See all
+Aucune activité enregistrée. ⇒ No activity recorded.
+Aucune note sur cette fiche. ⇒ No notes on this record.
+Modifier les notes ⇒ Edit the notes
+À rappeler ⇒ To call back
+Refus ⇒ Refused
+Écrivez votre message… ⇒ Write your message…
+Points à retenir, décisions, suites à donner… ⇒ Key points, decisions, next steps…
+Notes sur ce prospect… ⇒ Notes on this prospect…

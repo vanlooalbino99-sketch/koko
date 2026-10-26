@@ -17,10 +17,10 @@
   // ?v= : le moteur est mis en cache 7 jours, on change l'adresse quand il change.
   var MOTEUR = '/verre/verre.js?v=8';
   var FORMES = [
-    ['spark', 'Étincelle'], ['prism', 'Prisme'], ['bloom', 'Fleur'], ['star-soft', 'Étoile'],
+    ['vague', 'Vagues de particules (sans 3D)'], ['spark', 'Étincelle'], ['prism', 'Prisme'], ['bloom', 'Fleur'], ['star-soft', 'Étoile'],
     ['growth', 'Croissance'], ['squircle', 'Galet'], ['logo', 'Logo Blackstart'], ['anneaux', 'Anneaux seuls, sans forme'],
   ];
-  var DEFAUT = 'spark';
+  var DEFAUT = 'vague';
   var PREF = 'bs-orbite', PREF_FORME = 'bs-orbite-forme';
   // Niveaux de qualité : on descend d'un cran si l'appareil peine.
   var NIVEAUX = [{ pixelRatio: 1.25, fps: 60 }, { pixelRatio: 0.85, fps: 60 }, { pixelRatio: 0.7, fps: 30 }];
@@ -33,6 +33,12 @@
     'html[data-scheme="light"] #bs-orbite-fond{background:#fff}',
     'html[data-scheme="light"] #bs-orbite-fond canvas{filter:invert(1) hue-rotate(180deg) saturate(1.15)}',
     'html[data-scheme="light"] #bs-orbite-fond::after{background:linear-gradient(90deg,rgb(255 255 255/.55),rgb(255 255 255/.25) 42%,rgb(255 255 255/0) 68%),linear-gradient(180deg,rgb(255 255 255/.4),rgb(255 255 255/0) 22%)}',
+    // Vagues de particules : bleu nuit, comme les maquettes ; en thème clair, les mêmes points sur fond clair.
+    '#bs-orbite-fond.vague{background:radial-gradient(70% 55% at 85% 8%,#101c4d 0,transparent 70%),radial-gradient(60% 50% at 8% 95%,#1a1250 0,transparent 70%),linear-gradient(180deg,#060b22,#030616)}',
+    '#bs-orbite-fond.vague::after{background:linear-gradient(90deg,rgb(3 6 22/.35),rgb(3 6 22/0) 30%)}',
+    'html[data-scheme="light"] #bs-orbite-fond.vague{background:linear-gradient(180deg,#f6f8ff,#eef1fb)}',
+    'html[data-scheme="light"] #bs-orbite-fond.vague canvas{filter:none;opacity:.7}',
+    'html[data-scheme="light"] #bs-orbite-fond.vague::after{background:none}',
     'html.bs-orbite #bs-orbite-fond{opacity:1}',
     'html.bs-orbite body{background:transparent}',
     'html.bs-orbite #bs-amb{display:none!important}',
@@ -92,8 +98,85 @@
     H.classList.toggle('bs-orbite', on);
     window.dispatchEvent(new Event('bs:orbite'));
   }
+  // Vagues de particules (canevas 2D, sans moteur 3D) : deux rubans violet → bleu → cyan qui se croisent en bas,
+  // un troisième en haut à droite et une poussière d'étoiles, qui ondulent et glissent lentement. 30 images/s au plus.
+  function vague(id) {
+    boite = document.createElement('div'); boite.id = 'bs-orbite-fond'; boite.className = 'vague'; boite.setAttribute('aria-hidden', 'true');
+    var cv = document.createElement('canvas'); boite.appendChild(cv);
+    document.body.insertBefore(boite, document.body.firstChild);
+    var ctx = cv.getContext('2d');
+    if (!ctx) { abandon = true; arreter(); return; }
+    var graine = 11;
+    function hasard() { graine = (graine * 16807) % 2147483647; return graine / 2147483647; }
+    function gauss() { return (hasard() + hasard() + hasard() - 1.5) / 1.5; }
+    var ARRETS = [[124, 77, 255], [76, 110, 245], [56, 208, 240]];
+    function couleur(u) {
+      var a = u < 0.5 ? ARRETS[0] : ARRETS[1], b = u < 0.5 ? ARRETS[1] : ARRETS[2], k = u < 0.5 ? u * 2 : (u - 0.5) * 2;
+      return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * k) + ',' + Math.round(a[1] + (b[1] - a[1]) * k) + ',' + Math.round(a[2] + (b[2] - a[2]) * k) + ')';
+    }
+    // Rubans : position verticale (part de la hauteur), amplitude, longueur d'onde, début et fin en largeur, épaisseur.
+    var RUBANS = [
+      { y: 0.8, amp: 0.07, onde: 1.15, x0: -0.05, x1: 1.05, ep: 0.05, phase: 0, n: 1700 },
+      { y: 0.8, amp: 0.07, onde: 1.15, x0: -0.05, x1: 1.05, ep: 0.045, phase: 2.2, n: 1500 },
+      { y: 0.09, amp: 0.045, onde: 0.9, x0: 0.3, x1: 1.05, ep: 0.035, phase: 1, n: 1300, monte: 0.07 },
+    ];
+    var points = [];
+    RUBANS.forEach(function (r, i) {
+      for (var k = 0; k < r.n; k++) {
+        var u = hasard();
+        points.push({ r: i, u: u, off: gauss(), sc: hasard() * 6.28, c: couleur(u), t: hasard() < 0.15 ? 2.4 : 1.5 });
+      }
+    });
+    var etoiles = [];
+    for (var e = 0; e < 240; e++) etoiles.push({ x: hasard(), y: hasard(), sc: hasard() * 6.28, a: 0.15 + hasard() * 0.35 });
+    var W = 0, Hh = 0;
+    function taille() {
+      var dpr = Math.min(window.devicePixelRatio || 1, [1.5, 1, 0.75][niveau] || 1);
+      W = window.innerWidth; Hh = window.innerHeight;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(Hh * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function dessiner(ms) {
+      var t = ms / 1000;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.clearRect(0, 0, W, Hh);
+      ctx.fillStyle = '#9fb4ff';
+      for (var i = 0; i < etoiles.length; i++) {
+        var s = etoiles[i];
+        ctx.globalAlpha = s.a * (0.55 + 0.45 * Math.sin(t * 0.6 + s.sc));
+        ctx.fillRect(s.x * W, s.y * Hh, 1, 1);
+      }
+      ctx.globalCompositeOperation = 'lighter';
+      for (var j = 0; j < points.length; j++) {
+        var p = points[j], r = RUBANS[p.r];
+        // Les points glissent lentement le long du ruban ; la vague ondule plus lentement encore.
+        var u = (p.u + t * 0.006) % 1, x = (r.x0 + (r.x1 - r.x0) * u) * W;
+        var yc = (r.y - (r.monte || 0) * u) * Hh + r.amp * Hh * Math.sin(6.283 * u / r.onde + t * 0.22 + r.phase);
+        var y = yc + p.off * r.ep * Hh;
+        ctx.globalAlpha = Math.max(0, 0.9 - Math.abs(p.off) * 0.5) * (0.55 + 0.45 * Math.sin(t * 0.9 + p.sc));
+        ctx.fillStyle = p.c;
+        ctx.fillRect(x, y, p.t, p.t);
+      }
+      ctx.globalAlpha = 1;
+    }
+    taille();
+    var prec = 0, image = 0, fini = false;
+    function boucle(ms) {
+      if (fini) return;
+      image = requestAnimationFrame(boucle);
+      if (ms - prec < 33) return;
+      prec = ms; dessiner(ms);
+    }
+    image = requestAnimationFrame(boucle);
+    window.addEventListener('resize', taille);
+    arret = function () { fini = true; cancelAnimationFrame(image); window.removeEventListener('resize', taille); };
+    marquer(true); surveiller(id);
+  }
+
   function demarrer() {
     var id = ++lance;
+    // Navigateur piloté (tests) : fond habituel, sauf « force » (captures d'écran).
+    if (forme() === 'vague') { if (navigator.webdriver && !forcer()) abandon = true; else vague(id); return; }
     charger().then(function (m) {
       if (id !== lance || arret || !voulu() || abandon || mouvementReduit()) return;
       if (!m.glassAvailable() || (!forcer() && logiciel())) { abandon = true; return; }

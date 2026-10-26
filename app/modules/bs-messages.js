@@ -873,7 +873,7 @@
     var sec = function (titreSec, arr) { return arr.length ? '<div class="bsm-sec">' + titreSec + '</div>' + arr.map(ligne).join('') : ''; };
     var eq = items.filter(function (c) { return c.kind === 'equipe'; }), gr = items.filter(function (c) { return c.kind === 'groupe'; }), di = items.filter(function (c) { return c.kind === 'direct'; });
     var enLigne = S.users.filter(function (u) { return u.id !== S.me && S.online.indexOf(u.id) >= 0; });
-    return '<aside class="bsm-side card"><div class="bsm-side-head"><div><h1 class="page-title">' + (grp ? 'Groupes' : 'Messages') + '</h1><p class="page-sub">' + (grp ? gr.length + ' groupe' + (gr.length > 1 ? 's' : '') : enLigne.length ? enLigne.length + ' en ligne' : 'Personne en ligne') + '</p></div>' +
+    return '<aside class="bsm-side card"><div class="bsm-side-head"><div><h1 class="page-title">' + (grp ? 'Groupes' : 'Messages') + '</h1>' + (grp ? '<p class="page-sub">' + gr.length + ' groupe' + (gr.length > 1 ? 's' : '') + '</p>' : '') + '</div>' +
       '<div class="bsm-side-act">' + (grp ? '<button type="button" class="btn btn-primary btn-sm" data-act="groupe">' + ic('plus', 14) + 'Nouveau groupe</button>'
         : '<button type="button" class="btn btn-primary btn-sm" data-act="direct">' + ic('plus', 14) + 'Nouveau message</button>') +
         '<button type="button" class="icon-btn" data-act="organigramme" title="Organigramme de l’équipe" aria-label="Organigramme de l’équipe">' + ic('organi', 18) + '</button></div></div>' +
@@ -1582,8 +1582,8 @@
     '.bsm-shell>.card{padding:0!important;overflow:hidden;min-height:0}',
     '.bsm-det{display:none}',
     '@media (min-width:1400px){.bsm-shell.det{grid-template-columns:316px minmax(0,1fr) 316px}.bsm-shell>.bsm-det.card{display:flex;flex-direction:column;gap:6px;overflow-y:auto!important;padding:18px 16px!important}}',
-    '.bsm-vues{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}',
-    '.bsm-vue{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);font:inherit;font-size:.8em;font-weight:650;cursor:pointer}',
+    '.bsm-vues{display:flex;flex-wrap:nowrap;gap:6px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:none}.bsm-vues::-webkit-scrollbar{display:none}',
+    '.bsm-vue{flex:none;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);font:inherit;font-size:.8em;font-weight:650;cursor:pointer}',
     '.bsm-vue i{font-style:normal;font-size:.9em;padding:0 6px;border-radius:6px;background:rgb(255 255 255/.12)}',
     '.bsm-vue.on{background:linear-gradient(135deg,var(--neon,var(--accent)),color-mix(in srgb,var(--neon,var(--accent)) 70%,#1e3a8a));border-color:transparent;color:#fff}',
     '.bsm-act{position:relative;margin:8px 12px 12px;padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--surface-2);display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:start}',

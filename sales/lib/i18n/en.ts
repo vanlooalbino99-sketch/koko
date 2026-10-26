@@ -241,6 +241,7 @@ export const en: Dictionary = {
     preview: 'See the call screen',
     startText: 'Talk to the prospect as on a real call. They may interrupt, object or hang up.',
     remaining: '{n} voice minutes left this month',
+    remainingUnlimited: 'Unlimited voice minutes',
     remainingTrial: 'Free trial: {n} of {total} calls left, {minutes} min max each',
     notConfigured: 'Voice simulation is not enabled on this server yet: the ElevenLabs key is missing.',
     quotaExceeded: "You've used all your voice minutes for this month.",
@@ -634,6 +635,9 @@ export const en: Dictionary = {
     trialTitle: 'Free trial',
     trialLeft: '{n} trial calls left',
     trialUsed: '{used} of {total} used',
+    unlimited: 'Unlimited',
+    unlimitedUsed: '{used} min used this month',
+    unlimitedHint: 'Unlimited access offered by Blackstart. A call lasts {minutes} minutes at most.',
     trialHint: 'The trial includes {calls} calls of up to {minutes} minutes, once. The call hangs up by itself at the limit.',
     paymentMethods: 'Secure payment by Stripe: card, Apple Pay, Google Pay and PayPal.',
     enterprise: {

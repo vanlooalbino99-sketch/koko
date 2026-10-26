@@ -78,9 +78,11 @@ export async function voxData(
     voiceName,
     remaining: !configured
       ? null
-      : credits.trialCalls !== null
-        ? format(c.remainingTrial, { n: credits.trialCallsLeft ?? 0, total: credits.trialCalls, minutes: credits.maxCallMinutes })
-        : format(c.remaining, { n: credits.remaining }),
+      : credits.unlimited
+        ? c.remainingUnlimited
+        : credits.trialCalls !== null
+          ? format(c.remainingTrial, { n: credits.trialCallsLeft ?? 0, total: credits.trialCalls, minutes: credits.maxCallMinutes })
+          : format(c.remaining, { n: credits.remaining }),
     blocked: auth.demo
       ? { message: t.demo.callBlocked, link: { href: '/demo', label: t.demo.callBlockedLink } }
       : !configured

@@ -241,6 +241,7 @@ export const fr = {
     preview: "Voir l'écran d'appel",
     startText: 'Parlez au prospect comme dans un vrai appel. Il peut vous couper, objecter ou raccrocher.',
     remaining: '{n} min de voix restantes ce mois-ci',
+    remainingUnlimited: 'Minutes de voix illimitées',
     remainingTrial: 'Essai gratuit : {n} sur {total} appels restants, {minutes} min maximum chacun',
     notConfigured: "La simulation vocale n'est pas encore activée sur ce serveur : la clé ElevenLabs n'est pas renseignée.",
     quotaExceeded: 'Vous avez utilisé toutes vos minutes de voix de ce mois-ci.',
@@ -644,6 +645,9 @@ export const fr = {
     trialTitle: 'Essai gratuit',
     trialLeft: '{n} appels d’essai restants',
     trialUsed: '{used} sur {total} utilisés',
+    unlimited: 'Illimité',
+    unlimitedUsed: '{used} min utilisées ce mois-ci',
+    unlimitedHint: 'Accès sans limite offert par Blackstart. Un appel dure {minutes} minutes au plus.',
     trialHint: 'L’essai offre {calls} appels de {minutes} minutes au plus, une seule fois. L’appel raccroche tout seul à la limite.',
     paymentMethods: 'Paiement sécurisé par Stripe : carte bancaire, Apple Pay, Google Pay et PayPal.',
     enterprise: {

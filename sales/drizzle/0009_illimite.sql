@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "unlimited" boolean DEFAULT false NOT NULL;

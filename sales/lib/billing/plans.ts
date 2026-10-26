@@ -96,6 +96,13 @@ export function planLimits(plan: Plan): PlanLimits {
   };
 }
 
+// Accès illimité offert (organizations.unlimited) : les droits de Premium, sans plafond de minutes. Le plafond technique
+// d'un appel et les garde-fous de la plateforme restent en place.
+export const UNLIMITED_CREDITS = 1_000_000;
+export function unlimitedLimits(): PlanLimits {
+  return { ...planLimits('premium'), monthlyCredits: UNLIMITED_CREDITS };
+}
+
 // Garde-fous de la plateforme, au-dessus de toutes les organisations : ils protègent la facture
 // ElevenLabs et Anthropic de l'éditeur si l'usage s'emballe.
 export function platformLimits() {

@@ -1,8 +1,8 @@
 import { and, count, eq, gte, inArray, notInArray, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { creditDebits, simulationAnalyses, simulations, type Simulation } from '../db/schema.ts';
+import { creditDebits, organizations, simulationAnalyses, simulations, type Simulation } from '../db/schema.ts';
 import { isOneOf } from '../domain.ts';
-import { PLANS, planLimits, platformLimits, type Plan, type PlanLimits } from './plans.ts';
+import { PLANS, planLimits, platformLimits, unlimitedLimits, type Plan, type PlanLimits } from './plans.ts';
 
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
@@ -25,18 +25,22 @@ export type CreditStatus = PlanLimits & {
   used: number;
   remaining: number;
   activeCalls: number;
+  // Accès illimité offert : pas de plafond de minutes affiché.
+  unlimited: boolean;
   // Essai : appels déjà passés et appels restants ; null pour les offres payantes.
   trialCallsUsed: number | null;
   trialCallsLeft: number | null;
 };
 
-export async function orgLimits(_db: Db | Tx, org: { id: string; plan: string }): Promise<{ plan: Plan; limits: PlanLimits }> {
+export async function orgLimits(db: Db | Tx, org: { id: string; plan: string }): Promise<{ plan: Plan; limits: PlanLimits; unlimited: boolean }> {
   const plan: Plan = isOneOf(PLANS, org.plan) ? org.plan : 'free';
-  return { plan, limits: planLimits(plan) };
+  const [row] = await db.select({ unlimited: organizations.unlimited }).from(organizations).where(eq(organizations.id, org.id)).limit(1);
+  const unlimited = row?.unlimited ?? false;
+  return { plan, limits: unlimited ? unlimitedLimits() : planLimits(plan), unlimited };
 }
 
 export async function creditStatus(db: Db | Tx, org: { id: string; plan: string }, now = new Date()): Promise<CreditStatus> {
-  const { plan, limits } = await orgLimits(db, org);
+  const { plan, limits, unlimited } = await orgLimits(db, org);
   const trial = limits.trialCalls !== null;
   // Les minutes de l'essai ne se renouvellent pas ; celles des offres payantes, chaque mois.
   const since = trial ? new Date(0) : monthStart(now);
@@ -67,6 +71,7 @@ export async function creditStatus(db: Db | Tx, org: { id: string; plan: string 
     // Essai épuisé (deux appels passés) : plus de minutes, même s'il en reste sur le papier.
     remaining: trialCallsLeft === 0 ? 0 : Math.max(0, limits.monthlyCredits - used.credits),
     activeCalls: active.n,
+    unlimited,
     trialCallsUsed: trial ? calls.n : null,
     trialCallsLeft,
   };

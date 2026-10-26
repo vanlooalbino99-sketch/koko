@@ -15,7 +15,7 @@ import {
 } from '../db/schema.ts';
 import { toCsv } from '../csv.ts';
 import { monthStart, platformUsage } from './credits.ts';
-import { DEFAULT_PRICES, grantsAccess, isOneOfPaid, planLimits, type Currency, type PaidPlan, type Plan } from './plans.ts';
+import { DEFAULT_PRICES, grantsAccess, isOneOfPaid, planLimits, unlimitedLimits, type Currency, type PaidPlan, type Plan } from './plans.ts';
 import type { PaidInvoice, PlanPrice } from './stripe.ts';
 
 // Cockpit de l'éditeur : chiffres de toute la plateforme sur une période (7, 30 ou 90 jours), comparés à la
@@ -311,7 +311,7 @@ async function accountRows(
   const sixWeeks = new Date(now.getTime() - 42 * DAY);
   const [orgs, weekly, daily, last, period, credits] = await Promise.all([
     db
-      .select({ id: organizations.id, name: organizations.name, plan: organizations.plan })
+      .select({ id: organizations.id, name: organizations.name, plan: organizations.plan, unlimited: organizations.unlimited })
       .from(organizations)
       .where(
         sql`exists (select 1 from ${simulations} s where s.organization_id = ${organizations.id} and s.status = 'completed') or exists (select 1 from ${billingAccounts} b where b.organization_id = ${organizations.id} and b.plan is not null)`,
@@ -362,7 +362,7 @@ async function accountRows(
     // Six semaines, de la plus ancienne à la plus récente.
     const weeklyCalls = Array.from({ length: 6 }, (_, i) => weekly.find((w) => w.organizationId === org.id && w.week === 5 - i)?.n ?? 0);
     const lastActivity = lastBy.get(org.id) ?? null;
-    const limits = planLimits(org.plan as Plan);
+    const limits = org.unlimited ? unlimitedLimits() : planLimits(org.plan as Plan);
     const usage = limits.monthlyCredits ? Math.min(1, (usedBy.get(org.id) ?? 0) / limits.monthlyCredits) : 0;
     const inactive = !lastActivity || now.getTime() - lastActivity.getTime() >= INACTIVE_DAYS * DAY;
     const recent = weeklyCalls[4] + weeklyCalls[5];

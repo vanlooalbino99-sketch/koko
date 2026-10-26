@@ -246,10 +246,13 @@ export default async function BillingPage({ searchParams }: Props) {
             </p>
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-2xl font-semibold tabular-nums">
-                {trial ? format(b.trialLeft, { n: credits.trialCallsLeft ?? 0 }) : format(b.creditsLeft, { n: credits.remaining })}
+                {credits.unlimited ? b.unlimited : trial ? format(b.trialLeft, { n: credits.trialCallsLeft ?? 0 }) : format(b.creditsLeft, { n: credits.remaining })}
               </span>
-              <span className="text-xs text-muted-foreground tabular-nums">{format(trial ? b.trialUsed : b.creditsUsed, { used: usedValue, total: usedMax })}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {credits.unlimited ? format(b.unlimitedUsed, { used: credits.used }) : format(trial ? b.trialUsed : b.creditsUsed, { used: usedValue, total: usedMax })}
+              </span>
             </div>
+            {!credits.unlimited && (
             <div
               className="h-2 rounded-full bg-[#e9ebef]"
               role="progressbar"
@@ -263,8 +266,13 @@ export default async function BillingPage({ searchParams }: Props) {
                 style={{ width: `${usedPct}%` }}
               />
             </div>
+            )}
             <p className="text-xs text-muted-foreground">
-              {trial ? format(b.trialHint, { calls: credits.trialCalls ?? 0, minutes: credits.maxCallMinutes }) : b.creditsHint}
+              {credits.unlimited
+                ? format(b.unlimitedHint, { minutes: credits.maxCallMinutes })
+                : trial
+                  ? format(b.trialHint, { calls: credits.trialCalls ?? 0, minutes: credits.maxCallMinutes })
+                  : b.creditsHint}
             </p>
           </div>
 
@@ -289,7 +297,7 @@ export default async function BillingPage({ searchParams }: Props) {
                 <CreditCard className="size-4" aria-hidden="true" /> {b.subscriptionTitle}
               </p>
               <Badge variant="outline" className="border-primary/25 bg-primary/5 text-primary">
-                {t.enums.plan[credits.plan]}
+                {credits.unlimited ? b.unlimited : t.enums.plan[credits.plan]}
               </Badge>
             </div>
             {account?.status && (
@@ -306,7 +314,8 @@ export default async function BillingPage({ searchParams }: Props) {
               </p>
             )}
             {account?.status === 'past_due' && <FormAlert message={b.pastDue} />}
-            {!provider && <p className="text-sm text-muted-foreground">{b.notConfigured}</p>}
+            {credits.unlimited && <p className="text-sm text-muted-foreground">{format(b.unlimitedHint, { minutes: credits.maxCallMinutes })}</p>}
+            {!provider && !credits.unlimited && <p className="text-sm text-muted-foreground">{b.notConfigured}</p>}
             {provider && !canManage && <p className="text-sm text-muted-foreground">{b.notManager}</p>}
           </div>
         </div>

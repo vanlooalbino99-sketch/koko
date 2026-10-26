@@ -210,6 +210,34 @@ test("essai gratuit : épuisé après deux appels aboutis, même s'il reste des 
   assert.equal(credits.remaining, 0);
 });
 
+test('accès illimité offert : ni essai ni plafond de minutes, droits de Premium, appel toujours borné à 15 minutes', async () => {
+  const { auth } = await newUser(db, 'Hector');
+  await db.update(organizations).set({ unlimited: true }).where(eq(organizations.id, auth.organization.id));
+  const [scenario] = await listScenarios(db, auth, { scope: 'catalog', language: 'fr', family: 'cold_call' });
+  const playable = (await getPlayableVersion(db, auth, scenario.id))!;
+  for (let i = 0; i < 3; i++) {
+    await db.insert(simulations).values({
+      organizationId: auth.organization.id,
+      userId: auth.user.id,
+      scenarioVersionId: playable.versionId,
+      status: 'completed',
+      durationSeconds: 600,
+    });
+  }
+  const credits = await creditStatus(db, auth.organization);
+  assert.equal(credits.plan, 'free');
+  assert.equal(credits.unlimited, true);
+  assert.equal(credits.trialCalls, null);
+  assert.equal(credits.trialCallsLeft, null);
+  assert.ok(credits.remaining > 100_000);
+  assert.equal(credits.maxCallMinutes, 15);
+  assert.equal(credits.privateScenarios, null);
+  assert.equal(credits.teamSpace, true);
+  // Un espace ordinaire n'en profite pas.
+  const other = await newUser(db, 'Inès');
+  assert.equal((await creditStatus(db, other.auth.organization)).unlimited, false);
+});
+
 test('paiement : seuls propriétaire et administrateurs passent en caisse ; une offre solo refuse un espace à plusieurs', async () => {
   const fake = new FakeStripe();
   const owner = await newUser(db, 'Hélène');

@@ -134,8 +134,14 @@ export default async function DashboardPage({ searchParams }: Props) {
 
         <KpiCard
           title={d.kpiCredits}
-          value={format(d.creditsValue, { n: n(credits.remaining) })}
-          delta={<p className="text-[11.5px] text-[#9aa1b2]">{format(d.creditsHint, { total: n(credits.monthlyCredits), plan: t.enums.plan[credits.plan] })}</p>}
+          value={credits.unlimited ? t.billing.unlimited : format(d.creditsValue, { n: n(credits.remaining) })}
+          delta={
+            <p className="text-[11.5px] text-[#9aa1b2]">
+              {credits.unlimited
+                ? format(t.billing.unlimitedUsed, { used: n(credits.used) })
+                : format(d.creditsHint, { total: n(credits.monthlyCredits), plan: t.enums.plan[credits.plan] })}
+            </p>
+          }
         >
           <Bars values={buckets(pulse.minutes.byDay, 7)} label={d.creditsChart} />
         </KpiCard>

@@ -2,7 +2,7 @@
 export const fr = {
   meta: {
     title: 'Blackstart AI Sales Intelligence',
-    description: "Entraînez-vous à vendre avec des prospects IA réalistes, comprenez vos erreurs et mesurez vos progrès.",
+    description: 'Le simulateur IA pour entraîner les closers high-ticket : des prospects IA réalistes, une analyse de chaque appel, des progrès mesurés.',
   },
   common: {
     appName: 'Sales Intelligence',
@@ -51,7 +51,7 @@ export const fr = {
   },
   landing: {
     badge: 'Entraînement commercial par IA',
-    title: 'Entraînez-vous à vendre face à des prospects qui résistent vraiment.',
+    title: 'Le simulateur IA pour entraîner les closers high-ticket.',
     subtitle:
       "Des prospects IA avec un budget, des objections et des informations qu'ils ne livrent qu'aux bonnes questions. Après chaque appel, une analyse précise de ce qui a marché et de ce qu'il faut travailler.",
     ctaSignup: 'Créer mon compte',

@@ -3,7 +3,7 @@ import type { Dictionary } from './fr.ts';
 export const en: Dictionary = {
   meta: {
     title: 'Blackstart AI Sales Intelligence',
-    description: 'Practice selling with realistic AI prospects, understand your mistakes and track your progress.',
+    description: 'The AI simulator for training high-ticket closers: realistic AI prospects, an analysis of every call, measurable progress.',
   },
   common: {
     appName: 'Sales Intelligence',
@@ -52,7 +52,7 @@ export const en: Dictionary = {
   },
   landing: {
     badge: 'AI sales training',
-    title: 'Practice selling to prospects who actually push back.',
+    title: 'The AI simulator for training high-ticket closers.',
     subtitle:
       'AI prospects with a budget, objections and facts they only share when you ask the right questions. After each call, a precise analysis of what worked and what to work on.',
     ctaSignup: 'Create my account',

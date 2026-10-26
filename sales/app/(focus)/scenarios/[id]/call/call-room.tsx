@@ -46,6 +46,7 @@ function Room({ data }: { data: VoxStatic }) {
   const [khz, setKhz] = useState<number | null>(null);
   const [volumeOn, setVolumeOn] = useState(true);
   const [interrupted, setInterrupted] = useState(false);
+  const [dropped, setDropped] = useState<{ resumeHref: string; reportHref: string }>();
 
   const simulationId = useRef<string | null>(null);
   const maxSeconds = useRef(Infinity);
@@ -77,9 +78,15 @@ function Room({ data }: { data: VoxStatic }) {
       }
       setPhase('ending');
       await finishSimulationAction(id, reason, message).catch(() => null);
+      // Coupure en cours d'appel : on propose de reprendre tout de suite plutôt que d'ouvrir le rapport.
+      if (reason === 'error') {
+        setDropped({ resumeHref: `/scenarios/${data.scenario.id}/call?reprise=${id}`, reportHref: `/simulations/${id}` });
+        setPhase('idle');
+        return;
+      }
       router.push(`/simulations/${id}`);
     },
-    [router],
+    [router, data.scenario.id],
   );
 
   // Réplique du vendeur : comptes (mots, questions, tics, concessions) et signaux, horodatés à son début.
@@ -187,6 +194,7 @@ function Room({ data }: { data: VoxStatic }) {
 
   async function start() {
     setError(undefined);
+    setDropped(undefined);
     setPhase('starting');
     try {
       // Demande explicite du micro avant d'ouvrir l'appel, pour expliquer un refus clairement.
@@ -199,7 +207,7 @@ function Room({ data }: { data: VoxStatic }) {
       setPhase('idle');
       return;
     }
-    const res = await startSimulationAction(data.scenario.id).catch(() => ({ ok: false as const, error: 'provider_error' as const }));
+    const res = await startSimulationAction(data.scenario.id, data.drill?.ref ?? undefined).catch(() => ({ ok: false as const, error: 'provider_error' as const }));
     if (!res.ok) {
       setError(errors[res.error]);
       setPhase('idle');
@@ -221,7 +229,12 @@ function Room({ data }: { data: VoxStatic }) {
     setMarkers([]);
     setStats(EMPTY_STATS);
     setVolumeOn(true);
-    startSession({ conversationToken: res.token, connectionType: 'webrtc' });
+    // Exercice ciblé ou reprise : le prospect décroche sur la réplique choisie par le serveur.
+    startSession({
+      conversationToken: res.token,
+      connectionType: 'webrtc',
+      ...(res.firstMessage ? { overrides: { agent: { firstMessage: res.firstMessage } } } : {}),
+    });
   }
 
   function mark() {
@@ -251,6 +264,7 @@ function Room({ data }: { data: VoxStatic }) {
         volumeOn,
         interrupted,
         error,
+        dropped,
       }}
       on={{
         start: () => void start(),

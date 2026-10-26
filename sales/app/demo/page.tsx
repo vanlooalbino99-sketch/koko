@@ -49,6 +49,7 @@ export default async function DemoPage() {
         publicProfile: content.prospect.publicProfile,
       },
       offer: { name: content.offer.name, price: content.offer.price },
+      memo: { steps: t.call.outline[meta.family], criteria: content.successCriteria },
     },
     voiceName: null,
     remaining: null,

@@ -160,7 +160,7 @@ export async function analyzeSimulation(db: Db, analyzer: Analyzer, simulationId
   const feedbackLocale: Locale = isOneOf(LOCALES, loaded.userLocale) ? loaded.userLocale : 'fr';
   try {
     const meta = ScenarioMetaSchema.parse(scenario);
-    const output = await analyzer.analyze(analysisPrompt({ meta, content, weights, transcript, feedbackLocale }));
+    const output = await analyzer.analyze(analysisPrompt({ meta, content, weights, transcript, feedbackLocale, drill: sim.drill }));
     const final = finalizeAnalysis(output.analysis, weights, transcript);
     // Compétences à travailler : celles citées par Claude, sinon les deux plus faibles de l'appel.
     const focus = final.focusSkills.length

@@ -22,7 +22,7 @@ test('dashboard : zéro partout pour un nouveau compte, aucun chiffre inventé',
   assert.equal(d.averageScore, null);
   assert.deepEqual(d.recent, []);
   assert.deepEqual(d.scoreHistory, []);
-  assert.equal(d.catalogScenarios, 16);
+  assert.equal(d.catalogScenarios, 24);
   assert.equal(d.members, 1);
 });
 

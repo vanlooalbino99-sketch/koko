@@ -3,7 +3,16 @@ import { audit } from '../audit.ts';
 import type { AuthContext } from '../auth/service.ts';
 import { creditStatus, debitSimulation, platformUsage } from '../billing/credits.ts';
 import type { Db } from '../db/client.ts';
-import { scenarioVersions, scenarios, simulations, voiceAgents, type Simulation, type TranscriptTurn } from '../db/schema.ts';
+import {
+  scenarioVersions,
+  scenarios,
+  simulationAnalyses,
+  simulations,
+  voiceAgents,
+  type Simulation,
+  type SimulationDrill,
+  type TranscriptTurn,
+} from '../db/schema.ts';
 import type { Locale } from '../domain.ts';
 import { ScenarioMetaSchema } from '../scenarios/content.ts';
 import { getPlayableVersion, type PlayableVersion } from '../scenarios/service.ts';
@@ -38,8 +47,60 @@ export async function ensureVoiceAgent(db: Db, provider: VoiceProvider, playable
 }
 
 export type StartResult =
-  | { ok: true; simulationId: string; token: string; maxSeconds: number }
+  | { ok: true; simulationId: string; token: string; maxSeconds: number; firstMessage?: string }
   | { ok: false; error: 'not_found' | 'quota_exceeded' | 'concurrent_limit' | 'platform_saturated' | 'provider_error' };
+
+// Demande du navigateur : rejouer le moment n° « moment » des reformulations d'un appel, ou reprendre un appel coupé.
+export type DrillRequest = { kind: 'moment'; from: string; moment: number } | { kind: 'resume'; from: string };
+
+// Un exercice ciblé est court : le temps de rejouer le moment et d'enchaîner.
+export const DRILL_MAX_SECONDS = 3 * 60;
+// Une reprise n'est proposée que peu après la coupure.
+const RESUME_WITHIN_MS = 2 * 60 * 60 * 1000;
+const RESUME_LINE: Record<Locale, string> = {
+  fr: 'Allô ? Excusez-moi, ça a coupé. Vous disiez ?',
+  en: 'Hello? Sorry, we got cut off. You were saying?',
+};
+
+// Exercice calculé par le serveur à partir d'un appel de l'utilisateur sur le même scénario : le texte vient de
+// la transcription et de l'analyse enregistrées, jamais du navigateur.
+export async function prepareDrill(db: Db, auth: AuthContext, scenarioId: string, req: DrillRequest, now = new Date()): Promise<SimulationDrill | null> {
+  const source = await ownSimulation(db, auth, String(req.from ?? ''));
+  if (!source) return null;
+  const [row] = await db
+    .select({ scenarioId: scenarioVersions.scenarioId, language: scenarios.language })
+    .from(scenarioVersions)
+    .innerJoin(scenarios, eq(scenarios.id, scenarioVersions.scenarioId))
+    .where(eq(scenarioVersions.id, source.scenarioVersionId))
+    .limit(1);
+  if (!row || row.scenarioId !== scenarioId) return null;
+  if (req.kind === 'resume') {
+    const ended = source.endedAt ?? source.createdAt;
+    if (source.endReason !== 'error' || now.getTime() - ended.getTime() > RESUME_WITHIN_MS) return null;
+    return { kind: 'resume', fromSimulationId: source.id, prospectLine: RESUME_LINE[row.language === 'en' ? 'en' : 'fr'] };
+  }
+  const [analysis] = await db
+    .select({ result: simulationAnalyses.result })
+    .from(simulationAnalyses)
+    .where(and(eq(simulationAnalyses.simulationId, source.id), eq(simulationAnalyses.status, 'completed')))
+    .limit(1);
+  const improvements = (analysis?.result as { improvements?: { turn: number; said: string; better: string; why: string }[] } | undefined)?.improvements;
+  const imp = Number.isInteger(req.moment) ? improvements?.[req.moment] : undefined;
+  const transcript = source.transcript ?? [];
+  if (!imp) return null;
+  const before = transcript.slice(0, Math.max(0, imp.turn)).findLast((t) => t.role === 'prospect');
+  if (!before?.text.trim()) return null;
+  const cut = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
+  return {
+    kind: 'moment',
+    fromSimulationId: source.id,
+    moment: req.moment,
+    prospectLine: cut(before.text.trim(), 400),
+    said: cut(imp.said, 600),
+    better: cut(imp.better, 600),
+    why: cut(imp.why, 600),
+  };
+}
 
 export async function startSimulation(
   db: Db,
@@ -47,9 +108,12 @@ export async function startSimulation(
   auth: AuthContext,
   scenarioId: string,
   voices: Partial<Record<Locale, string>> = {},
+  drillRequest?: DrillRequest,
 ): Promise<StartResult> {
   const playable = await getPlayableVersion(db, auth, scenarioId);
   if (!playable) return { ok: false, error: 'not_found' };
+  const drill = drillRequest ? await prepareDrill(db, auth, playable.scenario.id, drillRequest) : null;
+  if (drillRequest && !drill) return { ok: false, error: 'not_found' };
   // Un seul appel à la fois par vendeur : un appel précédent resté ouvert (onglet fermé) part en récupération de transcription.
   await db
     .update(simulations)
@@ -78,6 +142,7 @@ export async function startSimulation(
       scenarioVersionId: playable.versionId,
       status: 'connecting',
       providerAgentId: agentId,
+      drill,
     })
     .returning({ id: simulations.id });
 
@@ -91,10 +156,13 @@ export async function startSimulation(
       actorUserId: auth.user.id,
       targetType: 'simulation',
       targetId: sim.id,
-      metadata: { scenarioId, version: playable.versionNumber },
+      metadata: { scenarioId, version: playable.versionNumber, ...(drill ? { drill: drill.kind, from: drill.fromSimulationId } : {}) },
     });
     // L'essai coupe l'appel plus tôt (5 minutes) : l'écran d'appel raccroche à cette limite.
-    return { ok: true, simulationId: sim.id, token, maxSeconds: Math.min(credits.maxCallMinutes, credits.remaining) * 60 };
+    const maxSeconds = Math.min(credits.maxCallMinutes, credits.remaining) * 60;
+    return drill
+      ? { ok: true, simulationId: sim.id, token, maxSeconds: drill.kind === 'moment' ? Math.min(maxSeconds, DRILL_MAX_SECONDS) : maxSeconds, firstMessage: drill.prospectLine }
+      : { ok: true, simulationId: sim.id, token, maxSeconds };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('[voice] jeton de conversation refusé', message);

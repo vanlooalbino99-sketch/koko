@@ -190,6 +190,19 @@ export const voiceAgents = pgTable('voice_agents', {
 });
 
 // Une réplique de la transcription, normalisée depuis la réponse d'ElevenLabs.
+// Appel lancé depuis un appel précédent : « moment » rejoue une réplique ratée, « resume » reprend après une coupure.
+export type SimulationDrill = {
+  kind: 'moment' | 'resume';
+  fromSimulationId: string;
+  // Rang de la reformulation rejouée dans l'analyse de l'appel d'origine.
+  moment?: number;
+  // Première phrase du prospect, imposée à l'ouverture de l'appel.
+  prospectLine: string;
+  said?: string;
+  better?: string;
+  why?: string;
+};
+
 export type TranscriptTurn = {
   role: 'seller' | 'prospect';
   text: string;
@@ -231,6 +244,8 @@ export const simulations = pgTable(
     overallScore: integer('overall_score'),
     // Moments marqués par le vendeur pendant l'appel (secondes depuis le début), repris dans le rapport.
     markers: integer('markers').array().notNull().default(sql`'{}'::integer[]`),
+    // Exercice ciblé (rejouer un moment d'un appel précédent) ou reprise après une coupure : calculé par le serveur.
+    drill: jsonb('drill').$type<SimulationDrill>(),
     createdAt: createdAt(),
   },
   (t) => [

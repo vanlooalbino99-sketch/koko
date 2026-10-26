@@ -371,13 +371,13 @@ test('parcours complet d\'un nouvel utilisateur', async () => {
   assert.equal(await recommended.count(), 3);
   await shot(page, '03-dashboard');
 
-  // Catalogue : 16 scénarios, filtre par langue, recherche.
+  // Catalogue : 24 scénarios, filtre par langue, recherche.
   await page.getByRole('link', { name: 'Scénarios', exact: true }).first().click();
   await page.waitForURL(`${BASE}/scenarios`);
-  await assert.doesNotReject(page.getByText('16 scénarios').waitFor());
+  await assert.doesNotReject(page.getByText('24 scénarios').waitFor());
   await page.getByLabel("Langue de l'appel").selectOption('fr');
   await page.getByRole('button', { name: 'Filtrer' }).click();
-  await assert.doesNotReject(page.getByText('8 scénarios').waitFor());
+  await assert.doesNotReject(page.getByText('12 scénarios').waitFor());
   await shot(page, '04-scenarios');
 
   // Un scénario du catalogue ne montre jamais ses informations cachées.
@@ -594,6 +594,20 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   const hrefs = await next.evaluateAll((links) => links.map((a) => a.getAttribute('href')));
   assert.ok(!hrefs.includes(`/scenarios/${report.scenarioId}`));
   await shot(page, '12b-rapport-recommandations');
+  // Exercice ciblé : le prospect décroche sur la réplique qui précédait la phrase à reformuler.
+  await page.getByRole('link', { name: 'Rejouer ce moment' }).first().click();
+  await page.waitForURL(/\/call\?exercice=/);
+  const drill = page.getByRole('complementary', { name: 'Exercice ciblé' });
+  await assert.doesNotReject(drill.getByText('« Une dizaine, peut-être plus. »').waitFor());
+  await assert.doesNotReject(drill.getByText('« Qu’est-ce qui vous arrangerait cette semaine ? »').waitFor());
+  // Fiche mémo du brief : trame de l'appel à froid et critères de réussite du scénario. On attend que l'écran
+  // d'appel soit chargé : avant, le brief appartient à l'écran d'attente, remplacé ensuite.
+  await page.locator('[data-phase="idle"]').waitFor();
+  await page.getByRole('button', { name: 'Brief' }).click();
+  await assert.doesNotReject(page.getByText('Trame conseillée').waitFor());
+  await assert.doesNotReject(page.getByText('Rendez-vous fixé avec un jour et une heure.').waitFor());
+  await shot(page, '12c-exercice-cible');
+  await page.goto(`${BASE}/simulations/${report.simulationId}?tab=recommendations`);
   // Élocution : chiffres calculés sur la transcription réelle.
   await tabs.getByRole('link', { name: 'Élocution' }).click();
   await page.waitForURL(/tab=speech/);

@@ -132,8 +132,9 @@ export function agentPayload(
       // Plafond de durée : la durée visée du scénario plus une marge, jamais plus de MAX_CALL_MINUTES (maîtrise des coûts).
       conversation: { max_duration_seconds: Math.min(MAX_CALL_MINUTES, meta.estimatedMinutes + 5) * 60 },
     },
-    // Seuls les jetons émis par notre serveur ouvrent une conversation avec ce prospect.
-    platform_settings: { auth: { enable_auth: true } },
+    // Seuls les jetons émis par notre serveur ouvrent une conversation avec ce prospect. La première phrase peut être
+    // remplacée à l'ouverture (exercice ciblé, reprise après une coupure) ; la consigne, jamais.
+    platform_settings: { auth: { enable_auth: true }, overrides: { conversation_config_override: { agent: { first_message: true } } } },
   };
 }
 

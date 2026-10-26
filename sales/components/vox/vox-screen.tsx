@@ -33,6 +33,7 @@ import {
 import type { Dictionary } from '@/lib/i18n';
 import { format } from '@/lib/i18n/format';
 import type { Locale } from '@/lib/domain';
+import type { DrillRequest } from '@/lib/simulations/service';
 import {
   annotate,
   coachTip,
@@ -86,7 +87,10 @@ export type VoxStatic = {
     chips: string[];
     prospect: { name: string; role: string; company: string; publicProfile: string };
     offer: { name: string; price: string };
+    memo: { steps: string[]; criteria: string[] };
   };
+  // Exercice ciblé ou reprise après une coupure : ce que le prospect dira en décrochant et le conseil à appliquer.
+  drill?: { ref: DrillRequest; kind: 'moment' | 'resume'; prospectLine: string; said?: string; better?: string } | null;
   voiceName: string | null;
   remaining: string | null;
   // L'appel ne peut pas démarrer (clé absente, minutes épuisées) : message et lien éventuel.
@@ -120,6 +124,8 @@ export type VoxLive = {
   error?: string;
   // Message affiché à la place de « Prêt à appeler » quand l'écran est au repos (fin de la démo, par exemple).
   notice?: string;
+  // L'appel a coupé après la connexion : reprendre tout de suite ou lire le rapport de la partie enregistrée.
+  dropped?: { resumeHref: string; reportHref: string };
 };
 
 // Lecture du son en continu, sans re-rendu React : niveau global, spectre et historique de l'appel.
@@ -182,7 +188,7 @@ export function VoxScreen({
 }) {
   const asked = live.stats.openQuestions + live.stats.closedQuestions;
   return (
-    <div className="theme-vox relative min-h-dvh lg:grid lg:grid-cols-[234px_minmax(0,1fr)] lg:grid-rows-[auto_auto_auto] xl:h-dvh xl:grid-cols-[234px_minmax(0,1fr)_336px] xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
+    <div data-phase={live.phase} className="theme-vox relative min-h-dvh lg:grid lg:grid-cols-[234px_minmax(0,1fr)] lg:grid-rows-[auto_auto_auto] xl:h-dvh xl:grid-cols-[234px_minmax(0,1fr)_336px] xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
       <Sidebar data={data} asked={asked} />
       <Header data={data} />
       <main id="contenu" className="flex min-h-0 flex-col lg:col-start-2 xl:row-start-2">
@@ -383,7 +389,37 @@ function Brief({ data }: { data: VoxStatic }) {
           </li>
         ))}
       </ul>
+      {data.drill && <DrillCard data={data} />}
     </section>
+  );
+}
+
+// Exercice ciblé : la réplique du prospect qui ouvre l'appel, ce que le vendeur avait dit et la meilleure réponse.
+function DrillCard({ data }: { data: VoxStatic }) {
+  const c = data.labels;
+  const d = data.drill!;
+  return (
+    <aside aria-label={d.kind === 'moment' ? c.drillTitle : c.resumeTitle} className="mt-4 grid gap-3 rounded-xl border border-teal/30 bg-teal/[0.06] p-4 text-[13.5px]">
+      <div>
+        <p className="text-[11px] tracking-wide text-teal uppercase">{d.kind === 'moment' ? c.drillTitle : c.resumeTitle}</p>
+        <p className="mt-1 text-muted-foreground">{d.kind === 'moment' ? c.drillIntro : c.resumeIntro}</p>
+      </div>
+      <p>
+        <span className="text-muted-foreground">{c.drillProspect} : </span>« {d.prospectLine} »
+      </p>
+      {d.kind === 'moment' && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <p className="text-[11px] tracking-wide text-muted-foreground uppercase">{c.drillSaid}</p>
+            <p className="mt-1 text-foreground/80">« {d.said} »</p>
+          </div>
+          <div>
+            <p className="text-[11px] tracking-wide text-teal uppercase">{c.drillBetter}</p>
+            <p className="mt-1">« {d.better} »</p>
+          </div>
+        </div>
+      )}
+    </aside>
   );
 }
 
@@ -575,6 +611,20 @@ function Visualizer({ data, live, meter }: { data: VoxStatic; live: VoxLive; met
               <p role="alert" className="max-w-md rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
                 {data.blocked.message}
               </p>
+            ) : live.dropped ? (
+              <>
+                <p role="alert" className="max-w-md text-[15px] text-balance">
+                  {c.dropped}
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Link href={live.dropped.resumeHref} className="rounded-lg bg-teal px-3.5 py-2 text-[13.5px] font-medium text-black hover:bg-teal/90">
+                    {c.resume}
+                  </Link>
+                  <Link href={live.dropped.reportHref} className="rounded-lg border border-border px-3.5 py-2 text-[13.5px] hover:bg-surface-2">
+                    {c.seeReport}
+                  </Link>
+                </div>
+              </>
             ) : live.notice ? (
               <p className="max-w-md text-[15px] text-balance">{live.notice}</p>
             ) : (
@@ -584,7 +634,7 @@ function Visualizer({ data, live, meter }: { data: VoxStatic; live: VoxLive; met
                 {data.remaining && <p className="text-[12px] text-muted-foreground">{data.remaining}</p>}
               </>
             )}
-            {live.error && (
+            {live.error && !live.dropped && (
               <p role="alert" className="max-w-md rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
                 {live.error}
               </p>
@@ -788,6 +838,26 @@ function Controls({ data, live, on }: { data: VoxStatic; live: VoxLive; on: VoxH
               <div>
                 <p className="text-[11px] tracking-wide text-teal uppercase">{c.context}</p>
                 <p className="mt-1 text-muted-foreground">{s.context}</p>
+              </div>
+            )}
+            {s.memo.steps.length > 0 && (
+              <div>
+                <p className="text-[11px] tracking-wide text-teal uppercase">{c.memoSteps}</p>
+                <ol className="mt-1 grid list-decimal gap-0.5 pl-5 text-muted-foreground">
+                  {s.memo.steps.map((step) => (
+                    <li key={step}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+            {s.memo.criteria.length > 0 && (
+              <div>
+                <p className="text-[11px] tracking-wide text-teal uppercase">{c.memoCriteria}</p>
+                <ul className="mt-1 grid list-disc gap-0.5 pl-5 text-muted-foreground">
+                  {s.memo.criteria.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

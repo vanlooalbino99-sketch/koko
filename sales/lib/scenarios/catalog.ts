@@ -738,6 +738,425 @@ const ENTRIES: Bilingual[] = [
       },
     },
   },
+  // Marchés internationaux (2026-10-26) : Afrique francophone et anglophone, diaspora. Les habitudes d'achat
+  // (WhatsApp, mobile money, paiement étalé, décision familiale) sont des traits de chaque prospect, pas des généralités.
+  {
+    key: 'closing-coaching-abidjan',
+    shared: {
+      family: 'closing',
+      difficulty: 'intermediate',
+      channel: 'video',
+      estimatedMinutes: 10,
+      personality: 'undecided',
+      decisionPower: 'decider',
+      skillWeights: { needs_discovery: 3, reformulation: 3, value_proposition: 4, objection_handling: 5, silence_management: 3, closing: 5 },
+    },
+    text: {
+      fr: {
+        title: 'Closing high-ticket : accompagnement à 2 000 € pour une dirigeante à Abidjan',
+        summary: "Conclure un accompagnement commercial de 3 mois avec une fondatrice intéressée, qui hésite sur le prix et veut en parler à son associé.",
+        industry: 'Événementiel',
+        objective: "Obtenir son accord pour démarrer l'accompagnement, avec le mode de paiement choisi et une date de début.",
+        context:
+          "Deuxième rendez-vous, en visio. Au premier appel, il y a une semaine, elle a dit vouloir structurer sa prospection d'entreprises. Hier, elle vous a écrit sur WhatsApp : « On fait le point demain ? »",
+        offer: {
+          name: 'Accompagnement Closing 90 jours',
+          description: '12 séances de coaching en visio, scripts de prospection adaptés à son marché, suivi de ses rendez-vous commerciaux sur WhatsApp.',
+          price: '2 000 € (environ 1 312 000 FCFA), en une fois ou en 3 mensualités',
+        },
+        prospect: {
+          name: 'Aminata Koné',
+          role: 'Fondatrice et gérante',
+          company: 'Kanga Events',
+          companySize: '6 salariés',
+          publicProfile: "Agence d'événementiel d'entreprise à Abidjan (Cocody), clients dans la banque et les télécoms, très active sur LinkedIn et Instagram.",
+        },
+        need: "Signer des contrats annuels avec des entreprises au lieu de dépendre des mariages et des événements ponctuels.",
+        budget: "Peut payer 2 000 € mais préfère étaler : trésorerie tendue en fin de trimestre, en attendant le paiement d'une banque cliente.",
+        objections: [
+          "C'est un gros montant pour nous en ce moment.",
+          "Je dois en parler à mon associé avant de m'engager.",
+          'Comment je sais que ça marchera sur le marché ivoirien ? Vos exemples sont surtout français.',
+          'On peut commencer le mois prochain ?',
+        ],
+        constraints: ['A 30 minutes avant un rendez-vous client.', "Ne s'engage pas si elle sent une pression ou une urgence artificielle."],
+        hiddenFacts: [
+          "Son associé lui a déjà dit qu'il la suivrait si elle trouvait le bon accompagnement.",
+          "Elle a perdu un appel d'offres de 18 millions de FCFA le mois dernier, faute de relance structurée.",
+          'Elle paie couramment ses prestataires par Wave ou Orange Money.',
+        ],
+        successCriteria: [
+          "Rappelle les objectifs qu'elle a donnés au premier appel avant de parler du prix.",
+          "Relie le montant à un contrat d'entreprise gagné.",
+          "Propose une solution concrète pour l'associé (appel à trois, résumé écrit) au lieu d'accepter le report.",
+          'Obtient une décision claire : démarrage, mode de paiement et date.',
+        ],
+        endConditions: [
+          "Accepte de démarrer si le vendeur relie l'offre à l'appel d'offres perdu et propose un paiement en 3 fois.",
+          'Reporte poliment si le vendeur insiste lourdement ou baisse son prix sans contrepartie.',
+        ],
+      },
+      en: {
+        title: 'High-ticket closing: a $2,000 coaching program for a founder in Lagos',
+        summary: 'Close a 3-month sales coaching program with a founder who is interested, hesitates on price and wants to talk to her business partner.',
+        industry: 'Events',
+        objective: 'Get her agreement to start the program, with the payment option chosen and a start date.',
+        context:
+          'Second meeting, on video. On the first call a week ago she said she wants to structure how she prospects companies. Yesterday she texted you on WhatsApp: "Shall we catch up tomorrow?"',
+        offer: {
+          name: '90-Day Closing Program',
+          description: '12 video coaching sessions, prospecting scripts adapted to her market, follow-up on her sales meetings over WhatsApp.',
+          price: '$2,000, paid at once or in 3 monthly installments',
+        },
+        prospect: {
+          name: 'Chiamaka Okafor',
+          role: 'Founder and CEO',
+          company: 'Kanga Events',
+          companySize: '6 employees',
+          publicProfile: 'Corporate events agency in Lagos (Victoria Island), clients in banking and telecoms, very active on LinkedIn and Instagram.',
+        },
+        need: 'Sign yearly contracts with companies instead of depending on weddings and one-off events.',
+        budget: 'Can pay $2,000 but prefers to spread it: cash is tight at quarter end while she waits for a bank client to pay.',
+        objections: [
+          "That's a big amount for us right now.",
+          'I need to talk to my business partner before committing.',
+          'How do I know this works in the Nigerian market? Your examples are mostly American.',
+          'Can we start next month?',
+        ],
+        constraints: ['Has 30 minutes before a client meeting.', 'Will not commit if she feels pressure or fake urgency.'],
+        hiddenFacts: [
+          'Her partner already told her he would back her if she found the right program.',
+          'She lost a 15-million-naira tender last month for lack of structured follow-up.',
+          'She usually pays suppliers by bank transfer or mobile money.',
+        ],
+        successCriteria: [
+          'Recalls the goals she shared on the first call before talking about price.',
+          'Ties the amount to one corporate contract won.',
+          'Offers a concrete way to involve the partner (three-way call, written summary) instead of accepting the delay.',
+          'Gets a clear decision: start, payment option and date.',
+        ],
+        endConditions: [
+          'Agrees to start if the seller ties the offer to the lost tender and offers 3 installments.',
+          'Politely postpones if the seller pushes hard or drops the price without getting anything back.',
+        ],
+      },
+    },
+  },
+  {
+    key: 'cold-call-fleet-dakar',
+    shared: {
+      family: 'cold_call',
+      difficulty: 'intermediate',
+      channel: 'phone',
+      estimatedMinutes: 6,
+      personality: 'skeptical',
+      decisionPower: 'influencer',
+      skillWeights: { opening: 5, questioning: 4, needs_discovery: 4, objection_handling: 4, closing: 4, clarity: 3 },
+    },
+    text: {
+      fr: {
+        title: 'Appel à froid : suivi GPS de flotte pour un transporteur à Dakar',
+        summary: "Obtenir un rendez-vous avec le directeur des opérations d'une entreprise de transport qui doute des logiciels venus de l'étranger.",
+        industry: 'Transport et logistique',
+        objective: 'Obtenir un rendez-vous de 30 minutes au dépôt, avec le directeur général, à une date précise.',
+        context: 'Vous appelez un jeudi à 10 h. Vous avez eu son numéro par un client commun, un distributeur de boissons de Thiès.',
+        offer: {
+          name: 'Blackstart Flotte',
+          description:
+            "Boîtiers GPS et application qui suivent chaque camion en temps réel, alertent en cas d'arrêt anormal et calculent la consommation de carburant. Fonctionne avec une connexion mobile faible.",
+          price: '15 000 FCFA par camion et par mois, installation offerte',
+        },
+        prospect: {
+          name: 'Moussa Diop',
+          role: 'Directeur des opérations',
+          company: 'Transports Diop & Fils',
+          companySize: '40 camions, 85 salariés',
+          publicProfile: 'Entreprise familiale de transport de marchandises entre le port de Dakar, Thiès et Touba, fondée par son père.',
+        },
+        need: 'Savoir où sont les camions et réduire les vols de carburant, qui pèsent sur la marge.',
+        budget: 'Aucun budget prévu ; son père, le directeur général, valide toute dépense au-dessus de 500 000 FCFA par mois.',
+        objections: [
+          'On a déjà essayé un GPS, ça ne captait pas sur la route de Touba.',
+          'Envoyez-moi ça sur WhatsApp, je regarderai.',
+          "Ces logiciels sont faits pour l'Europe, pas pour nos routes.",
+          "C'est mon père qui décide de ce genre de choses.",
+        ],
+        constraints: [
+          "Est au dépôt et souvent interrompu ; coupe court si rien ne l'intéresse au bout de 5 minutes.",
+          'Se méfie des vendeurs qui ne connaissent pas le terrain.',
+        ],
+        hiddenFacts: [
+          'Il estime perdre 8 à 10 % du carburant chaque mois.',
+          'Un camion a disparu deux jours le mois dernier ; le client a menacé de partir.',
+          'Le client commun qui vous a recommandé est un ami de son père.',
+        ],
+        successCriteria: [
+          'Cite le client commun dans les 30 premières secondes.',
+          'Pose au moins deux questions sur le carburant ou la sécurité des camions.',
+          'Répond à l’objection sur le réseau avec un fait précis.',
+          'Propose un rendez-vous avec le directeur général, avec un jour et une heure.',
+        ],
+        endConditions: [
+          'Accepte le rendez-vous si le vendeur a parlé du carburant et proposé d’inclure son père.',
+          'Demande un message WhatsApp et raccroche si le vendeur récite son argumentaire.',
+        ],
+      },
+      en: {
+        title: 'Cold call: GPS fleet tracking for a haulage company in Nairobi',
+        summary: 'Book a meeting with the operations director of a haulage firm who doubts software built abroad.',
+        industry: 'Transport and logistics',
+        objective: 'Book a 30-minute meeting at the depot with the managing director, on a specific date.',
+        context: 'You call on a Thursday at 10 am. You got his number from a mutual client, a beverage distributor in Nakuru.',
+        offer: {
+          name: 'Blackstart Fleet',
+          description: 'GPS trackers and an app that follow every truck in real time, alert on abnormal stops and compute fuel use. Works on a weak mobile signal.',
+          price: 'KES 3,000 per truck per month, installation included',
+        },
+        prospect: {
+          name: 'Daniel Otieno',
+          role: 'Operations director',
+          company: 'Otieno & Sons Haulage',
+          companySize: '40 trucks, 85 employees',
+          publicProfile: 'Family haulage company moving goods between the port of Mombasa, Nairobi and Kisumu, founded by his father.',
+        },
+        need: 'Know where the trucks are and cut fuel theft, which eats into margins.',
+        budget: 'Nothing planned; his father, the managing director, signs off on anything above KES 100,000 a month.',
+        objections: [
+          'We already tried a GPS system, it lost signal on the Kisumu road.',
+          'Send it to me on WhatsApp, I will look.',
+          'These systems are built for Europe, not for our roads.',
+          'My father decides these things.',
+        ],
+        constraints: ['At the depot and often interrupted; ends the call if nothing interests him after 5 minutes.', "Distrusts sellers who don't know the ground."],
+        hiddenFacts: [
+          'He estimates losing 8 to 10% of fuel every month.',
+          'A truck went missing for two days last month; the client threatened to leave.',
+          'The mutual client who referred you is a friend of his father.',
+        ],
+        successCriteria: [
+          'Mentions the mutual client in the first 30 seconds.',
+          'Asks at least two questions about fuel or truck security.',
+          'Answers the signal objection with a specific fact.',
+          'Proposes a meeting with the managing director, with a day and a time.',
+        ],
+        endConditions: [
+          'Accepts the meeting if the seller talked about fuel and offered to include his father.',
+          'Asks for a WhatsApp message and hangs up if the seller recites a pitch.',
+        ],
+      },
+    },
+  },
+  {
+    key: 'objections-freelance-online-store',
+    shared: {
+      family: 'objection_handling',
+      difficulty: 'intermediate',
+      channel: 'video',
+      estimatedMinutes: 8,
+      personality: 'price_sensitive',
+      decisionPower: 'decider',
+      skillWeights: { active_listening: 3, reformulation: 4, value_proposition: 4, objection_handling: 5, negotiation: 3, closing: 3 },
+    },
+    text: {
+      fr: {
+        title: 'Objection prix : boutique en ligne à 2 000 € pour une créatrice de mode',
+        summary: 'En freelance, défendre un devis de 2 000 € face à une créatrice qui a trouvé moins cher sur une plateforme.',
+        industry: 'Mode et e-commerce',
+        objective: 'Faire accepter le devis à 2 000 € sans remise, ou avec une contrepartie, et fixer la date de lancement du projet.',
+        context:
+          "Vous êtes freelance. Vous avez envoyé votre devis il y a trois jours, après un premier échange. Elle vous rappelle en visio : « J'ai eu une autre proposition, on peut en parler ? »",
+        offer: {
+          name: 'Boutique Shopify clé en main',
+          description: "Création de la boutique, 30 fiches produits, paiement en plusieurs fois, une heure de formation et un mois de suivi après le lancement.",
+          price: '2 000 € HT, 50 % à la commande',
+        },
+        prospect: {
+          name: 'Léa Mbemba-Martin',
+          role: 'Créatrice et fondatrice',
+          company: 'Maison Kanga',
+          companySize: 'Seule, avec une couturière à mi-temps',
+          publicProfile:
+            "Marque de vêtements en wax fabriqués à Paris, 12 000 abonnés sur Instagram ; vend aujourd'hui par messages privés et sur les marchés de créateurs.",
+        },
+        need: 'Vendre en ligne sans gérer chaque commande à la main par messages, pour lancer sa collection de printemps.',
+        budget: "Avait prévu 1 500 € ; peut aller jusqu'à 2 000 € si elle est convaincue.",
+        objections: [
+          "On m'a proposé la même chose à 900 € sur une plateforme de freelances.",
+          "2 000 €, c'est presque mon budget tissu pour la collection.",
+          'Vous pouvez faire un geste ?',
+          'Et si ça ne vend pas plus ?',
+        ],
+        constraints: ['Doit lancer sa collection dans six semaines.', 'A déjà été déçue par un prestataire qui a disparu après le paiement.'],
+        hiddenFacts: [
+          'Le freelance à 900 € ne fait ni les fiches produits ni le suivi.',
+          'Elle perd environ une commande sur trois faute de répondre assez vite aux messages.',
+          'Un concept store de Londres veut vendre ses pièces si elle a un site.',
+        ],
+        successCriteria: [
+          "Fait préciser ce que contient l'offre à 900 € avant de répondre.",
+          'Relie le prix aux commandes perdues et au lancement de la collection.',
+          'Ne baisse pas le prix sans contrepartie (paiement, périmètre, témoignage).',
+          'Obtient une décision et une date de lancement.',
+        ],
+        endConditions: [
+          'Accepte le devis si le vendeur a montré la différence de périmètre et rassuré sur le suivi après paiement.',
+          "Choisit l'offre à 900 € si le vendeur accorde une remise sans rien demander.",
+        ],
+      },
+      en: {
+        title: 'Price objection: a £1,600 online store for a fashion designer',
+        summary: 'As a freelancer, defend a £1,600 quote to a designer who found a cheaper offer on a platform.',
+        industry: 'Fashion and e-commerce',
+        objective: 'Get the £1,600 quote accepted with no discount, or with something in return, and set the project start date.',
+        context:
+          'You are a freelancer. You sent your quote three days ago after a first conversation. She calls you back on video: "I got another offer, can we talk about it?"',
+        offer: {
+          name: 'Turnkey Shopify store',
+          description: 'Store setup, 30 product pages, pay-in-installments checkout, a one-hour training session and one month of support after launch.',
+          price: '£1,600 + VAT, 50% upfront',
+        },
+        prospect: {
+          name: 'Grace Mensah-Clarke',
+          role: 'Designer and founder',
+          company: 'House of Kente',
+          companySize: 'Solo, with a part-time seamstress',
+          publicProfile: 'Clothing brand in kente and wax prints made in London, 12,000 Instagram followers; currently sells through DMs and at makers markets.',
+        },
+        need: 'Sell online without handling every order by hand in DMs, to launch her spring collection.',
+        budget: 'Had planned £1,200; can go up to £1,600 if convinced.',
+        objections: [
+          'Someone offered me the same thing for £700 on a freelance platform.',
+          "£1,600 is almost my fabric budget for the collection.",
+          'Can you do anything on the price?',
+          'What if it does not sell more?',
+        ],
+        constraints: ['Must launch her collection in six weeks.', 'Was let down before by a provider who vanished after being paid.'],
+        hiddenFacts: [
+          'The £700 freelancer does neither the product pages nor the support.',
+          'She loses about one order in three because she cannot answer DMs fast enough.',
+          'A concept store in Paris wants to stock her pieces if she has a website.',
+        ],
+        successCriteria: [
+          'Asks what the £700 offer includes before answering.',
+          'Ties the price to lost orders and the collection launch.',
+          'Gives no discount without something in return (payment, scope, testimonial).',
+          'Gets a decision and a start date.',
+        ],
+        endConditions: [
+          'Accepts the quote if the seller showed the difference in scope and reassured her about support after payment.',
+          'Picks the £700 offer if the seller gives a discount without asking for anything.',
+        ],
+      },
+    },
+  },
+  {
+    key: 'negotiation-solar-maintenance-hotel',
+    shared: {
+      family: 'negotiation',
+      difficulty: 'expert',
+      channel: 'phone',
+      estimatedMinutes: 10,
+      personality: 'analytical',
+      decisionPower: 'committee',
+      skillWeights: { needs_discovery: 3, value_proposition: 4, objection_handling: 4, silence_management: 3, negotiation: 5, closing: 4 },
+    },
+    text: {
+      fr: {
+        title: 'Négociation : contrat de maintenance solaire pour un hôtel à Douala',
+        summary: "Défendre la valeur d'un contrat de maintenance face à un directeur d'hôtel qui négocie chaque ligne et compare avec un technicien local.",
+        industry: 'Hôtellerie et énergie',
+        objective: 'Faire accepter un contrat annuel en gardant au moins 90 % du prix, avec une contrepartie pour tout ce que vous cédez.',
+        context:
+          "Votre société a installé les panneaux solaires de l'hôtel il y a un an et la garantie se termine. Vous appelez après l'envoi de votre proposition de renouvellement.",
+        offer: {
+          name: 'Maintenance Sérénité',
+          description: 'Deux visites préventives par an, nettoyage des panneaux, surveillance à distance de la production, intervention en 48 h en cas de panne.',
+          price: '4 800 000 FCFA par an (environ 7 300 €)',
+        },
+        prospect: {
+          name: 'Serge Ndongo',
+          role: 'Directeur général',
+          company: 'Hôtel Le Wouri',
+          companySize: '62 chambres',
+          publicProfile: "Hôtel d'affaires à Douala (Bonanjo), clientèle de sociétés pétrolières et d'ONG, propriété d'une famille d'investisseurs.",
+        },
+        need: 'Éviter les coupures pendant les délestages et réduire la facture de gazole des groupes électrogènes.',
+        budget: 'Les propriétaires ont plafonné chaque contrat de service à 4 millions de FCFA par an.',
+        objections: [
+          'Un technicien du quartier me fait le nettoyage pour le quart de ce prix.',
+          'Les panneaux sont neufs, pourquoi deux visites par an ?',
+          'Sans 20 % de moins, je ne peux pas présenter ça aux propriétaires.',
+          "Payer l'année d'avance, c'est impossible.",
+        ],
+        constraints: [
+          'Doit présenter la proposition aux propriétaires vendredi.',
+          'Respecte les vendeurs qui tiennent leur prix avec des chiffres ; se méfie de ceux qui cèdent vite.',
+        ],
+        hiddenFacts: [
+          "La production a baissé de 12 % ces trois derniers mois à cause de la poussière de l'harmattan.",
+          "L'hôtel a dépensé 9 millions de FCFA de gazole l'an dernier pendant les délestages.",
+          'Les propriétaires acceptent de dépasser le plafond si le gain est chiffré par écrit.',
+        ],
+        successCriteria: [
+          'Fait chiffrer le coût des coupures et du gazole avant de parler de prix.',
+          'Distingue clairement un simple nettoyage de la surveillance avec intervention en 48 h.',
+          'Ne cède rien sans contrepartie (paiement trimestriel contre engagement de deux ans, par exemple).',
+          'Obtient un accord sur un document chiffré à présenter aux propriétaires vendredi.',
+        ],
+        endConditions: [
+          "Accepte de présenter l'offre aux propriétaires si le gain est chiffré et le paiement étalé.",
+          "Met fin à l'appel s'il obtient 20 % de remise sans contrepartie : il en demandera encore plus vendredi.",
+        ],
+      },
+      en: {
+        title: 'Negotiation: solar maintenance contract for a hotel in Accra',
+        summary: 'Defend the value of a maintenance contract to a hotel manager who negotiates every line and compares you with a local technician.',
+        industry: 'Hospitality and energy',
+        objective: 'Get a yearly contract accepted while keeping at least 90% of the price, with something in return for anything you give.',
+        context:
+          "Your company installed the hotel's solar panels a year ago and the warranty is ending. You call after sending your renewal proposal.",
+        offer: {
+          name: 'Peace of Mind Maintenance',
+          description: 'Two preventive visits a year, panel cleaning, remote monitoring of output, 48-hour repair callout.',
+          price: 'GHS 85,000 per year',
+        },
+        prospect: {
+          name: 'Kwame Asante',
+          role: 'General manager',
+          company: 'The Osu Palm Hotel',
+          companySize: '62 rooms',
+          publicProfile: 'Business hotel in Accra (Osu), guests from oil companies and NGOs, owned by a family of investors.',
+        },
+        need: 'Avoid outages during power cuts and cut the diesel bill for the generators.',
+        budget: 'The owners capped each service contract at GHS 70,000 a year.',
+        objections: [
+          'A local technician cleans the panels for a quarter of this price.',
+          'The panels are new, why two visits a year?',
+          "Unless you take 20% off, I can't take this to the owners.",
+          'Paying a whole year upfront is impossible.',
+        ],
+        constraints: [
+          'Must present the proposal to the owners on Friday.',
+          'Respects sellers who hold their price with figures; distrusts those who give in quickly.',
+        ],
+        hiddenFacts: [
+          'Output fell 12% over the last three months because of harmattan dust.',
+          'The hotel spent GHS 160,000 on diesel last year during power cuts.',
+          'The owners accept going over the cap if the saving is quantified in writing.',
+        ],
+        successCriteria: [
+          'Gets the cost of outages and diesel quantified before talking price.',
+          'Clearly separates simple cleaning from monitoring with a 48-hour callout.',
+          'Gives nothing without something in return (quarterly payment for a two-year commitment, for example).',
+          'Agrees on a quantified document to present to the owners on Friday.',
+        ],
+        endConditions: [
+          'Agrees to present the offer to the owners if the saving is quantified and payment is spread.',
+          'Ends the call if he gets 20% off with nothing in return: he will ask for even more on Friday.',
+        ],
+      },
+    },
+  },
 ];
 
 export const CATALOG: CatalogEntry[] = ENTRIES.flatMap((entry) =>

@@ -280,6 +280,23 @@ export default async function SimulationPage({ params, searchParams }: Props) {
           </div>
         </header>
 
+        {sim.drill && (
+          <p className="mx-5 mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-teal/30 bg-teal/10 px-4 py-2.5 text-sm sm:mx-7 print:hidden">
+            <span>{sim.drill.kind === 'moment' ? r.drillBanner : r.resumedBanner}</span>
+            <Link href={`/simulations/${sim.drill.fromSimulationId}`} className="text-primary underline-offset-2 hover:underline">
+              {r.drillOrigin}
+            </Link>
+            {sim.drill.kind === 'moment' && provider && (
+              <Link
+                href={`/scenarios/${sim.scenarioId}/call?${new URLSearchParams({ exercice: sim.drill.fromSimulationId, moment: String(sim.drill.moment ?? 0) })}`}
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                {r.drillAgain}
+              </Link>
+            )}
+          </p>
+        )}
+
         {result && (
           <nav aria-label={r.tabsLabel} className="mt-5 overflow-x-auto border-b border-border px-3 sm:px-5 print:hidden">
             <ul className="flex min-w-max gap-1">
@@ -740,6 +757,14 @@ export default async function SimulationPage({ params, searchParams }: Props) {
                   <p className="mt-1 text-sm">« {imp.better} »</p>
                 </div>
                 <p className="text-sm text-muted-foreground md:col-span-2">{imp.why}</p>
+                {provider && (
+                  <div className="flex flex-wrap items-center gap-3 md:col-span-2 print:hidden">
+                    <Link href={`/scenarios/${sim!.scenarioId}/call?${new URLSearchParams({ exercice: sim!.id, moment: String(i) })}`} className={button}>
+                      <Repeat className="size-4" aria-hidden="true" /> {r.drillButton}
+                    </Link>
+                    <span className="text-xs text-muted-foreground">{r.drillHint}</span>
+                  </div>
+                )}
               </div>
             ))}
           </Panel>

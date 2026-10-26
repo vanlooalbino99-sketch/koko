@@ -13,6 +13,7 @@ import {
   saveMarkers,
   startSimulation,
   syncSimulation,
+  type DrillRequest,
   type StartResult,
 } from '@/lib/simulations/service';
 import { scheduleAnalysis } from '@/lib/server/analysis';
@@ -20,12 +21,19 @@ import { isDemo, refuseInDemo, requireAuth } from '@/lib/server/context';
 import { voiceProviderFromEnv } from '@/lib/voice/provider';
 import { configuredVoices } from '@/lib/voice/voices';
 
-export async function startSimulationAction(scenarioId: string): Promise<StartResult | { ok: false; error: 'not_configured' }> {
+export async function startSimulationAction(scenarioId: string, drill?: DrillRequest): Promise<StartResult | { ok: false; error: 'not_configured' }> {
   const auth = await requireAuth();
   const provider = voiceProviderFromEnv();
   // Démo : aucun appel n'est lancé (ni payé) ; l'écran d'appel l'annonce déjà.
   if (!provider || auth.demo) return { ok: false, error: 'not_configured' };
-  return startSimulation(await getDb(), provider, auth, String(scenarioId), configuredVoices());
+  // Seule la référence de l'appel d'origine vient du navigateur : le texte de l'exercice est relu par le serveur.
+  const request: DrillRequest | undefined =
+    drill?.kind === 'moment'
+      ? { kind: 'moment', from: String(drill.from), moment: Number(drill.moment) }
+      : drill?.kind === 'resume'
+        ? { kind: 'resume', from: String(drill.from) }
+        : undefined;
+  return startSimulation(await getDb(), provider, auth, String(scenarioId), configuredVoices(), request);
 }
 
 export async function markConnectedAction(simulationId: string, conversationId: string): Promise<boolean> {

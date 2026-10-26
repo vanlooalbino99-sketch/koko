@@ -1,16 +1,19 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { eq } from 'drizzle-orm';
-import { simulations, voiceAgents } from '../lib/db/schema.ts';
+import { simulationAnalyses, simulations, voiceAgents } from '../lib/db/schema.ts';
 import type { Db } from '../lib/db/client.ts';
 import { getPlayableVersion, listScenarios } from '../lib/scenarios/service.ts';
 import { ScenarioMetaSchema } from '../lib/scenarios/content.ts';
 import { agentPayload } from '../lib/voice/agent-config.ts';
+import { analysisPrompt } from '../lib/analysis/prompt.ts';
 import {
   finishSimulation,
   getSimulation,
   markSimulationConnected,
+  DRILL_MAX_SECONDS,
   MAX_MARKERS,
+  prepareDrill,
   saveMarkers,
   startSimulation,
   syncSimulation,
@@ -274,4 +277,83 @@ test('coûts : un appel à la fois dans l\'offre gratuite, garde-fou mensuel de 
     delete process.env.PLATFORM_MONTHLY_MINUTES;
   }
   assert.ok((await startSimulation(db, provider, solo.auth, scenario.id)).ok);
+});
+
+// Appel terminé avec une reformulation conseillée au tour 3 (la réplique du prospect juste avant est au tour 2).
+async function finishedCallWithImprovement(auth: Parameters<typeof listScenarios>[1], scenarioId: string) {
+  const started = await startSimulation(db, provider, auth, scenarioId);
+  assert.ok(started.ok);
+  await db
+    .update(simulations)
+    .set({
+      status: 'completed',
+      endReason: 'user',
+      endedAt: new Date(),
+      transcript: [
+        { role: 'prospect', text: 'Allô, oui ?', at: 0 },
+        { role: 'seller', text: 'Bonjour, je vous appelle pour notre logiciel.', at: 2 },
+        { role: 'prospect', text: "C'est trop cher pour nous, franchement.", at: 6 },
+        { role: 'seller', text: 'Je peux vous faire une remise de 20 %.', at: 9 },
+      ],
+    })
+    .where(eq(simulations.id, started.simulationId));
+  await db.insert(simulationAnalyses).values({
+    simulationId: started.simulationId,
+    status: 'completed',
+    result: { improvements: [{ turn: 3, said: 'Je peux vous faire une remise de 20 %.', better: 'Trop cher par rapport à quoi ?', why: 'Comprendre avant de céder.' }] },
+  });
+  return started.simulationId;
+}
+
+test('exercice ciblé : le prospect décroche sur la réplique ratée, 3 minutes au plus, texte relu par le serveur', async () => {
+  const { auth } = await newUser(db, 'Awa');
+  const scenario = await firstCatalogScenario(auth);
+  const from = await finishedCallWithImprovement(auth, scenario.id);
+
+  const drill = await startSimulation(db, provider, auth, scenario.id, {}, { kind: 'moment', from, moment: 0 });
+  assert.ok(drill.ok);
+  assert.equal(drill.firstMessage, "C'est trop cher pour nous, franchement.");
+  assert.ok(drill.maxSeconds <= DRILL_MAX_SECONDS);
+  const [row] = await db.select().from(simulations).where(eq(simulations.id, drill.simulationId));
+  assert.equal(row.drill?.kind, 'moment');
+  assert.equal(row.drill?.fromSimulationId, from);
+  assert.equal(row.drill?.better, 'Trop cher par rapport à quoi ?');
+
+  // Moment inexistant, autre scénario ou appel d'un autre utilisateur : refusé.
+  assert.deepEqual(await startSimulation(db, provider, auth, scenario.id, {}, { kind: 'moment', from, moment: 5 }), { ok: false, error: 'not_found' });
+  const [other] = (await listScenarios(db, auth, { scope: 'catalog', language: 'fr' })).filter((s) => s.id !== scenario.id);
+  assert.equal(await prepareDrill(db, auth, other.id, { kind: 'moment', from, moment: 0 }), null);
+  const { auth: stranger } = await newUser(db, 'Kofi');
+  assert.equal(await prepareDrill(db, stranger, scenario.id, { kind: 'moment', from, moment: 0 }), null);
+
+  // L'analyse de l'exercice sait qu'il commence au milieu d'un appel.
+  const playable = (await getPlayableVersion(db, auth, scenario.id))!;
+  // La première phrase peut être remplacée à l'ouverture, la consigne non.
+  const payload = agentPayload(ScenarioMetaSchema.parse(playable.scenario), playable.content, { id: playable.versionId, number: playable.versionNumber });
+  assert.deepEqual(payload.platform_settings.overrides, { conversation_config_override: { agent: { first_message: true } } });
+  const prompt = analysisPrompt({
+    meta: ScenarioMetaSchema.parse(playable.scenario),
+    content: playable.content,
+    weights: playable.content.skillWeights,
+    transcript: [],
+    feedbackLocale: 'fr',
+    drill: row.drill,
+  });
+  assert.match(prompt, /<targeted_drill>/);
+  assert.match(prompt, /Trop cher par rapport à quoi/);
+});
+
+test('reprise : proposée seulement après une coupure récente de son propre appel', async () => {
+  const { auth } = await newUser(db, 'Fatou');
+  const scenario = await firstCatalogScenario(auth);
+  const from = await finishedCallWithImprovement(auth, scenario.id);
+  // Appel terminé normalement : pas de reprise.
+  assert.equal(await prepareDrill(db, auth, scenario.id, { kind: 'resume', from }), null);
+  await db.update(simulations).set({ endReason: 'error' }).where(eq(simulations.id, from));
+  const resume = await startSimulation(db, provider, auth, scenario.id, {}, { kind: 'resume', from });
+  assert.ok(resume.ok);
+  assert.match(resume.firstMessage ?? '', /coupé/);
+  // Trois heures plus tard, c'est trop tard.
+  const later = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  assert.equal(await prepareDrill(db, auth, scenario.id, { kind: 'resume', from }, later), null);
 });

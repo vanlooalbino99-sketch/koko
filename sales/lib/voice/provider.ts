@@ -26,7 +26,10 @@ export type AgentPayload = {
     turn: { turn_eagerness: 'patient' | 'normal' | 'eager' };
     conversation: { max_duration_seconds: number };
   };
-  platform_settings: { auth: { enable_auth: true } };
+  platform_settings: {
+    auth: { enable_auth: true };
+    overrides: { conversation_config_override: { agent: { first_message: true } } };
+  };
 };
 
 const ConversationSchema = z.object({

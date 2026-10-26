@@ -67,10 +67,10 @@ test('validation : un scénario doit évaluer au moins une compétence', () => {
   assert.deepEqual(parsed.error?.issues.map((i) => [i.path.join('.'), i.message]), [['content.skillWeights', 'skill_weights_empty']]);
 });
 
-test('catalogue : 16 scénarios publics FR et EN, resynchronisation sans doublon', async () => {
+test('catalogue : 24 scénarios publics FR et EN, resynchronisation sans doublon', async () => {
   const rows = await db.select().from(scenarios);
   assert.equal(rows.length, CATALOG.length);
-  assert.equal(CATALOG.length, 16);
+  assert.equal(CATALOG.length, 24);
   assert.deepEqual(await syncCatalog(db), { created: 0, updated: 0 });
   assert.equal((await db.select().from(scenarioVersions)).length, CATALOG.length);
 });
@@ -132,7 +132,7 @@ test('versions : une modification crée la version 2 et garde la version 1', asy
 test('recherche et filtres : texte échappé, langue, difficulté', async () => {
   const { auth } = await newUser(db, 'Sam');
   const fr = await listScenarios(db, auth, { language: 'fr', scope: 'catalog' });
-  assert.equal(fr.length, 8);
+  assert.equal(fr.length, 12);
   assert.ok(fr.every((s) => s.language === 'fr'));
   const experts = await listScenarios(db, auth, { difficulty: 'expert' });
   assert.ok(experts.length > 0 && experts.every((s) => s.difficulty === 'expert'));

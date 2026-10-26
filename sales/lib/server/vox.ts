@@ -6,7 +6,8 @@ import type { Db } from '@/lib/db/client';
 import { can, type Difficulty, type Family, type Locale } from '@/lib/domain';
 import { format, type Dictionary } from '@/lib/i18n';
 import type { ScenarioDetail } from '@/lib/scenarios/service';
-import { listSimulations } from '@/lib/simulations/service';
+import { listSimulations, type DrillRequest } from '@/lib/simulations/service';
+import type { SimulationDrill } from '@/lib/db/schema';
 import { voiceProviderFromEnv } from '@/lib/voice/provider';
 
 // Données de l'écran d'appel. Seuls des champs visibles par l'apprenant sont copiés : jamais les faits
@@ -18,6 +19,7 @@ export async function voxData(
   locale: Locale,
   detail: ScenarioDetail,
   voiceName: string | null,
+  drill: { ref: DrillRequest; data: SimulationDrill } | null = null,
 ): Promise<VoxStatic> {
   const c = t.call;
   const { scenario, content } = detail;
@@ -74,6 +76,15 @@ export async function voxData(
         publicProfile: content.prospect.publicProfile,
       },
       offer: { name: content.offer.name, price: content.offer.price },
+      // Fiche mémo consultable pendant l'appel : trame du type d'appel et critères de réussite.
+      memo: { steps: c.outline[scenario.family as Family] ?? [], criteria: content.successCriteria },
+    },
+    drill: drill && {
+      ref: drill.ref,
+      kind: drill.data.kind,
+      prospectLine: drill.data.prospectLine,
+      said: drill.data.said,
+      better: drill.data.better,
     },
     voiceName,
     remaining: !configured

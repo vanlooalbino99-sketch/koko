@@ -71,6 +71,13 @@
       "when": 1793036541944,
       "tag": "0009_illimite",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793037926310,
+      "tag": "0010_exercice",
+      "breakpoints": true
     }
   ]
 }

@@ -295,9 +295,12 @@
     var ps = prospects();
     if (tout || !racine.querySelector('.bsaj')) {
       var file = aAppeler(ps).length;
-      racine.innerHTML = '<div class="bsaj">' +
+      // Administrateurs : la vue d'ensemble CEO (équipe, simulations, objectifs) passe en tête de page.
+      var ceo = !!(window.bsCeo && window.BS_SERVER && window.BS_SERVER.user && window.BS_SERVER.user.role === 'admin');
+      racine.innerHTML = (ceo ? '<div data-z="ceo"></div>' : '') + '<div class="bsaj">' +
         '<div class="bsaj-gauche">' +
-        '<header class="bsaj-tete"><div><h1>' + bonjour() + '</h1><p>Voici un aperçu de votre prospection aujourd’hui.</p></div><time>' + esc(dateLongue()) + '</time></header>' +
+        (ceo ? '<header class="bsaj-tete bsaj-tete-ceo"><div><h2>Ma prospection du jour</h2><p>Vos prospects, vos appels et vos rendez-vous.</p></div><time>' + esc(dateLongue()) + '</time></header>'
+          : '<header class="bsaj-tete"><div><h1>' + bonjour() + '</h1><p>Voici un aperçu de votre prospection aujourd’hui.</p></div><time>' + esc(dateLongue()) + '</time></header>') +
         '<div class="bsaj-kpis" data-z="kpis"></div>' +
         '<section class="bsaj-carte bsaj-prospects"><div class="bsaj-p-tete"><div><h2>Mes prospects</h2><p>Liste des prospects qualifiés pour votre campagne.</p></div>' +
         '<div class="bsaj-p-boutons"><button type="button" class="bsaj-btn2" data-act="session" title="Session d’appels : enchaîner les appels prévus aujourd’hui">' + ic('zap', 16) + 'Appels<span data-z="file">' + (file ? ' (' + file + ')' : '') + '</span></button>' +
@@ -307,9 +310,10 @@
         '<button type="button" class="bsaj-fbtn' + (UI.filtres || UI.secteur || UI.prio ? ' on' : '') + '" data-act="filtres" aria-expanded="' + UI.filtres + '">' + ic('list-filter', 16) + 'Filtres</button></div>' +
         '<div data-z="filtres"></div><div data-z="table"></div></section></div>' +
         '<aside class="bsaj-droite"><div data-z="ia"></div><section class="bsaj-carte bsaj-perf" data-z="perf"></section><section class="bsaj-carte bsaj-activ" data-z="acts"></section></aside></div>';
-      if (window.bsAssistants) window.bsAssistants.panneau(racine.querySelector('[data-z=ia]'), { defaut: 'membre', session: function () { session(); } });
+      if (window.bsAssistants) window.bsAssistants.panneau(racine.querySelector('.bsaj [data-z=ia]'), { defaut: 'membre', session: function () { session(); } });
+      if (ceo) window.bsCeo.monter(racine.querySelector('[data-z=ceo]'));
     }
-    var z = function (n) { return racine.querySelector('[data-z=' + n + ']'); };
+    var z = function (n) { return racine.querySelector('.bsaj [data-z=' + n + ']'); };
     z('kpis').innerHTML = zoneKpis(ps);
     z('onglets').innerHTML = zoneOnglets(ps);
     z('filtres').innerHTML = zoneFiltres(ps);
@@ -324,7 +328,7 @@
     el.addEventListener('click', function (ev) {
       var t = ev.target;
       var b = t.closest('button,input,a,select,label');
-      if (b && b.closest('[data-z=ia]')) return;
+      if (b && b.closest('.bsaj [data-z=ia],[data-z=ceo]')) return;
       if (b && b.dataset) {
         var d = b.dataset;
         if (d.onglet) { UI.onglet = d.onglet; UI.page = 0; dessiner(); return; }
@@ -350,6 +354,7 @@
     });
     el.addEventListener('change', function (ev) {
       var t = ev.target, d = t.dataset || {};
+      if (t.closest('[data-z=ceo]')) return;
       if (d.sel) { if (t.checked) UI.sel[d.sel] = 1; else delete UI.sel[d.sel]; dessiner(); return; }
       if (d.tout != null) {
         var l = filtrer(prospects()).slice(UI.page * PAR_PAGE, UI.page * PAR_PAGE + PAR_PAGE);
@@ -363,12 +368,12 @@
       if (ev.target.dataset && ev.target.dataset.q != null) { UI.q = ev.target.value; UI.page = 0; dessiner(); }
     });
     el.addEventListener('pointermove', function (ev) {
-      var g = ev.target.closest && ev.target.closest('[data-graph]'); if (!g) { if (UI.survol >= 0) { UI.survol = -1; dessiner(); } return; }
+      var g = ev.target.closest && ev.target.closest('.bsaj [data-graph]'); if (!g) { if (UI.survol >= 0) { UI.survol = -1; dessiner(); } return; }
       var r = g.getBoundingClientRect(), n = UI.periode, k = Math.round((ev.clientX - r.left) / r.width * (n - 1));
       k = Math.max(0, Math.min(n - 1, k));
-      if (k !== UI.survol) { UI.survol = k; racine.querySelector('[data-z=perf]').innerHTML = zonePerf(prospects()); }
+      if (k !== UI.survol) { UI.survol = k; racine.querySelector('.bsaj [data-z=perf]').innerHTML = zonePerf(prospects()); }
     });
-    el.addEventListener('pointerleave', function () { if (UI.survol >= 0) { UI.survol = -1; var p = racine && racine.querySelector('[data-z=perf]'); if (p) p.innerHTML = zonePerf(prospects()); } });
+    el.addEventListener('pointerleave', function () { if (UI.survol >= 0) { UI.survol = -1; var p = racine && racine.querySelector('.bsaj [data-z=perf]'); if (p) p.innerHTML = zonePerf(prospects()); } });
   }
 
   function monter(el) {
@@ -386,6 +391,7 @@
         if (!racine || !racine.isConnected) { if (desabo) { desabo(); desabo = null; } return; }
         if (avant === s.prospects) return;
         avant = s.prospects; clearTimeout(minuteur); minuteur = setTimeout(function () { dessiner(); }, 200);
+        if (window.bsCeo && racine.querySelector('[data-z=ceo]')) window.bsCeo.rafraichir();
       });
       desabo = typeof sub === 'function' ? sub : null;
     }
@@ -404,6 +410,7 @@
       '.bsaj-tete h1{margin:0;font-size:2em;font-weight:800;letter-spacing:-.02em;line-height:1.15}',
       '.bsaj-tete p{margin:6px 0 0;color:var(--text-2);font-size:1.02em}',
       '.bsaj-tete time{flex:none;margin-top:8px;color:var(--text-2);font-size:.9em;font-weight:500}',
+      '.bsaj-tete-ceo h2{margin:0;font-size:1.35em;font-weight:800;letter-spacing:-.01em}.bsaj-tete-ceo p{font-size:.92em}',
       '.bsaj-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}',
       '.bsaj-kpi{display:flex;flex-direction:column;gap:4px;padding:16px;border-radius:16px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow-sm);min-width:0}',
       '.bsaj-kpi-ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;color:#fff;margin-bottom:10px;background:linear-gradient(145deg,rgb(var(--accent-rgb)),rgb(var(--accent-rgb)/.7));box-shadow:0 8px 20px -8px rgb(var(--accent-rgb)/.85),inset 0 1px 0 rgb(255 255 255/.22)}',

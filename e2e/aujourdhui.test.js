@@ -39,7 +39,11 @@ test('Aujourd’hui : chiffres, prospects, actions, assistant IA', async () => {
   // Sans prospect : l'accueil d'origine ; avec la démo : la nouvelle page.
   await page.getByText('Charger la démo').first().click();
   await page.waitForSelector('.bsaj');
-  assert.match(await page.textContent('.bsaj-tete h1'), /^Bon(jour|soir) Vanloo/);
+  // Administrateur : la vue d'ensemble CEO en tête, puis la prospection du jour.
+  await page.waitForSelector('.bsceo-kpi');
+  assert.match(await page.textContent('.bsceo-hero h1'), /^Bon(jour|soir) Vanloo,/);
+  assert.equal(await page.locator('.bsceo-kpi').count(), 4);
+  assert.equal(await page.textContent('.bsaj-tete-ceo h2'), 'Ma prospection du jour');
   assert.equal(await page.locator('.bsaj-kpi').count(), 4);
   assert.deepEqual(await page.locator('.bsaj-kpi-l').allTextContents(), ['Nouveaux prospects', 'Messages envoyés', 'Réponses reçues', 'Rendez-vous planifiés']);
 
@@ -79,16 +83,16 @@ test('Aujourd’hui : chiffres, prospects, actions, assistant IA', async () => {
   await page.evaluate(() => window.__bsY.set({ overlays: [], session: null }));
 
   // Assistant IA : l'administrateur voit toute l'équipe IA ; sans clé Claude, la réponse le dit.
-  await page.waitForSelector('[data-z=ia] .bsas-card');
-  assert.match(await page.textContent('[data-z=ia] .bsas-t b'), /Assistant IA - Vanloo 2\.0/);
-  await page.click('[data-z=ia] [data-act=menu]');
-  assert.equal(await page.locator('[data-z=ia] [data-choisir]').count(), 8);
-  await page.click('[data-z=ia] [data-choisir="vp_sales"]');
-  assert.equal(await page.textContent('[data-z=ia] .bsas-t b'), 'VP Sales');
-  await page.fill('[data-z=ia] .bsas-champ', 'Fais la revue de mon pipeline');
-  await page.press('[data-z=ia] .bsas-champ', 'Enter');
-  await page.waitForSelector('[data-z=ia] .bsas-bulle.info');
-  assert.match(await page.textContent('[data-z=ia] .bsas-bulle.info'), /Claude n’est pas encore branché/);
+  await page.waitForSelector('.bsaj [data-z=ia] .bsas-card');
+  assert.match(await page.textContent('.bsaj [data-z=ia] .bsas-t b'), /Assistant IA - Vanloo 2\.0/);
+  await page.click('.bsaj [data-z=ia] [data-act=menu]');
+  assert.equal(await page.locator('.bsaj [data-z=ia] [data-choisir]').count(), 8);
+  await page.click('.bsaj [data-z=ia] [data-choisir="vp_sales"]');
+  assert.equal(await page.textContent('.bsaj [data-z=ia] .bsas-t b'), 'VP Sales');
+  await page.fill('.bsaj [data-z=ia] .bsas-champ', 'Fais la revue de mon pipeline');
+  await page.press('.bsaj [data-z=ia] .bsas-champ', 'Enter');
+  await page.waitForSelector('.bsaj [data-z=ia] .bsas-bulle.info');
+  assert.match(await page.textContent('.bsaj [data-z=ia] .bsas-bulle.info'), /Claude n’est pas encore branché/);
 
   // Performance et activités.
   await page.selectOption('[data-f=periode]', '30');

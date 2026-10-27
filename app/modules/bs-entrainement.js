@@ -196,8 +196,27 @@
     return fetch(url, { method: methode, credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart', 'Content-Type': 'application/json' }, body: corps ? JSON.stringify(corps) : undefined })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { if (!r.ok) throw Object.assign(new Error(b.error || 'Erreur ' + r.status), { code: b.code, status: r.status }); return b; }); });
   }
+  // Chaque simulation notée part au serveur (note sur 100) : l'accueil des administrateurs suit les simulations de
+  // l'équipe. L'historique déjà sur cet appareil est envoyé une fois par compte ; le serveur ignore les doublons.
+  function familleDe(cle) {
+    var m = /^m:(.+)$/.exec(cle || ''), sc = m && SCENARIOS.filter(function (x) { return x.id === m[1]; })[0];
+    return sc ? sc.famille : /^p:/.test(cle || '') ? 'prospection' : 'autre';
+  }
+  function partager(h, duree, ia) {
+    if (!window.BS_SERVER || typeof h.note !== 'number') return;
+    api('POST', '/api/equipe/simulations', { at: h.at, note: Math.round(h.note * 10), famille: familleDe(h.cle), titre: h.titre, duree: duree || 0, ia: !!ia }).catch(function () { /* réessayé au prochain envoi de l'historique */ });
+  }
+  function partagerHistorique() {
+    var u = window.BS_SERVER && window.BS_SERVER.user;
+    if (!u || !u.id) return;
+    if (!P.partages || typeof P.partages !== 'object') P.partages = {};
+    if (P.partages[u.id]) return;
+    P.historique.slice().reverse().forEach(function (h) { partager(h, 0, h.mode === 'claude'); });
+    P.partages[u.id] = true; ecrire();
+  }
   function etatIA() {
     if (!window.BS_SERVER) { S.ia = false; return; }
+    partagerHistorique();
     api('GET', '/api/ia/etat').then(function (b) { S.ia = !!b.ia; S.admin = !!b.admin; S.source = b.source; rendre(); }, function () { S.ia = false; rendre(); });
   }
 
@@ -395,6 +414,7 @@
     garderAppel(A.cle, rec);
     S.rapport = A.cle; S.onglet = 'analyse'; S.appel = null;
     memoriser({ at: rec.at, cle: A.cle, titre: A.titre, prospectId: rec.prospectId, nom: p ? p.entreprise : A.modele ? A.modele.persona.entreprise : 'Prospect type', niveau: A.niveau, note: n.note, mode: ia ? 'claude' : 'script' });
+    partager(P.historique[0], A.duree, ia);
     noterSurFiche(p, 'Simulation IA ' + (ia ? 'avec Claude' : 'sans IA') + ' sur ce prospect : ' + n.note + '/10' + (n.objectif_atteint ? ', objectif atteint' : '') + ' (' + NIVEAUX[A.niveau][0].toLowerCase() + ')');
     rendre();
     try { racine.querySelector('.bsent-onglets').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* rien */ }
@@ -976,4 +996,6 @@
   }
 
   window.bsEntrainement = { monter: monter, fiche: fiche, _etat: S, _noteScript: noteScript, _repliqueScript: repliqueScript };
+  // Historique de cet appareil : envoyé une fois au serveur, sans attendre une visite de la page.
+  if (window.BS_SERVER) setTimeout(partagerHistorique, 5000);
 })();

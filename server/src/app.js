@@ -20,6 +20,7 @@ import { enregistrementsRoutes } from './routes/enregistrements.js';
 import { mailRoutes } from './routes/mail.js';
 import { integrationsRoutes } from './routes/integrations.js';
 import { iaRoutes } from './routes/ia.js';
+import { equipeRoutes } from './routes/equipe.js';
 import { paiementsRoutes } from './routes/paiements.js';
 import { loginPage, safeReturn } from './pages.js';
 import { assemble } from '../../scripts/build.mjs';
@@ -80,6 +81,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/api/mail', requireAcces('mail'), mailRoutes({ db, dataDir, ...mail }));
   app.use('/api/integrations', requireAcces('entrainement'), integrationsRoutes(integrations));
   app.use('/api/ia', requireUser, iaRoutes({ db, dataDir, ...ia }));
+  app.use('/api/equipe', requireUser, express.json({ limit: '20kb' }), equipeRoutes({ db }));
   app.use('/api/paiements', requireAcces('payments'), paiementsRoutes({ db, dataDir, ...paiements }));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Adresse inconnue.' }));
   app.use('/ambiance', ambianceFiles({ store }));

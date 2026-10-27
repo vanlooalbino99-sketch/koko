@@ -1,0 +1,80 @@
+# Vue d'ensemble CEO en tête de la page Aujourd'hui des administrateurs (bs-ceo).
+Vue d’ensemble CEO ⇒ CEO overview
+Voici un aperçu de la performance de votre entreprise aujourd’hui. ⇒ Here is an overview of your company's performance today.
+Les meilleures équipes ne sont pas les plus grandes, mais celles qui apprennent le plus vite. ⇒ The best teams aren't the biggest, but the ones that learn the fastest.
+Équipe active ⇒ Active team
+sur les 30 derniers jours ⇒ over the last 30 days
+Simulations réalisées ⇒ Simulations completed
+sur les 7 derniers jours ⇒ over the last 7 days
+Taux de réussite ⇒ Success rate
+simulations notées 70 ou plus ⇒ simulations scored 70 or more
+Consommation IA ⇒ AI usage
+requêtes Claude ce mois ⇒ Claude requests this month
+du mois dernier ⇒ of last month
+Chargement des chiffres de l’équipe… ⇒ Loading team figures…
+Clé Claude à coller ⇒ Claude key needed
+Voici les points clés à surveiller cette semaine : ⇒ Key points to watch this week:
+Simulations cette semaine ⇒ Simulations this week
+Aucune simulation cette semaine ⇒ No simulations this week
+lancez l’équipe sur Simulations IA ⇒ get the team started on AI Simulations
+membre à accompagner (score < 60) ⇒ member to coach (score < 60)
+membres à accompagner (score < 60) ⇒ members to coach (score < 60)
+relance en retard sur les prospects ⇒ overdue follow-up on prospects
+relances en retard sur les prospects ⇒ overdue follow-ups on prospects
+Aucune relance en retard ⇒ No overdue follow-ups
+Requêtes Claude ce mois ⇒ Claude requests this month
+Voir le rapport détaillé ⇒ See the detailed report
+Question pour l’assistant CEO ⇒ Question for the CEO assistant
+Posez une question à votre assistant… ⇒ Ask your assistant a question…
+Envoyer à l’assistant CEO ⇒ Send to the CEO assistant
+Performance des équipes ⇒ Team performance
+Décrochés ⇒ Answered
+Pas encore de simulation ni d’appel sur la période. ⇒ No simulations or calls yet for this period.
+Note moyenne des simulations IA ⇒ Average AI simulation score
+Part des appels où le contact a décroché ⇒ Share of calls where the contact answered
+Part des appels décrochés qui donnent un rendez-vous ⇒ Share of answered calls that lead to a meeting
+Note des simulations, appels décrochés et rendez-vous par jour, en pourcentage ⇒ Simulation score, answered calls and meetings per day, in percent
+Répartition des formations ⇒ Training breakdown
+Ce mois-ci ⇒ This month
+Prospection ⇒ Prospecting
+Découverte ⇒ Discovery
+Relance ⇒ Follow-up
+Autres ⇒ Others
+a complété un module de formation ⇒ completed a training module
+a rejoint l’équipe ⇒ joined the team
+a terminé une simulation ⇒ completed a simulation
+Les simulations, formations et arrivées de l’équipe apparaîtront ici. ⇒ The team's simulations, training and new arrivals will appear here.
+Évolution des performances ⇒ Performance trend
+30 jours ⇒ 30 days
+Score moyen ⇒ Average score
+Durée d’appel ⇒ Call duration
+Conversion ⇒ Conversion
+Clients signés ⇒ Clients signed
+Note moyenne des simulations IA sur 30 jours ⇒ Average AI simulation score over 30 days
+Appels avec une durée enregistrée, 30 jours ⇒ Calls with a recorded duration, 30 days
+Appels qui donnent un rendez-vous, 30 jours ⇒ Calls that lead to a meeting, 30 days
+Appels conclus par une signature, 30 jours ⇒ Calls closed with a signature, 30 days
+Score moyen des simulations par jour sur 30 jours ⇒ Average simulation score per day over 30 days
+La courbe se remplit avec les simulations notées. ⇒ The curve fills in with scored simulations.
+Répartition par département ⇒ Breakdown by department
+Score moyen des simulations par poste (organigramme). ⇒ Average simulation score by role (org chart).
+Objectifs & progression ⇒ Goals & progress
+Objectif de la semaine ⇒ Goal of the week
+rendez-vous obtenus en appel ⇒ meetings booked by phone
+Appels de la semaine ⇒ Calls this week
+Chiffre d’affaires du mois ⇒ Revenue this month
+Former 100 % de l’équipe ⇒ Train 100% of the team
+formés ⇒ trained
+Vos équipes en un coup d’œil ⇒ Your teams at a glance
+Voir tous les membres ⇒ See all members
+pas de simulation ⇒ no simulations
+Voir l’organigramme ⇒ See the org chart
+Passez au niveau supérieur ⇒ Take it to the next level
+Entraînez toute l’équipe avec Blackstart AI Sales Intelligence : appels vocaux avec des prospects IA, analyse de chaque appel et coaching. ⇒ Train the whole team with Blackstart AI Sales Intelligence: voice calls with AI prospects, analysis of every call and coaching.
+Voir les options Enterprise ⇒ See the Enterprise options
+Membres connectés ou actifs (messages, simulations, formation) ces 30 derniers jours ⇒ Members signed in or active (messages, simulations, training) in the last 30 days
+Simulations IA notées, toute l’équipe ⇒ Scored AI simulations, whole team
+Part des simulations des 30 derniers jours notées 70/100 ou plus ⇒ Share of simulations in the last 30 days scored 70/100 or more
+Requêtes envoyées à Claude (simulations, assistants, rédaction) depuis le 1er du mois ⇒ Requests sent to Claude (simulations, assistants, writing) since the 1st of the month
+Ma prospection du jour ⇒ My prospecting today
+Vos prospects, vos appels et vos rendez-vous. ⇒ Your prospects, calls and meetings.

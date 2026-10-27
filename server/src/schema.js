@@ -194,6 +194,25 @@ export const SQLITE_MIGRATIONS = [
      created_at TEXT NOT NULL,
      PRIMARY KEY (message_id, user_id, emoji)
    );`,
+  // v13 : simulations IA de chaque membre (note sur 100) et requêtes envoyées à Claude, pour l'accueil des administrateurs.
+  `CREATE TABLE simulations (
+     id TEXT PRIMARY KEY,
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     famille TEXT NOT NULL,
+     titre TEXT NOT NULL,
+     note INTEGER NOT NULL,
+     duree INTEGER NOT NULL DEFAULT 0,
+     ia INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX simulations_date ON simulations(created_at);
+   CREATE TABLE ia_usage (
+     id TEXT PRIMARY KEY,
+     user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+     kind TEXT NOT NULL,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX ia_usage_date ON ia_usage(created_at);`,
 ];
 
 // PostgreSQL : le même schéma que SQLite après toutes ses migrations, en une fois.
@@ -397,4 +416,24 @@ export const PG_MIGRATIONS = [
      PRIMARY KEY (message_id, user_id, emoji)
    );
    ALTER TABLE chat_reactions ENABLE ROW LEVEL SECURITY;`,
+  `CREATE TABLE simulations (
+     id TEXT PRIMARY KEY,
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     famille TEXT NOT NULL,
+     titre TEXT NOT NULL,
+     note INTEGER NOT NULL,
+     duree INTEGER NOT NULL DEFAULT 0,
+     ia INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX simulations_date ON simulations(created_at);
+   CREATE TABLE ia_usage (
+     id TEXT PRIMARY KEY,
+     user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+     kind TEXT NOT NULL,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX ia_usage_date ON ia_usage(created_at);
+   ALTER TABLE simulations ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE ia_usage ENABLE ROW LEVEL SECURITY;`,
 ];

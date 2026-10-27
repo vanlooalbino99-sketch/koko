@@ -1938,7 +1938,7 @@
   // ------------------------------------------------------------------ styles
   var CSS = [
     '.bsm-root{min-width:0}',
-    '.bsm-shell{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;height:calc(100dvh - var(--topbar-h,60px) - 56px);min-height:460px}',
+    '.bsm-shell{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;height:calc(100dvh - var(--topbar-h,60px) - 82px);min-height:460px}',
     '.bsm-shell>.card{padding:0!important;overflow:hidden;min-height:0}',
     '.bsm-det{display:none}',
     '@media (min-width:1400px){.bsm-shell.det{grid-template-columns:316px minmax(0,1fr) 316px}.bsm-shell>.bsm-det.card{display:flex;flex-direction:column;gap:6px;overflow-y:auto!important;padding:18px 16px!important}}',
@@ -1970,7 +1970,7 @@
     '.bsm-det-membres{display:flex;flex-direction:column;gap:2px}',
     '.bsm-det-membres button{display:flex;align-items:center;gap:10px;width:100%;padding:6px 8px;border-radius:10px;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer}.bsm-det-membres button:hover:not(:disabled){background:var(--surface-2)}.bsm-det-membres button:disabled{cursor:default}',
     '.bsm-det-membres .bsm-av{width:32px;height:32px;border-radius:50%;font-size:.68em}',
-    '.bsm-det-membres span{display:flex;flex-direction:column;min-width:0}.bsm-det-membres b{font-size:.86em;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bsm-det-membres small{font-size:.72em;color:var(--text-3)}',
+    '.bsm-det-membres button>span:not(.bsm-av){display:flex;flex-direction:column;min-width:0}.bsm-det-membres b{font-size:.86em;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bsm-det-membres small{font-size:.72em;color:var(--text-3)}',
     '.bsm-det-fics{display:flex;flex-direction:column;gap:6px}',
     '.bsm-det-vide{margin:2px 0;font-size:.82em;color:var(--text-3)}',
     '.bsm-lien{margin-left:auto;border:0;background:none;padding:0;font:inherit;font-size:.95em;text-transform:none;letter-spacing:0;color:var(--accent-text,var(--accent));cursor:pointer}',
@@ -2012,7 +2012,7 @@
     '.bsm-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--aur-hair,var(--border))}',
     '.bsm-head-t{flex:1;min-width:0;display:flex;flex-direction:column}',
     '.bsm-head-t b{font-size:1.02em;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-    '.bsm-head-t span{font-size:.8em;color:var(--text-3)}',
+    '.bsm-head-t>span{font-size:.8em;color:var(--text-3)}',
     '.bsm-stack{display:flex;padding-left:6px}',
     '.bsm-back{display:none}',
     '.bsm-scroll{flex:1;overflow-y:auto;padding:18px 20px 8px;display:flex;flex-direction:column;gap:3px;min-height:0}',
@@ -2474,5 +2474,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
 
   window.bsMessages = { monter: monter, appel: Appel, sonnerie: Sonnerie, visionneuse: Vue,
-    organigramme: function () { orgV.auto = true; S.modal = { type: 'organigramme' }; if (location.hash !== '#/messages') location.hash = '#/messages'; else rendre(); }, etat: function () { return S; } };
+    organigramme: function () { orgV.auto = true; S.modal = { type: 'organigramme' }; if (location.hash !== '#/messages') location.hash = '#/messages'; else rendre(); }, etat: function () { return S; },
+    // Ouvre la conversation directe avec un membre (créée au besoin), depuis une autre page.
+    ecrireA: function (uid) { api('POST', '/directs', { userId: uid }).then(function (r) { S.convs[r.conversation.id] = r.conversation; aller(r.conversation.id); }).catch(function (e) { S.err = e.message; rendre(); }); } };
 })();

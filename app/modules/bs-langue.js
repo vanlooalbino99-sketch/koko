@@ -96,6 +96,7 @@
   motif(/^secteur (.+)$/, function (_, x) { var r = brut(x); return 'sector ' + (r == null ? x : r); });
   motif(/^(.+) \/ mois$/, function (_, x) { return x + ' / month'; });
   motif(/^Semaine du (.+)$/, function (_, x) { return 'Week of ' + x; });
+  motif(/^(\d+) \/ (\d+) rendez-vous$/, function (_, a, b) { return a + ' / ' + b + ' meetings'; });
   motif(/^(\S+) sur (\S+)$/, function (_, a, b) { return /\d/.test(a) && /\d/.test(b) ? a + ' of ' + b : null; });
   motif(/^Module (\d+) sur (\d+)$/, function (_, a, b) { return 'Module ' + a + ' of ' + b; });
   motif(/^depuis le (.+)$/, function (_, x) { return 'since ' + x; });

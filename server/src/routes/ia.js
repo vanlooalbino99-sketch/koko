@@ -8,6 +8,7 @@
 // elle est alors chiffrée en base et n'est jamais renvoyée au navigateur.
 import express, { Router } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { randomUUID } from 'node:crypto';
 import { getSetting, setSetting } from '../store.js';
 import { coffre } from '../coffre.js';
 import { peut } from '../acces.js';
@@ -154,6 +155,9 @@ export function iaRoutes({ db, dataDir, creer = (apiKey) => new Anthropic({ apiK
     const n = q && q.jour === jour ? q.n + 1 : 1;
     if (n > PAR_JOUR) { res.status(429).json({ error: 'Limite du jour atteinte pour Claude (garde-fou de coût) : réessayez demain.' }); return false; }
     quotas.set(req.user.id, { jour, n });
+    // Compteur des requêtes envoyées à Claude (accueil des administrateurs) ; sans effet sur la réponse.
+    db.run('INSERT INTO ia_usage (id, user_id, kind, created_at) VALUES (?, ?, ?, ?)', randomUUID(), req.user.id, String(req.path).slice(0, 60), new Date().toISOString())
+      .catch((e) => console.error('[ia] compteur :', e && e.message));
     return true;
   }
   // Appel à Claude, avec repli automatique sur un autre modèle si Claude décline (fallbacks côté serveur).

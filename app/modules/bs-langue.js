@@ -96,6 +96,11 @@
   motif(/^secteur (.+)$/, function (_, x) { var r = brut(x); return 'sector ' + (r == null ? x : r); });
   motif(/^(.+) \/ mois$/, function (_, x) { return x + ' / month'; });
   motif(/^Semaine du (.+)$/, function (_, x) { return 'Week of ' + x; });
+  motif(/^Ciblez davantage le secteur (.+)$/, function (_, x) { var r = brut(x); return 'Focus more on the ' + (r == null ? x : r) + ' sector'; });
+  motif(/^Ce secteur présente un taux de conversion de (\S+) %, soit \+(\d+) pts au-dessus de la moyenne\.$/, function (_, a, b) { return 'This sector converts at ' + a + '%, ' + b + ' pts above average.'; });
+  motif(/^Privilégiez les appels entre (\d+)h et (\d+)h$/, function (_, a, b) { return 'Favour calls between ' + a + ':00 and ' + b + ':00'; });
+  motif(/^Ce créneau génère (\S+) % de réponses en plus que la moyenne\.$/, function (_, x) { return 'This time slot gets ' + x + '% more answers than average.'; });
+  motif(/^(\d+) h – (\d+) h$/, function (_, a, b) { return a + ':00 – ' + b + ':00'; });
   motif(/^(\d+) \/ (\d+) rendez-vous$/, function (_, a, b) { return a + ' / ' + b + ' meetings'; });
   motif(/^(\S+) sur (\S+)$/, function (_, a, b) { return /\d/.test(a) && /\d/.test(b) ? a + ' of ' + b : null; });
   motif(/^Module (\d+) sur (\d+)$/, function (_, a, b) { return 'Module ' + a + ' of ' + b; });

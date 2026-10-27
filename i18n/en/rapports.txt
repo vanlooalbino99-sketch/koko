@@ -1,0 +1,46 @@
+# Page Rapports & analyses (bs-rapports) : KPI, graphiques, sources, équipe, créneaux, recommandations.
+Rapports & analyses ⇒ Reports & analytics
+Pilotez la performance commerciale avec des données fiables. ⇒ Steer sales performance with reliable data.
+Exporter le rapport ⇒ Export the report
+Prospects contactés ⇒ Prospects contacted
+Rendez-vous obtenus ⇒ Meetings booked
+Revenus générés ⇒ Revenue generated
+vs. mois précédent ⇒ vs. previous month
+Performance commerciale ⇒ Sales performance
+Prospects contactés, rendez-vous obtenus et taux de conversion ⇒ Prospects contacted, meetings booked and conversion rate
+Prospects contactés, rendez-vous obtenus et taux de conversion par mois ⇒ Prospects contacted, meetings booked and conversion rate per month
+Évolution du chiffre d’affaires ⇒ Revenue trend
+Revenus générés par mois (cumulés) ⇒ Revenue generated per month (cumulative)
+Chiffre d’affaires cumulé par mois ⇒ Cumulative revenue per month
+Sources de conversion ⇒ Conversion sources
+Origine des prospects ⇒ Where prospects come from
+Performance par équipe ⇒ Team performance
+Simulations IA et taux de réussite par membre ⇒ AI simulations and success rate per member
+Simulations et taux de réussite par membre ⇒ Simulations and success rate per member
+Rendez-vous du jour ⇒ Today's meetings
+Meilleurs créneaux d’appel ⇒ Best call times
+Taux de réponse des prospects ⇒ Prospect answer rate
+Taux de réponse par heure d’appel ⇒ Answer rate by call hour
+Recommandations IA ⇒ AI recommendations
+Nos algorithmes analysent vos appels et vos prospects pour proposer des actions qui améliorent vos performances. ⇒ Our algorithms analyse your calls and prospects to suggest actions that improve your results.
+Voir les horaires ⇒ See the times
+Revenu récurrent (MRR) ⇒ Recurring revenue (MRR)
+Abonnements actifs en fin de mois ⇒ Active subscriptions at month end
+Revenu récurrent mensuel ⇒ Monthly recurring revenue
+Nombre de prospects par étape ⇒ Number of prospects per stage
+Voir le pipeline ⇒ See the pipeline
+Passé ⇒ Past
+6 mois ⇒ 6 months
+3 derniers mois ⇒ Last 3 months
+6 derniers mois ⇒ Last 6 months
+12 derniers mois ⇒ Last 12 months
+Aucun rendez-vous aujourd’hui. ⇒ No meetings today.
+Ajoutez des prospects pour voir leur origine. ⇒ Add prospects to see where they come from.
+Aucun rendez-vous planifié. Planifiez vos relances depuis le Calendrier. ⇒ No meetings planned. Schedule your follow-ups from the Calendar.
+Chargement de l’équipe… ⇒ Loading the team…
+Les heures d’appel s’affichent dès que des appels sont enregistrés. ⇒ Call times appear as soon as calls are logged.
+Enregistrez l’heure de vos appels ⇒ Log the time of your calls
+Les recommandations se précisent à mesure que vos appels et vos fiches sont enregistrés dans le CRM. ⇒ Recommendations get sharper as your calls and records are logged in the CRM.
+Renseignez le secteur de vos prospects ⇒ Fill in your prospects' sector
+CA cumulé (€) ⇒ Cumulative revenue (€)
+Taux de conversion (%) ⇒ Conversion rate (%)

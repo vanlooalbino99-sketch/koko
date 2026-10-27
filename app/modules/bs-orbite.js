@@ -55,8 +55,20 @@
   var H = document.documentElement;
   var boite = null, arret = null, moteur = null, niveau = 0, abandon = false, lance = 0;
   var reduit = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+  // Une fois par appareil : les choix faits pour l'ancien fond en verre 3D (forme, fond coupé quand il ralentissait le CRM)
+  // ne cachent pas les vagues de particules demandées ensuite. Les choix faits après restent respectés.
+  try {
+    if (!localStorage.getItem('bs-orbite-vagues')) {
+      localStorage.removeItem(PREF_FORME);
+      if (localStorage.getItem(PREF) === 'off') localStorage.removeItem(PREF);
+      localStorage.setItem('bs-orbite-vagues', '1');
+    }
+  } catch (e) { /* stockage bloqué */ }
 
   function mouvementReduit() { return reduit.matches || H.getAttribute('data-motion') === 'reduced'; }
+  // Vagues : lentes et discrètes, elles tournent même si le système demande moins d'animations ; figées si le
+  // réglage « Animations » du CRM est sur Réduites ou Aucune.
+  function figer() { var m = H.getAttribute('data-motion'); return m === 'reduced' || m === 'none'; }
   function voulu() { try { return localStorage.getItem(PREF) !== 'off'; } catch (e) { return true; } }
   function forme() {
     var f = null;
@@ -104,7 +116,7 @@
   // Vagues de particules (canevas 2D, sans moteur 3D) : deux rubans violet → bleu → cyan qui se croisent en bas,
   // un troisième en haut à droite et une poussière d'étoiles, qui ondulent et glissent lentement. 30 images/s au plus.
   function vague(id) {
-    boite = document.createElement('div'); boite.id = 'bs-orbite-fond'; boite.className = 'vague'; boite.setAttribute('aria-hidden', 'true');
+    boite = document.createElement('div'); boite.id = 'bs-orbite-fond'; boite.className = 'vague'; boite.setAttribute('aria-hidden', 'true'); boite.setAttribute('data-fige', String(figer()));
     var cv = document.createElement('canvas'); boite.appendChild(cv);
     document.body.insertBefore(boite, document.body.firstChild);
     var ctx = cv.getContext('2d');
@@ -166,17 +178,24 @@
       ctx.globalAlpha = 1;
     }
     taille();
-    var prec = 0, image = 0, fini = false;
+    var prec = 0, image = 0, fini = false, nb = 0, cout = 0, fige = figer();
     function boucle(ms) {
       if (fini) return;
       image = requestAnimationFrame(boucle);
-      if (ms - prec < 33) return;
-      prec = ms; dessiner(ms);
+      if (ms - prec < 33 || document.hidden) return;
+      prec = ms;
+      var t0 = performance.now(); dessiner(ms); cout += performance.now() - t0; nb++;
+      // Appareil qui peine (plus de 14 ms par image en moyenne) : moitié moins de points et de pixels, sans jamais couper le fond.
+      if (nb === 60) {
+        if (cout / nb > 14 && points.length > 1500) { points = points.filter(function (x, k) { return k % 2 === 0; }); if (niveau < 2) { niveau++; taille(); } }
+        nb = 0; cout = 0;
+      }
     }
-    image = requestAnimationFrame(boucle);
-    window.addEventListener('resize', taille);
-    arret = function () { fini = true; cancelAnimationFrame(image); window.removeEventListener('resize', taille); };
-    H.classList.add('bs-vague'); marquer(true); surveiller(id);
+    function redessiner() { taille(); if (fige) dessiner(20000); }
+    if (fige) dessiner(20000); else image = requestAnimationFrame(boucle);
+    window.addEventListener('resize', redessiner);
+    arret = function () { fini = true; cancelAnimationFrame(image); window.removeEventListener('resize', redessiner); };
+    H.classList.add('bs-vague'); marquer(true);
   }
 
   function demarrer() {
@@ -206,8 +225,10 @@
   }
   function relancer() { lance++; arreter(); maj(); }
   function maj() {
-    var on = voulu() && !abandon && !mouvementReduit();
+    var vagues = forme() === 'vague';
+    var on = voulu() && !abandon && (vagues || !mouvementReduit());
     if (!on) { lance++; arreter(); return; }
+    if (arret && vagues && boite && boite.getAttribute('data-fige') !== String(figer())) { relancer(); return; }
     if (!arret) demarrer();
   }
 

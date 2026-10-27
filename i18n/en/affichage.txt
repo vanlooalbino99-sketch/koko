@@ -252,3 +252,8 @@ Galet ⇒ Pebble
 Logo Blackstart ⇒ Blackstart logo
 Anneaux seuls, sans forme ⇒ Rings only, no shape
 Fond en verre 3D indisponible : ⇒ 3D glass background unavailable:
+Fond animé ⇒ Animated background
+Des vagues de particules bleu-violet qui ondulent lentement derrière toutes les pages, sur cet appareil (ou une forme en verre 3D, au choix ci-dessous). Activé, il remplace les images d'ambiance dans le CRM (fond et bannière) ; elles restent à l'ouverture et sur la page de connexion. ⇒ Blue-violet particle waves slowly rippling behind every page, on this device (or a 3D glass shape, to choose below). When on, it replaces the ambience images in the CRM (background and banner); they stay on startup and on the login page.
+Style du fond animé ⇒ Animated background style
+Vagues de particules, ou une forme en verre 3D qui tourne. ⇒ Particle waves, or a spinning 3D glass shape.
+Vagues de particules (sans 3D) ⇒ Particle waves (no 3D)

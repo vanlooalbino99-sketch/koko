@@ -96,6 +96,9 @@
     '#bs-pres .s-viz{min-height:0;font-size:1.15em}',
     '#bs-pres .s-viz .chart{height:auto!important}',
     '#bs-pres .s-viz .chart svg{width:100%;height:auto;max-height:52vh}',
+    // Page Rapports (bs-rapports) : graphiques et cartes chiffrées repérés par data-pres-*.
+    '#bs-pres .s-viz [data-pres-anim] svg{width:100%;height:auto;max-height:52vh}',
+    '#bs-pres .s-kgrid [data-pres-kpi]{font-size:1.2em;min-height:150px}',
     '#bs-pres .s-viz .ring{margin:0 auto}',
     '#bs-pres .s-ins{display:flex;flex-direction:column;gap:12px;justify-content:center}',
     '#bs-pres .s-card{border-radius:18px;padding:16px 18px;background:rgb(255 255 255/.1);border:1px solid rgb(255 255 255/.16);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}',
@@ -279,7 +282,8 @@
   function animKpi(el, o) {
     var b = (o && o.delay) || 0;
     anim(el, [{ opacity: 0, transform: 'translateY(16px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 650, delay: b });
-    countUp(el.querySelector('.kpi-value'), b + 120, 1100);
+    countUp(el.querySelector('.kpi-value, [data-pres-val]'), b + 120, 1100);
+    presAnim(el, b + 120);
   }
   function animHeat(el, o) {
     var b = (o && o.delay) || 0, cells = el.querySelectorAll('.heat');
@@ -475,11 +479,18 @@
     }, 1500);
   }
 
+  // Graphiques dessinés par un module (Rapports) : il les anime lui-même à la réception de « bs:animer ».
+  function presAnim(root, delay, slow) {
+    var l = root.matches && root.matches('[data-pres-anim]') ? [root] : [];
+    Array.prototype.push.apply(l, root.querySelectorAll('[data-pres-anim]'));
+    l.forEach(function (v) { v.dispatchEvent(new CustomEvent('bs:animer', { bubbles: true, detail: { delay: delay, slow: !!slow } })); });
+  }
+
   // ---------------------------------------------------------------- bouton « Présenter »
   var PLAY = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>';
   function presentable() {
     var main = document.getElementById('main');
-    return !!(main && main.querySelector('.chart svg, .hbars, .funnel'));
+    return !!(main && main.querySelector('.chart svg, .hbars, .funnel, [data-pres-carte]'));
   }
   function decorate() {
     var main = document.getElementById('main');
@@ -516,7 +527,7 @@
   // Chiffres clés d'un graphique (données exposées par l'interface dans data-bsc).
   function chartInsights(card) {
     var out = [];
-    var c = card.querySelector('.chart[data-bsc]');
+    var c = card.querySelector('.chart[data-bsc], [data-pres-anim][data-bsc]');
     var d = c && parseJson(c.getAttribute('data-bsc'));
     if (d && d.d && d.d.length) {
       var pts = d.d, vals = pts.map(function (p) { return Number(p.v && p.v[0]) || 0; }), n = vals.length;
@@ -597,14 +608,15 @@
 
   function buildSlides() {
     var main = document.getElementById('main');
-    var title = txt(main.querySelector('.page-title')) || 'Tableau de bord';
-    var sub = txt(main.querySelector('.page-sub'));
+    var title = txt(main.querySelector('.page-title, [data-pres-titre]')) || 'Tableau de bord';
+    var sub = txt(main.querySelector('.page-sub, [data-pres-sous]'));
     var slides = [{ type: 'title', title: title, sub: sub }];
-    var kpis = Array.prototype.slice.call(main.querySelectorAll('.kpi'));
+    var kpis = Array.prototype.slice.call(main.querySelectorAll('.kpi, [data-pres-kpi]'));
     if (kpis.length) slides.push({ type: 'kpis', kpis: kpis });
-    Array.prototype.forEach.call(main.querySelectorAll('.card'), function (card) {
-      if (!card.querySelector('.chart svg, .hbars .hbar, .funnel .funnel-row, .ring')) return;
-      slides.push({ type: 'chart', card: card, title: txt(card.querySelector('.card-title')), sub: txt(card.querySelector('.card-sub')), ins: chartInsights(card) });
+    Array.prototype.forEach.call(main.querySelectorAll('.card, [data-pres-carte]'), function (card) {
+      if (!card.querySelector('.chart svg, .hbars .hbar, .funnel .funnel-row, .ring, [data-pres-anim]')) return;
+      if (card.querySelector('[data-pres-vide]')) return;
+      slides.push({ type: 'chart', card: card, title: txt(card.querySelector('.card-title, [data-pres-t]')), sub: txt(card.querySelector('.card-sub, [data-pres-s]')), ins: chartInsights(card) });
     });
     slides.push({ type: 'end', title: title });
     return slides;
@@ -686,11 +698,11 @@
         }).join('') + '</div></div>';
       var viz = el.querySelector('.s-viz');
       Array.prototype.forEach.call(s.card.children, function (ch) {
-        if (ch.classList.contains('card-head')) return;
+        if (ch.classList.contains('card-head') || ch.hasAttribute('data-pres-skip')) return;
         var cl = ch.cloneNode(true);
-        Array.prototype.forEach.call(cl.querySelectorAll('.chart-tip, .bs-live'), function (t) { t.remove(); });
+        Array.prototype.forEach.call(cl.querySelectorAll('.chart-tip, .bs-live, .bsr-bulle'), function (t) { t.remove(); });
         unidle(cl);
-        Array.prototype.forEach.call(cl.querySelectorAll('.chart svg'), function (svg) {
+        Array.prototype.forEach.call(cl.querySelectorAll('.chart svg, [data-pres-anim] > svg'), function (svg) {
           var w = Number(svg.getAttribute('width')), h = Number(svg.getAttribute('height'));
           if (w && h) {
             svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h); svg.removeAttribute('width'); svg.removeAttribute('height');
@@ -719,12 +731,13 @@
       anim(el.querySelector('.s-date'), [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: 500 + chars.length * 38 });
       anim(el.querySelector('.s-line'), [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 900, delay: 650 + chars.length * 38 });
     } else if (s.type === 'kpis') {
-      Array.prototype.forEach.call(el.querySelectorAll('.kpi'), function (k, i) { animKpi(k, { delay: 300 + i * 110 }); });
+      Array.prototype.forEach.call(el.querySelectorAll('.kpi, [data-pres-kpi]'), function (k, i) { animKpi(k, { delay: 300 + i * 110 }); });
     } else if (s.type === 'chart') {
       var viz = el.querySelector('.s-viz');
       Array.prototype.forEach.call(viz.querySelectorAll(SEL), function (v) {
         if (v.matches('.chart')) animChart(v, { delay: 350, slow: true }); else animate(v, { delay: 350 });
       });
+      presAnim(viz, 350, true);
       Array.prototype.forEach.call(el.querySelectorAll('.s-card'), function (c, i) {
         anim(c, [{ opacity: 0, transform: 'translateX(30px)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: 900 + i * 260 });
         countUp(c.querySelector('.v'), 900 + i * 260, 1200);

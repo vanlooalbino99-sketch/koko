@@ -44,6 +44,8 @@ test('Rapports : KPI, graphiques, info-bulle, période et export', async () => {
   const der = m[m.length - 1];
   assert.equal(m.length, 6);
   // Prospects contactés sur la période : chaque fiche comptée une fois, même appelée plusieurs mois.
+  // Les chiffres s'animent (compteur) : on lit la valeur une fois le compteur arrivé.
+  await page.waitForFunction(() => [...document.querySelector('.bsr-kpi-t > b').childNodes].some((t) => t.__bsCount === 0));
   const n = Number((await page.locator('.bsr-kpi-t > b').first().textContent()).trim());
   assert.ok(n >= Math.max(...m.map((x) => x.contactes)) && n <= m.reduce((s, x) => s + x.contactes, 0), 'prospects contactés ' + n);
   for (const g of ['perf', 'ca', 'creneaux', 'mrr']) assert.ok(await page.locator(`[data-g=${g}] svg`).count(), 'graphique ' + g);
@@ -57,7 +59,7 @@ test('Rapports : KPI, graphiques, info-bulle, période et export', async () => {
   await page.waitForSelector('[data-g=perf] .bsr-bulle');
 
   // Période : 12 derniers mois.
-  await page.locator('.bsr-per-b').click();
+  await page.locator('.bsr-per-b:not(.bsr-pres-b)').click();
   await page.getByText('12 derniers mois').click();
   await page.waitForFunction(() => window.bsRapports.mensuel().length === 12);
 
@@ -66,6 +68,13 @@ test('Rapports : KPI, graphiques, info-bulle, période et export', async () => {
   const csv = readFileSync(await dl.path(), 'utf8');
   assert.match(csv, /Mois;/);
   assert.equal(csv.trim().split('\n').length, 13);
+
+  // Mode présentation : un diapo par graphique du rapport, avec les chiffres clés.
+  await page.locator('[data-act=presenter]').click();
+  await page.waitForSelector('#bs-pres .p-slide');
+  assert.ok(await page.locator('#bs-pres .p-seg').count() >= 6);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#bs-pres', { state: 'detached' });
   assert.deepEqual(errors, []);
   await ctx.close();
 });

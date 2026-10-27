@@ -48,3 +48,6 @@ Taux de conversion (%) ⇒ Conversion rate (%)
 Pleines (deux tons) ⇒ Filled (two-tone)
 Traits ⇒ Outline
 Style ⇒ Style
+# Rapports : MRR (badge ARR) et séries du mode présentation.
+Chiffre d’affaires ⇒ Revenue
+Revenu récurrent annuel (MRR × 12) ⇒ Annual recurring revenue (MRR × 12)

@@ -15,6 +15,9 @@
   var SOURCES = [C.bleu, C.violet, C.indigo, C.cyan, C.turquoise, C.rose, C.gris];
   var S = { mois: Number(lire('bs-rapports-mois')) || 6, menu: false, survol: -1, equipe: null };
   var racine = null, desabo = null, minuteur = 0;
+  // Données de chaque graphique pour les chiffres clés du mode présentation (bs-anim lit data-bsc).
+  var BSC = {};
+  var animerApres = false;
 
   function lire(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function ecrire(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* facultatif */ } }
@@ -29,7 +32,7 @@
 
   var EXTRA = {
     'rap-haut': '<path d="M12 19V5M6 11l6-6 6 6"/>', 'rap-bas': '<path d="M12 5v14M6 13l6 6 6-6"/>', 'rap-fleche': '<path d="M5 12h14M13 6l6 6-6 6"/>',
-    'rap-chevron': '<path d="M6 9l6 6 6-6"/>', 'rap-pourcent': '<path d="M19 5L5 19M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>',
+    'rap-chevron': '<path d="M6 9l6 6 6-6"/>', 'rap-lecture': '<path d="M8 5.5v13l11-6.5z" fill="currentColor"/>', 'rap-pourcent': '<path d="M19 5L5 19M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>',
   };
   function ic(name, size) {
     var hs = window.__bsHs ? window.__bsHs() : null;
@@ -90,7 +93,7 @@
     var p = vals.map(function (v, i) { return [2 + i * (W - 4) / Math.max(1, vals.length - 1), 4 + (1 - (v - min) / Math.max(1, max - min)) * (H - 10)]; });
     var l = lisse(p), aire = l + ' L' + (W - 2) + ' ' + H + ' L2 ' + H + ' Z', fin = p[p.length - 1];
     return '<svg class="bsr-etin" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + couleur + '" stop-opacity=".45"/><stop offset="1" stop-color="' + couleur + '" stop-opacity="0"/></linearGradient></defs>' +
-      '<path d="' + aire + '" fill="url(#' + id + ')"/><path d="' + l + '" fill="none" stroke="' + couleur + '" stroke-width="2"/><circle cx="' + fin[0].toFixed(1) + '" cy="' + fin[1].toFixed(1) + '" r="3" fill="' + couleur + '"/></svg>';
+      '<path class="bsr-aire" d="' + aire + '" fill="url(#' + id + ')"/><path class="bsr-ligne" d="' + l + '" fill="none" stroke="' + couleur + '" stroke-width="2"/><circle class="bsr-pt" cx="' + fin[0].toFixed(1) + '" cy="' + fin[1].toFixed(1) + '" r="3" fill="' + couleur + '"/></svg>';
   }
   function graduation(max) { var p = Math.pow(10, Math.floor(Math.log10(Math.max(1, max)))), l = [1, 2, 2.5, 5, 10].map(function (k) { return k * p; }).filter(function (s) { return s * 4 >= max; }); return (l[0] || p * 10) * 4; }
 
@@ -109,12 +112,12 @@
     m.forEach(function (x, i) {
       var cx = G + pas * i + pas / 2;
       if (i === S.survol) s += '<rect x="' + (cx - pas / 2 + 4) + '" y="' + T + '" width="' + (pas - 8) + '" height="' + ih + '" rx="8" class="bsr-survol"/>';
-      s += '<rect x="' + (cx - bw - 2) + '" y="' + y(x.contactes) + '" width="' + bw + '" height="' + (T + ih - y(x.contactes)) + '" rx="4" fill="url(#bsrB)"/>' +
-        '<rect x="' + (cx + 2) + '" y="' + y(x.rdv) + '" width="' + bw + '" height="' + (T + ih - y(x.rdv)) + '" rx="4" fill="url(#bsrV)"/>' +
+      s += '<rect class="bsr-barre" x="' + (cx - bw - 2) + '" y="' + y(x.contactes) + '" width="' + bw + '" height="' + (T + ih - y(x.contactes)) + '" rx="4" fill="url(#bsrB)"/>' +
+        '<rect class="bsr-barre" x="' + (cx + 2) + '" y="' + y(x.rdv) + '" width="' + bw + '" height="' + (T + ih - y(x.rdv)) + '" rx="4" fill="url(#bsrV)"/>' +
         '<text x="' + cx + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(x.label) + '</text>';
       pts.push([cx, yt(x.taux)]);
     });
-    s += '<path d="' + lisse(pts) + '" fill="none" stroke="' + C.turquoise + '" stroke-width="2.2" filter="url(#bsrLueur)"/>' + pts.map(function (p, i) { return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="' + (i === S.survol ? 5 : 3.5) + '" fill="' + C.turquoise + '" stroke="#0b1027" stroke-width="1.5"/>'; }).join('');
+    s += '<path class="bsr-ligne" d="' + lisse(pts) + '" fill="none" stroke="' + C.turquoise + '" stroke-width="2.2" filter="url(#bsrLueur)"/>' + pts.map(function (p, i) { return '<circle class="bsr-pt" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="' + (i === S.survol ? 5 : 3.5) + '" fill="' + C.turquoise + '" stroke="#0b1027" stroke-width="1.5"/>'; }).join('');
     var bulle = '';
     if (S.survol >= 0 && m[S.survol]) {
       var x = m[S.survol], gauche = G + pas * S.survol + pas / 2;
@@ -127,32 +130,34 @@
       '<linearGradient id="bsrV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c084fc"/><stop offset="1" stop-color="#6d28d9"/></linearGradient>' +
       '<filter id="bsrLueur" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="2.5" result="f"/><feMerge><feMergeNode in="f"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>' + s + '</svg>' + bulle;
   }
-  function grCA(W, m) {
-    var H = 210, G = 58, B = 24, T = 12, ih = H - B - T, iw = W - G - 14, max = graduation(Math.max.apply(null, m.map(function (x) { return x.cum; }).concat([1000])));
+  // Courbe en aire violette (maquette « Évolution du chiffre d'affaires ») : chiffre d'affaires cumulé ou MRR.
+  function grAire(W, m, cle, id, label) {
+    var H = 210, G = 58, B = 24, T = 12, ih = H - B - T, iw = W - G - 14, max = graduation(Math.max.apply(null, m.map(function (x) { return x[cle]; }).concat([cle === 'mrr' ? 100 : 1000])));
     var y = function (v) { return T + ih - v / max * ih; }, x = function (i) { return G + 6 + i * iw / Math.max(1, m.length - 1); }, s = '';
     for (var k = 0; k <= 5; k++) { var v = max / 5 * k; s += '<line x1="' + G + '" x2="' + (W - 6) + '" y1="' + y(v) + '" y2="' + y(v) + '" class="bsr-grille"/><text x="' + (G - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + esc(euros(v)) + '</text>'; }
-    var p = m.map(function (d, i) { return [x(i), y(d.cum)]; }), l = lisse(p);
-    s += '<path d="' + l + ' L' + p[p.length - 1][0].toFixed(1) + ' ' + (T + ih) + ' L' + p[0][0].toFixed(1) + ' ' + (T + ih) + ' Z" fill="url(#bsrCA)"/>' +
-      '<path d="' + l + '" fill="none" stroke="#a78bfa" stroke-width="2.4"/>' + p.map(function (q) { return '<circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="3.5" fill="#c4b5fd" stroke="#4c1d95" stroke-width="1.5"/>'; }).join('') +
+    var p = m.map(function (d, i) { return [x(i), y(d[cle])]; }), l = lisse(p);
+    s += '<path class="bsr-aire" d="' + l + ' L' + p[p.length - 1][0].toFixed(1) + ' ' + (T + ih) + ' L' + p[0][0].toFixed(1) + ' ' + (T + ih) + ' Z" fill="url(#' + id + ')"/>' +
+      '<path class="bsr-ligne" d="' + l + '" fill="none" stroke="#a78bfa" stroke-width="2.4"/>' + p.map(function (q) { return '<circle class="bsr-pt" cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="3.5" fill="#c4b5fd" stroke="#4c1d95" stroke-width="1.5"/>'; }).join('') +
       m.map(function (d, i) { return '<text x="' + x(i) + '" y="' + (H - 5) + '" text-anchor="middle">' + esc(d.label) + '</text>'; }).join('');
-    return '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Chiffre d’affaires cumulé par mois"><defs><linearGradient id="bsrCA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7c3aed" stop-opacity=".55"/><stop offset="1" stop-color="#4f46e5" stop-opacity=".04"/></linearGradient></defs>' + s + '</svg>';
+    return '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7c3aed" stop-opacity=".55"/><stop offset="1" stop-color="#4f46e5" stop-opacity=".04"/></linearGradient></defs>' + s + '</svg>';
   }
   function grEquipe(W) {
     var d = S.equipe;
-    if (d === 'interdit') return '<p class="bsr-vide">Réservé aux administrateurs : les simulations IA de chaque membre.</p>';
-    if (!d) return '<p class="bsr-vide">Chargement de l’équipe…</p>';
+    if (d === 'interdit') return '<p class="bsr-vide" data-pres-vide>Réservé aux administrateurs : les simulations IA de chaque membre.</p>';
+    if (!d) return '<p class="bsr-vide" data-pres-vide>Chargement de l’équipe…</p>';
     var debut = new Date(); debut.setMonth(debut.getMonth() - S.mois + 1, 1); debut.setHours(0, 0, 0, 0);
     var l = d.membres.map(function (mb) {
       var s = d.simulations.filter(function (x) { return x.userId === mb.id && Date.parse(x.at) >= debut.getTime(); });
       return { m: mb, n: s.length, r: s.length ? Math.round(s.filter(function (x) { return x.note >= 70; }).length / s.length * 100) : 0 };
     }).filter(function (x) { return x.n; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 5);
-    if (!l.length) return '<p class="bsr-vide">Les simulations IA de l’équipe apparaîtront ici (page Simulations IA).</p>';
+    BSC.equipe = l.length ? { t: 'bar', s: ['Simulations IA'], d: l.map(function (x) { return { l: String(x.m.name || '?').trim().split(/\s+/)[0], v: [x.n], f: [String(x.n)] }; }) } : null;
+    if (!l.length) return '<p class="bsr-vide" data-pres-vide>Les simulations IA de l’équipe apparaîtront ici (page Simulations IA).</p>';
     var H = 180, G = 30, D = 34, B = 8, T = 16, ih = H - B - T, iw = W - G - D, max = graduation(Math.max.apply(null, l.map(function (x) { return x.n; }).concat([4])));
     var pas = iw / l.length, bw = Math.min(22, pas * 0.26), y = function (v) { return T + ih - v / max * ih; }, yt = function (v) { return T + ih - v / 100 * ih; }, s = '';
     for (var k = 0; k <= 4; k++) s += '<line x1="' + G + '" x2="' + (W - D) + '" y1="' + y(max / 4 * k) + '" y2="' + y(max / 4 * k) + '" class="bsr-grille"/><text x="' + (G - 6) + '" y="' + (y(max / 4 * k) + 4) + '" text-anchor="end">' + Math.round(max / 4 * k) + '</text><text x="' + (W - D + 6) + '" y="' + (yt(25 * k) + 4) + '">' + 25 * k + '%</text>';
     l.forEach(function (x, i) {
       var cx = G + pas * i + pas / 2;
-      s += '<rect x="' + (cx - bw - 2) + '" y="' + y(x.n) + '" width="' + bw + '" height="' + (T + ih - y(x.n)) + '" rx="3" fill="url(#bsrV2)"/><rect x="' + (cx + 2) + '" y="' + yt(x.r) + '" width="' + bw + '" height="' + (T + ih - yt(x.r)) + '" rx="3" fill="url(#bsrT2)"/>' +
+      s += '<rect class="bsr-barre" x="' + (cx - bw - 2) + '" y="' + y(x.n) + '" width="' + bw + '" height="' + (T + ih - y(x.n)) + '" rx="3" fill="url(#bsrV2)"/><rect class="bsr-barre" x="' + (cx + 2) + '" y="' + yt(x.r) + '" width="' + bw + '" height="' + (T + ih - yt(x.r)) + '" rx="3" fill="url(#bsrT2)"/>' +
         '<text x="' + (cx - bw / 2 - 2) + '" y="' + (y(x.n) - 4) + '" text-anchor="middle" class="fort">' + x.n + '</text><text x="' + (cx + bw / 2 + 2) + '" y="' + (yt(x.r) - 4) + '" text-anchor="middle" class="fort">' + x.r + '%</text>';
     });
     return '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Simulations et taux de réussite par membre"><defs>' +
@@ -166,30 +171,21 @@
   function grCreneaux(W) {
     var ap = appels(prospects()), l = [];
     for (var h = 8; h <= 18; h++) { var a = ap.filter(function (c) { return c.h === h; }); l.push({ h: h, n: a.length, v: a.length ? Math.round(a.filter(function (c) { return c.o && c.o !== 'injoignable'; }).length / a.length * 100) : 0 }); }
-    if (!l.some(function (x) { return x.n; })) return '<p class="bsr-vide">Les heures d’appel s’affichent dès que des appels sont enregistrés.</p>';
+    BSC.creneaux = l.some(function (x) { return x.n; }) ? { t: 'bar', d: l.filter(function (x) { return x.n; }).map(function (x) { return { l: x.h + ' h', v: [x.v], f: [x.v + ' %'] }; }) } : null;
+    if (!BSC.creneaux) return '<p class="bsr-vide" data-pres-vide>Les heures d’appel s’affichent dès que des appels sont enregistrés.</p>';
     var H = 196, G = 34, B = 22, T = 10, ih = H - B - T, iw = W - G - 4, pas = iw / l.length, bw = Math.min(26, pas * 0.62), y = function (v) { return T + ih - v / 40 * ih; }, max = Math.max(40, Math.ceil(Math.max.apply(null, l.map(function (x) { return x.v; })) / 10) * 10), s = '';
     y = function (v) { return T + ih - v / max * ih; };
     for (var k = 0; k <= 4; k++) s += '<line x1="' + G + '" x2="' + W + '" y1="' + y(max / 4 * k) + '" y2="' + y(max / 4 * k) + '" class="bsr-grille"/><text x="' + (G - 6) + '" y="' + (y(max / 4 * k) + 4) + '" text-anchor="end">' + Math.round(max / 4 * k) + '%</text>';
     l.forEach(function (x, i) {
       var cx = G + pas * i + pas / 2;
-      s += '<rect x="' + (cx - bw / 2) + '" y="' + y(x.v) + '" width="' + bw + '" height="' + (T + ih - y(x.v)) + '" rx="4" fill="url(#bsrC)"><title>' + x.h + ' h – ' + (x.h + 1) + ' h : ' + x.v + ' % (' + x.n + ')</title></rect>' +
+      s += '<rect class="bsr-barre" x="' + (cx - bw / 2) + '" y="' + y(x.v) + '" width="' + bw + '" height="' + (T + ih - y(x.v)) + '" rx="4" fill="url(#bsrC)"><title>' + x.h + ' h – ' + (x.h + 1) + ' h : ' + x.v + ' % (' + x.n + ')</title></rect>' +
         (x.h % 2 === 0 ? '<text x="' + cx + '" y="' + (H - 5) + '" text-anchor="middle">' + x.h + 'h</text>' : '');
     });
     return '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Taux de réponse par heure d’appel"><defs><linearGradient id="bsrC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#4338ca"/></linearGradient></defs>' + s + '</svg>';
   }
-  function grMRR(W, m) {
-    var H = 170, G = 58, B = 22, T = 10, ih = H - B - T, iw = W - G - 14, max = graduation(Math.max.apply(null, m.map(function (x) { return x.mrr; }).concat([100])));
-    var y = function (v) { return T + ih - v / max * ih; }, x = function (i) { return G + 6 + i * iw / Math.max(1, m.length - 1); }, s = '';
-    for (var k = 0; k <= 4; k++) s += '<line x1="' + G + '" x2="' + (W - 6) + '" y1="' + y(max / 4 * k) + '" y2="' + y(max / 4 * k) + '" class="bsr-grille"/><text x="' + (G - 8) + '" y="' + (y(max / 4 * k) + 4) + '" text-anchor="end">' + esc(euros(max / 4 * k)) + '</text>';
-    var p = m.map(function (d, i) { return [x(i), y(d.mrr)]; });
-    s += '<path d="' + lisse(p) + '" fill="none" stroke="' + C.turquoise + '" stroke-width="2.2"/>' + p.map(function (q) { return '<circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="3" fill="' + C.turquoise + '"/>'; }).join('') +
-      m.map(function (d, i) { return '<text x="' + x(i) + '" y="' + (H - 4) + '" text-anchor="middle">' + esc(d.label) + '</text>'; }).join('');
-    return '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Revenu récurrent mensuel">' + s + '</svg>';
-  }
-
   // ---------------------------------------------------------------- encarts
   function carteKpi(ic1, couleur, label, valeur, e, vals, id) {
-    return '<section class="bsr-carte bsr-kpi"><span class="bsr-kpi-ic" style="--c:' + couleur + '">' + ic1 + '</span><div class="bsr-kpi-t"><small>' + label + '</small><b>' + valeur + '</b>' +
+    return '<section class="bsr-carte bsr-kpi" data-pres-kpi data-pres-anim><span class="bsr-kpi-ic" style="--c:' + couleur + '">' + ic1 + '</span><div class="bsr-kpi-t"><small>' + label + '</small><b data-pres-val>' + valeur + '</b>' +
       '<span>' + puce(e) + '<em>vs. mois précédent</em></span></div>' + etincelle(vals, couleur, id) + '</section>';
   }
   function sources() {
@@ -199,13 +195,13 @@
     if (l.length > 5) { var reste = l.slice(4).reduce(function (s, x) { return s + x.n; }, 0); l = l.slice(0, 4).concat([{ l: 'Autres', n: reste }]); }
     var tot = ps.length, R0 = 52, Cc = 2 * Math.PI * R0, off = 0;
     var anneau = '<svg viewBox="0 0 140 140" class="bsr-donut" aria-hidden="true"><circle cx="70" cy="70" r="' + R0 + '" fill="none" stroke="var(--border)" stroke-width="16"/>' + l.map(function (x, i) {
-      var len = tot ? x.n / tot * Cc : 0, c = '<circle cx="70" cy="70" r="' + R0 + '" fill="none" stroke="' + SOURCES[i % SOURCES.length] + '" stroke-width="16" stroke-dasharray="' + Math.max(0, len - 2).toFixed(2) + ' ' + Cc.toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 70 70)"/>';
+      var len = tot ? x.n / tot * Cc : 0, c = '<circle class="bsr-arc" cx="70" cy="70" r="' + R0 + '" fill="none" stroke="' + SOURCES[i % SOURCES.length] + '" stroke-width="16" stroke-dasharray="' + Math.max(0, len - 2).toFixed(2) + ' ' + Cc.toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 70 70)"/>';
       off += len; return c;
     }).join('') + '</svg>';
-    return '<div class="bsr-tete">' + '<span class="bsr-tic">' + ic('target', 17) + '</span><div><h2>Sources de conversion</h2><p>Origine des prospects</p></div></div>' +
-      (tot ? '<div class="bsr-sources"><div class="bsr-donut-w">' + anneau + '<div><b>' + nb(tot) + '</b><span>prospects</span></div></div><ul>' + l.map(function (x, i) {
+    return '<div class="bsr-tete" data-pres-skip>' + '<span class="bsr-tic">' + ic('target', 17) + '</span><div><h2 data-pres-t>Sources de conversion</h2><p data-pres-s>Origine des prospects</p></div></div>' +
+      (tot ? '<div class="bsr-sources" data-pres-anim data-bsc="' + esc(JSON.stringify({ t: 'bar', d: l.map(function (x) { return { l: x.l, v: [x.n], f: [nb(x.n)] }; }) })) + '"><div class="bsr-donut-w">' + anneau + '<div><b>' + nb(tot) + '</b><span>prospects</span></div></div><ul>' + l.map(function (x, i) {
         return '<li><i style="background:' + SOURCES[i % SOURCES.length] + '"></i><span>' + esc(x.l) + '</span><b>' + Math.round(x.n / tot * 100) + '%</b><em>' + nb(x.n) + '</em></li>';
-      }).join('') + '</ul></div>' : '<p class="bsr-vide">Ajoutez des prospects pour voir leur origine.</p>');
+      }).join('') + '</ul></div>' : '<p class="bsr-vide" data-pres-vide>Ajoutez des prospects pour voir leur origine.</p>');
   }
   function activite() {
     var evs = window.bsCalendrier && window.bsCalendrier.evenements ? window.bsCalendrier.evenements() : [];
@@ -214,13 +210,13 @@
     var titre = 'Rendez-vous du jour';
     if (!l.length) { l = evs.filter(function (e) { return e.d > auj && e.min !== null; }); titre = 'Prochains rendez-vous'; }
     l = l.slice(0, 4);
-    return '<div class="bsr-tete"><span class="bsr-tic">' + ic('activity', 17) + '</span><div><h2>Activité commerciale</h2><p>' + titre + '</p></div></div>' +
+    return '<div class="bsr-tete" data-pres-skip><span class="bsr-tic">' + ic('activity', 17) + '</span><div><h2 data-pres-t>Activité commerciale</h2><p data-pres-s>' + titre + '</p></div></div>' +
       (l.length ? '<ul class="bsr-act">' + l.map(function (e) {
         var etat = e.d === auj && maint >= e.min && maint < e.min + e.dur ? ['En cours', 'cours'] : e.d === auj && maint >= e.min + e.dur ? ['Passé', 'passe'] : ['À venir', 'venir'];
         return '<li><button type="button" data-ev="' + e.k + ':' + esc(e.id) + '"><span class="bsr-act-ic" style="--c:' + ({ blue: C.bleu, purple: C.violet, pink: C.rose, green: '#10b981', orange: '#f97316', amber: '#f59e0b', sky: '#0ea5e9' }[e.ton] || C.bleu) + '">' + ic(e.ic, 15) + '</span>' +
           '<time>' + (e.d === auj ? '' : '<small>' + esc(e.d.slice(8) + '/' + e.d.slice(5, 7)) + '</small>') + deux(Math.floor(e.min / 60)) + ':' + deux(e.min % 60) + '</time><span class="bsr-act-t"><b>' + esc(e.quoi || e.titre) + '</b><small>' + esc(e.qui || e.sous || '') + '</small></span>' +
           '<em class="' + etat[1] + '">' + etat[0] + '</em></button></li>';
-      }).join('') + '</ul>' : '<p class="bsr-vide">Aucun rendez-vous planifié. Planifiez vos relances depuis le Calendrier.</p>');
+      }).join('') + '</ul>' : '<p class="bsr-vide" data-pres-vide>Aucun rendez-vous planifié. Planifiez vos relances depuis le Calendrier.</p>');
   }
   function recommandations() {
     var ps = prospects(), recs = [];
@@ -235,19 +231,89 @@
     var bh = heures.filter(function (x) { return x.n >= 3; }).sort(function (a, b) { return b.v - a.v; })[0];
     if (bh && m0 && bh.v > m0) recs.push(['clock', 'Privilégiez les appels entre ' + bh.h + 'h et ' + (bh.h + 2) + 'h', 'Ce créneau génère ' + Math.round((bh.v - m0) / m0 * 100) + ' % de réponses en plus que la moyenne.', 'Voir les horaires', '#creneaux']);
     while (recs.length < 2) recs.push(['sparkles', recs.length ? 'Enregistrez l’heure de vos appels' : 'Renseignez le secteur de vos prospects', 'Les recommandations se précisent à mesure que vos appels et vos fiches sont enregistrés dans le CRM.', 'Voir les prospects', '#/prospects']);
-    return '<div class="bsr-reco-g"><span class="bsr-reco-logo">' + ic('sparkles', 26) + '</span><div><h2>Recommandations IA</h2><p>Nos algorithmes analysent vos appels et vos prospects pour proposer des actions qui améliorent vos performances.</p></div></div>' +
+    return '<div class="bsr-reco-g"><span class="bsr-reco-logo">' + ic('sparkles', 26) + '</span><div><h2 data-pres-t>Recommandations IA</h2><p data-pres-s>Nos algorithmes analysent vos appels et vos prospects pour proposer des actions qui améliorent vos performances.</p></div></div>' +
       recs.slice(0, 2).map(function (r) {
         return '<div class="bsr-reco"><span class="bsr-tic">' + ic(r[0], 18) + '</span><div><b>' + esc(r[1]) + '</b><p>' + esc(r[2]) + '</p></div><a href="' + r[4] + '"' + (r[4] === '#creneaux' ? ' data-act="creneaux"' : '') + '>' + esc(r[3]) + ic('rap-fleche', 13) + '</a></div>';
       }).join('');
   }
   function pipeline() {
     var ps = prospects(), l = [['a_appeler', 'À appeler'], ['injoignable', 'Injoignable'], ['rdv_pris', 'RDV pris'], ['audit_realise', 'Audit réalisé'], ['proposition_envoyee', 'Proposition envoyée'], ['client_signe', 'Client actif'], ['perdu', 'Perdu / Refus']];
-    var max = Math.max.apply(null, l.map(function (x) { return ps.filter(function (p) { return p.statut === x[0]; }).length; }).concat([1]));
-    return '<div class="bsr-tete"><span class="bsr-tic">' + ic('kanban', 17) + '</span><div><h2>Répartition du pipeline</h2><p>Nombre de prospects par étape</p></div><a class="bsr-voir" href="#/pipeline">Voir le pipeline' + ic('rap-fleche', 13) + '</a></div><ul class="bsr-pipe">' + l.map(function (x) {
+    var n0 = l.map(function (x) { return ps.filter(function (p) { return p.statut === x[0]; }).length; }), max = Math.max.apply(null, n0.concat([1]));
+    var bsc = { t: 'bar', d: l.map(function (x, i) { return { l: x[1], v: [n0[i]], f: [nb(n0[i])] }; }) };
+    return '<div class="bsr-tete" data-pres-skip><span class="bsr-tic">' + ic('kanban', 17) + '</span><div><h2 data-pres-t>Répartition du pipeline</h2><p data-pres-s>Nombre de prospects par étape</p></div><a class="bsr-voir" href="#/pipeline">Voir le pipeline' + ic('rap-fleche', 13) + '</a></div><ul class="bsr-pipe" data-pres-anim data-bsc="' + esc(JSON.stringify(bsc)) + '">' + l.map(function (x) {
       var n = ps.filter(function (p) { return p.statut === x[0]; }).length;
       return '<li><span>' + esc(x[1]) + '</span><i><i style="width:' + (n / max * 100).toFixed(1) + '%"></i></i><b>' + nb(n) + '</b></li>';
     }).join('') + '</ul>';
   }
+
+  // ---------------------------------------------------------------- présentation animée
+  // Apparition à l'arrivée sur la page et au changement de période : les cartes arrivent en cascade, les barres
+  // poussent, les courbes se dessinent, l'anneau se remplit, les chiffres défilent. Les cartes plus bas s'animent
+  // quand on les fait défiler. Le mode présentation (bs-anim) rejoue ces animations sur chaque diapositive.
+  var EASE = 'cubic-bezier(.16,1,.3,1)', EASE_IO = 'cubic-bezier(.65,0,.35,1)', obs = null;
+  function reduit() { return document.documentElement.getAttribute('data-motion') === 'reduced' || !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  function an(el, frames, o) { if (!el || !el.animate) return; try { el.animate(frames, Object.assign({ fill: 'backwards', easing: EASE }, o)); } catch (e) { /* navigateur ancien */ } }
+  function tracer(p, delai, duree) {
+    var L = 0; try { L = p.getTotalLength(); } catch (e) { /* hors affichage */ }
+    if (L) an(p, [{ strokeDasharray: L + ' ' + L, strokeDashoffset: L }, { strokeDasharray: L + ' ' + L, strokeDashoffset: 0 }], { duration: duree, delay: delai, easing: EASE_IO });
+  }
+  function animerGraph(g, b, lent) {
+    var sl = lent ? 1.3 : 1, svg = g.querySelector('svg');
+    if (svg) {
+      svg.querySelectorAll('.bsr-grille').forEach(function (l, i) { an(l, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: b + i * 40 }); });
+      var barres = svg.querySelectorAll('.bsr-barre');
+      barres.forEach(function (r, i) {
+        r.style.transformBox = 'fill-box'; r.style.transformOrigin = '50% 100%';
+        an(r, [{ transform: 'scaleY(0)', opacity: 0.4 }, { transform: 'scaleY(1.06)', opacity: 1, offset: 0.72 }, { transform: 'scaleY(1)', opacity: 1 }], { duration: 900 * sl, delay: b + 150 + Math.min(i, 24) * 40 });
+      });
+      var t0 = b + 150 + (barres.length ? Math.min(barres.length, 24) * 40 + 250 : 0), D = 1100 * sl;
+      svg.querySelectorAll('.bsr-ligne').forEach(function (p) { tracer(p, t0, D); });
+      svg.querySelectorAll('.bsr-aire').forEach(function (p) { an(p, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: D, delay: t0, easing: EASE_IO }); });
+      var pts = svg.querySelectorAll('.bsr-pt');
+      pts.forEach(function (c, i) {
+        c.style.transformBox = 'fill-box'; c.style.transformOrigin = '50% 50%';
+        an(c, [{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1.7)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1 }], { duration: 600, delay: t0 + D * (pts.length > 1 ? i / (pts.length - 1) : 1) - 80 });
+      });
+      svg.querySelectorAll('text.fort').forEach(function (t, i) { an(t, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 500, delay: t0 + i * 30 }); });
+      svg.querySelectorAll('.bsr-arc').forEach(function (c, i) {
+        var da = (c.getAttribute('stroke-dasharray') || '').split(/[ ,]+/);
+        if (da.length === 2) an(c, [{ strokeDasharray: '0 ' + da[1] }, { strokeDasharray: da.join(' ') }], { duration: 800 * sl, delay: b + 200 + i * 160 });
+      });
+    }
+    g.querySelectorAll('.bsr-membres > span, .bsr-sources li').forEach(function (x, i) { an(x, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 500, delay: b + 400 + i * 70 }); });
+    g.querySelectorAll('.bsr-pipe li > i > i').forEach(function (x, i) { x.style.transformOrigin = '0 50%'; an(x, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 900 * sl, delay: b + 150 + i * 80 }); });
+    if (window.bsAnim && window.bsAnim.countUp) g.querySelectorAll('.bsr-donut-w b, .bsr-pipe li > b').forEach(function (x, i) { window.bsAnim.countUp(x, b + 200 + i * 60, 1000); });
+  }
+  function animerCarte(c, b) {
+    an(c, [{ opacity: 0, transform: 'translateY(22px) scale(.985)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: b });
+    var cu = window.bsAnim && window.bsAnim.countUp;
+    if (c.matches('.bsr-kpi')) { if (cu) cu(c.querySelector('[data-pres-val]'), b + 150, 1100); animerGraph(c, b + 150); }
+    if (cu) c.querySelectorAll('.bsr-ca-t > b, .bsr-ca-t .bsr-badge').forEach(function (x) { cu(x, b + 150, 1200); });
+    c.querySelectorAll('[data-pres-anim]').forEach(function (g) { animerGraph(g, b + 120); });
+  }
+  function animerPage() {
+    if (!racine || reduit()) return;
+    if (obs) obs.disconnect();
+    var cartes = racine.querySelectorAll('.bsr-carte');
+    if (!('IntersectionObserver' in window)) { cartes.forEach(function (c, i) { animerCarte(c, Math.min(i, 10) * 70); }); return; }
+    var file = [], t = null;
+    obs = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { obs.unobserve(e.target); file.push(e.target); } });
+      if (file.length && !t) t = setTimeout(function () {
+        t = null;
+        var l = file.splice(0);
+        l.sort(function (a, b) { var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(); return (ra.top - rb.top) || (ra.left - rb.left); });
+        l.forEach(function (c, i) { animerCarte(c, Math.min(i, 10) * 80); });
+      }, 30);
+    }, { threshold: 0.12 });
+    cartes.forEach(function (c) { obs.observe(c); });
+  }
+  // Diapositives du mode présentation : bs-anim envoie « bs:animer » sur les copies des graphiques.
+  document.addEventListener('bs:animer', function (e) {
+    var el = e.target, d = e.detail || {};
+    if (!el || !el.closest || !el.closest('#bs-pres') || reduit()) return;
+    animerGraph(el, d.delay || 0, d.slow);
+  });
 
   // ---------------------------------------------------------------- page
   function libellePeriode() {
@@ -257,41 +323,59 @@
   }
   function dessiner() {
     if (!racine || !racine.isConnected) return;
-    var m = mensuel(), t = totaux(m), n = m.length, der = m[n - 1], av = m[n - 2] || { contactes: 0, rdv: 0, taux: 0, cum: 0, ca: 0 };
+    var m = mensuel(), t = totaux(m), n = m.length, der = m[n - 1], av = m[n - 2] || { contactes: 0, rdv: 0, taux: 0, cum: 0, ca: 0, mrr: 0 };
     var eCA = evolution(der.cum, av.cum);
     racine.innerHTML = '<div class="bsr">' +
-      '<header class="bsr-entete"><span class="bsr-logo">' + ic('chart-column', 24) + '</span><div><h1>Rapports &amp; analyses</h1><p>Pilotez la performance commerciale avec des données fiables.</p></div>' +
+      '<header class="bsr-entete"><span class="bsr-logo">' + ic('chart-column', 24) + '</span><div><h1 data-pres-titre>Rapports &amp; analyses</h1><p data-pres-sous>Pilotez la performance commerciale avec des données fiables.</p></div>' +
       '<div class="bsr-actions"><div class="bsr-per"><button type="button" class="bsr-per-b" data-act="menu" aria-expanded="' + S.menu + '">' + ic('calendar', 16) + '<span>' + esc(libellePeriode()) + '</span>' + ic('rap-chevron', 14) + '</button>' +
       (S.menu ? '<div class="bsr-menu" role="menu">' + [3, 6, 12].map(function (k) { return '<button type="button" role="menuitem" data-mois="' + k + '" class="' + (k === S.mois ? 'on' : '') + '">' + k + ' derniers mois</button>'; }).join('') + '</div>' : '') + '</div>' +
+      '<button type="button" class="bsr-per-b bsr-pres-b" data-act="presenter" title="Mode présentation : diaporama plein écran (touche P)">' + ic('rap-lecture', 15) + '<span>Présenter</span><kbd>P</kbd></button>' +
       '<button type="button" class="btn btn-primary bsr-export" data-act="export">' + ic('download', 16) + 'Exporter le rapport</button></div></header>' +
       '<div class="bsr-kpis">' +
       carteKpi(ic('users', 20), C.bleu, 'Prospects contactés', nb(t.contactes), evolution(der.contactes, av.contactes), m.map(function (x) { return x.contactes; }), 'bsrE1') +
       carteKpi(ic('calendar', 20), C.violet, 'Rendez-vous obtenus', nb(t.rdv), evolution(der.rdv, av.rdv), m.map(function (x) { return x.rdv; }), 'bsrE2') +
       carteKpi(ic('rap-pourcent', 20), C.turquoise, 'Taux de conversion', virgule(t.taux) + ' %', evolution(der.taux, av.taux, true), m.map(function (x) { return x.taux; }), 'bsrE3') +
       carteKpi(ic('euro', 20), '#a78bfa', 'Revenus générés', esc(euros(t.ca)), eCA, m.map(function (x) { return x.cum; }), 'bsrE4') + '</div>' +
-      '<div class="bsr-l1"><section class="bsr-carte"><div class="bsr-tete"><span class="bsr-tic">' + ic('chart-column', 17) + '</span><div><h2>Performance commerciale</h2><p>Prospects contactés, rendez-vous obtenus et taux de conversion</p></div>' +
+      '<div class="bsr-l1"><section class="bsr-carte" data-pres-carte><div class="bsr-tete" data-pres-skip><span class="bsr-tic">' + ic('chart-column', 17) + '</span><div><h2 data-pres-t>Performance commerciale</h2><p data-pres-s>Prospects contactés, rendez-vous obtenus et taux de conversion</p></div>' +
       '<div class="bsr-leg"><span><i style="background:' + C.bleu + '"></i>Prospects contactés</span><span><i style="background:' + C.violet + '"></i>Rendez-vous obtenus</span><span><i class="rond" style="background:' + C.turquoise + '"></i>Taux de conversion</span></div></div>' +
-      '<div class="bsr-g" data-g="perf"></div></section>' +
-      '<section class="bsr-carte"><div class="bsr-tete"><span class="bsr-tic">' + ic('chart-line', 17) + '</span><div><h2>Évolution du chiffre d’affaires</h2><p>Revenus générés par mois (cumulés)</p></div></div>' +
-      '<div class="bsr-ca-t"><b>' + esc(euros(t.ca)) + '</b><span class="bsr-badge">' + esc(euros(der.cum)) + '</span></div><div class="bsr-ca-e">' + puce(eCA) + '<em>vs. mois précédent</em></div><div class="bsr-g" data-g="ca"></div></section></div>' +
-      '<div class="bsr-l2"><section class="bsr-carte bsr-src-carte">' + sources() + '</section>' +
-      '<section class="bsr-carte"><div class="bsr-tete"><span class="bsr-tic">' + ic('users', 17) + '</span><div><h2>Performance par équipe</h2><p>Simulations IA et taux de réussite par membre</p></div></div>' +
-      '<div class="bsr-leg petit"><span><i style="background:' + C.violet + '"></i>Simulations</span><span><i style="background:' + C.turquoise + '"></i>Taux de réussite</span></div><div class="bsr-g" data-g="equipe"></div></section>' +
+      '<div class="bsr-g" data-pres-anim data-g="perf"></div></section>' +
+      '<section class="bsr-carte" data-pres-carte><div class="bsr-tete" data-pres-skip><span class="bsr-tic">' + ic('chart-line', 17) + '</span><div><h2 data-pres-t>Évolution du chiffre d’affaires</h2><p data-pres-s>Revenus générés par mois (cumulés)</p></div></div>' +
+      '<div class="bsr-ca-t"><b>' + esc(euros(t.ca)) + '</b><span class="bsr-badge">' + esc(euros(der.cum)) + '</span></div><div class="bsr-ca-e">' + puce(eCA) + '<em>vs. mois précédent</em></div><div class="bsr-g" data-pres-anim data-g="ca"></div></section></div>' +
+      '<div class="bsr-l2"><section class="bsr-carte bsr-src-carte" data-pres-carte>' + sources() + '</section>' +
+      '<section class="bsr-carte" data-pres-carte><div class="bsr-tete" data-pres-skip><span class="bsr-tic">' + ic('users', 17) + '</span><div><h2 data-pres-t>Performance par équipe</h2><p data-pres-s>Simulations IA et taux de réussite par membre</p></div></div>' +
+      '<div class="bsr-leg petit"><span><i style="background:' + C.violet + '"></i>Simulations</span><span><i style="background:' + C.turquoise + '"></i>Taux de réussite</span></div><div class="bsr-g" data-pres-anim data-g="equipe"></div></section>' +
       '<section class="bsr-carte">' + activite() + '</section>' +
-      '<section class="bsr-carte" id="bsr-creneaux"><div class="bsr-tete"><span class="bsr-tic">' + ic('clock', 17) + '</span><div><h2>Meilleurs créneaux d’appel</h2><p>Taux de réponse des prospects</p></div></div><div class="bsr-g" data-g="creneaux"></div></section></div>' +
+      '<section class="bsr-carte" id="bsr-creneaux" data-pres-carte><div class="bsr-tete" data-pres-skip><span class="bsr-tic">' + ic('clock', 17) + '</span><div><h2 data-pres-t>Meilleurs créneaux d’appel</h2><p data-pres-s>Taux de réponse des prospects</p></div></div><div class="bsr-g" data-pres-anim data-g="creneaux"></div></section></div>' +
       '<section class="bsr-carte bsr-recos">' + recommandations() + '</section>' +
-      '<div class="bsr-l3"><section class="bsr-carte"><div class="bsr-tete"><span class="bsr-tic">' + ic('trending-up', 17) + '</span><div><h2>Revenu récurrent (MRR)</h2><p>Abonnements actifs en fin de mois</p></div><b class="bsr-mrr">' + esc(euros(der.mrr)) + '</b></div><div class="bsr-g" data-g="mrr"></div></section>' +
-      '<section class="bsr-carte">' + pipeline() + '</section></div>' +
+      '<div class="bsr-l3"><section class="bsr-carte" data-pres-carte><div class="bsr-tete" data-pres-skip><span class="bsr-tic">' + ic('trending-up', 17) + '</span><div><h2 data-pres-t>Revenu récurrent (MRR)</h2><p data-pres-s>Abonnements actifs en fin de mois</p></div></div>' +
+      '<div class="bsr-ca-t"><b>' + esc(euros(der.mrr)) + '</b><span class="bsr-badge" title="Revenu récurrent annuel (MRR × 12)">ARR ' + esc(euros(der.mrr * 12)) + '</span></div><div class="bsr-ca-e">' + puce(evolution(der.mrr, av.mrr)) + '<em>vs. mois précédent</em></div><div class="bsr-g" data-pres-anim data-g="mrr"></div></section>' +
+      '<section class="bsr-carte" data-pres-carte>' + pipeline() + '</section></div>' +
       '<div class="bsn-root bsr-niche"></div></div>';
     graphiques(m);
     var ni = racine.querySelector('.bsr-niche'); if (ni && window.bsNiche) window.bsNiche.monter(ni);
+    if (animerApres) { animerApres = false; animerPage(); }
   }
   var dernier = null;
   function graphiques(m) {
     if (!racine) return;
     m = m || mensuel(); dernier = m;
-    var f = { perf: function (W) { return grPerf(W, m); }, ca: function (W) { return grCA(W, m); }, equipe: grEquipe, creneaux: grCreneaux, mrr: function (W) { return grMRR(W, m); } };
-    racine.querySelectorAll('[data-g]').forEach(function (el) { var W = Math.max(220, Math.floor(el.clientWidth)); el.innerHTML = f[el.dataset.g](W); });
+    var f = { perf: function (W) { return grPerf(W, m); }, ca: function (W) { return grAire(W, m, 'cum', 'bsrCA', 'Chiffre d’affaires cumulé par mois'); }, equipe: grEquipe, creneaux: grCreneaux, mrr: function (W) { return grAire(W, m, 'mrr', 'bsrMRR', 'Revenu récurrent mensuel'); } };
+    var serie = function (cle, fmt) { return m.map(function (x) { return { l: x.label, v: [x[cle]], f: [fmt(x[cle])] }; }); };
+    BSC.perf = { t: 'bar', s: ['Rendez-vous obtenus'], d: serie('rdv', nb) };
+    BSC.ca = { t: 'bar', s: ['Chiffre d’affaires'], d: serie('ca', euros) };
+    BSC.mrr = { t: 'line', d: serie('mrr', euros) };
+    racine.querySelectorAll('[data-g]').forEach(function (el) {
+      var W = Math.max(220, Math.floor(el.clientWidth));
+      el.innerHTML = f[el.dataset.g](W);
+      if (BSC[el.dataset.g]) el.setAttribute('data-bsc', JSON.stringify(BSC[el.dataset.g])); else el.removeAttribute('data-bsc');
+    });
+  }
+  // L'équipe arrive après coup : seul son graphique est redessiné (les autres finissent leur animation).
+  function equipe(animer) {
+    var g = racine && racine.querySelector('[data-g=equipe]'); if (!g) return;
+    g.innerHTML = grEquipe(Math.max(220, Math.floor(g.clientWidth)));
+    if (BSC.equipe) g.setAttribute('data-bsc', JSON.stringify(BSC.equipe)); else g.removeAttribute('data-bsc');
+    if (animer && !reduit()) animerGraph(g, 0);
   }
   function exporter() {
     var m = mensuel(), l = [['Mois', 'Prospects contactés', 'Appels', 'Rendez-vous obtenus', 'Taux de conversion (%)', 'Clients signés', 'CA nouveau (€)', 'CA cumulé (€)', 'MRR (€)']];
@@ -309,15 +393,16 @@
     if (!u || u.role !== 'admin') { S.equipe = 'interdit'; return; }
     fetch('/api/equipe/apercu', { credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart' } })
       .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .then(function (d) { S.equipe = d; graphiques(dernier); })
-      .catch(function () { S.equipe = 'interdit'; graphiques(dernier); });
+      .then(function (d) { S.equipe = d; equipe(true); })
+      .catch(function () { S.equipe = 'interdit'; equipe(false); });
   }
   function brancher(el) {
     el.addEventListener('click', function (ev) {
       var b = ev.target.closest('button,a'); if (!b || !el.contains(b) || b.closest('.bsr-niche')) { if (S.menu && !ev.target.closest('.bsr-per')) { S.menu = false; dessiner(); } return; }
       var d = b.dataset;
       if (d.act === 'menu') { S.menu = !S.menu; dessiner(); return; }
-      if (d.mois) { S.mois = Number(d.mois); S.menu = false; ecrire('bs-rapports-mois', S.mois); dessiner(); return; }
+      if (d.mois) { S.mois = Number(d.mois); S.menu = false; ecrire('bs-rapports-mois', S.mois); animerApres = true; dessiner(); return; }
+      if (d.act === 'presenter') { if (window.bsAnim && window.bsAnim.present) window.bsAnim.present(); return; }
       if (d.act === 'export') { exporter(); return; }
       if (d.act === 'creneaux') { ev.preventDefault(); var c = racine.querySelector('#bsr-creneaux'); if (c) { c.scrollIntoView({ behavior: 'smooth', block: 'center' }); c.classList.add('vu'); setTimeout(function () { c.classList.remove('vu'); }, 1600); } return; }
       if (d.ev) { var id = d.ev.slice(2); if (d.ev[0] === 'p') ouvrir('prospect', { id: id }); else ouvrir('taskForm', { id: id }); return; }
@@ -338,6 +423,7 @@
     css();
     if (racine !== el) { racine = el; brancher(el); }
     S.menu = false; S.survol = -1;
+    animerApres = true;
     dessiner();
     if (S.equipe === null || typeof S.equipe === 'object') chargerEquipe();
     window.removeEventListener('resize', surTaille); window.addEventListener('resize', surTaille);
@@ -364,7 +450,7 @@
       '.bsr-entete h1{margin:0;font-size:1.75em;font-weight:800;letter-spacing:-.02em;color:var(--text)}.bsr-entete p{margin:3px 0 0;color:var(--text-2);font-size:.95em}',
       '.bsr-logo{flex:none;display:grid;place-items:center;width:48px;height:48px;border-radius:14px;color:#c4b5fd;background:linear-gradient(145deg,rgba(124,58,237,.35),rgba(59,130,246,.18));border:1px solid rgba(139,92,246,.45);box-shadow:0 0 22px -6px rgba(139,92,246,.7)}',
       '.bsr-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.bsr-per{position:relative}',
-      '.bsr-per-b{display:flex;align-items:center;gap:9px;font:inherit;font-size:.86em;color:var(--text);padding:9px 12px;border-radius:10px;border:1px solid var(--neon-line,var(--border));background:color-mix(in srgb,var(--surface) 80%,transparent);cursor:pointer}',
+      '.bsr-per-b,.bsr-pres-b{display:flex;align-items:center;gap:9px;font:inherit;font-size:.86em;color:var(--text);padding:9px 12px;border-radius:10px;border:1px solid var(--neon-line,var(--border));background:color-mix(in srgb,var(--surface) 80%,transparent);cursor:pointer}',
       '.bsr-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:180px;padding:6px;border-radius:12px;border:1px solid var(--neon-line,var(--border));background:var(--surface);box-shadow:var(--shadow-lg,0 20px 40px -12px rgba(0,0,0,.6))}',
       '.bsr-menu button{display:block;width:100%;text-align:left;font:inherit;font-size:.86em;padding:8px 10px;border-radius:8px;border:0;background:none;color:var(--text);cursor:pointer}.bsr-menu button:hover,.bsr-menu button.on{background:var(--surface-2)}.bsr-menu button.on{color:#a78bfa;font-weight:600}',
       '.bsr-export{display:inline-flex;align-items:center;gap:8px}',
@@ -423,5 +509,5 @@
     document.head.appendChild(st);
   }
 
-  window.bsRapports = { monter: monter, mensuel: mensuel };
+  window.bsRapports = { monter: monter, mensuel: mensuel, animer: animerPage };
 })();

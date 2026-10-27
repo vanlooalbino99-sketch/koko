@@ -278,6 +278,10 @@
   stroke-dasharray: var(--len, 400);
   animation: bs-draw 1.4s cubic-bezier(0.3, 0.6, 0.2, 1) both;
 }
+/* Anneau de score de l'Intelligence IA : le trait se dessine jusqu'au score (dasharray posé par le composant). */
+.bs-ring-draw {
+  animation: bs-draw 1.4s cubic-bezier(0.3, 0.6, 0.2, 1) both;
+}
 .bs-float {
   transform-box: fill-box;
   transform-origin: center;
@@ -314,6 +318,7 @@
   .bs-pop,
   .bs-fade,
   .bs-draw,
+  .bs-ring-draw,
   .bs-float,
   .bs-twinkle,
   .bs-needle,

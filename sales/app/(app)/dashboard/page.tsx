@@ -8,14 +8,16 @@ import { card, CardTitle, KpiCard, LiveBadge, ViewAll } from '@/components/cockp
 import { ParticleWave } from '@/components/cockpit/particle-wave';
 import { PeriodMenu } from '@/components/cockpit/period-menu';
 import { InsightSpark } from '@/components/cockpit/insight-spark';
+import { AiIntelligence } from '@/components/intelligence/ai-intelligence';
 import { ScenarioCard } from '@/components/scenarios/scenario-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { creditStatus } from '@/lib/billing/credits';
+import { aiIntelligence } from '@/lib/dashboard/intelligence';
 import { getDashboard } from '@/lib/dashboard/service';
 import { PERIODS, periodOf, trainingPulse, type SkillRow } from '@/lib/dashboard/pulse';
 import { getDb } from '@/lib/server/db';
-import { can, SKILLS, type Family, type Skill } from '@/lib/domain';
+import { can, SKILLS, type Difficulty, type Family, type Skill } from '@/lib/domain';
 import { format, formatDate, timeAgo } from '@/lib/i18n';
 import { recommendScenarios } from '@/lib/scenarios/service';
 import { getI18n, requireOnboarded } from '@/lib/server/context';
@@ -53,12 +55,13 @@ export default async function DashboardPage({ searchParams }: Props) {
   // Appels restés sans transcription (onglet fermé pendant l'appel) : rattrapés avant d'afficher les chiffres.
   if (provider) await syncPendingSimulations(db, provider, auth).catch(() => undefined);
   const now = new Date();
-  const [data, pulse, credits, picks, missions] = await Promise.all([
+  const [data, pulse, credits, picks, missions, intel] = await Promise.all([
     getDashboard(db, auth),
     trainingPulse(db, auth, { days, now }),
     creditStatus(db, auth.organization, now),
     recommendScenarios(db, auth, profile, locale),
     listMyMissions(db, auth),
+    aiIntelligence(db, auth, { locale, experience: profile.experience as Difficulty, now }),
   ]);
   // Exercice pour la compétence la plus faible : le scénario du catalogue qui la travaille le plus, à son niveau.
   const [practice] = pulse.weakest
@@ -154,6 +157,9 @@ export default async function DashboardPage({ searchParams }: Props) {
           <Gauge value={pulse.score.value} label={d.kpiScore} />
         </KpiCard>
       </div>
+
+      {/* Intelligence IA : point faible, objections qui coûtent des points et exercice conseillé, d'après les analyses. */}
+      <AiIntelligence intel={intel} t={t} locale={locale} voiceReady={!!provider} />
 
       <div className="grid gap-2.5 xl:grid-cols-[1.15fr_1.45fr_1fr]">
         {/* Temps par type d'appel : anneau épais et légende, comme « Revenue by Product ». */}

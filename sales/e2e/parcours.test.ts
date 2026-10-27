@@ -807,7 +807,7 @@ test('démo publique : appel scénarisé joué sans compte, voix choisies et syn
   const page = await context.newPage();
   lastPage = page;
   await page.goto(`${BASE}/`);
-  await page.getByRole('link', { name: 'Voir une démo' }).click();
+  await page.getByRole('link', { name: 'Voir la démo' }).click();
   await page.waitForURL(`${BASE}/demo`);
   await page.getByText('Démo · appel scénarisé').first().waitFor();
   await page.getByText('Écoutez Camille appeler Marc Lefèvre').waitFor();

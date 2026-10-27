@@ -44,3 +44,7 @@ Les recommandations se précisent à mesure que vos appels et vos fiches sont en
 Renseignez le secteur de vos prospects ⇒ Fill in your prospects' sector
 CA cumulé (€) ⇒ Cumulative revenue (€)
 Taux de conversion (%) ⇒ Conversion rate (%)
+# Réglages › Icônes du menu : style des icônes.
+Pleines (deux tons) ⇒ Filled (two-tone)
+Traits ⇒ Outline
+Style ⇒ Style

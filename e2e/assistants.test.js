@@ -53,7 +53,7 @@ test('Assistants IA : 6 compétences par assistant, méthode, amorce, compétenc
   page.on('pageerror', (e) => errors.push(e.message));
   // Profil en haut à droite : nom complet et rôle.
   assert.equal(await page.textContent('.bs-moi .nm b'), 'Vanloo Albino');
-  assert.match(await page.textContent('.bs-moi .nm small'), /^Administrateur/);
+  assert.equal(await page.textContent('.bs-moi .nm small'), 'Admin');
 
   await page.evaluate(() => { location.hash = '#/assistants'; });
   await page.waitForSelector('.bsasp-carte');

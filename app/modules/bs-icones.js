@@ -20,6 +20,7 @@
   if (window.bsIcones) return;
 
   var LIB = window.bsIconesLib || { d: {}, t: {}, g: [], s: '', i: {} };
+  var PLEINES = window.bsIconesPleines || {};
   var SERVER = !!window.BS_SERVER;
   var CACHE_KEY = 'bs-icones';
   var NAV = [
@@ -233,6 +234,7 @@
     var teintes = {};
     if (st.teintes && typeof st.teintes === 'object') NAV.forEach(function (n) { if (n.id && isHex(st.teintes[n.id])) teintes[n.id] = st.teintes[n.id].toLowerCase(); });
     return {
+      forme: ['pleine', 'trait'].indexOf(st.forme) >= 0 ? st.forme : 'pleine',
       trait: ['fin', 'normal', 'gras'].indexOf(st.trait) >= 0 ? st.trait : 'normal',
       couleur: ['neutre', 'accent', 'multi', 'perso'].indexOf(st.couleur) >= 0 ? st.couleur : 'neutre',
       perso: isHex(st.perso) ? st.perso.toLowerCase() : '#60a5fa',
@@ -245,7 +247,7 @@
   }
   function applyStyle() {
     var h = document.documentElement;
-    h.setAttribute('data-bsi-trait', style.trait); h.setAttribute('data-bsi-couleur', style.couleur);
+    h.setAttribute('data-bsi-forme', style.forme); h.setAttribute('data-bsi-trait', style.trait); h.setAttribute('data-bsi-couleur', style.couleur);
     h.style.setProperty('--bsi-perso', style.perso);
     // Couleur choisie pour une rubrique : elle prime sur le style du menu, même sur la rubrique active.
     var el = document.getElementById('bs-icones-teintes');
@@ -267,6 +269,7 @@
 
   // ---------------------------------------------------------------- dessin
   function svg(name) {
+    if (name && name.indexOf('pleine-') === 0) return PLEINES[name.slice(7)] || '';
     if (!LIB.d[name]) return '';
     return svgCache[name] || (svgCache[name] = LIB.d[name].split('|').map(function (d) { return '<path d="' + d + '"/>'; }).join(''));
   }
@@ -278,7 +281,8 @@
   function icon(name, size) {
     return '<svg class="ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner(name) + '</svg>';
   }
-  function nav(id, def) { return map[id] || def; }
+  // Forme « pleine » (par défaut) : l'icône deux tons de la rubrique ; forme « trait » : l'icône choisie ou celle d'origine.
+  function nav(id, def) { return style.forme === 'pleine' && PLEINES[id] ? 'pleine-' + id : map[id] || def; }
   function refresh() {
     rev++;
     if (window.__bsY) window.__bsY.set({ bsIc: rev });
@@ -298,7 +302,7 @@
   function saveStyle(patch) {
     style = cleanStyle(Object.assign({}, style, patch));
     try { localStorage.setItem(STYLE_KEY, JSON.stringify(style)); } catch (e) {}
-    applyStyle(); listeners.forEach(function (l) { l(); });
+    applyStyle(); refresh();
     var a = amb();
     if (a) return Promise.resolve(a.reglages({ iconesStyle: style }));
     return Promise.resolve();
@@ -310,7 +314,7 @@
     var next = clean(c.icones || {});
     if (JSON.stringify(next) !== JSON.stringify(map)) { map = next; writeCache(); refresh(); }
     var st = cleanStyle(c.iconesStyle);
-    if (JSON.stringify(st) !== JSON.stringify(style)) { style = st; try { localStorage.setItem(STYLE_KEY, JSON.stringify(style)); } catch (e) {} applyStyle(); listeners.forEach(function (l) { l(); }); }
+    if (JSON.stringify(st) !== JSON.stringify(style)) { style = st; try { localStorage.setItem(STYLE_KEY, JSON.stringify(style)); } catch (e) {} applyStyle(); refresh(); }
   }
   function hook() {
     var a = amb();
@@ -561,7 +565,7 @@
     }
     function styleRow(ro) {
       var nT = Object.keys(style.teintes).length;
-      return '<div class="bsi-style"><div class="bsi-st"><span class="bsi-st-l">Trait</span>' + seg('trait', [['fin', 'Fin'], ['normal', 'Normal'], ['gras', 'Gras']], ro) + '</div>' +
+      return '<div class="bsi-style"><div class="bsi-st"><span class="bsi-st-l">Style</span>' + seg('forme', [['pleine', 'Pleines (deux tons)'], ['trait', 'Traits']], ro) + '</div><div class="bsi-st"><span class="bsi-st-l">Trait</span>' + seg('trait', [['fin', 'Fin'], ['normal', 'Normal'], ['gras', 'Gras']], ro) + '</div>' +
         '<div class="bsi-st"><span class="bsi-st-l">Couleur</span>' + seg('couleur', [['neutre', 'Neutre'], ['accent', 'Accent'], ['multi', 'Multicolore'], ['perso', 'Personnalisée']], ro) + '</div>' +
         (style.couleur === 'perso' ? '<div class="bsi-st"><span class="bsi-st-l">Teinte du menu</span>' + swatches(style.perso, 'perso', ro) + '</div>' : '') +
         (nT && !ro ? '<button type="button" class="btn btn-ghost btn-sm" data-act="resetcol">Effacer les couleurs par rubrique (' + nT + ')</button>' : '') +
@@ -607,7 +611,7 @@
       if (t.hasAttribute('data-navsel')) { ui.sel = t.getAttribute('data-navsel'); if (ui.cat === 'idees' || !ui.q) ui.cat = 'idees'; render(); return; }
       if (t.hasAttribute('data-cat')) { ui.cat = t.getAttribute('data-cat'); ui.q = ''; var qi = el.querySelector('[data-q]'); if (qi) qi.value = ''; renderGrid(); return; }
       if (!canEdit()) return;
-      if (t.hasAttribute('data-ic')) { var next = Object.assign({}, map); next[ui.sel] = t.getAttribute('data-ic'); save(next); return; }
+      if (t.hasAttribute('data-ic')) { var next = Object.assign({}, map); next[ui.sel] = t.getAttribute('data-ic'); if (style.forme === 'pleine') saveStyle({ forme: 'trait' }); save(next); return; }
       var act = t.getAttribute('data-act');
       if (act === 'autocol') { var t2 = Object.assign({}, style.teintes); delete t2[ui.sel]; saveStyle({ teintes: t2 }); return; }
       if (act === 'resetcol') { if (confirm('Effacer les couleurs choisies rubrique par rubrique ?')) saveStyle({ teintes: {} }); return; }

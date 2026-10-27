@@ -248,12 +248,12 @@
     '.bse-av.ph,.bs-moi .ph,.bs-moi-tete .ph{background:var(--ph) center/cover no-repeat;color:transparent}',
     '.bse-me .bse-av{width:64px;height:64px;border-radius:50%;font-size:22px}',
     '.bse-photo{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}',
-    '.bs-moi{flex:none;display:inline-flex;align-items:center;gap:10px;padding:4px 10px 4px 4px;margin-left:6px;border-radius:999px;border:1px solid transparent;background:none;color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s;text-align:left}',
+    '.bs-moi{flex:none;display:inline-flex;align-items:center;gap:12px;padding:4px 10px 4px 4px;margin-left:6px;border-radius:16px;border:1px solid transparent;background:none;color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s;text-align:left}',
     '.bs-moi .nm{display:flex;flex-direction:column;gap:1px;min-width:0;max-width:220px;line-height:1.2}',
     '.bs-moi .nm b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-    '.bs-moi .nm small{font-size:12px;font-weight:500;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.bs-moi .nm small{font-size:12.5px;font-weight:500;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.bs-moi:hover{background:rgb(var(--text-rgb,148 163 184)/.09);border-color:var(--border-2,var(--border))}',
-    '.bs-moi .ph,.bs-moi .ini{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background-color:rgb(var(--accent-rgb));flex:none}',
+    '.bs-moi .ph,.bs-moi .ini{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background-color:rgb(var(--accent-rgb));flex:none}',
     '.bs-moi .ph{background-color:transparent}',
     '@media (max-width:760px){.bs-moi{padding:2px;border:0;background:none}.bs-moi .nm{display:none}}',
     '.bs-moi .chev{opacity:.55;transition:transform .2s}',
@@ -381,12 +381,9 @@
     placerMoi();
     window.dispatchEvent(new CustomEvent('bs:profil', { detail: { userId: USER.id, photo: v } }));
   }
-  // Pastille du compte en haut à droite : photo, nom complet et « poste - entreprise » ; ouvre le menu du compte.
+  // Pastille du compte en haut à droite (maquette d'albino) : photo carrée arrondie, nom et poste (« Admin » par défaut) ; ouvre le menu du compte.
   function sousTitreMoi() {
-    var st = window.__bsStore && window.__bsStore.get ? window.__bsStore.get() : {};
-    var ent = st.companyInfo && st.companyInfo.nom ? String(st.companyInfo.nom) : '';
-    var poste = USER.poste || (USER.role === 'admin' ? 'Administrateur' : 'Membre');
-    return poste + (ent ? ' - ' + ent : '');
+    return USER.poste || (USER.role === 'admin' ? 'Admin' : 'Membre');
   }
   var moiAbonne = false;
   function placerMoi() {

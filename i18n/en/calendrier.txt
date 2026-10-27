@@ -1,0 +1,22 @@
+# Page Calendrier (bs-calendrier) : vues jour, semaine, mois, mini-calendrier, prochains rendez-vous, statistiques.
+Calendrier ⇒ Calendar
+Gérez vos rendez-vous, suivez vos prospects et ne manquez aucune opportunité. ⇒ Manage your meetings, follow your prospects and never miss an opportunity.
+Aller à une date ⇒ Go to a date
+Fuseau horaire ⇒ Time zone
+Mois précédent ⇒ Previous month
+Mois suivant ⇒ Next month
+Suivi audit ⇒ Audit follow-up
+Suivi proposition ⇒ Proposal follow-up
+Suivi client ⇒ Client follow-up
+Négociation ⇒ Negotiation
+Appel de prospection ⇒ Prospecting call
+Rendez-vous client ⇒ Client meeting
+Suivi d’audit ⇒ Audit follow-up
+Suivi de proposition ⇒ Proposal follow-up
+journée ⇒ all day
+Prochains rendez-vous ⇒ Upcoming meetings
+Aucun rendez-vous à venir. Touchez un créneau libre pour en planifier un. ⇒ No upcoming meetings. Tap a free slot to schedule one.
+Statistiques rapides ⇒ Quick stats
+rendez-vous cette semaine ⇒ meetings this week
+contacts actifs ⇒ active contacts
+Planifier un rendez-vous ⇒ Schedule a meeting

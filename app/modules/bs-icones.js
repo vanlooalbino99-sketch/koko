@@ -25,7 +25,7 @@
   var NAV = [
     { group: 'Prospection' },
     { id: 'today', label: 'Aujourd’hui', def: 'phone' },
-    { id: 'agenda', label: 'Agenda', def: 'calendar' },
+    { id: 'agenda', label: 'Calendrier', def: 'calendar' },
     { id: 'prospects', label: 'Prospects', def: 'users' },
     { id: 'leads', label: 'Nouveaux leads', def: 'sparkles' },
     { id: 'pipeline', label: 'Pipeline', def: 'kanban' },

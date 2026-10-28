@@ -56,7 +56,29 @@ test('Rapports : KPI, graphiques, info-bulle, période et export', async () => {
   const g = page.locator('[data-g=perf]');
   const b = await g.boundingBox();
   await page.mouse.move(b.x + b.width * 0.7, b.y + b.height / 2);
-  await page.waitForSelector('[data-g=perf] .bsr-bulle');
+  await page.waitForSelector('[data-g=perf] .bsr-calque.on .bsr-bulle');
+  assert.match(await page.locator('[data-g=perf] .bsr-calque.on .bsr-bulle').innerText(), /Appels passés/);
+
+  // Survol du chiffre d'affaires : montant du mois et cumul.
+  const ca = await page.locator('[data-g=ca]').boundingBox();
+  await page.mouse.move(ca.x + ca.width * 0.6, ca.y + ca.height / 2);
+  await page.waitForSelector('[data-g=ca] .bsr-calque.on .bsr-bulle');
+  assert.match(await page.locator('[data-g=ca] .bsr-calque.on .bsr-bulle').innerText(), /Cumulé sur la période/);
+
+  // Régularité : une case par jour sur 12 semaines, avec une bulle au survol.
+  const cells = page.locator('.bsr-reg-g .bsr-cell[data-j]');
+  const nb = await cells.count();
+  assert.ok(nb >= 78 && nb <= 84, 'cases ' + nb);
+  await cells.nth(nb - 2).scrollIntoViewIfNeeded();
+  await cells.nth(nb - 2).hover();
+  await page.waitForSelector('.bsr-reg-g .bsr-calque.on .bsr-bulle');
+  assert.match(await page.locator('.bsr-reg-g .bsr-calque.on .bsr-bulle').innerText(), /Appels/);
+  assert.equal(await page.locator('.bsr-reg-t').count(), 4);
+
+  // Résultats des appels : chaque issue compte les appels de la période.
+  const tot = await page.evaluate(() => { const m = window.bsRapports.mensuel(); return m.reduce((s, x) => s + x.appels, 0); });
+  assert.equal(Number((await page.locator('.bsr-total b').textContent()).replace(/\s/g, '')), tot);
+  await page.mouse.move(5, 5);
 
   // Période : 12 derniers mois.
   await page.locator('.bsr-per-b:not(.bsr-pres-b)').click();

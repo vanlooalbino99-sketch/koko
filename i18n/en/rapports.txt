@@ -51,3 +51,21 @@ Style ⇒ Style
 # Rapports : MRR (badge ARR) et séries du mode présentation.
 Chiffre d’affaires ⇒ Revenue
 Revenu récurrent annuel (MRR × 12) ⇒ Annual recurring revenue (MRR × 12)
+# Rapports : bulles au survol, Régularité et Résultats des appels.
+Appels passés ⇒ Calls made
+Part ⇒ Share
+Part du pipeline ⇒ Share of pipeline
+Valeur des projets ⇒ Deal value
+Cumulé sur la période ⇒ Cumulative over the period
+Variation ⇒ Change
+Note moyenne ⇒ Average score
+Simulations ⇒ Simulations
+Résultats des appels ⇒ Call outcomes
+Issue de chaque appel sur la période ⇒ Outcome of each call over the period
+Part des appels ⇒ Share of calls
+Aucun appel enregistré sur la période ⇒ No calls logged over the period
+sur 12 semaines ⇒ over 12 weeks
+Jours actifs ⇒ Active days
+avec au moins un appel ⇒ with at least one call
+Série en cours ⇒ Current streak
+Jour le plus actif ⇒ Busiest day

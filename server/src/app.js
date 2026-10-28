@@ -59,6 +59,8 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
     res.set('Cache-Control', 'public, max-age=604800').sendFile(join(ROOT, 'node_modules', f));
   });
   app.use('/verre', express.static(join(ROOT, 'app', 'verre'), { maxAge: '7d', fallthrough: false, index: false }));
+  // Bibliothèque d'icônes deux tons de Réglages › Icônes du menu (chargée à la demande, versionnée par ?v=).
+  app.use('/icones', express.static(join(ROOT, 'app', 'icones'), { maxAge: '30d', fallthrough: false, index: false }));
   // Captures de la vraie interface pour les tutos de la formation (régénérées par scripts/formation/ecrans.mjs).
   app.use('/formation', express.static(join(ROOT, 'app', 'formation'), { maxAge: '7d', fallthrough: false, index: false }));
   app.use(attachUser(db));

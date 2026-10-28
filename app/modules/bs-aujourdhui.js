@@ -30,8 +30,9 @@
     'aj-bas': '<path d="M12 5v14M19 12l-7 7-7-7"/>',
   };
   function ic(name, size) {
+    var pl = window.bsIcones && window.bsIcones.plein && window.bsIcones.plein(name);
     var hs = window.__bsHs ? window.__bsHs() : null;
-    var inner = EXTRA[name] || (window.bsIcones && window.bsIcones.svg(name)) || (hs && hs[name]) || '';
+    var inner = pl || EXTRA[name] || (window.bsIcones && window.bsIcones.svg(name)) || (hs && hs[name]) || '';
     return '<svg class="ic" width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
   }
 

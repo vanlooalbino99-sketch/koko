@@ -74,9 +74,10 @@
     ['Fête', '🎉 🎊 🎁 🥂 🍾 🍕 ☕ 🍰 🌞 🌈 ⚡ 🌍'],
   ];
   function ic(name, size) {
+    var pl = window.bsIcones && window.bsIcones.plein && window.bsIcones.plein(name);
     var lib = EXTRA[name] || (window.bsIcones && window.bsIcones.svg(name));
     var hs = window.__bsHs ? window.__bsHs() : null;
-    var inner = (hs && hs[name]) || lib || '';
+    var inner = pl || (hs && hs[name]) || lib || '';
     return '<svg class="ic" width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
   }
   function api(method, path, body) {

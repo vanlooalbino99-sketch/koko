@@ -30,8 +30,9 @@
   function hash(s) { var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); }
   function dateFr(iso) { try { return new Date(String(iso).slice(0, 10) + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); } catch (e) { return iso; } }
   function ic(name, size) {
+    var pl = window.bsIcones && window.bsIcones.plein && window.bsIcones.plein(name);
     var hs = window.__bsHs ? window.__bsHs() : null;
-    var inner = (window.bsIcones && window.bsIcones.svg(name)) || (hs && hs[name]) || '';
+    var inner = pl || (window.bsIcones && window.bsIcones.svg(name)) || (hs && hs[name]) || '';
     return '<svg class="ic" width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
   }
 

@@ -20,7 +20,8 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function ic(name, size) {
-    var p = window.bsIcones && window.bsIcones.svg ? window.bsIcones.svg(name) : '';
+    var pl = window.bsIcones && window.bsIcones.plein && window.bsIcones.plein(name);
+    var p = pl || (window.bsIcones && window.bsIcones.svg ? window.bsIcones.svg(name) : '');
     return '<svg width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (p || '<circle cx="12" cy="12" r="8"/>') + '</svg>';
   }
   function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }

@@ -254,3 +254,8 @@ Semaine en cours ⇒ Current week
 Mois en cours ⇒ Current month
 taux de passage entre étapes ⇒ step-to-step conversion
 Prendre des nouvelles ⇒ Check in
+# Icônes du menu : bibliothèque deux tons (Iconsax et Phosphor).
+Deux tons ⇒ Two-tone
+Chargement des 2 405 icônes deux tons… ⇒ Loading the 2,405 two-tone icons…
+La bibliothèque deux tons n’a pas pu être chargée (connexion ?). Les icônes au trait restent disponibles. ⇒ The two-tone library could not be loaded (connection?). Outline icons are still available.
+Les icônes deux tons sont disponibles dans la version en ligne du CRM. ⇒ Two-tone icons are available in the online version of the CRM.

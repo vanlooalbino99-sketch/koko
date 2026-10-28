@@ -21,6 +21,7 @@
 
   var LIB = window.bsIconesLib || { d: {}, t: {}, g: [], s: '', i: {} };
   var PLEINES = window.bsIconesPleines || {};
+  var PLEINES_UI = window.bsIconesPleinesUi || { noms: {}, svg: {} };
   var SERVER = !!window.BS_SERVER;
   var CACHE_KEY = 'bs-icones';
   var NAV = [
@@ -159,6 +160,41 @@
   var rev = 0;
   var svgCache = {};
 
+  // ---------------------------------------------------------------- bibliothèque deux tons (Iconsax et Phosphor)
+  // 2 405 icônes deux tons (noms « ix-… » et « ph-… »), chargées à la demande depuis /icones/deux-tons.js : quand on ouvre
+  // l'écran de choix, ou quand une rubrique du menu en utilise une. Les icônes du menu sont gardées dans ce navigateur
+  // pour ne pas recharger toute la bibliothèque à chaque visite.
+  var DEUX_URL = '/icones/deux-tons.js?v=2405';
+  var DEUX_CACHE = 'bs-icones-2t';
+  var DEUX = null, deuxEtat = '';
+  var deuxCache = (function () { try { var c = JSON.parse(localStorage.getItem(DEUX_CACHE) || '{}'); return c && typeof c === 'object' ? c : {}; } catch (e) { return {}; } })();
+  function estDeux(n) { return typeof n === 'string' && /^(ix|ph)-[a-z0-9-]+$/.test(n); }
+  function svgSur(v) { return typeof v === 'string' && /^<(path|g|circle|rect|ellipse|polygon|line|polyline)[\s>]/.test(v) && !/<(script|foreignObject|image|use)|\son[a-z]+=|javascript:|href=/i.test(v); }
+  function chargerDeux() {
+    if (deuxEtat) return;
+    // Version autonome (un seul fichier HTML) : pas de serveur pour fournir la bibliothèque.
+    if (!SERVER) { deuxEtat = 'absent'; return; }
+    deuxEtat = 'charge';
+    var sc = document.createElement('script');
+    sc.src = DEUX_URL; sc.async = true;
+    sc.onload = function () { DEUX = window.bsIcones2Tons || null; deuxEtat = DEUX ? 'ok' : 'erreur'; index.deux = null; ideasCache = {}; garderDeux(); refresh(); };
+    sc.onerror = function () { deuxEtat = 'erreur'; refresh(); };
+    (document.head || document.documentElement).appendChild(sc);
+  }
+  function garderDeux() {
+    if (!DEUX) return;
+    var c = {};
+    Object.keys(map).forEach(function (k) { var n = map[k]; if (estDeux(n) && DEUX.d[n]) c[n] = DEUX.d[n]; });
+    deuxCache = c;
+    try { localStorage.setItem(DEUX_CACHE, JSON.stringify(c)); } catch (e) {}
+  }
+  function svgDeux(name) {
+    if (DEUX && DEUX.d[name]) return DEUX.d[name];
+    if (svgSur(deuxCache[name])) return deuxCache[name];
+    chargerDeux();
+    return '';
+  }
+
   // ---------------------------------------------------------------- animation des icônes du menu
   var ANIM_KEY = 'bs-icones-anim';
   // Gestes : étapes [pourcentage, transformation, opacité?], et point d'appui.
@@ -261,15 +297,18 @@
   function clean(m) {
     var out = {};
     if (!m || typeof m !== 'object') return out;
-    NAV.forEach(function (n) { if (n.id && typeof m[n.id] === 'string' && LIB.d[m[n.id]]) out[n.id] = m[n.id]; });
+    NAV.forEach(function (n) { if (n.id && typeof m[n.id] === 'string' && (LIB.d[m[n.id]] || estDeux(m[n.id]))) out[n.id] = m[n.id]; });
     return out;
   }
   function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+  // Nom affiché d'une icône : « ix-call-calling » → « call calling (Iconsax) ».
+  function nomLisible(n) { var m = /^(ix|ph)-(.*)$/.exec(n || ''); return m ? m[2].replace(/-/g, ' ') + (m[1] === 'ix' ? ' (Iconsax)' : ' (Phosphor)') : String(n || '').replace(/-/g, ' '); }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
   // ---------------------------------------------------------------- dessin
   function svg(name) {
     if (name && name.indexOf('pleine-') === 0) return PLEINES[name.slice(7)] || '';
+    if (estDeux(name)) return svgDeux(name);
     if (!LIB.d[name]) return '';
     return svgCache[name] || (svgCache[name] = LIB.d[name].split('|').map(function (d) { return '<path d="' + d + '"/>'; }).join(''));
   }
@@ -282,7 +321,10 @@
     return '<svg class="ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner(name) + '</svg>';
   }
   // Forme « pleine » (par défaut) : l'icône deux tons de la rubrique ; forme « trait » : l'icône choisie ou celle d'origine.
-  function nav(id, def) { return style.forme === 'pleine' && PLEINES[id] ? 'pleine-' + id : map[id] || def; }
+  function nav(id, def) { return estDeux(map[id]) ? map[id] : style.forme === 'pleine' && PLEINES[id] ? 'pleine-' + id : map[id] || def; }
+  // Même style pour le reste de l'interface (boutons, en-têtes, onglets) : la version deux tons d'une icône si elle existe,
+  // sinon '' et l'appelant garde son icône au trait. Le style « Traits » remet les traits partout.
+  function plein(name) { var n = style.forme === 'pleine' && PLEINES_UI.noms[name]; return (n && PLEINES_UI.svg[n]) || ''; }
   function refresh() {
     rev++;
     if (window.__bsY) window.__bsY.set({ bsIc: rev });
@@ -323,15 +365,19 @@
   }
 
   // ---------------------------------------------------------------- recherche
-  var index = null;
-  function buildIndex() {
-    index = {};
-    var groupOf = {};
-    LIB.g.forEach(function (g) { g[1].split(' ').forEach(function (n) { groupOf[n] = g[0]; }); });
-    Object.keys(LIB.d).forEach(function (n) {
-      index[n] = { g: groupOf[n] || 'divers', tags: norm(LIB.t[n] || '').split(' '), grp: norm(GROUPS[groupOf[n]] || '').split(' ') };
+  // Deux catalogues : « deux » (icônes deux tons, une fois chargées) et « trait » (Lucide, toujours là).
+  var index = { trait: null, deux: null };
+  function source(src) { return src === 'deux' ? (DEUX || { d: {}, t: {}, g: [] }) : LIB; }
+  function buildIndex(src) {
+    var L = source(src), ix = {}, groupOf = {};
+    L.g.forEach(function (g) { g[1].split(' ').forEach(function (n) { groupOf[n] = g[0]; }); });
+    Object.keys(L.d).forEach(function (n) {
+      ix[n] = { g: groupOf[n] || 'divers', tags: norm(L.t[n] || '').split(' '), grp: norm(GROUPS[groupOf[n]] || '').split(' ') };
     });
+    if (src !== 'deux' || DEUX) index[src === 'deux' ? 'deux' : 'trait'] = ix;
+    return ix;
   }
+  function getIndex(src) { return index[src === 'deux' ? 'deux' : 'trait'] || buildIndex(src); }
   // Mots-clés à chercher pour un mot tapé : le mot lui-même, puis sa traduction (les premiers mots comptent plus).
   function terms(word) {
     var out = [word], w = word.replace(/s$/, '');
@@ -343,7 +389,7 @@
   }
   // Pertinence d'une icône pour un mot : nom de l'icône > mots-clés > thème. 0 = ne correspond pas.
   function weight(ix, n, ts) {
-    var best = 0, nameWords = n.split('-');
+    var best = 0, nameWords = n.replace(/^(ix|ph)-/, '').split('-');
     for (var i = 0; i < ts.length; i++) {
       var t = ts[i], k = 1 - Math.min(i, 12) * 0.04, wgt = 0;
       var match = function (x) { return t.length < 3 ? x === t : x.indexOf(t) === 0; };
@@ -355,35 +401,37 @@
     }
     return best;
   }
-  function search(q) {
-    if (!index) buildIndex();
+  function search(q, src) {
+    var ix = getIndex(src);
     var words = norm(q).split(' ').filter(function (x) { return x.length >= 2; });
     if (!words.length) return [];
     var lists = words.map(terms), res = [];
-    Object.keys(index).forEach(function (n) {
+    Object.keys(ix).forEach(function (n) {
       var score = 0;
-      for (var i = 0; i < lists.length; i++) { var w = weight(index[n], n, lists[i]); if (!w) return; score += w; }
+      for (var i = 0; i < lists.length; i++) { var w = weight(ix[n], n, lists[i]); if (!w) return; score += w; }
       res.push([n, score]);
     });
     res.sort(function (a, b) { return b[1] - a[1] || a[0].length - b[0].length || (a[0] < b[0] ? -1 : 1); });
     return res.map(function (r) { return r[0]; });
   }
-  function groupList(id) {
-    if (!index) buildIndex();
-    if (id === 'toutes') return Object.keys(LIB.d).sort();
-    var g = LIB.g.filter(function (x) { return x[0] === id; })[0];
+  function groupList(id, src) {
+    var L = source(src);
+    if (id === 'toutes') return Object.keys(L.d).sort();
+    var g = L.g.filter(function (x) { return x[0] === id; })[0];
     return g ? g[1].split(' ') : [];
   }
   var ideasCache = {};
-  function ideas(navId) {
-    if (ideasCache[navId]) return ideasCache[navId];
-    var out = (LIB.i[navId] || '').split(' ').filter(function (n) { return LIB.d[n]; });
+  function ideas(navId, src) {
+    var ck = (src === 'deux' ? 'deux:' : 'trait:') + navId;
+    if (ideasCache[ck]) return ideasCache[ck];
+    if (src === 'deux' && !DEUX) return [];
+    var out = src === 'deux' ? [] : (LIB.i[navId] || '').split(' ').filter(function (n) { return LIB.d[n]; });
     // Puis, mot par mot, les meilleures icônes de la recherche, en alternant pour garder de la variété.
-    var lists = (IDEES_MOTS[navId] || '').split(' ').filter(Boolean).map(function (w) { return search(w).slice(0, 12); });
+    var lists = (IDEES_MOTS[navId] || '').split(' ').filter(Boolean).map(function (w) { return search(w, src).slice(0, 12); });
     var bof = /(^|-)(x|off|minus|lock|dashed|slash|bug|omega|alert|question|playing)(-|$)/;
     lists = lists.map(function (l) { return l.filter(function (n) { return !bof.test(n); }); });
     for (var r = 0; r < 12 && out.length < 40; r++) lists.forEach(function (l) { var n = l[r]; if (n && out.indexOf(n) < 0 && out.length < 40) out.push(n); });
-    return (ideasCache[navId] = out);
+    return (ideasCache[ck] = out);
   }
   function samePack(pk) {
     var a = Object.keys(map), b = Object.keys(pk.map);
@@ -438,6 +486,7 @@
       '.bsi-ht span{font-size:13px;color:var(--text-3)}',
       '.bsi-tools{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}',
       '.bsi-tools .search{flex:1;min-width:220px}',
+      '.bsi-src{flex:none}',
       '.bsi-count{font-size:12.5px;color:var(--text-3);white-space:nowrap}',
       '.bsi-chips{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;margin:0 -4px 12px;padding:2px 4px 6px;scrollbar-width:thin;-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent);mask-image:linear-gradient(90deg,#000 92%,transparent)}',
       '.bsi-chip{flex:none;white-space:nowrap;padding:5px 11px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s}',
@@ -492,18 +541,24 @@
     if (!el || el.getAttribute('data-bsi')) return;
     el.setAttribute('data-bsi', '1');
     ensureCss();
-    var ui = { sel: 'formations', q: '', cat: 'idees' };
-    function current(id) { var n = NAV.filter(function (x) { return x.id === id; })[0]; return map[id] || (n && n.def); }
+    // src : « deux » (icônes deux tons, par défaut) ou « trait » (icônes au trait).
+    var ui = { sel: 'formations', q: '', cat: 'idees', src: SERVER ? 'deux' : 'trait' };
+    function current(id) { var n = NAV.filter(function (x) { return x.id === id; })[0]; return nav(id, n && n.def); }
     function list() {
-      if (ui.q.trim()) return search(ui.q);
-      if (ui.cat === 'idees') return ideas(ui.sel);
-      return groupList(ui.cat);
+      if (ui.src === 'deux' && !DEUX) return [];
+      if (ui.q.trim()) return search(ui.q, ui.src);
+      if (ui.cat === 'idees') return ideas(ui.sel, ui.src);
+      return groupList(ui.cat, ui.src);
     }
     function gridHtml(ro) {
+      if (ui.src === 'deux' && !DEUX) {
+        chargerDeux();
+        return '<div class="bsi-empty">' + (deuxEtat === 'absent' ? 'Les icônes deux tons sont disponibles dans la version en ligne du CRM.' : deuxEtat === 'erreur' ? 'La bibliothèque deux tons n’a pas pu être chargée (connexion ?). Les icônes au trait restent disponibles.' : 'Chargement des 2 405 icônes deux tons…') + '</div>';
+      }
       var names = list(), cur = map[ui.sel] || '';
       if (!names.length) return '<div class="bsi-empty">Aucune icône pour « ' + esc(ui.q) + ' ». Essayez un autre mot : formation, argent, équipe, fusée…</div>';
       return names.map(function (n) {
-        return '<button type="button" class="bsi-ic' + (n === cur ? ' on' : '') + '" data-ic="' + n + '" title="' + esc(n.replace(/-/g, ' ')) + '"' + (ro ? ' disabled' : '') + '>' + icon(n, 22) + '</button>';
+        return '<button type="button" class="bsi-ic' + (n === cur ? ' on' : '') + '" data-ic="' + n + '" title="' + esc(nomLisible(n)) + '"' + (ro ? ' disabled' : '') + '>' + icon(n, 22) + '</button>';
       }).join('');
     }
     function countTxt() {
@@ -513,18 +568,23 @@
     function render() {
       if (!el.isConnected) return;
       var ro = !canEdit(), selNav = NAV.filter(function (x) { return x.id === ui.sel; })[0];
-      var total = Object.keys(LIB.d).length, mods = Object.keys(map).length;
+      var total = Object.keys(source(ui.src).d).length || (ui.src === 'deux' ? 2405 : 0), mods = Object.keys(map).length;
+      var nTrait = Object.keys(LIB.d).length;
       var where = SERVER ? 'Le choix est partagé avec toute l’équipe.' : 'Le choix est enregistré dans ce navigateur.';
       var left = '<nav class="bsi-nav" aria-label="Rubriques du menu">' + NAV.map(function (n) {
         if (n.group) return '<div class="bsi-gl">' + esc(n.group) + '</div>';
         return '<button type="button" class="bsi-row' + (n.id === ui.sel ? ' sel' : '') + '" data-navsel="' + n.id + '"' + (teinte(n.id) && n.id !== ui.sel ? ' style="--bsi-t:' + teinte(n.id) + '"' : '') + '><span class="bsi-cur">' + icon(current(n.id), 17) + '</span><span class="bsi-lab">' + esc(n.label) + '</span>' + (map[n.id] || style.teintes[n.id] ? '<span class="bsi-mod">modifiée</span>' : '') + '</button>';
       }).join('') + '</nav>';
-      var chips = [['idees', 'Idées pour « ' + selNav.label + ' »']].concat([['toutes', 'Toutes', total]]).concat(LIB.g.map(function (g) { return [g[0], GROUPS[g[0]] || g[0], g[1].split(' ').length]; }));
+      var chips = [['idees', 'Idées pour « ' + selNav.label + ' »']].concat([['toutes', 'Toutes', total]]).concat(source(ui.src).g.map(function (g) { return [g[0], GROUPS[g[0]] || g[0], g[1].split(' ').length]; }));
+      var srcs = '<div role="tablist" class="segmented bsi-src" aria-label="Bibliothèque">' + [['deux', 'Deux tons', 2405], ['trait', 'Traits', nTrait]].map(function (o) {
+        var on = ui.src === o[0];
+        return '<button type="button" role="tab" aria-selected="' + on + '" class="seg' + (on ? ' active' : '') + '" data-src="' + o[0] + '"><span>' + o[1] + '</span><span class="seg-count">' + o[2].toLocaleString('fr-FR') + '</span></button>';
+      }).join('') + '</div>';
       var right = '<div class="bsi-pick">' +
-        '<div class="bsi-head"><span class="bsi-big"' + (teinte(ui.sel) ? ' style="color:' + teinte(ui.sel) + ';background:radial-gradient(120% 100% at 30% 15%,#2a3448,#0b111c)"' : '') + '>' + icon(current(ui.sel), 30) + '</span><div class="bsi-ht"><b>Icône de « ' + esc(selNav.label) + ' »</b><span>' + (map[ui.sel] ? 'Icône choisie : ' + esc(map[ui.sel].replace(/-/g, ' ')) : 'Icône d’origine') + '</span></div>' +
+        '<div class="bsi-head"><span class="bsi-big"' + (teinte(ui.sel) ? ' style="color:' + teinte(ui.sel) + ';background:radial-gradient(120% 100% at 30% 15%,#2a3448,#0b111c)"' : '') + '>' + icon(current(ui.sel), 30) + '</span><div class="bsi-ht"><b>Icône de « ' + esc(selNav.label) + ' »</b><span>' + (map[ui.sel] ? 'Icône choisie : ' + esc(nomLisible(map[ui.sel])) : 'Icône d’origine') + '</span></div>' +
         (map[ui.sel] && !ro ? '<button type="button" class="btn btn-secondary btn-md" data-act="reset">Remettre l’icône d’origine</button>' : '') + '</div>' +
         colorRow(ro) +
-        '<div class="bsi-tools"><div class="search"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner('search') + '</svg>' +
+        '<div class="bsi-tools">' + srcs + '<div class="search"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner('search') + '</svg>' +
         '<input class="search-input" data-q placeholder="Rechercher : formation, argent, équipe, fusée…" value="' + esc(ui.q) + '" aria-label="Rechercher une icône"></div><span class="bsi-count" data-count>' + countTxt() + '</span></div>' +
         '<div class="bsi-chips"' + (ui.q.trim() ? ' style="opacity:.45"' : '') + '>' + chips.map(function (c) {
           return '<button type="button" class="bsi-chip' + (!ui.q.trim() && ui.cat === c[0] ? ' on' : '') + '" data-cat="' + c[0] + '">' + esc(c[1]) + (c[2] ? '<small>' + c[2] + '</small>' : '') + '</button>';
@@ -535,7 +595,7 @@
       var lock = ro ? '<div class="bsi-lock">' + icon('lock', 15) + 'Seul un administrateur peut changer les icônes du menu de l’équipe.</div>' : '';
       var focusQ = document.activeElement && document.activeElement.hasAttribute && document.activeElement.hasAttribute('data-q') && el.contains(document.activeElement);
       el.innerHTML = '<section class="card"><header class="card-head"><div class="card-title-wrap"><span class="card-icon">' + icon('shapes', 16) + '</span><div><h3 class="card-title">Icônes du menu</h3>' +
-        '<p class="card-sub">Donnez à chaque rubrique l’icône qui lui parle, parmi ' + total.toLocaleString('fr-FR') + ' icônes classées par thème. ' + where + '</p></div></div></header>' +
+        '<p class="card-sub">Donnez à chaque rubrique l’icône qui lui parle, parmi ' + (2405 + nTrait).toLocaleString('fr-FR') + ' icônes classées par thème. ' + where + '</p></div></div></header>' +
         lock + packsHtml(ro) + styleRow(ro) + '<div class="bsi-layout">' + left + right + '</div></section>';
       if (focusQ) { var qi = el.querySelector('[data-q]'); qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); }
     }
@@ -603,7 +663,8 @@
       }
     }
     el.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-navsel],[data-cat],[data-ic],[data-act],[data-st],[data-pack],[data-col],[data-anim]'); if (!t || t.disabled) return;
+      var t = e.target.closest('[data-navsel],[data-cat],[data-ic],[data-act],[data-st],[data-pack],[data-col],[data-anim],[data-src]'); if (!t || t.disabled) return;
+      if (t.hasAttribute('data-src')) { ui.src = t.getAttribute('data-src'); ui.cat = 'idees'; render(); return; }
       if (t.hasAttribute('data-anim')) { saveAnim(t.getAttribute('data-anim')); return; }
       if (t.hasAttribute('data-col')) { if (!canEdit()) return; var kc = t.getAttribute('data-col').split(':'); saveStyle(colorPatch(kc[0], kc[1])); return; }
       if (t.hasAttribute('data-pack')) { if (!canEdit()) return; var pk = PACKS.filter(function (x) { return x.id === t.getAttribute('data-pack'); })[0]; if (pk) save(Object.assign({}, pk.map)); return; }
@@ -611,7 +672,12 @@
       if (t.hasAttribute('data-navsel')) { ui.sel = t.getAttribute('data-navsel'); if (ui.cat === 'idees' || !ui.q) ui.cat = 'idees'; render(); return; }
       if (t.hasAttribute('data-cat')) { ui.cat = t.getAttribute('data-cat'); ui.q = ''; var qi = el.querySelector('[data-q]'); if (qi) qi.value = ''; renderGrid(); return; }
       if (!canEdit()) return;
-      if (t.hasAttribute('data-ic')) { var next = Object.assign({}, map); next[ui.sel] = t.getAttribute('data-ic'); if (style.forme === 'pleine') saveStyle({ forme: 'trait' }); save(next); return; }
+      if (t.hasAttribute('data-ic')) {
+        // Une icône deux tons garde le style « Pleines » ; une icône au trait passe le menu au style « Traits ».
+        var choisie = t.getAttribute('data-ic'), next = Object.assign({}, map); next[ui.sel] = choisie;
+        if (!estDeux(choisie) && style.forme === 'pleine') saveStyle({ forme: 'trait' });
+        save(next); garderDeux(); return;
+      }
       var act = t.getAttribute('data-act');
       if (act === 'autocol') { var t2 = Object.assign({}, style.teintes); delete t2[ui.sel]; saveStyle({ teintes: t2 }); return; }
       if (act === 'resetcol') { if (confirm('Effacer les couleurs choisies rubrique par rubrique ?')) saveStyle({ teintes: {} }); return; }
@@ -638,7 +704,7 @@
     render();
   }
 
-  window.bsIcones = { svg: svg, nav: nav, monterReglages: monterReglages, animation: function (v) { if (v === undefined) return anim; saveAnim(v); }, choix: function () { return Object.assign({}, map); }, choisir: function (id, nom) { var n = Object.assign({}, map); if (nom) n[id] = nom; else delete n[id]; return save(n); }, chercher: search };
+  window.bsIcones = { svg: svg, nav: nav, plein: plein, monterReglages: monterReglages, animation: function (v) { if (v === undefined) return anim; saveAnim(v); }, choix: function () { return Object.assign({}, map); }, choisir: function (id, nom) { var n = Object.assign({}, map); if (nom) n[id] = nom; else delete n[id]; return save(n); }, chercher: search };
   applyStyle(); applyAnim();
   if (document.head) { globalCss(); animCss(); } else document.addEventListener('DOMContentLoaded', function () { globalCss(); animCss(); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hook); else hook();

@@ -132,3 +132,18 @@ html:not([data-scheme="light"]) :is(.btn-primary, .p-action.primary, .fab) {
   background: #ef4444;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--bg) 85%, #1a2040);
 }
+
+/* Sélection active comme dans le menu (demande d'albino, 28 octobre 2026), en clair comme en sombre : pilule bleue
+   pleine, texte et icône blancs. Onglets, filtres, boutons segmentés, sous-menu des Réglages et onglets des pages
+   Mail, Nouveaux leads et Simulations IA. */
+:is(.sn-item, .chip, .seg, .seg-btn, .tab, .bsmail-tab, .bsl-onglet, .bsl-sect, .bsent-puce):is(.active, .on) {
+  color: #fff !important;
+  background: var(--neon, var(--accent)) !important;
+  border-color: transparent !important;
+  text-shadow: none !important;
+  box-shadow: 0 10px 22px -14px color-mix(in srgb, var(--neon, var(--accent)) 95%, transparent) !important;
+}
+:is(.sn-item, .chip, .seg, .seg-btn, .tab, .bsmail-tab, .bsl-onglet, .bsl-sect, .bsent-puce):is(.active, .on) :is(.ic, .chip-count, .seg-count, small, em, b) { color: #fff !important; }
+:is(.sn-item, .chip, .seg, .seg-btn, .tab, .bsmail-tab, .bsl-onglet, .bsl-sect, .bsent-puce):is(.active, .on) .tab-count { color: #fff; background: rgb(255 255 255 / .22); }
+.chip.active .badge-dot { box-shadow: 0 0 0 2px rgb(255 255 255 / .9); }
+.tab.active { border-radius: 10px; border-bottom-color: transparent !important; }

@@ -39,8 +39,9 @@
     'rap-chevron': '<path d="M6 9l6 6 6-6"/>', 'rap-lecture': '<path d="M8 5.5v13l11-6.5z" fill="currentColor"/>', 'rap-pourcent': '<path d="M19 5L5 19M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>',
   };
   function ic(name, size) {
+    var pl = window.bsIcones && window.bsIcones.plein && window.bsIcones.plein(name);
     var hs = window.__bsHs ? window.__bsHs() : null;
-    var inner = EXTRA[name] || (window.bsIcones && window.bsIcones.svg(name)) || (hs && hs[name]) || '';
+    var inner = pl || EXTRA[name] || (window.bsIcones && window.bsIcones.svg(name)) || (hs && hs[name]) || '';
     return '<svg class="ic" width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
   }
 

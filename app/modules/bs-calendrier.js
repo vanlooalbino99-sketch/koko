@@ -57,8 +57,9 @@
     'cal-fleche': '<path d="M5 12h14M13 6l6 6-6 6"/>', 'cal-bas': '<path d="M6 9l6 6 6-6"/>',
   };
   function ic(name, size) {
+    var pl = window.bsIcones && window.bsIcones.plein && window.bsIcones.plein(name);
     var hs = window.__bsHs ? window.__bsHs() : null;
-    var inner = EXTRA[name] || (window.bsIcones && window.bsIcones.svg(name)) || (hs && hs[name]) || '';
+    var inner = pl || EXTRA[name] || (window.bsIcones && window.bsIcones.svg(name)) || (hs && hs[name]) || '';
     return '<svg class="ic" width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
   }
 

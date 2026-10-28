@@ -24,7 +24,8 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function ic(name, size, color) {
-    var lib = EXTRA[name] || (window.bsIcones && window.bsIcones.svg ? window.bsIcones.svg(name) : '');
+    var pl = window.bsIcones && window.bsIcones.plein && window.bsIcones.plein(name);
+    var lib = pl || EXTRA[name] || (window.bsIcones && window.bsIcones.svg ? window.bsIcones.svg(name) : '');
     return '<svg width="' + (size || 18) + '" height="' + (size || 18) + '" viewBox="0 0 24 24" fill="none" stroke="' + (color || 'currentColor') +
       '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (lib || '<circle cx="12" cy="12" r="8"/>') + '</svg>';
   }

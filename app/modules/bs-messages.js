@@ -1413,7 +1413,7 @@
     var total = function (u, n) { var k = n < 12 ? t.enfants(u.id) : []; return k.reduce(function (s, x) { return s + 1 + total(x, n + 1); }, 0); };
     var carteOrg = function (u, prof, nb) {
       return '<button type="button" class="bso-carte' + (u.id === S.me ? ' moi' : '') + (prof === 0 ? ' tete' : '') + '"' + (u.id === S.me ? '' : ' data-dm="' + esc(u.id) + '" title="Écrire à ' + esc(u.name) + '"') + '>' +
-        avatar(u.id, u.name) + '<span class="bso-t"><b>' + esc(u.name) + (u.id === S.me ? ' <small>vous</small>' : '') + '</b><em>' + esc(u.poste || 'Poste à définir') + '</em>' +
+        avatar(u.id, u.name) + '<span class="bso-t"><b>' + esc(u.name) + (u.id === S.me ? ' <small>vous</small>' : '') + '</b><em>' + esc(u.poste || (u.role === 'admin' ? 'Admin' : 'Poste à définir')) + '</em>' +
         (nb ? '<span class="bso-nb">' + nb + ' personne' + (nb > 1 ? 's' : '') + '</span>' : '') + '</span></button>';
     };
     var noeud = function (u, prof) {
@@ -2462,6 +2462,10 @@
     '.bsm-pc-a .ico{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff}.ico.vert{background:#16a34a}.ico.bleu{background:#2563eb}.ico.violet{background:#7c3aed}',
     '.bsm-pc-note{margin:0 0 6px;font-size:.84em;line-height:1.5;color:var(--text)}',
     '@media (max-width:820px){.bsm-shell{grid-template-columns:1fr;gap:0;height:calc(100dvh - var(--topbar-h,60px) - 110px)}.bsm-chiffres{grid-template-columns:repeat(2,minmax(0,1fr));margin:4px 12px 10px}.bsm-act{display:none}.bsm-shell.liste .bsm-main{display:none}.bsm-shell.fil .bsm-side{display:none}.bsm-back{display:inline-flex}.bsm-stack,.bsm-hint{display:none}.bsm-visio .btn-label{display:none}.bsm-msg{max-width:92%}.bsm-scroll{padding:14px 12px 8px}.bsm-compose{margin:8px 10px 10px}}',
+    // Avatars carrés arrondis partout dans Messages et l'organigramme, comme la pastille du compte en haut à droite
+    // (maquette d'albino). Les bannières façon iPhone gardent leur rond.
+    '.bsm-av,.bsm-av.ph,.bsm-av.ph.gph{border-radius:28%!important}',
+    '.bsm-ios-ic.pers .bsm-av{border-radius:50%!important}',
   ].join('\n');
   function ensureCss() {
     if (document.getElementById('bs-messages-css')) return;

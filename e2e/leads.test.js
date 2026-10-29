@@ -78,7 +78,7 @@ test('génère des lots toujours nouveaux, sans doublon, et les ajoute au CRM', 
   // Le serveur principal d'OpenStreetMap est saturé (504) : le générateur doit passer au suivant.
   await page.route('https://overpass-api.de/**', (route) => route.fulfill({ status: 504, headers: cors, body: 'Gateway Timeout' }));
   await page.route('https://overpass.private.coffee/**', (route) => route.fulfill({ headers: cors, body: JSON.stringify({ elements: [
-    { type: 'node', lat: 45.7601, lon: 4.8501, tags: { name: 'Plomberie Express', phone: '+33 4 78 00 00 01', website: 'plomberie-express.fr' } },
+    { type: 'node', lat: 45.7601, lon: 4.8501, tags: { name: 'Plomberie Express', phone: '+33 4 78 00 00 01', 'contact:whatsapp': '+33 6 12 34 56 78', website: 'plomberie-express.fr' } },
     { type: 'node', lat: 45.7602, lon: 4.8502, tags: { name: 'Boulangerie Voisine', phone: '+33 4 78 99 99 99' } },
   ] }) }));
 
@@ -110,6 +110,15 @@ test('génère des lots toujours nouveaux, sans doublon, et les ajoute au CRM', 
   assert.match(await carte1.innerText(), /plomberie-express\.fr/);
   assert.equal(await page.locator('a[href*="78 99 99 99"], a[href="tel:+33478999999"]').count(), 0);
   assert.ok(await page.locator('.bsl-none').count() >= 10);
+
+  // WhatsApp publié sur OpenStreetMap : lien wa.me sur la carte, et le filtre « Seulement les leads avec WhatsApp ».
+  assert.equal(await carte1.locator('a.bsl-wa[href="https://wa.me/33612345678"]').count(), 1);
+  assert.match(await carte1.innerText(), /WhatsApp publié/);
+  await page.locator('input[name=wa]').check();
+  assert.equal(await page.locator('.bsl-card').count(), 1);
+  assert.match(await page.locator('.bsl-bar').innerText(), /11 masqués \(sans WhatsApp\)/);
+  if (process.env.BS_CAPTURES) { await page.waitForTimeout(800); await page.screenshot({ path: join(process.env.BS_CAPTURES, 'leads-whatsapp.png') }); }
+  await page.locator('input[name=wa]').uncheck();
 
   // Deuxième et troisième lots : jamais un lead déjà proposé.
   await page.locator('.bsl-more button[data-act=gen]').click();

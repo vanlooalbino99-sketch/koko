@@ -144,6 +144,8 @@ export const RE = {
   siren: /(?:siren|siret|r\.?c\.?s\.?|tva|immatricul\w*|registre du commerce[^0-9]{0,40})[^0-9]{0,60}((?:FR\s?\d{2}\s?)?\d{3}[\s. ]?\d{3}[\s. ]?\d{3})/gi,
   ldPhone: /"telephone"\s*:\s*"([^"]{6,30})"/gi,
   ldEmail: /"email"\s*:\s*"(?:mailto:)?([^"]{5,100})"/gi,
+  // Liens « Écrire sur WhatsApp » : wa.me/33612345678, api.whatsapp.com/send?phone=…, whatsapp://send?phone=…
+  wa: /(?:wa\.me\/|(?:api|web)\.whatsapp\.com\/send\/?\?(?:[^"'\s<>]*?&(?:amp;)?)?phone=|whatsapp:\/\/send\/?\?(?:[^"'\s<>]*?&(?:amp;)?)?phone=)(?:\+|%2B)?(\d{8,15})/gi,
   link: /<a\b[^>]*?href\s*=\s*["']([^"'#]+)["'][^>]*>([\s\S]{0,300}?)<\/a>/gi,
 };
 const ENT = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", eacute: 'é', egrave: 'è', ecirc: 'ê', agrave: 'à', ccedil: 'ç', ocirc: 'ô', ucirc: 'û', icirc: 'î', rsquo: '’', commat: '@', period: '.' };
@@ -168,6 +170,13 @@ export function normPhone(raw) {
   if (!/^[1-9]\d{8}$/.test(d)) return null;
   return { e164: '+33' + d, national: ('0' + d).replace(/(\d{2})(?=\d)/g, '$1 ') };
 }
+// Numéro WhatsApp (format international, tous pays) : français en 06 12 34 56 78, sinon +32 470…
+export function normWhatsapp(raw) {
+  const d = String(raw).replace(/\D/g, '');
+  if (/^0[1-9]\d{8}$/.test(d) || /^33[1-9]\d{8}$/.test(d) || /^0033/.test(d)) return normPhone(d.startsWith('33') ? '+' + d : d);
+  if (/^[1-9]\d{7,14}$/.test(d)) return { e164: '+' + d, national: '+' + d };
+  return null;
+}
 export function sirenValid(s) { // Luhn on 9 digits
   if (!/^\d{9}$/.test(s)) return false;
   let sum = 0; for (let i = 0; i < 9; i++) { let v = +s[8 - i]; if (i % 2) { v *= 2; if (v > 9) v -= 9; } sum += v; }
@@ -185,9 +194,10 @@ export function zoneOfDept(cp) {
 }
 const BAD_MAIL = /(^|\.)(example|exemple|domain|sentry|wixpress|sentry-next|godaddy|ovh|o2switch|hostinger|ionos|wordpress|w3\.org|schema\.org)\./i;
 export function extract(html, { pageKind = 'home', siteHost = '' } = {}) {
-  const phones = [], emails = [], sirens = new Set();
+  const phones = [], emails = [], sirens = new Set(), whatsapps = [];
   const add = (raw, src, ctx = '') => {
     const p = normPhone(raw); if (!p) return;
+    if (/whats\s?app/i.test(ctx.slice(-40))) whatsapps.push({ ...p, src: 'texte' });
     let w = { tel: 3, ld: 3, text: 1 }[src] + (pageKind === 'contact' ? 2 : 0);
     if (/h[ée]berg|hosting|hosted by|h[ée]bergeur/i.test(ctx)) w -= 10; // host provider block in mentions légales
     if (/^\+338(9|36)/.test(p.e164)) w -= 5; // premium-rate
@@ -196,6 +206,7 @@ export function extract(html, { pageKind = 'home', siteHost = '' } = {}) {
   };
   for (const m of html.matchAll(RE.tel)) { try { add(decodeURIComponent(m[1]), 'tel'); } catch { add(m[1], 'tel'); } }
   for (const m of html.matchAll(RE.ldPhone)) add(m[1], 'ld');
+  for (const m of html.matchAll(RE.wa)) { const w = normWhatsapp(m[1]); if (w) whatsapps.push({ ...w, src: 'lien' }); }
   for (const m of html.matchAll(RE.mailto)) { try { emails.push(decodeURIComponent(m[1])); } catch { emails.push(m[1]); } }
   for (const m of html.matchAll(RE.cfEmail)) emails.push(decodeCfEmail(m[1]));
   for (const m of html.matchAll(RE.ldEmail)) emails.push(m[1]);
@@ -209,7 +220,7 @@ export function extract(html, { pageKind = 'home', siteHost = '' } = {}) {
   const mails = [...new Set(emails.map((e) => e.trim().toLowerCase()))]
     .filter((e) => /^[^@\s]+@[^@\s]+\.[a-z]{2,24}$/.test(e) && !/\.(png|jpe?g|gif|webp|svg|css|js)$/.test(e) && !BAD_MAIL.test(e.split('@')[1] + '.'))
     .sort((a, b) => (b.endsWith('@' + host) || b.endsWith('.' + host)) - (a.endsWith('@' + host) || a.endsWith('.' + host)));
-  return { phones, emails: mails, sirens: [...sirens], text };
+  return { phones, emails: mails, sirens: [...sirens], whatsapps, text };
 }
 export function discoverLinks(html, baseUrl) {
   const base = new URL(baseUrl), host = base.hostname.replace(/^www\./, ''), out = new Map();
@@ -233,7 +244,7 @@ export function pageHasSiren(text, siren) {
 // lead: { siren, cp, nom }   site: 'https://…'
 export async function enrichFromWebsite(site, lead, { fetchOpts = {}, respectRobots = true } = {}) {
   const t0 = Date.now(), deadline = t0 + 20000;
-  const out = { site, confirmed: 'none', telephone: '', email: '', phones: [], emails: [], sirens: [], pages: [], errors: [] };
+  const out = { site, confirmed: 'none', telephone: '', email: '', whatsapp: '', phones: [], emails: [], sirens: [], whatsapps: [], pages: [], errors: [] };
   let home;
   try { home = await fetchPage(site, fetchOpts); } catch (e) { out.errors.push('home: ' + (e.code || e.message)); return out; }
   if (!home.html) { out.errors.push('home: HTTP ' + home.status); return out; }
@@ -255,12 +266,13 @@ export async function enrichFromWebsite(site, lead, { fetchOpts = {}, respectRob
     } catch (e) { out.errors.push(kind + ': ' + (e.code || e.message)); }
   }));
   const zone = zoneOfDept(lead.cp || '');
-  const byPhone = new Map(); const emails = []; const sirens = new Set();
+  const byPhone = new Map(); const emails = []; const sirens = new Set(); const byWa = new Map();
   for (const p of pages) {
     const x = extract(p.html, { pageKind: p.kind, siteHost: host });
     out.pages.push(p.url);
     if (lead.siren && pageHasSiren(x.text, lead.siren)) out.confirmed = 'siren';
     x.sirens.forEach((s) => sirens.add(s)); emails.push(...x.emails);
+    for (const w of x.whatsapps) { const cur = byWa.get(w.e164) || { e164: w.e164, national: w.national, w: 0 }; cur.w += w.src === 'lien' ? 2 : 1; byWa.set(w.e164, cur); }
     for (const ph of x.phones) {
       const z = +ph.national[1];
       const w = ph.w + (zone && z >= 1 && z <= 5 ? (z === zone ? 2 : -3) : 0);
@@ -272,7 +284,8 @@ export async function enrichFromWebsite(site, lead, { fetchOpts = {}, respectRob
   if (out.confirmed !== 'siren' && lead.siren && out.sirens.length && !out.sirens.includes(lead.siren)) out.confirmed = 'mismatch';
   out.phones = [...byPhone.values()].filter((p) => p.w > 0).sort((a, b) => b.w - a.w).map(({ e164, national, w, hits }) => ({ e164, national, w, hits }));
   out.emails = [...new Set(emails)];
-  if (out.confirmed !== 'mismatch') { out.telephone = out.phones[0]?.national || ''; out.email = out.emails[0] || ''; }
+  out.whatsapps = [...byWa.values()].sort((a, b) => b.w - a.w).map(({ e164, national }) => ({ e164, national }));
+  if (out.confirmed !== 'mismatch') { out.telephone = out.phones[0]?.national || ''; out.email = out.emails[0] || ''; out.whatsapp = out.whatsapps[0]?.national || ''; }
   out.ms = Date.now() - t0;
   return out;
 }

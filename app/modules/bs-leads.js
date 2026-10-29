@@ -105,6 +105,17 @@
   function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function nowTime() { var d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
   function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  // WhatsApp : numéro publié comme tel (bouton wa.me sur le site, OpenStreetMap), sinon un mobile (06/07), qui l'est très souvent.
+  var WA_PATH = 'M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.47-2.39-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.18-1.41-.08-.13-.28-.2-.57-.35M12.05 21.78a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.89-9.88 2.64 0 5.12 1.03 6.99 2.9a9.83 9.83 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.89 9.88m8.41-18.3A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45c6.56 0 11.89-5.34 11.9-11.9a11.82 11.82 0 0 0-3.48-8.41Z';
+  function icWa(size) { return '<svg viewBox="0 0 24 24" width="' + (size || 14) + '" height="' + (size || 14) + '" aria-hidden="true"><path fill="currentColor" d="' + WA_PATH + '"/></svg>'; }
+  function mobileFr(t) { return /^0[67]\d{8}$/.test(digits(t).replace(/^0033|^33(?=\d{9}$)/, '0')); }
+  function waDe(l) {
+    if (l.whatsapp) return { num: l.whatsapp, sur: true };
+    if (l.telephone && mobileFr(l.telephone)) return { num: l.telephone, sur: false };
+    return null;
+  }
+  // 06 12 34 56 78 → 33612345678 ; +32 470… → 32470… (format des liens wa.me).
+  function waIntl(t) { var d = digits(t); if (/^00/.test(d)) d = d.slice(2); else if (/^0\d{9}$/.test(d)) d = '33' + d.slice(1); return d; }
   function plural(n, one, many) { return n + ' ' + (n > 1 ? (many || one + 's') : one); }
   var SIGLES = /^(sarl|sas|sasu|eurl|sa|sci|snc|selarl|selas|scp|scm|eirl|ei|earl|gaec|sccv|scea|sel|asso|ste|cie|sc|sarlu)$/i;
   var PETITS = /^(de|du|des|la|le|les|et|en|au|aux|sur|sous|a|l|d)$/i;
@@ -135,7 +146,7 @@
   function defaultPrefs() {
     var st = window.__bsStore ? window.__bsStore.get() : {};
     var ci = (st && st.companyInfo) || {};
-    return { secteur: SECTEURS[0].id, metier: '', zone: ci.ville || '', rayon: '0', taille: 'toutes' };
+    return { secteur: SECTEURS[0].id, metier: '', zone: ci.ville || '', rayon: '0', taille: 'toutes', wa: false };
   }
   function readPrefs() { var p = readJson(PREFS_KEY, null); return Object.assign(defaultPrefs(), p || {}); }
   function secteurOf(id) { return SECTEURS.filter(function (s) { return s.id === id; })[0] || SECTEURS[0]; }
@@ -183,19 +194,21 @@
     var ix = crmIndex(), dup = inCrm(lead, ix);
     if (dup) return { id: dup, duplicate: true };
     var d = today(), ts = new Date().toISOString(), id = newId();
+    var wa = waDe(lead);
     var notes = [
       'Lead proposé par le générateur de leads le ' + new Date().toLocaleDateString('fr-FR') + ' (base officielle Sirene).',
       lead.nafLabel ? 'Activité : ' + lead.nafLabel + (lead.naf ? ' (NAF ' + lead.naf + ')' : '') : '',
       lead.dirigeant ? 'Dirigeant : ' + lead.dirigeant + (lead.qualite ? ' (' + lead.qualite + ')' : '') : '',
       [lead.creation ? 'Créée en ' + lead.creation : '', lead.effectif].filter(Boolean).join(' · '),
+      wa ? 'WhatsApp : ' + wa.num + (wa.sur ? ' (publié par l’entreprise)' : ' (mobile, WhatsApp probable)') : '',
       lead.osm ? 'Coordonnées trouvées sur OpenStreetMap' + (lead.osm.nom ? ' (« ' + lead.osm.nom + ' »)' : '') + '.' : 'Téléphone et email non publiés dans les sources ouvertes : à rechercher.',
       'Fiche officielle : https://annuaire-entreprises.data.gouv.fr/entreprise/' + lead.siren,
     ].filter(Boolean).join('\n');
     var p = {
       id: id, entreprise: lead.enseigne || lead.nom, secteur: lead.secteur, contact: lead.dirigeant || '',
-      telephone: lead.telephone || '', email: lead.email || '', ville: lead.ville || '', adresse: lead.adresse || '',
+      telephone: lead.telephone || (wa ? wa.num : ''), whatsapp: wa ? wa.num : '', email: lead.email || '', ville: lead.ville || '', adresse: lead.adresse || '',
       siret: lead.siret || lead.siren, site: lead.site || '', canal: CANAL, statut: 'a_appeler', priorite: 'moyenne',
-      tags: ['Lead généré'].concat(lead.metier ? [lead.metier] : []), notes: notes, dealValue: 0, mrrValue: 0, signedAt: null, resilieAt: null,
+      tags: ['Lead généré'].concat(lead.metier ? [lead.metier] : [], wa ? ['WhatsApp'] : []), notes: notes, dealValue: 0, mrrValue: 0, signedAt: null, resilieAt: null,
       prochaineRelance: d, prochaineRelanceHeure: '', createdAt: d, updatedAt: d, callLog: [],
       events: [{ id: newId(), ts: ts, date: d, time: nowTime(), type: 'create', text: 'Prospect créé par le générateur de leads (' + (lead.metier || lead.secteur) + ')' }],
     };
@@ -372,7 +385,7 @@
   }
   function enrichirGroupe(pts) {
     var q = '[out:json][timeout:15];(' + pts.map(function (l) {
-      return 'nwr(around:150,' + l.lat.toFixed(6) + ',' + l.lon.toFixed(6) + ')["name"][~"^(phone|contact:phone|contact:mobile|website|contact:website|email|contact:email)$"~"."];';
+      return 'nwr(around:150,' + l.lat.toFixed(6) + ',' + l.lon.toFixed(6) + ')["name"][~"^(phone|contact:phone|contact:mobile|contact:whatsapp|website|contact:website|email|contact:email)$"~"."];';
     }).join('') + ');out tags center;';
     return overpass(q).then(function (data) {
       var els = (data && data.elements) || [];
@@ -389,6 +402,7 @@
         l.osm = { nom: best.name };
         l.telephone = String(best.phone || best['contact:phone'] || best['contact:mobile'] || '').split(';')[0].trim();
         l.site = cleanUrl(best.website || best['contact:website']);
+        l.whatsapp = String(best['contact:whatsapp'] || '').split(';')[0].trim();
         l.email = String(best.email || best['contact:email'] || '').split(';')[0].trim();
       });
     }).catch(function () { pts.forEach(function (l) { l.osmDone = true; l.osmKo = true; }); });
@@ -412,6 +426,7 @@
               l.telephone = l.telephone || x.telephone || '';
               l.site = l.site || cleanUrl(x.site);
               l.email = l.email || x.email || '';
+              l.whatsapp = l.whatsapp || x.whatsapp || '';
               l.sources = x.sources || [];
             });
           })
@@ -454,17 +469,22 @@
     function signaux(l) {
       var out = [], an = new Date().getFullYear();
       if (l.creation && an - l.creation <= 1) out.push(['green', 'Nouvelle entreprise']);
+      var w = waDe(l);
+      if (w) out.push(['wa', w.sur ? 'WhatsApp' : 'Mobile · WhatsApp probable']);
       if (l.trancheCode && /^(1|2|3|4|5)/.test(l.trancheCode)) out.push(['blue', '10 salariés et plus']);
       if (l.etablissements > 1) out.push(['violet', plural(l.etablissements, 'établissement')]);
       return out;
     }
+    function masque(l) { return prefs.wa && l.osmDone && !waDe(l); }
     function leadCard(l, i) {
+      if (masque(l)) return '';
       var st = state.statut[l.siren] || (inCrm(l) ? 'deja' : '');
       var titre = l.enseigne || l.nom, q = encodeURIComponent((l.enseigne || l.nom) + ' ' + l.ville);
-      var contact;
-      if (l.telephone || l.site || l.email) {
+      var contact, wa = waDe(l);
+      if (l.telephone || l.site || l.email || wa) {
         contact = '<div class="bsl-contact">' +
           (l.telephone ? '<a href="tel:' + esc(digits(l.telephone).replace(/^33/, '+33')) + '">' + ic('phone', 14) + esc(l.telephone) + '</a>' : '') +
+          (wa ? '<a class="bsl-wa" href="https://wa.me/' + waIntl(wa.num) + '" target="_blank" rel="noopener noreferrer" title="Ouvrir la conversation WhatsApp">' + icWa(14) + esc(wa.num) + '<em>' + (wa.sur ? 'WhatsApp publié' : 'mobile, WhatsApp probable') + '</em></a>' : '') +
           (l.site ? '<a href="' + esc(l.site) + '" target="_blank" rel="noopener noreferrer">' + ic('globe', 14) + esc(l.site.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')) + '</a>' : '') +
           (l.email ? '<a href="mailto:' + esc(l.email) + '">' + ic('mail', 14) + esc(l.email) + '</a>' : '') +
           '<span class="bsl-src">Source : ' + esc(l.sources && l.sources.length ? l.sources.join(', ') : 'OpenStreetMap') + '</span></div>';
@@ -497,7 +517,7 @@
     }
     function initials(s) { return String(s || '?').replace(/[^\p{L}\p{N} ]/gu, ' ').trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase() || '?'; }
     function hue(s) { var h = 0; String(s || '').split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) % 360; }); return h; }
-    function restants() { return state.leads.filter(function (l) { return !state.statut[l.siren] && !inCrm(l); }); }
+    function restants() { return state.leads.filter(function (l) { return !state.statut[l.siren] && !inCrm(l) && !masque(l); }); }
 
     function onglets() {
       if (!window.bsLinkedin) return '';
@@ -517,6 +537,7 @@
         return;
       }
       var s = secteurOf(prefs.secteur), st = state.stats, rest = restants();
+      var nMasques = state.leads.filter(masque).length, nWa = state.leads.filter(function (l) { return waDe(l); }).length;
       var html =
         '<div class="page-head"><div class="page-head-text"><h1 class="page-title">Nouveaux leads</h1>' +
         '<p class="page-sub">De vraies entreprises en activité, tirées de la base officielle Sirene. Chaque lot est nouveau : jamais deux fois le même lead.</p></div></div>' + onglets() +
@@ -529,18 +550,20 @@
         '<label class="field bsl-zone"><span class="field-label">Zone</span><input class="input" name="zone" type="search" autocomplete="off" placeholder="Ville, code postal ou département (vide : toute la France)" value="' + esc(prefs.zone) + '"></label>' +
         '<label class="field"><span class="field-label">Rayon</span><span class="select-wrap"><select class="input select" name="rayon"' + (prefs.zone && !/^(\d{2}|2a|2b|97\d)$/i.test(prefs.zone.trim()) ? '' : ' disabled') + '>' + RAYONS.map(function (r) { return '<option value="' + r[0] + '"' + (prefs.rayon === r[0] ? ' selected' : '') + '>' + r[1] + '</option>'; }).join('') + '</select><span class="select-caret">' + ic('chevron-down', 16) + '</span></span></label>' +
         '<label class="field"><span class="field-label">Taille</span><span class="select-wrap"><select class="input select" name="taille">' + TAILLES.map(function (t) { return '<option value="' + t.id + '"' + (prefs.taille === t.id ? ' selected' : '') + '>' + t.label + '</option>'; }).join('') + '</select><span class="select-caret">' + ic('chevron-down', 16) + '</span></span></label>' +
-        '</div><div class="bsl-go"><button type="button" class="btn btn-primary bsl-gen" data-act="gen"' + (state.busy ? ' disabled' : '') + '>' + (state.busy ? '<span class="bsl-spin"></span>Recherche de nouveaux leads…' : ic('sparkles', 16) + (state.leads.length ? 'Générer d’autres leads' : 'Générer des leads')) + '</button>' +
+        '</div><div class="bsl-go"><label class="bsl-waf">' + '<input type="checkbox" name="wa"' + (prefs.wa ? ' checked' : '') + '>' + icWa(15) + 'Seulement les leads avec WhatsApp</label><button type="button" class="btn btn-primary bsl-gen" data-act="gen"' + (state.busy ? ' disabled' : '') + '>' + (state.busy ? '<span class="bsl-spin"></span>Recherche de nouveaux leads…' : ic('sparkles', 16) + (state.leads.length ? 'Générer d’autres leads' : 'Générer des leads')) + '</button>' +
         (st ? '<span class="bsl-meta">' + esc(st.total ? st.total.toLocaleString('fr-FR') + ' entreprises trouvées · ' : '') + esc(st.zone || '') + ' · ' + plural(st.proposes || 0, 'lead proposé', 'leads proposés') + ' pour cette recherche' + (st.dejaCrm ? ' · ' + plural(st.dejaCrm, 'déjà au CRM ignoré', 'déjà au CRM ignorés') : '') + '</span>' : '') +
         '</div></section>' +
         (state.err ? '<div class="bsl-msg bad" role="alert">' + ic('triangle-alert', 16) + '<span>' + esc(state.err) + '</span></div>' : '') +
         (st && st.epuise && !state.busy ? '<div class="bsl-msg">' + ic('info', 16) + '<span>' + (state.leads.length ? 'Ce sont les derniers leads de cette recherche.' : 'Tous les leads de cette recherche vous ont déjà été proposés.') + ' Changez de métier, élargissez la zone, ou revoyez ceux que vous n’avez pas ajoutés.</span><button type="button" class="btn btn-secondary btn-sm" data-act="reset">Revoir les leads déjà proposés</button></div>' : '') +
         (state.busy && !state.leads.length ? '<div class="bsl-list">' + [0, 1, 2, 3, 4, 5].map(function (i) { return '<div class="card bsl-card bsl-skel" style="--i:' + i + '"><i></i><i></i><i></i><i></i></div>'; }).join('') + '</div>' : '') +
-        (state.leads.length ? '<div class="bsl-bar"><h2>' + plural(state.leads.length, 'nouveau lead', 'nouveaux leads') + (state.osmBusy ? '<small><span class="bsl-spin"></span>coordonnées en cours…</small>' : '') + '</h2>' +
+        (state.leads.length ? '<div class="bsl-bar"><h2>' + plural(state.leads.length, 'nouveau lead', 'nouveaux leads') + (state.osmBusy ? '<small><span class="bsl-spin"></span>coordonnées en cours…</small>' : '') +
+          (nWa ? '<small class="bsl-wan">' + icWa(13) + plural(nWa, 'avec WhatsApp', 'avec WhatsApp') + '</small>' : '') +
+          (nMasques ? '<small>' + plural(nMasques, 'masqué', 'masqués') + ' (sans WhatsApp)</small>' : '') + '</h2>' +
           (rest.length > 1 ? '<button type="button" class="btn btn-secondary btn-sm" data-act="all">' + ic('plus', 15) + 'Tout ajouter (' + rest.length + ')</button>' : '') + '</div>' +
           '<div class="bsl-list' + (state.busy ? ' busy' : '') + '">' + state.leads.map(leadCard).join('') + '</div>' +
           '<div class="bsl-more"><button type="button" class="btn btn-primary" data-act="gen"' + (state.busy ? ' disabled' : '') + '>' + ic('repeat', 16) + 'Proposer d’autres leads</button></div>' : '') +
         (!st && !state.busy && !state.leads.length && !state.err ? '<div class="card bsl-empty">' + ic('sparkles', 28) + '<h2>Choisissez un secteur et une zone</h2><p>Puis cliquez sur « Générer des leads ». Chaque lot contient ' + LOT + ' entreprises que vous n’avez encore jamais vues.</p></div>' : '') +
-        '<p class="bsl-note">' + ic('shield-check', 14) + '<span>Sources : base Sirene de l’INSEE (API Recherche d’entreprises de l’État) pour l’identité, l’adresse et le dirigeant ; OpenStreetMap et le site internet de l’entreprise (page contact, mentions légales) pour le téléphone, le site et l’email, quand ils y sont publiés. Les emails sont rarement publics. Prospection B2B : votre offre doit concerner leur activité, et chaque contact doit pouvoir refuser d’être recontacté (RGPD).</span></p>';
+        '<p class="bsl-note">' + ic('shield-check', 14) + '<span>Sources : base Sirene de l’INSEE (API Recherche d’entreprises de l’État) pour l’identité, l’adresse et le dirigeant ; OpenStreetMap et le site internet de l’entreprise (page contact, mentions légales) pour le téléphone, le site, l’email et le numéro WhatsApp (bouton WhatsApp du site ; sinon un mobile 06/07, souvent sur WhatsApp), quand ils y sont publiés. Les emails sont rarement publics. Prospection B2B : votre offre doit concerner leur activité, et chaque contact doit pouvoir refuser d’être recontacté (RGPD).</span></p>';
       root.innerHTML = html;
     }
 
@@ -596,6 +619,7 @@
       if (t && t.closest && t.closest('.bsli-root')) return;
       if (n === 'metier' || n === 'rayon' || n === 'taille') { prefs[n] = t.value; savePrefs(); state.stats = null; render(); }
       if (n === 'zone') { prefs.zone = t.value.trim(); savePrefs(); state.stats = null; render(); }
+      if (n === 'wa') { prefs.wa = !!t.checked; savePrefs(); render(); }
     });
     root.addEventListener('keydown', function (ev) {
       if (ev.target && ev.target.closest && ev.target.closest('.bsli-root')) return;
@@ -669,6 +693,13 @@
     '.bsl-contact a:hover{text-decoration:underline}',
     '.bsl-contact a svg{flex:none}',
     '.bsl-src{font-size:.85em;color:var(--text-3)}',
+    '.bsl-contact a.bsl-wa{color:#128c7e}[data-scheme=dark] .bsl-contact a.bsl-wa{color:#25d366}',
+    '.bsl-wa em{font-style:normal;font-weight:500;font-size:.86em;color:var(--text-3);margin-left:2px}',
+    '.bsl-chip.wa{background:rgb(37 211 102/.14);color:#128c7e}[data-scheme=dark] .bsl-chip.wa{color:#25d366}',
+    '.bsl-waf{display:inline-flex;align-items:center;gap:7px;font-size:.88em;font-weight:600;color:var(--text-2);cursor:pointer;order:2}',
+    '.bsl-waf input{width:16px;height:16px;accent-color:#25d366;margin:0}',
+    '.bsl-waf svg{color:#25d366}',
+    '.bsl-bar h2 small.bsl-wan{color:#128c7e}[data-scheme=dark] .bsl-bar h2 small.bsl-wan{color:#25d366}',
     '.bsl-none,.bsl-wait{flex-direction:row;align-items:flex-start;gap:8px;color:var(--text-3)}',
     '.bsl-none svg{flex:none;margin-top:2px}',
     '.bsl-links{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8em}',

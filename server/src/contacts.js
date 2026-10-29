@@ -99,7 +99,7 @@ const lectureSite = limite(8);
 
 // ------------------------------------------------------------------ 1. base locale des lieux OpenStreetMap
 function versContact(x) {
-  return { telephone: telFr(x.tel), site: siteUrl(x.site), email: emailOk(x.email) ? x.email.trim() : '', nomOsm: x.nom || x.marque };
+  return { telephone: telFr(x.tel), site: siteUrl(x.site), email: emailOk(x.email) ? x.email.trim() : '', whatsapp: x.whatsapp ? telFr(x.whatsapp) : '', nomOsm: x.nom || x.marque };
 }
 export function trouverLocal(lieux, lead) {
   const siret = lieux.parSiret(lead.siret);
@@ -126,13 +126,13 @@ async function parOverpass(leads) {
   const pts = leads.filter((l) => l.lat != null);
   if (!pts.length) return {};
   const q = '[out:json][timeout:25][maxsize:67108864];(' + pts.map((l) =>
-    `nwr(around:250,${l.lat.toFixed(6)},${l.lon.toFixed(6)})["name"][~"^(phone|contact:phone|contact:mobile|website|contact:website|email|contact:email)$"~"."];`).join('') + ');out tags center;';
+    `nwr(around:250,${l.lat.toFixed(6)},${l.lon.toFixed(6)})["name"][~"^(phone|contact:phone|contact:mobile|contact:whatsapp|website|contact:website|email|contact:email)$"~"."];`).join('') + ');out tags center;';
   const data = await interroger(q);
   const els = (data && data.elements) || [];
   const lieux = els.map((el) => {
     const t = el.tags || {}, c = el.center || el;
     return { lat: c.lat, lon: c.lon, nom: t.name || '', marque: t.brand || '', tel: String(t.phone || t['contact:phone'] || t['contact:mobile'] || '').split(';')[0],
-      site: t.website || t['contact:website'] || '', email: String(t.email || t['contact:email'] || '').split(';')[0], siret: String(t['ref:FR:SIRET'] || '').replace(/\D/g, '') };
+      whatsapp: String(t['contact:whatsapp'] || '').split(';')[0], site: t.website || t['contact:website'] || '', email: String(t.email || t['contact:email'] || '').split(';')[0], siret: String(t['ref:FR:SIRET'] || '').replace(/\D/g, '') };
   }).filter((x) => x.lat != null);
   const out = {};
   for (const l of pts) {
@@ -207,12 +207,12 @@ const NOMS = { google: 'Google', here: 'HERE', tomtom: 'TomTom' };
 // ------------------------------------------------------------------ recherche complète d'un lead
 // trouve : résultat déjà connu pour ce lead (Overpass en repli) ; undefined : chercher dans la base locale.
 export async function chercher(lead, conf = {}, trouve) {
-  const res = { telephone: '', site: '', email: '', sources: [] };
+  const res = { telephone: '', site: '', email: '', whatsapp: '', sources: [] };
   const erreurs = [];
   const prendre = (r, source) => {
     if (!r) return;
     let pris = false;
-    for (const k of ['telephone', 'site', 'email']) if (!res[k] && r[k]) { res[k] = r[k]; pris = true; }
+    for (const k of ['telephone', 'site', 'email', 'whatsapp']) if (!res[k] && r[k]) { res[k] = r[k]; pris = true; }
     if (pris && !res.sources.includes(source)) res.sources.push(source);
   };
   prendre(trouve !== undefined ? trouve : conf.lieux && conf.lieux.etat.pret ? trouverLocal(conf.lieux, lead) : null, 'OpenStreetMap');
@@ -224,13 +224,14 @@ export async function chercher(lead, conf = {}, trouve) {
   if (conf.lireSites !== false) {
     try {
       const vraiSite = res.site && !PAS_SITE.test(res.site);
-      if (vraiSite && (!res.telephone || !res.email)) {
+      // Le site est lu même quand le téléphone est connu : il peut afficher un bouton WhatsApp.
+      if (vraiSite && (!res.telephone || !res.email || !res.whatsapp)) {
         const r = await lectureSite(() => avecDelai((conf.enrichir || enrichFromWebsite)(res.site, lead, conf.siteOpts), 20000));
-        if (r && r.confirmed !== 'mismatch') prendre({ telephone: r.telephone, email: emailDuSite(r, res.site) }, SITE);
+        if (r && r.confirmed !== 'mismatch') prendre({ telephone: r.telephone, email: emailDuSite(r, res.site), whatsapp: r.whatsapp }, SITE);
       } else if (!vraiSite && /^\d{9}$/.test(lead.siren || '')) {
         // Pas de site, ou seulement une page Facebook : on cherche le vrai site.
         const r = await lectureSite(() => avecDelai((conf.deviner || guessWebsite)(lead, conf.siteOpts), 25000));
-        if (r && r.confirmed === 'siren') { if (r.site) res.site = ''; prendre({ site: r.site, telephone: r.telephone, email: emailDuSite(r, r.site) }, SITE); }
+        if (r && r.confirmed === 'siren') { if (r.site) res.site = ''; prendre({ site: r.site, telephone: r.telephone, email: emailDuSite(r, r.site), whatsapp: r.whatsapp }, SITE); }
       }
     } catch (e) { erreurs.push('site: ' + (e && e.message)); }
   }
@@ -307,7 +308,7 @@ const ESSAIS = [
   ['coiffeurs de la Manche', '96.02A', '50'],
 ];
 export async function essaiReel(conf = {}) {
-  const t0 = Date.now(), total = { n: 0, telephone: 0, site: 0, email: 0, un: 0 }, parSource = {};
+  const t0 = Date.now(), total = { n: 0, telephone: 0, site: 0, email: 0, whatsapp: 0, un: 0 }, parSource = {};
   for (const [label, naf, dep] of ESSAIS) {
     let leads;
     try {
@@ -316,17 +317,17 @@ export async function essaiReel(conf = {}) {
     } catch (e) { console.warn(`[contacts] essai ${label} : base officielle injoignable (${e && e.message})`); continue; }
     const res = {};
     for (let i = 0; i < leads.length; i += 6) Object.assign(res, await chercherLot(leads.slice(i, i + 6), conf));
-    const c = { telephone: 0, site: 0, email: 0, un: 0 };
+    const c = { telephone: 0, site: 0, email: 0, whatsapp: 0, un: 0 };
     const exemples = [];
     for (const l of leads) {
       const r = res[l.id] || {};
-      for (const k of ['telephone', 'site', 'email']) if (r[k]) { c[k]++; total[k]++; }
+      for (const k of ['telephone', 'site', 'email', 'whatsapp']) if (r[k]) { c[k]++; total[k]++; }
       if (r.telephone || r.site || r.email) { c.un++; total.un++; if (exemples.length < 2) exemples.push(`${l.enseigne || l.nom} → ${[r.telephone, r.site, r.email].filter(Boolean).join(' · ')} [${(r.sources || []).join(', ')}]`); }
       for (const s of r.sources || []) parSource[s] = (parSource[s] || 0) + 1;
     }
     total.n += leads.length;
-    console.log(`[contacts] essai ${label} : ${leads.length} leads → au moins une coordonnée ${c.un}, téléphone ${c.telephone}, site ${c.site}, email ${c.email}${exemples.length ? ' | ex. ' + exemples.join(' ; ') : ''}`);
+    console.log(`[contacts] essai ${label} : ${leads.length} leads → au moins une coordonnée ${c.un}, téléphone ${c.telephone}, site ${c.site}, email ${c.email}, WhatsApp ${c.whatsapp}${exemples.length ? ' | ex. ' + exemples.join(' ; ') : ''}`);
   }
-  console.log(`[contacts] essai réel terminé : ${total.n} leads → au moins une coordonnée ${total.un}, téléphone ${total.telephone}, site ${total.site}, email ${total.email} ; sources ${JSON.stringify(parSource)} (${Math.round((Date.now() - t0) / 1000)} s)`);
+  console.log(`[contacts] essai réel terminé : ${total.n} leads → au moins une coordonnée ${total.un}, téléphone ${total.telephone}, site ${total.site}, email ${total.email}, WhatsApp ${total.whatsapp} ; sources ${JSON.stringify(parSource)} (${Math.round((Date.now() - t0) / 1000)} s)`);
   return total;
 }

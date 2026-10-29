@@ -100,7 +100,7 @@ test('correspondance : SIRET, enseigne entre parenthèses, rien pour le voisin',
 test('lot : base locale puis site de l’entreprise (deviné, vérifié par le SIREN)', async () => {
   const conf = {
     lieux, siteOpts: {},
-    enrichir: async () => ({ confirmed: 'none', telephone: '', email: 'contact@agence-web.fr', emails: ['contact@agence-web.fr', 'agence@nestenn.com'] }),
+    enrichir: async () => ({ confirmed: 'none', telephone: '', whatsapp: '06 12 34 56 78', email: 'contact@agence-web.fr', emails: ['contact@agence-web.fr', 'agence@nestenn.com'] }),
     deviner: async (l) => (l.siren === '222222226' ? { confirmed: 'siren', site: 'https://pelissolo.fr/', telephone: '01 45 00 00 00', email: 'contact@pelissolo.fr' } : null),
   };
   const r = await chercherLot([
@@ -108,9 +108,9 @@ test('lot : base locale puis site de l’entreprise (deviné, vérifié par le S
     { id: 'b', siren: '222222226', siret: '', nom: 'Pelissolo Immobilier', enseigne: '', lat: 48.8710, lon: 2.3040 },
     { id: 'c', siren: '333333334', siret: '', nom: 'SCI Les Tilleuls', enseigne: '', lat: 46.0, lon: 3.0 },
   ], conf);
-  assert.deepEqual(r.a, { telephone: '02 33 00 00 00', site: 'https://immobilier-cherbourg.nestenn.com/', email: 'agence@nestenn.com', sources: ['OpenStreetMap', 'Site de l’entreprise'] });
-  assert.deepEqual(r.b, { telephone: '01 45 00 00 00', site: 'https://pelissolo.fr/', email: 'contact@pelissolo.fr', sources: ['Site de l’entreprise'] });
-  assert.deepEqual(r.c, { telephone: '', site: '', email: '', sources: [] });
+  assert.deepEqual(r.a, { telephone: '02 33 00 00 00', site: 'https://immobilier-cherbourg.nestenn.com/', email: 'agence@nestenn.com', whatsapp: '06 12 34 56 78', sources: ['OpenStreetMap', 'Site de l’entreprise'] });
+  assert.deepEqual(r.b, { telephone: '01 45 00 00 00', site: 'https://pelissolo.fr/', email: 'contact@pelissolo.fr', whatsapp: '', sources: ['Site de l’entreprise'] });
+  assert.deepEqual(r.c, { telephone: '', site: '', email: '', whatsapp: '', sources: [] });
 });
 
 test('HERE : le lieu au même nom près de l’adresse, avec son téléphone, son site et son email', async () => {
@@ -139,6 +139,16 @@ test('site : téléphone et email de la page contact, SIREN des mentions légale
   assert.equal(liens.get('legal'), 'https://www.martin-plomberie.fr/mentions-legales');
   assert.equal(liens.get('contact'), 'https://www.martin-plomberie.fr/nous-contacter');
   assert.ok(slugCandidates({ nom: 'Plomberie Martin SARL', ville: 'Lyon' }).includes('plomberie-martin.fr'));
+});
+
+test('site : numéro WhatsApp des liens wa.me / api.whatsapp.com et du texte « WhatsApp : 06… »', () => {
+  const a = extract('<a href="https://wa.me/33612345678?text=Bonjour">Écrivez-nous</a>', { pageKind: 'home' });
+  assert.equal(a.whatsapps[0].national, '06 12 34 56 78');
+  const b = extract('<a href="https://api.whatsapp.com/send?l=fr&amp;phone=%2B32470123456">WhatsApp</a>', { pageKind: 'home' });
+  assert.equal(b.whatsapps[0].national, '+32470123456');
+  const c = extract('<p>Téléphone : 04 78 11 22 33 — WhatsApp : 07 11 22 33 44</p>', { pageKind: 'contact' });
+  assert.deepEqual(c.whatsapps.map((w) => w.national), ['07 11 22 33 44']);
+  assert.equal(extract('<a href="tel:0478112233">Appel</a>').whatsapps.length, 0);
 });
 
 test('route /api/contacts : connexion requise, lot limité, réponse par lead', async () => {

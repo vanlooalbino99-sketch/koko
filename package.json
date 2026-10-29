@@ -1,6 +1,6 @@
 {
   "name": "blackstart-crm",
-  "version": "5.18.0",
+  "version": "5.19.0",
   "private": true,
   "description": "Blackstart AI — CRM de prospection : application (un seul fichier HTML) et serveur d'équipe (Node.js + SQLite)",
   "type": "module",
@@ -16,7 +16,8 @@
     "test:e2e": "node --experimental-sqlite --disable-warning=ExperimentalWarning --test \"e2e/*.test.js\"",
     "legacy:v4": "cd legacy/v4 && node build.mjs",
     "legacy:premium": "cd legacy/v3-premium && node build-premium.mjs",
-    "build:verre": "node scripts/build-verre.mjs"
+    "build:verre": "node scripts/build-verre.mjs",
+    "build:motion": "esbuild scripts/motion/entry.js --bundle --minify --format=iife --legal-comments=none --outfile=app/modules/bs-motion.js --banner:js=\"/* Généré par npm run build:motion depuis scripts/motion/entry.js (Motion, motion.dev, licence MIT). */\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.25.0",
+    "motion": "^12.43.0",
     "playwright": "1.56.1",
     "preact": "^10.29.0",
     "three": "0.160.0"

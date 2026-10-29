@@ -34,6 +34,12 @@
   function fmtTime(ms) { var s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
   function euro(v) { return Math.round(v).toLocaleString('fr-FR') + ' €'; }
   var EASE = 'cubic-bezier(.16,1,.3,1)', EASE_IO = 'cubic-bezier(.65,0,.35,1)', SPRING = 'cubic-bezier(.34,1.56,.64,1)';
+  // Ressorts physiques et cascades de Motion (modules/bs-motion.js), joués sur l'horloge des scènes.
+  function ressort(o) { return window.bsMotion ? window.bsMotion.ressort(o) : { d: Math.round((o && o.duree || .6) * 1100), easing: SPRING }; }
+  function cascade(n, pas, depuis) {
+    if (window.bsMotion) return window.bsMotion.cascade(n, pas, depuis);
+    var out = []; for (var i = 0; i < n; i++) out.push(depuis === 'center' ? Math.abs(i - (n - 1) / 2) * pas : depuis === 'last' ? (n - 1 - i) * pas : i * pas); return out;
+  }
 
   // ================================================================== voix off et durées
   // Voix off neuronale pré-enregistrée (fichiers voix/<empreinte>.mp3, durées dans window.BS_VOIX) ; sinon la
@@ -72,8 +78,16 @@
       fadeUp: function (el, at, d, dist) { return S.a(el, [{ opacity: 0, transform: 'translateY(' + (dist == null ? 24 : dist) + 'px)' }, { opacity: 1, transform: 'none' }], at, d || 700); },
       fadeIn: function (el, at, d) { return S.a(el, [{ opacity: 0 }, { opacity: 1 }], at, d || 500, 'linear'); },
       fadeOut: function (el, at, d) { return S.a(el, [{ opacity: 1 }, { opacity: 0 }], at, d || 400, 'linear', { fill: 'forwards' }); },
-      pop: function (el, at, d) { return S.a(el, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1)' }], at, d || 650, SPRING); },
-      slide: function (el, at, dx, dy, d) { return S.a(el, [{ opacity: 0, transform: 'translate(' + (dx || 0) + 'px,' + (dy || 0) + 'px)' }, { opacity: 1, transform: 'none' }], at, d || 800); },
+      // Ressort : o = { duree (s), rebond (0 à 1) } ; la durée vient de la physique du ressort.
+      spring: function (el, frames, at, o, extra) { var r = ressort(o); return S.a(el, frames, at, r.d, r.easing, extra); },
+      pop: function (el, at, d) {
+        S.a(el, [{ opacity: 0 }, { opacity: 1 }], at, 220, 'linear');
+        return S.spring(el, [{ transform: 'scale(.55)' }, { transform: 'scale(1)' }], at, { duree: (d || 650) / 1000 * .7, rebond: .45 });
+      },
+      slide: function (el, at, dx, dy, d) {
+        S.a(el, [{ opacity: 0 }, { opacity: 1 }], at, 300, 'linear');
+        return S.spring(el, [{ transform: 'translate(' + (dx || 0) + 'px,' + (dy || 0) + 'px)' }, { transform: 'none' }], at, { duree: (d || 800) / 1000 * .65, rebond: .22 });
+      },
       move: function (el, at, d, from, to, ease) { return S.a(el, [{ transform: from }, { transform: to }], at, d, ease || EASE_IO, { fill: 'forwards' }); },
       draw: function (path, at, d) { return S.a(path, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], at, d || 1200, EASE_IO); },
       grow: function (el, at, d, origin) { el.style.transformOrigin = origin || '50% 100%'; return S.a(el, [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], at, d || 900); },
@@ -180,11 +194,63 @@
         var k = S.el('Formation Blackstart CRM', 'left:0;top:318px;width:1280px', 'bsf-kicker');
         S.fadeUp(k, 700, 700, 12);
         var t = S.el(title.split(' ').map(function (w) { return '<span>' + esc(w) + '</span>'; }).join(' '), 'left:80px;top:350px;width:1120px', 'bsf-bigtitle');
-        Array.prototype.forEach.call(t.children, function (w, i) { S.a(w, [{ opacity: 0, transform: 'translateY(40px) rotate(4deg)' }, { opacity: 1, transform: 'none' }], 900 + i * 90, 800); });
+        var dl = cascade(t.children.length, 90);
+        Array.prototype.forEach.call(t.children, function (w, i) {
+          S.a(w, [{ opacity: 0 }, { opacity: 1 }], 900 + dl[i], 260, 'linear');
+          S.spring(w, [{ transform: 'translateY(46px) rotate(5deg) scale(.9)' }, { transform: 'none' }], 900 + dl[i], { duree: .55, rebond: .4 });
+        });
         var line = S.el('', 'left:540px;top:446px;width:200px;height:3px', 'bsf-line');
         S.growX(line, 1500, 900);
         var chips = S.el((items || []).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join(''), 'left:0;top:478px;width:1280px', 'bsf-chips');
-        Array.prototype.forEach.call(chips.children, function (c, i) { S.pop(c, S.b(1) + i * 160, 500); });
+        var dc = cascade(chips.children.length, 140, 'center');
+        Array.prototype.forEach.call(chips.children, function (c, i) { S.pop(c, S.b(1) + dc[i], 500); });
+      },
+    };
+  }
+  // Exemple concret animé : un membre de l'équipe, une petite histoire en étapes, et le résultat.
+  // o : { titre, qui: [initiales, nom, rôle, couleur], intro, etapes: [[heure, icône, texte court, phrase dite]], fin: [icône, texte, phrase dite] }
+  var TEINTES = { bleu: ['#3b82f6', '#22d3ee'], violet: ['#8b5cf6', '#ec4899'], vert: ['#10b981', '#84cc16'], orange: ['#f97316', '#facc15'], rose: ['#f43f5e', '#a855f7'] };
+  function exempleScene(o) {
+    var et = o.etapes, caps = [o.intro].concat(et.map(function (e) { return e[3]; })).concat(o.fin ? [o.fin[2]] : []);
+    return {
+      exemple: true, captions: caps,
+      build: function (S) {
+        var tc = TEINTES[o.qui[3]] || TEINTES.bleu;
+        var k = S.el(ic('sparkles', 15, '#fde68a') + '<span>Exemple concret</span>', 'left:90px;top:52px', 'bsf-ex-kick');
+        S.pop(k, 150, 500);
+        var h = S.el(esc(o.titre), 'left:90px;top:92px;width:1100px', 'bsf-ex-h');
+        S.spring(h, [{ opacity: 0, transform: 'translateY(30px)' }, { opacity: 1, transform: 'none' }], 300, { duree: .6, rebond: .25 });
+        // Le personnage : carte qui rebondit, avatar qui respire.
+        var p = S.el('<div class="bsf-ex-av" style="background:linear-gradient(135deg,' + tc[0] + ',' + tc[1] + ')">' + esc(o.qui[0]) + '</div><b>' + esc(o.qui[1]) + '</b><span>' + esc(o.qui[2]) + '</span>',
+          'left:90px;top:168px;width:300px;height:226px', 'bsf-ex-qui');
+        S.a(p, [{ opacity: 0 }, { opacity: 1 }], 500, 300, 'linear');
+        S.spring(p, [{ transform: 'translateX(-80px) rotate(-6deg) scale(.85)' }, { transform: 'none' }], 500, { duree: .7, rebond: .35 });
+        S.a(p.querySelector('.bsf-ex-av'), [{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }], 1400, 2400, 'ease-in-out', { iterations: 40 });
+        // La frise : un trait qui se dessine, une carte par étape.
+        var top0 = 176, pas = Math.min(104, 320 / Math.max(1, et.length - 1));
+        var rail = S.el('', 'left:470px;top:' + (top0 + 20) + 'px;width:3px;height:' + (pas * (et.length - 1) + 30) + 'px;background:linear-gradient(' + tc[0] + ',' + tc[1] + ');border-radius:3px', '');
+        rail.style.transformOrigin = '50% 0'; S.a(rail, [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], S.b(1) - 300, (S.b(caps.length - 1) - S.b(1)) || 1200, 'linear');
+        et.forEach(function (e, i) {
+          var at = S.b(i + 1), y = top0 + i * pas;
+          var dot = S.el(ic(e[1], 20, '#fff'), 'left:450px;top:' + y + 'px;width:44px;height:44px;background:linear-gradient(135deg,' + tc[0] + ',' + tc[1] + ')', 'bsf-ex-dot');
+          S.pop(dot, at - 150, 550);
+          var c = S.el('<em>' + esc(e[0]) + '</em><span>' + esc(e[2]) + '</span>', 'left:516px;top:' + (y - 6) + 'px;width:680px', 'bsf-ex-card');
+          S.a(c, [{ opacity: 0 }, { opacity: 1 }], at, 280, 'linear');
+          S.spring(c, [{ transform: 'translateX(120px) scale(.92)' }, { transform: 'none' }], at, { duree: .6, rebond: .3 });
+          if (i < et.length - 1) S.a(c, [{ opacity: 1 }, { opacity: .55 }], S.b(i + 2), 500, 'linear', { fill: 'forwards' });
+        });
+        if (o.fin) {
+          var at = S.b(caps.length - 1);
+          var f = S.el(ic(o.fin[0], 22, '#052e1b') + '<span>' + esc(o.fin[1]) + '</span>', 'left:90px;top:414px;width:300px', 'bsf-ex-fin');
+          S.a(f, [{ opacity: 0 }, { opacity: 1 }], at, 200, 'linear');
+          S.spring(f, [{ transform: 'scale(.3) rotate(-8deg)' }, { transform: 'none' }], at, { duree: .5, rebond: .55 });
+          // Petites étincelles qui jaillissent du badge.
+          var dl = cascade(12, 25, 'center');
+          for (var j = 0; j < 12; j++) {
+            var a = j / 12 * Math.PI * 2, sp = S.el('', 'left:236px;top:440px;width:8px;height:8px;opacity:0;background:' + [C.amber, C.green, C.cyan, C.rose][j % 4], 'bsf-ex-spark');
+            S.a(sp, [{ opacity: 1, transform: 'translate(0,0) scale(1)' }, { opacity: 0, transform: 'translate(' + Math.round(Math.cos(a) * 170) + 'px,' + Math.round(Math.sin(a) * 110) + 'px) scale(.3)' }], at + 120 + dl[j], 900, 'cubic-bezier(.2,.8,.3,1)', { fill: 'forwards' });
+          }
+        }
       },
     };
   }
@@ -233,7 +299,8 @@
         var view = win.querySelector('.bsf-bview'), cam = win.querySelector('.bsf-bcam');
         view.style.height = VH + 'px';
         cam.style.cssText = 'width:' + VW + 'px;height:' + VH + 'px';
-        S.a(win, [{ opacity: 0, transform: 'translateY(46px) scale(.94) rotateX(8deg)' }, { opacity: 1, transform: 'none' }], 0, 1000);
+        S.a(win, [{ opacity: 0 }, { opacity: 1 }], 0, 380, 'linear');
+        S.spring(win, [{ transform: 'translateY(60px) scale(.92) rotateX(10deg)' }, { transform: 'none' }], 0, { duree: .75, rebond: .25 });
         var tag = S.el(ic('play', 12) + '<span>Tuto</span>' + esc(o.t), 'left:' + (left + 14) + 'px;top:' + (top + (mobile ? 14 : 44)) + 'px', 'bsf-tutotag');
         S.a(tag, [{ opacity: 0, transform: 'translateX(-20px)' }, { opacity: 1, transform: 'none', offset: .15 }, { opacity: 1, transform: 'none', offset: .85 }, { opacity: 0, transform: 'translateX(-10px)' }], 500, 3600, 'linear');
         function img(id) { var i = new Image(); i.src = ecranUrl(id); i.alt = ''; i.className = 'bsf-shot'; i.draggable = false; cam.appendChild(i); return i; }
@@ -285,7 +352,8 @@
             var zb = zone(curId, st.bulle[0]);
             if (zb) {
               var below = zb[1] + zb[3] + 54 < VH, bl = S.el(esc(st.bulle[1]), 'left:' + (zb[0] + zb[2] / 2) + 'px;top:' + (below ? zb[1] + zb[3] + 10 : zb[1] - 10) + 'px', 'bsf-bulle' + (below ? '' : ' up'), cam);
-              S.a(bl, [{ opacity: 0, transform: 'translate(-50%,' + (below ? '0' : '-100%') + ') translateY(' + (below ? 8 : -8) + 'px) scale(.9)' }, { opacity: 1, transform: 'translate(-50%,' + (below ? '0' : '-100%') + ')' }], at + 300, 500, SPRING);
+              S.a(bl, [{ opacity: 0 }, { opacity: 1 }], at + 300, 200, 'linear');
+              S.spring(bl, [{ transform: 'translate(-50%,' + (below ? '0' : '-100%') + ') translateY(' + (below ? 14 : -14) + 'px) scale(.7)' }, { transform: 'translate(-50%,' + (below ? '0' : '-100%') + ')' }], at + 300, { duree: .45, rebond: .5 });
               S.a(bl, [{ opacity: 1 }, { opacity: 0 }], at + (st.duree || 3200), 300, 'linear', { fill: 'forwards' });
             }
           }
@@ -843,223 +911,337 @@
   // Sans les captures (version autonome), le module reprend les anciennes scènes animées (ANCIENS).
   function module(o) {
     var tutos = o.tutos.filter(Boolean);
-    var list = tutos.length ? [titleScene(o.n, o.t, o.accroche, o.chips)].concat(o.avant || [], tutos, o.apres || [], [recapScene(o.recap, o.suivant)]) : o.secours;
+    var ex = o.exemple ? [exempleScene(o.exemple)] : [];
+    var list = tutos.length ? [titleScene(o.n, o.t, o.accroche, o.chips)].concat(ex, o.avant || [], tutos, o.apres || [], [recapScene(o.recap, o.suivant)]) : o.secours.slice(0, 1).concat(ex, o.secours.slice(1));
     tutos.forEach(function (s) { s.module = o.n; });
     return { f: o.f, t: o.t, s: o.s, quiz: o.quiz, scenes: list };
   }
   var MODULES = [
-    module({ n: 1, f: '01-demarrer', t: 'Bien démarrer dans le CRM', s: 'Connexion, menu, recherche Ctrl K, bouton Créer, profil, thème et mobile.',
-      accroche: 'Deux minutes pour vous repérer partout dans le CRM.', chips: ['Connexion', 'Menu', 'Recherche', 'Créer', 'Profil', 'Mobile'],
+    module({ n: 1, f: '01-bien-demarrer', t: 'Bien démarrer dans le CRM', s: 'Connexion, menu, recherche Ctrl K, bouton Créer, profil, anglais et mobile.',
+      accroche: 'Trois minutes pour vous sentir chez vous dans le CRM.', chips: ['Connexion', 'Menu', 'Ctrl K', 'Créer', 'Profil', 'Mobile'],
+      exemple: { titre: 'Le premier matin de Lucas', qui: ['LM', 'Lucas Moreau', 'Commercial terrain', 'vert'], intro: 'Exemple concret : c’est le premier jour de Lucas, notre nouveau commercial. Voyons comment il prend ses marques.',
+        etapes: [['8 h 55', 'lock', 'Il se connecte avec son e-mail', 'Lucas se connecte avec son e-mail et le mot de passe reçu par son responsable.'],
+          ['9 h 00', 'search', 'Ctrl K, « Plomberie »', 'Il tape Contrôle K, puis « Plomberie » : la fiche de Plomberie Martin s’ouvre en une seconde.'],
+          ['9 h 02', 'plus', 'Créer › Nouveau prospect', 'Un artisan l’appelle ? Le bouton Créer lui ouvre une nouvelle fiche, sans quitter sa page.']],
+        fin: ['check', 'Opérationnel en 5 minutes', 'Résultat : Lucas est opérationnel en cinq minutes, sans formation en salle !'] },
       quiz: [
         ['Quel raccourci ouvre la recherche et les commandes ?', ['Ctrl + K', 'Ctrl + P', 'Alt + F4'], 0],
-        ['Où trouver « Mon compte », l’organigramme et la déconnexion ?', ['Dans Rapports', 'En cliquant sur votre nom, en haut à droite', 'Dans Paiements'], 1],
+        ['Où passer le CRM en anglais ?', ['Dans Paiements', 'Dans le menu de votre profil, en haut à droite', 'Ce n’est pas possible'], 1],
         ['Le CRM fonctionne-t-il sur téléphone ?', ['Non', 'Oui, avec une barre de navigation en bas', 'Seulement en lecture'], 1],
       ],
       tutos: [
         tuto({ t: 'Se connecter', ecran: 'connexion', page: 'connexion', captions: ['Chaque membre de l’équipe a son propre compte : votre e-mail et votre mot de passe suffisent.', 'Une fois connecté, vous retrouvez les données de toute l’équipe, à jour en temps réel.'],
           steps: [{ b: 0, d: 600, zoom: 'formulaire', spot: 'formulaire' }, { b: 0, d: 1400, curseur: 'email', clic: true }, { b: 1, zoom: null, spot: false }] }),
-        tuto({ t: 'Se repérer dans le menu', ecran: 'accueil', page: 'today', captions: ['À gauche, le menu regroupe toutes les rubriques : prospection, ventes, équipe et analyse.', 'Les pastilles rouges signalent ce qui vous attend : relances, tâches, paiements.', 'Besoin de place ? « Replier le menu » ne garde que les icônes.'],
+        tuto({ t: 'Se repérer dans le menu', ecran: 'accueil', page: 'today', captions: ['À gauche, le menu est rangé par familles : prospection, ventes, marketing, automatisation, équipe et analyse.', 'Les pastilles bleues comptent ce qui vous attend. Par exemple, sept appels à passer aujourd’hui.', 'Besoin de place ? « Replier le menu » ne garde que les icônes deux tons.'],
           steps: [{ b: 0, d: 300, zoom: 'menu', spot: 'menu', lent: true }, { b: 1, curseur: 'prospection' }, { b: 1, d: 400, bulle: ['prospection', 'Pastille = à traiter aujourd’hui'] }, { b: 2, curseur: 'replier', spot: 'replier' }, { b: 2, d: 2600, zoom: null, spot: false }] }),
-        tuto({ t: 'Tout trouver avec Ctrl K', ecran: 'accueil', page: 'today', captions: ['En haut, la barre de recherche, ou le raccourci Contrôle K, trouve tout : un prospect, un devis, une action.', 'Tapez quelques lettres : les résultats s’affichent aussitôt, Entrée pour ouvrir.'],
-          steps: [{ b: 0, d: 200, zoom: 'recherche', spot: 'recherche' }, { b: 0, d: 900, curseur: 'recherche', clic: true }, { b: 1, ecran: 'recherche', zoom: 'palette', spot: 'palette' }, { b: 1, d: 900, bulle: ['resultat', 'Entrée pour ouvrir'] }] }),
-        tuto({ t: 'Créer en un clic', ecran: 'accueil', page: 'today', captions: ['Le bouton Créer, en haut à droite, crée un prospect, un devis, une facture, une tâche ou un rendez-vous, depuis n’importe quelle page.', 'Astuce : N pour un nouveau prospect, T pour une nouvelle tâche.'],
-          steps: [{ b: 0, d: 200, zoom: 'creer', s: 2 }, { b: 0, d: 700, curseur: 'creer', clic: true, centre: true }, { b: 0, d: 1200, ecran: 'creer', zoom: 'menu', spot: 'menu' }, { b: 1, bulle: ['menu', 'Raccourcis N et T'] }] }),
-        tuto({ t: 'Mon compte, organigramme, déconnexion', ecran: 'accueil', page: 'today', captions: ['Cliquez sur votre nom en haut à droite : Mon compte, l’organigramme de l’équipe, les réglages et la déconnexion.', 'L’icône soleil ou lune bascule tout de suite entre le mode clair et le mode sombre.'],
-          steps: [{ b: 0, d: 200, zoom: 'moi', s: 2 }, { b: 0, d: 700, curseur: 'moi', clic: true, centre: true }, { b: 0, d: 1300, ecran: 'moi', zoom: 'menu', spot: 'menu' }, { b: 1, ecran: 'accueil', zoom: 'theme', s: 2.2, spot: 'theme' }, { b: 1, d: 500, curseur: 'theme', clic: true, centre: true }] }),
-        tuto({ t: 'Le CRM sur téléphone', ecran: 'mobile', page: 'today', captions: ['Sur téléphone, le CRM s’adapte : les rubriques principales passent dans une barre en bas de l’écran.', 'Lancez votre session d’appels directement depuis votre mobile.'],
+        tuto({ t: 'Tout trouver avec Ctrl K', ecran: 'accueil', page: 'today', captions: ['La barre de recherche, ou Contrôle K, trouve tout : un prospect, un devis, une action.', 'Exemple : tapez « ost » et l’Ostéo Santé Confluence apparaît. Entrée pour ouvrir sa fiche.'],
+          steps: [{ b: 0, d: 300, zoom: 'recherche', s: 2, spot: 'recherche', curseur: 'recherche', clic: true }, { b: 1, ecran: 'recherche', zoom: 'palette', spot: 'palette' }, { b: 1, d: 1600, spot: 'resultat' }] }),
+        tuto({ t: 'Créer en un clic', ecran: 'accueil', page: 'today', captions: ['Le bouton Créer, en haut, crée un prospect, un devis, une facture, une tâche ou un rendez-vous, depuis n’importe quelle page.', 'Astuce : la touche N ouvre un nouveau prospect, la touche T une nouvelle tâche.'],
+          steps: [{ b: 0, d: 200, zoom: 'creer', s: 2.2, spot: 'creer', curseur: 'creer', clic: true, centre: true }, { b: 0, d: 1400, ecran: 'creer', zoom: 'menu', spot: 'menu' }, { b: 1, zoom: null, spot: false }] }),
+        tuto({ t: 'Profil, déconnexion et anglais', nouveau: true, ecran: 'accueil', page: 'today', captions: ['Cliquez sur votre nom en haut à droite : mon compte, l’organigramme, les réglages et la déconnexion.', 'Un collègue anglophone ? « Switch to English » passe tout le CRM en anglais, pour lui seul.'],
+          steps: [{ b: 0, d: 200, zoom: 'moi', s: 2 }, { b: 0, d: 700, curseur: 'moi', clic: true, centre: true }, { b: 0, d: 1300, ecran: 'moi', zoom: 'menu', spot: 'menu' }, { b: 1, d: 300, bulle: ['menu', 'Français ou anglais'] }] }),
+        tuto({ t: 'Le CRM sur téléphone', ecran: 'mobile', page: 'today', captions: ['Sur téléphone, le CRM s’adapte : les rubriques principales passent dans une barre en bas de l’écran.', 'Entre deux rendez-vous, Lucas lance sa session d’appels depuis le parking.'],
           steps: [{ b: 0, d: 600, spot: 'barre', bulle: ['barre', 'Navigation en bas'] }, { b: 1, spot: 'session', curseur: 'session', clic: true, centre: true }] }),
       ],
-      recap: ['Le menu à gauche, la recherche Ctrl K en haut.', 'Le bouton Créer, partout, pour aller vite.', 'Votre nom en haut à droite : compte, organigramme, déconnexion.'], suivant: 'Ma journée et la session d’appels',
+      recap: ['Le menu par familles, la recherche Ctrl K en haut.', 'Le bouton Créer, partout, pour aller vite.', 'Votre nom en haut à droite : compte, anglais, déconnexion.'], suivant: 'Votre journée et la vue CEO',
       secours: ANCIENS[0].scenes }),
 
-    module({ n: 2, f: '02-journee-appels', t: 'Ma journée et la session d’appels', s: 'Écran Aujourd’hui, file d’appels, script, notes, résultat et relance.',
-      accroche: 'Le cœur de la prospection : appeler, noter, relancer.', chips: ['Aujourd’hui', 'Session', 'Script', 'Résultat'],
+    module({ n: 2, f: '02-ma-journee', t: 'Votre journée et la vue CEO', s: 'Vue d’ensemble CEO, assistant IA, file d’appels, session, notes et résultat.',
+      accroche: 'Chaque matin, le CRM vous dit quoi faire, et au dirigeant comment va l’équipe.', chips: ['Vue CEO', 'Assistant', 'File d’appels', 'Session', 'Résultat'],
+      exemple: { titre: 'Le lundi de Sarah', qui: ['SB', 'Sarah Benali', 'Responsable commerciale', 'bleu'], intro: 'Exemple concret : lundi matin, Sarah ouvre l’écran Aujourd’hui.',
+        etapes: [['9 h 00', 'phone', 'Relance en retard : Plomberie Martin', 'En tête de file : Plomberie Martin, une relance en retard de trois jours.'],
+          ['9 h 04', 'mic', 'Script + notes pendant l’appel', 'Elle appelle, suit le script, et note : « intéressé par un audit, rappeler jeudi ».'],
+          ['9 h 07', 'calendar', 'Résultat : RDV jeudi 14 h', 'Résultat « rendez-vous pris » : le rendez-vous de jeudi 14 heures part tout seul dans le calendrier.']],
+        fin: ['zap', '3 appels de plus avant 10 h', 'Sans chercher un seul numéro, elle enchaîne trois appels de plus avant dix heures !'] },
       quiz: [
+        ['Que montre la vue d’ensemble CEO ?', ['L’équipe active, les simulations IA, le taux de réussite et l’activité récente', 'Seulement la météo', 'Les mots de passe'], 0],
         ['Dans quel ordre la file d’appels classe-t-elle les prospects ?', ['Par ordre alphabétique', 'Les relances en retard d’abord', 'Au hasard'], 1],
-        ['Que fait « Lancer la session d’appels » ?', ['Elle enchaîne les appels automatiquement, avec le script', 'Elle envoie des SMS', 'Elle exporte la liste'], 0],
-        ['Après un appel « À rappeler », que propose le CRM ?', ['Rien', 'De supprimer la fiche', 'De programmer la relance dans l’agenda'], 2],
+        ['Après un appel « rendez-vous pris », que fait le CRM ?', ['Rien', 'Il supprime la fiche', 'Il programme le rendez-vous dans le calendrier'], 2],
       ],
       tutos: [
-        tuto({ t: 'L’écran Aujourd’hui', ecran: 'aujourdhui', page: 'today', captions: ['Chaque matin, l’écran Aujourd’hui vous dit quoi faire : votre file d’appels, vos tâches et vos prochaines relances.', 'Les relances en retard passent en premier, avec le nombre de jours de retard.', 'Un clic sur le téléphone vert appelle le prospect.'],
-          steps: [{ b: 0, d: 400, zoom: 'file', spot: 'file', lent: true }, { b: 1, zoom: 'premier', s: 2.1, spot: 'premier' }, { b: 2, curseur: 'appeler', clic: true, centre: true }, { b: 2, d: 1800, zoom: null, spot: false }] }),
-        tuto({ t: 'Lancer une session d’appels', ecran: 'aujourdhui', page: 'today', captions: ['Le grand bouton bleu lance la session : les appels s’enchaînent, sans chercher le numéro suivant.', 'Pour chaque appel : le bouton pour composer, le script pas à pas, et un bloc-notes.', 'Suivez les six étapes du script, de l’accroche à la prise de rendez-vous.'],
-          steps: [{ b: 0, d: 200, zoom: 'session', s: 1.7, spot: 'session' }, { b: 0, d: 800, curseur: 'session', clic: true }, { b: 1, ecran: 'appel', zoom: null, spot: false }, { b: 1, d: 900, spot: 'composer', curseur: 'composer' }, { b: 2, zoom: 'script', spot: 'script' }] }),
-        tuto({ t: 'Noter et clore un appel', ecran: 'appel', page: 'today', captions: ['Notez ce qui se dit pendant l’appel : besoins, objections, prochaine étape.', 'Terminer l’appel ouvre le compte-rendu : choisissez le résultat, la relance se programme toute seule.'],
+        tuto({ t: 'La vue d’ensemble CEO', nouveau: true, ecran: 'ceo', page: 'today', captions: ['Pour le dirigeant, Aujourd’hui commence par la vue d’ensemble CEO : un bonjour, et la santé de l’entreprise.', 'Quatre chiffres clés : l’équipe active, les simulations IA réalisées, le taux de réussite et la consommation IA.', 'Plus bas, la performance des équipes, la répartition des formations et l’activité récente de chacun.'],
+          steps: [{ b: 0, d: 300, zoom: 'hero', spot: 'hero' }, { b: 1, zoom: 'kpi', spot: 'kpi' }, { b: 2, zoom: null, spot: 'perf' }, { b: 2, d: 2200, spot: 'activite' }] }),
+        tuto({ t: 'Poser une question à l’assistant', nouveau: true, ecran: 'ceo', page: 'today', captions: ['À droite, l’assistant IA résume les points à surveiller cette semaine.', 'Posez-lui une question, par exemple : « Quels prospects relancer en priorité ? ». Il répond avec vos vraies données.'],
+          steps: [{ b: 0, d: 300, zoom: 'assistant', spot: 'assistant' }, { b: 1, curseur: 'assistant', clic: true }, { b: 1, d: 300, bulle: ['assistant', 'Vos données, en clair'] }] }),
+        tuto({ t: 'L’écran Aujourd’hui du commercial', nouveau: true, ecran: 'aujourdhui', page: 'today', captions: ['Pour un commercial, Aujourd’hui commence par ses chiffres du jour : nouveaux prospects, messages envoyés, réponses reçues et rendez-vous.', 'Mes prospects : filtrez « À contacter », « En cours » ou « Clients ». Le score IA dit qui appeler en premier.', 'À droite, son assistant IA personnel, avec ses compétences : planifier sa journée, préparer un appel, répondre à une objection.'],
+          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, zoom: 'prospects', spot: 'prospects' }, { b: 1, d: 1800, spot: 'onglets', curseur: 'onglets', clic: true }, { b: 1, d: 3600, spot: 'premier' }, { b: 2, zoom: 'assistant', spot: 'assistant' }] }),
+        tuto({ t: 'Lancer une session d’appels', ecran: 'aujourdhui', page: 'today', captions: ['Le bouton Appels lance la session : les appels du jour s’enchaînent, sans chercher le numéro suivant.', 'Pour chaque appel : le bouton pour composer, le script pas à pas, la fiche et un bloc-notes.', 'Suivez les six étapes du script, de l’accroche à la prise de rendez-vous.'],
+          steps: [{ b: 0, d: 200, zoom: 'session', s: 2.2, spot: 'session' }, { b: 0, d: 900, curseur: 'session', clic: true, centre: true }, { b: 1, ecran: 'appel', zoom: null, spot: false }, { b: 1, d: 900, spot: 'composer', curseur: 'composer' }, { b: 2, zoom: 'script', spot: 'script' }] }),
+        tuto({ t: 'Noter et clore un appel', ecran: 'appel', page: 'today', captions: ['Notez ce qui se dit pendant l’appel. Exemple : « Intéressée par un audit, rappeler jeudi ».', 'Terminer l’appel ouvre le compte-rendu : choisissez le résultat, la relance se programme toute seule.'],
           steps: [{ b: 0, d: 200, zoom: 'notes', spot: 'notes' }, { b: 0, d: 700, curseur: 'notes', clic: true }, { b: 1, curseur: 'terminer', clic: true, spot: 'terminer' }, { b: 1, d: 1300, ecran: 'resultat', zoom: 'fenetre', spot: 'fenetre' }] }),
       ],
-      recap: ['L’écran Aujourd’hui : retards d’abord, tâches et relances.', 'La session enchaîne les appels avec le script.', 'Un résultat par appel, la relance part dans l’agenda.'], suivant: 'Prospects et fiches',
+      recap: ['La vue CEO : la santé de l’équipe en un coup d’œil.', 'Le commercial : ses chiffres du jour, ses prospects classés par score.', 'Un résultat par appel, la relance part dans le calendrier.'], suivant: 'Les simulations IA',
       secours: ANCIENS[1].scenes }),
 
-    module({ n: 3, f: '03-prospects-fiches', t: 'Prospects et fiches', s: 'Statuts, recherche, filtres, fiche prospect, création, import et export.',
+    module({ n: 3, f: '03-simulations-ia', t: 'S’entraîner avec les simulations IA', s: 'Scénarios, fiche du prospect, appel simulé à la voix, note et recommandations.',
+      accroche: 'Rater devant une IA, pour réussir devant le client.', chips: ['Scénarios', 'Objections', 'Appel simulé', 'Note'],
+      exemple: { titre: 'Inès apprivoise l’objection prix', qui: ['IG', 'Inès Garnier', 'Chargée de clientèle', 'violet'], intro: 'Exemple concret : Inès a perdu deux ventes sur « c’est trop cher ». Elle s’entraîne.',
+        etapes: [['Mardi', 'target', 'Scénario « Objection prix : version difficile »', 'Elle choisit le scénario « Objection prix, version difficile ».'],
+          ['5 min', 'mic', 'Appel à la voix avec un prospect joué par l’IA', 'Elle parle à voix haute : le prospect, joué par l’IA, la pousse dans ses retranchements.'],
+          ['Après', 'chart-line', 'Note 58, puis 81 sur 100', 'Première note : cinquante-huit sur cent. Elle suit les conseils, recommence : quatre-vingt-un !']],
+        fin: ['award', 'Vente signée vendredi', 'Vendredi, face à un vrai client, elle a la bonne réponse. Vente signée !'] },
+      quiz: [
+        ['À quoi servent les simulations IA ?', ['À s’entraîner face à un prospect joué par l’IA, à la voix', 'À envoyer des factures', 'À changer de thème'], 0],
+        ['Que trouve-t-on dans la fiche d’un scénario ?', ['L’objectif, le contexte et les objections à prévoir', 'Un code promo', 'Rien'], 0],
+        ['Après l’appel simulé, que donne le CRM ?', ['Une note sur 100, une analyse et des recommandations', 'Une amende', 'Un e-mail au client'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'Choisir un scénario', nouveau: true, ecran: 'simulations', page: 'entrainement', captions: ['Simulations IA : à gauche, les scénarios. Prospection, découverte, objections, closing, relance, et même vos propres prospects.', 'Le badge « Recommandé » vous dit par quoi commencer.', 'Au centre, la fiche : l’objectif à atteindre, le contexte, et les objections à prévoir.'],
+          steps: [{ b: 0, d: 300, zoom: 'scenarios', spot: 'scenarios' }, { b: 0, d: 2600, spot: 'filtres', curseur: 'filtres' }, { b: 1, zoom: 'recommande', s: 2, spot: 'recommande', curseur: 'recommande', clic: true }, { b: 2, zoom: 'fiche', spot: 'fiche' }, { b: 2, d: 2600, spot: 'objections' }] }),
+        tuto({ t: 'Le profil du prospect', nouveau: true, ecran: 'simulations', page: 'entrainement', captions: ['À droite, qui vous allez appeler. Exemple : Thomas Bernard, directeur informatique, analytique, prudent et sensible au prix.', 'Son ouverture à l’appel démarre à vingt-cinq pour cent : à vous de la faire monter.'],
+          steps: [{ b: 0, d: 300, zoom: 'profil', spot: 'profil' }, { b: 1, d: 300, bulle: ['profil', 'À convaincre !'] }] }),
+        tuto({ t: 'Passer l’appel simulé', nouveau: true, ecran: 'simulations', page: 'entrainement', captions: ['« Démarrer l’appel » : parlez au micro, l’IA répond à la voix, comme un vrai prospect.', 'Raccrochez quand vous avez obtenu le rendez-vous… ou quand il vous a raccroché au nez !'],
+          steps: [{ b: 0, d: 300, zoom: 'fiche', spot: false }, { b: 0, d: 1200, ecran: 'simulation-appel', zoom: null, spot: 'appel' }, { b: 1, zoom: 'raccrocher', s: 2, spot: 'raccrocher', curseur: 'raccrocher' }] }),
+        tuto({ t: 'Lire sa note et progresser', nouveau: true, ecran: 'simulations', page: 'entrainement', captions: ['Après l’appel, l’analyse de performance donne une note sur cent et six compétences.', 'Les recommandations proposent la phrase à essayer et l’exercice ciblé pour progresser.'],
+          steps: [{ b: 0, d: 300, zoom: 'analyse', spot: 'analyse' }, { b: 1, zoom: null, spot: 'analyse' }] }),
+      ],
+      recap: ['Un scénario recommandé, avec objectif et objections.', 'Un appel à la voix face à un prospect joué par l’IA.', 'Une note sur 100 et des conseils pour progresser.'], suivant: 'Prospects et fiches',
+      secours: ANCIENS[1].scenes }),
+
+    module({ n: 4, f: '04-prospects', t: 'Prospects et fiches', s: 'Statuts, recherche, filtres, fiche prospect, création, import et export.',
       accroche: 'Un fichier clair, filtré, toujours à jour.', chips: ['Statuts', 'Filtres', 'Fiche', 'Import'],
+      exemple: { titre: 'Alex importe son vieux fichier Excel', qui: ['AM', 'Alex Martin', 'Fondateur & gérant', 'orange'], intro: 'Exemple concret : Alex a deux cents contacts dans un vieux fichier Excel.',
+        etapes: [['Étape 1', 'upload', 'Importer › contacts.xlsx', 'Il clique sur Importer et choisit son fichier : le CRM reconnaît les colonnes tout seul.'],
+          ['Étape 2', 'users', '12 doublons repérés', 'Douze doublons sont repérés avant l’import : rien n’est en double.'],
+          ['Étape 3', 'filter', 'Pastille « À appeler » : 188', 'Un clic sur la pastille « À appeler », et la liste de la semaine est prête.']],
+        fin: ['check', '188 prospects prêts', 'Résultat : cent quatre-vingt-huit prospects propres, prêts à être appelés.'] },
       quiz: [
         ['Comment voir seulement les prospects « RDV pris » ?', ['Avec la pastille de statut en haut de la liste', 'Il faut tout exporter', 'Dans Réglages'], 0],
         ['Que contient la fiche d’un prospect ?', ['Seulement son nom', 'Coordonnées, historique complet, tâches et documents', 'Uniquement les devis'], 1],
         ['Comment ajouter 200 contacts d’un coup ?', ['Un par un', 'Avec « Importer » (CSV ou Excel)', 'Ce n’est pas possible'], 1],
       ],
       tutos: [
-        tuto({ t: 'Filtrer ses prospects', ecran: 'prospects', page: 'prospects', captions: ['La liste des prospects : en haut, une pastille par statut, avec le nombre de fiches.', 'Cherchez par entreprise, contact, ville ou téléphone, et affinez avec les filtres.', 'Passez de la vue tableau à la vue liste selon vos préférences.'],
+        tuto({ t: 'Filtrer ses prospects', ecran: 'prospects', page: 'prospects', captions: ['La liste des prospects : en haut, une pastille par statut, avec le nombre de fiches.', 'Cherchez par entreprise, contact, ville ou téléphone. Exemple : « Lyon » pour vos prospects lyonnais.', 'Passez de la vue tableau à la vue liste selon vos préférences.'],
           steps: [{ b: 0, d: 300, zoom: 'statuts', spot: 'statuts' }, { b: 0, d: 1500, bulle: ['statuts', 'Un clic = un filtre'] }, { b: 1, zoom: 'recherche', spot: 'recherche', curseur: 'recherche', clic: true }, { b: 1, d: 1800, curseur: 'filtres', spot: 'filtres' }, { b: 2, zoom: null, spot: 'vue', curseur: 'vue' }] }),
         tuto({ t: 'Ouvrir une fiche prospect', ecran: 'prospects', page: 'prospects', captions: ['Cliquez sur une ligne : la fiche du prospect s’ouvre.', 'Tout y est : coordonnées, appel, e-mail, SMS ou WhatsApp en un clic, et l’historique complet de chaque action.'],
           steps: [{ b: 0, d: 200, zoom: 'premier', spot: 'premier' }, { b: 0, d: 700, curseur: 'premier', clic: true }, { b: 1, ecran: 'fiche', zoom: null, spot: 'fiche' }] }),
         tuto({ t: 'Créer et importer des prospects', ecran: 'prospects', page: 'prospects', captions: ['Le bouton Nouveau ouvre la fiche de création : entreprise, contact, téléphone, secteur.', 'Importer charge un fichier CSV ou Excel ; les doublons sont détectés. Exporter télécharge votre liste.'],
           steps: [{ b: 0, d: 200, zoom: 'nouveau', s: 2, curseur: 'nouveau', clic: true, centre: true }, { b: 0, d: 1300, ecran: 'nouveau-prospect', zoom: 'fenetre', spot: 'fenetre' }, { b: 1, ecran: 'import', zoom: 'fenetre', spot: 'fenetre' }] }),
       ],
-      recap: ['Une pastille par statut pour filtrer en un clic.', 'La fiche garde tout l’historique, action par action.', 'Import CSV ou Excel, export en un clic.'], suivant: 'Trouver de nouveaux leads',
+      recap: ['Une pastille par statut pour filtrer en un clic.', 'La fiche garde tout l’historique, action par action.', 'Import CSV ou Excel, doublons détectés.'], suivant: 'Trouver de nouveaux clients',
       secours: ANCIENS[2].scenes }),
 
-    module({ n: 4, f: '04-nouveaux-leads', t: 'Trouver de nouveaux leads', s: 'Le générateur de vrais leads par secteur et par zone, et le suivi de votre niche.',
-      accroche: 'De vraies entreprises, jamais deux fois les mêmes.', chips: ['Secteur', 'Zone', 'Coordonnées', 'Niche'],
+    module({ n: 5, f: '05-nouveaux-clients', t: 'Trouver de nouveaux clients', s: 'Générateur de leads Sirene, LinkedIn, suivi de niche et analyse du marché.',
+      accroche: 'De vraies entreprises, jamais deux fois les mêmes, là où ça rapporte.', chips: ['Leads', 'LinkedIn', 'Niche', 'Marché'],
+      exemple: { titre: 'Sarah cherche des plombiers à Lyon', qui: ['SB', 'Sarah Benali', 'Responsable commerciale', 'bleu'], intro: 'Exemple concret : Sarah veut vingt nouveaux plombiers lyonnais à appeler cette semaine.',
+        etapes: [['Lundi', 'chart-line', 'Marché : 1 240 plombiers dans le Rhône', 'Dans Marché, elle découvre mille deux cent quarante entreprises de plomberie dans le Rhône.'],
+          ['Lundi', 'sparkles', 'Nouveaux leads › Plomberie › Lyon', 'Dans Nouveaux leads : Artisans, Plomberie, Lyon. Douze vraies entreprises, avec le dirigeant.'],
+          ['Lundi', 'plus', 'Un clic : ajoutés à appeler aujourd’hui', 'Un clic par entreprise : elles arrivent dans ses prospects, à appeler aujourd’hui.']],
+        fin: ['zap', '12 leads frais, zéro doublon', 'Et la semaine prochaine ? Douze autres, jamais les mêmes.'] },
       quiz: [
-        ['D’où viennent les leads proposés ?', ['Inventés au hasard', 'Du registre officiel des entreprises, entreprises actives', 'De vos anciens clients'], 1],
-        ['Le générateur propose-t-il deux fois la même entreprise ?', ['Oui, souvent', 'Non : il retient ce qu’il vous a déjà montré et ce qui est déjà au CRM', 'Seulement le lundi'], 1],
-        ['Où suivre les résultats de votre client idéal ?', ['Dans Rapports, « Suivi de ma niche »', 'Dans Paiements', 'Nulle part'], 0],
+        ['D’où viennent les leads proposés ?', ['Inventés au hasard', 'Du registre officiel des entreprises (Sirene), entreprises actives', 'De vos anciens clients'], 1],
+        ['Que propose l’onglet LinkedIn de Nouveaux leads ?', ['Importer vos contacts LinkedIn et les classer par intérêt', 'Publier des vidéos', 'Rien'], 0],
+        ['À quoi sert la page Marché ?', ['À mesurer le nombre d’entreprises par métier, les nouvelles entreprises et la concurrence', 'À acheter des fichiers', 'À changer le thème'], 0],
       ],
       tutos: [
         tuto({ t: 'Générer des leads', ecran: 'leads', page: 'leads', captions: ['Nouveaux leads : choisissez un secteur, un métier et une zone, ville, code postal ou département.', 'Le générateur trouve de vraies entreprises actives, avec le dirigeant, l’adresse, et quand il les trouve, le téléphone, le site et l’e-mail.', 'Un clic ajoute le lead à vos prospects, à appeler aujourd’hui.'],
           steps: [{ b: 0, d: 300, zoom: 'formulaire', spot: 'formulaire' }, { b: 0, d: 1200, curseur: 'generer', clic: true, centre: true }, { b: 1, zoom: 'cartes', spot: 'cartes', lent: true }, { b: 2, zoom: 'carte', spot: 'carte' }, { b: 2, d: 600, curseur: 'ajouter', clic: true }] }),
-        tuto({ t: 'Suivre sa niche', ecran: 'niche', page: 'reports', captions: ['Dans Rapports, le suivi de ma niche compare vos secteurs : prospects, contacts, rendez-vous, clients et conversion.', 'Définissez votre client idéal : le générateur vous propose ensuite les leads qui lui ressemblent.'],
+        tuto({ t: 'Vos contacts LinkedIn', nouveau: true, ecran: 'linkedin', page: 'leads', captions: ['Onglet LinkedIn : collez un profil, utilisez le bouton à glisser dans vos favoris, ou importez tout votre réseau avec le fichier Connections.', 'Le CRM note chaque contact selon votre client idéal, pour appeler d’abord les plus prometteurs.'],
+          steps: [{ b: 0, d: 300, zoom: 'onglets', s: 2, spot: 'onglets' }, { b: 0, d: 1600, zoom: null, spot: false }] }),
+        tuto({ t: 'Mesurer son marché', nouveau: true, ecran: 'marche', page: 'marche', captions: ['Marché : tapez une zone, par exemple Lyon, puis « Analyser le marché ».', 'Le CRM compte les entreprises de chaque métier, les compare à vos résultats, et vous dit où prospecter en premier.', 'Deux autres onglets : les nouvelles entreprises du mois, et la concurrence.'],
+          steps: [{ b: 0, d: 300, zoom: 'zone', spot: 'zone' }, { b: 0, d: 1500, curseur: 'analyser', clic: true }, { b: 1, zoom: null, spot: 'zone' }, { b: 2, zoom: 'onglets', s: 2, spot: 'onglets', curseur: 'onglets' }] }),
+        tuto({ t: 'Suivre sa niche', ecran: 'niche', page: 'reports', captions: ['Le suivi de ma niche compare vos secteurs : prospects, contacts, rendez-vous, clients et conversion.', 'Définissez votre client idéal : le générateur vous propose ensuite les leads qui lui ressemblent.'],
           steps: [{ b: 0, d: 300, zoom: 'niche', spot: 'niche', lent: true }, { b: 1, curseur: 'ideal', clic: true, spot: 'ideal' }] }),
       ],
-      recap: ['Secteur, métier, zone : des leads réels et nouveaux.', 'Un clic pour les ajouter à vos prospects.', 'Le suivi de niche vous dit quel secteur rapporte.'], suivant: 'Pipeline, agenda et tâches',
+      recap: ['Sirene : des leads réels et nouveaux, en un clic.', 'LinkedIn : votre réseau, classé par intérêt.', 'Marché et niche : prospectez là où ça rapporte.'], suivant: 'Calendrier, pipeline et tâches',
       secours: ANCIENS[2].scenes }),
 
-    module({ n: 5, f: '05-pipeline-agenda', t: 'Pipeline, agenda et tâches', s: 'Glisser-déposer, vues jour, semaine, mois, planifier, rendez-vous du site, tâches.',
-      accroche: 'Voir où en est chaque affaire, et ne rater aucun rendez-vous.', chips: ['Pipeline', 'Agenda', 'Site', 'Tâches'],
+    module({ n: 6, f: '06-calendrier-pipeline', t: 'Calendrier, pipeline et tâches', s: 'Le nouveau calendrier jour, semaine, mois, le pipeline au glisser-déposer et les tâches.',
+      accroche: 'Voir où en est chaque affaire, et ne rater aucun rendez-vous.', chips: ['Calendrier', 'Pipeline', 'Tâches'],
+      exemple: { titre: 'Le Cabinet Lumière, de l’appel à la signature', qui: ['SB', 'Sarah Benali', 'Responsable commerciale', 'rose'], intro: 'Exemple concret : suivons le Cabinet Dentaire Lumière dans le pipeline de Sarah.',
+        etapes: [['Lundi', 'phone', 'Colonne « Rendez-vous »', 'Lundi, rendez-vous obtenu : Sarah glisse la carte dans la colonne Rendez-vous.'],
+          ['Mercredi', 'calendar', 'Audit mercredi 11 h au calendrier', 'Mercredi onze heures, l’audit apparaît dans son calendrier, avec un rappel.'],
+          ['Jeudi', 'file-text', 'Tâche : envoyer la proposition', 'Jeudi, une tâche lui rappelle d’envoyer la proposition. Elle la coche.']],
+        fin: ['award', 'Client signé ! 🎉', 'Vendredi : glissée dans « Client signé ». Bravo Sarah !'] },
       quiz: [
+        ['Quelles vues propose le calendrier ?', ['Jour, semaine et mois', 'Seulement l’année', 'Aucune'], 0],
         ['Comment changer le statut d’une affaire dans le pipeline ?', ['En la glissant dans une autre colonne', 'En la supprimant', 'Par e-mail'], 0],
-        ['Que se passe-t-il quand un visiteur réserve sur le site ?', ['Rien', 'Le RDV et une tâche de rappel arrivent dans le CRM', 'Un e-mail part sans rien créer'], 1],
         ['Où voir toutes les tâches en retard ?', ['Dans Tâches, en haut', 'Dans Clients', 'Dans Carte clients'], 0],
       ],
       tutos: [
+        tuto({ t: 'Le calendrier', nouveau: true, ecran: 'calendrier', page: 'agenda', captions: ['Le calendrier réunit vos rendez-vous, vos relances et vos tâches. Chaque couleur a son sens : appel, rendez-vous, audit, tâche.', 'Passez du jour à la semaine ou au mois, et changez de fuseau horaire pour vos clients à l’étranger.', 'À droite : le mini calendrier, les prochains rendez-vous et vos statistiques de la semaine.'],
+          steps: [{ b: 0, d: 300, zoom: 'semaine', spot: 'semaine', lent: true }, { b: 1, zoom: 'vues', s: 2, spot: 'vues', curseur: 'vues', clic: true }, { b: 1, d: 2600, ecran: 'calendrier-mois', zoom: null, spot: 'mois' }, { b: 2, ecran: 'calendrier', zoom: 'prochains', spot: 'prochains' }, { b: 2, d: 2600, spot: 'stats' }] }),
         tuto({ t: 'Le pipeline', ecran: 'pipeline', page: 'pipeline', captions: ['Le pipeline montre chaque affaire, colonne par colonne : à appeler, injoignable, rendez-vous, audit, proposition.', 'Glissez une carte d’une colonne à l’autre : le statut et l’historique se mettent à jour.'],
           steps: [{ b: 0, d: 400, zoom: 'colonnes', spot: 'colonnes', lent: true }, { b: 1, zoom: 'carte', s: 1.9, spot: 'carte', curseur: 'carte' }, { b: 1, d: 1300, curseur: 'colonne2', clic: true }] }),
-        tuto({ t: 'L’agenda', ecran: 'agenda', page: 'agenda', captions: ['L’agenda réunit vos relances et vos rendez-vous, en vue jour, semaine ou mois.', 'Planifier crée un créneau lié à un prospect, avec rappel.'],
-          steps: [{ b: 0, d: 200, zoom: 'relances', spot: 'relances' }, { b: 0, d: 2200, zoom: 'vues', s: 2, spot: 'vues', curseur: 'vues' }, { b: 1, curseur: 'planifier', clic: true, spot: 'planifier' }, { b: 1, d: 1200, ecran: 'planifier', zoom: 'fenetre', spot: 'fenetre' }] }),
-        tuto({ t: 'Les tâches', ecran: 'taches', page: 'tasks', captions: ['Tâches : en retard, aujourd’hui, à venir. Cochez-les au fur et à mesure.', 'Celles du jour s’affichent aussi sur l’écran Aujourd’hui.'],
+        tuto({ t: 'Les tâches', ecran: 'taches', page: 'tasks', captions: ['Tâches : en retard, aujourd’hui, à venir. Cochez-les au fur et à mesure.', 'Celles du jour s’affichent aussi sur l’écran Aujourd’hui et dans le calendrier.'],
           steps: [{ b: 0, d: 300, zoom: 'retard', spot: 'retard' }, { b: 0, d: 2000, zoom: 'jour', spot: 'jour' }, { b: 1, zoom: null, spot: 'nouvelle', curseur: 'nouvelle' }] }),
       ],
-      apres: [ANCIENS[7].scenes[1], ANCIENS[7].scenes[2]],
-      recap: ['Le pipeline se pilote au glisser-déposer.', 'L’agenda : jour, semaine, mois ; on planifie depuis la fiche.', 'Les réservations du site arrivent toutes seules.'], suivant: 'Devis, factures et paiements',
+      recap: ['Le calendrier : jour, semaine, mois, et fuseau horaire.', 'Le pipeline se pilote au glisser-déposer.', 'Les tâches du jour vous suivent partout.'], suivant: 'Téléphone et mail',
       secours: ANCIENS[3].scenes }),
 
-    module({ n: 6, f: '06-devis-factures', t: 'Devis, factures et paiements', s: 'Créer un devis, aperçu A4, PDF, conversion en facture, encaissements.',
-      accroche: 'Du devis à l’encaissement, sans ressaisie.', chips: ['Devis', 'PDF', 'Facture', 'Paiement'],
+    module({ n: 7, f: '07-telephone-mail', t: 'Téléphone et mail', s: 'Ringover dans le CRM, appel en un clic, vos boîtes mail, envoyer depuis le CRM.',
+      accroche: 'Appeler et écrire sans jamais quitter le CRM.', chips: ['Ringover', 'Click-to-call', 'Gmail', 'Mail pro'],
+      exemple: { titre: 'Lucas rappelle Kiné Performance', qui: ['LM', 'Lucas Moreau', 'Commercial terrain', 'vert'], intro: 'Exemple concret : Lucas doit rappeler Kiné Performance, puis envoyer un devis.',
+        etapes: [['14 h 00', 'phone', 'Clic sur le numéro : Ringover appelle', 'Il clique sur le numéro dans la fiche : Ringover compose, sans toucher son téléphone.'],
+          ['14 h 06', 'clock', 'Appel de 6 min noté sur la fiche', 'L’appel de six minutes est noté tout seul sur la fiche du prospect.'],
+          ['14 h 08', 'mail', 'Mail + devis PDF depuis son adresse pro', 'Dans Mail, il envoie le devis en PDF, depuis sa propre adresse professionnelle.']],
+        fin: ['check', 'Tout est dans l’historique', 'Appel, mail et devis : tout est dans l’historique. Rien à recopier !'] },
+      quiz: [
+        ['Que se passe-t-il quand on clique sur un numéro avec Ringover activé ?', ['L’appel part depuis votre ligne Ringover', 'Rien', 'Un SMS part'], 0],
+        ['Depuis quelle adresse partent les mails du CRM ?', ['Une adresse inconnue', 'Votre propre boîte : Gmail, Hostinger, OVH…', 'Celle de Blackstart'], 1],
+        ['Où l’appel est-il noté ?', ['Nulle part', 'Sur la fiche du prospect, avec sa durée', 'Dans les réglages'], 1],
+      ],
+      tutos: [
+        tuto({ t: 'Ringover dans le CRM', nouveau: true, ecran: 'telephone', page: 'telephone', captions: ['Téléphone : Ringover s’ouvre dans une fenêtre du CRM, et reste ouvert quand vous changez de page.', 'Un clic sur le numéro d’un prospect lance l’appel. Chaque appel, sortant, entrant ou manqué, est noté sur sa fiche.', 'Activez Ringover une seule fois sur chaque ordinateur ou téléphone.'],
+          steps: [{ b: 0, d: 300, zoom: 'ringover', spot: 'ringover' }, { b: 1, d: 300, bulle: ['ringover', 'Appel en un clic'] }, { b: 2, curseur: 'activer', clic: true, spot: 'activer' }] }),
+        tuto({ t: 'Connecter sa boîte mail', nouveau: true, ecran: 'mail-boites', page: 'mail', captions: ['Mail, onglet Mes boîtes : choisissez votre messagerie. Gmail, Hostinger, OVH, IONOS, Zoho et les autres.', 'Exemple : Gmail se connecte avec votre compte Google, en deux clics. Les mails partent comme si vous les envoyiez vous-même.'],
+          steps: [{ b: 0, d: 300, zoom: 'fournisseurs', spot: 'fournisseurs' }, { b: 1, curseur: 'gmail', clic: true, spot: 'gmail' }] }),
+        tuto({ t: 'Écrire un mail', nouveau: true, ecran: 'mail-ecrire', page: 'mail', captions: ['Onglet Nouveau mail : une fois votre boîte connectée, écrivez au prospect, et joignez un devis ou une facture en PDF.', 'L’onglet Envoyés garde la trace de tout, et chaque mail s’ajoute à l’historique du prospect.'],
+          steps: [{ b: 0, d: 300, zoom: 'onglets', s: 2, spot: 'onglets' }, { b: 1, zoom: null, spot: false }] }),
+      ],
+      recap: ['Ringover : un clic sur un numéro, l’appel part.', 'Vos mails partent de votre propre boîte.', 'Appels et mails s’ajoutent à l’historique du prospect.'], suivant: 'Devis, factures et paiements',
+      secours: ANCIENS[2].scenes }),
+
+    module({ n: 8, f: '08-devis-paiements', t: 'Devis, factures et paiements en ligne', s: 'Créer un devis, aperçu A4, facture, paiement par carte et PayPal, encaissements.',
+      accroche: 'Du devis à l’argent sur le compte, sans ressaisie.', chips: ['Devis', 'Facture', 'Stripe', 'PayPal', 'Encaissements'],
+      exemple: { titre: 'Square Habitat paie en 2 minutes', qui: ['AM', 'Alex Martin', 'Fondateur & gérant', 'vert'], intro: 'Exemple concret : Square Habitat Lyon 6 a accepté un devis de trois cent quarante-huit euros.',
+        etapes: [['10 h 00', 'file-text', 'Devis accepté › Convertir en facture', 'Alex convertit le devis en facture, en un clic, avec sa numérotation.'],
+          ['10 h 01', 'credit-card', 'Facture envoyée avec un lien de paiement', 'La facture part avec un lien de paiement : carte bancaire, Apple Pay ou PayPal.'],
+          ['10 h 03', 'wallet', 'Le client paie depuis son téléphone', 'Deux minutes plus tard, le client paie depuis son téléphone.']],
+        fin: ['check', 'Facture « payée » toute seule', 'La facture passe en « payée » toute seule. Plus besoin de relancer !'] },
       quiz: [
         ['Les totaux d’un devis se calculent…', ['à la main', 'automatiquement, remise et TVA comprises', 'à l’export seulement'], 1],
-        ['Un devis accepté devient une facture…', ['en un clic, avec sa propre numérotation', 'en recopiant tout', 'jamais'], 0],
-        ['Que propose la page Paiements ?', ['Liens de paiement, virement avec IBAN, suivi des encaissements', 'Seulement l’IBAN', 'Rien'], 0],
+        ['Comment un client peut-il payer une facture en ligne ?', ['Par un lien Stripe ou PayPal ajouté à la facture', 'Par fax', 'Ce n’est pas possible'], 0],
+        ['Que se passe-t-il quand le client a payé en ligne ?', ['La facture passe en « payée » toute seule', 'Rien', 'Il faut tout ressaisir'], 0],
       ],
       tutos: [
         tuto({ t: 'Créer un devis', ecran: 'devis', page: 'devis', captions: ['Devis et factures : en haut, ce qui est en attente, le taux d’acceptation et ce qui reste à encaisser.', 'Nouveau devis : choisissez le client, ajoutez vos lignes ; remise et TVA se calculent pendant que vous tapez.'],
           steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, curseur: 'nouveau', clic: true, spot: 'nouveau' }, { b: 1, d: 1200, ecran: 'devis-edition', zoom: null, spot: 'fenetre' }] }),
         tuto({ t: 'Aperçu, PDF et facture', ecran: 'devis', page: 'devis', captions: ['Ouvrez un devis : l’aperçu A4 est prêt à imprimer ou à envoyer en PDF.', 'Devis accepté ? Un clic le convertit en facture, avec sa propre numérotation.'],
           steps: [{ b: 0, d: 200, zoom: 'liste', spot: 'liste', curseur: 'liste', clic: true }, { b: 0, d: 1500, ecran: 'devis-apercu', zoom: null, spot: 'document' }, { b: 1, spot: 'actions', zoom: 'actions' }] }),
-        tuto({ t: 'Suivre les paiements', ecran: 'paiements', page: 'payments', captions: ['Paiements : ce qui reste à encaisser, les retards, et tout ce qui a été encaissé.', 'Copiez vos liens de paiement ou votre IBAN pour les envoyer à vos clients.'],
-          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 0, d: 2400, zoom: 'factures', spot: 'factures' }, { b: 1, zoom: 'liens', spot: 'liens' }, { b: 1, d: 1800, zoom: 'virement', spot: 'virement' }] }),
+        tuto({ t: 'Le paiement en ligne', nouveau: true, ecran: 'paiement-en-ligne', page: 'payments', captions: ['Paiements : à encaisser, en retard, encaissé ce mois et au total.', 'Paiement en ligne : connectez Stripe ou PayPal une fois. Chaque facture reçoit son lien de paiement, ajouté au mail d’envoi.', 'Quand le client a payé, la facture passe en « payée » toute seule.'],
+          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, zoom: 'enligne', spot: 'enligne' }, { b: 1, d: 2400, curseur: 'stripe', clic: true }, { b: 2, zoom: 'factures', spot: 'factures' }] }),
       ],
-      recap: ['Un devis se crée en quelques lignes ; les totaux suivent.', 'Aperçu A4, PDF, puis conversion en facture.', 'Paiements : on voit tout de suite qui a réglé.'], suivant: 'Clients, tableau de bord et rapports',
+      recap: ['Un devis en quelques lignes ; les totaux suivent.', 'Aperçu A4, PDF, puis conversion en facture.', 'Stripe ou PayPal : le client paie, la facture se met à jour.'], suivant: 'Le marketing',
       secours: ANCIENS[4].scenes }),
 
-    module({ n: 7, f: '07-pilotage', t: 'Clients, tableau de bord et rapports', s: 'Portefeuille, MRR, objectifs, entonnoir, rapports et présentation.',
-      accroche: 'Mesurer pour mieux décider.', chips: ['Clients', 'MRR', 'Objectifs', 'Rapports'],
+    module({ n: 9, f: '09-marketing', t: 'Le marketing : campagnes, modèles et contenu', s: 'Séquences de mails, modèles de messages, calendrier de publications, sources et ROI.',
+      accroche: 'Faire venir les clients pendant que vous dormez (ou presque).', chips: ['Campagnes', 'Modèles', 'Contenu', 'Sources & ROI'],
+      exemple: { titre: 'La campagne « Dentistes de Lyon »', qui: ['SB', 'Sarah Benali', 'Responsable commerciale', 'violet'], intro: 'Exemple concret : Sarah lance une campagne vers trente cabinets dentaires de Lyon.',
+        etapes: [['Jour 0', 'mail', 'Mail 1 : premier contact', 'Jour zéro : le premier mail part depuis sa boîte, avec le prénom et le nom du cabinet.'],
+          ['Jour 3', 'refresh-cw', 'Relance automatique à J+3', 'Jour trois : une relance, seulement pour ceux qui n’ont pas répondu.'],
+          ['Jour 7', 'message-circle', '4 réponses, 2 rendez-vous', 'Jour sept : quatre réponses, deux rendez-vous. Ceux qui répondent sortent de la séquence.']],
+        fin: ['chart-line', 'Sources & ROI : 1 € investi, 9 € gagnés', 'Et dans Sources et ROI, elle voit enfin ce que chaque canal lui rapporte.'] },
       quiz: [
-        ['Que mesure le MRR ?', ['Le revenu récurrent mensuel', 'Le nombre d’appels', 'Le nombre de devis'], 0],
-        ['À quoi sert l’entonnoir de conversion ?', ['À repérer l’étape où les prospects décrochent', 'À trier les e-mails', 'À rien'], 0],
-        ['Comment partager vos chiffres en réunion ?', ['Avec « Présenter » ou l’export CSV des rapports', 'En recopiant à la main', 'Ce n’est pas possible'], 0],
+        ['Qu’est-ce qu’une campagne dans le CRM ?', ['Une séquence de mails : premier contact, relance à J+3, dernier message à J+7', 'Une affiche', 'Un appel groupé'], 0],
+        ['Que se passe-t-il quand un prospect répond à la campagne ?', ['Il reçoit quand même toutes les relances', 'Il sort de la séquence', 'Il est supprimé'], 1],
+        ['À quoi sert Sources & ROI ?', ['À savoir d’où viennent vos clients et ce que chaque canal rapporte', 'À changer de mot de passe', 'À rien'], 0],
       ],
       tutos: [
+        tuto({ t: 'Les campagnes de mails', nouveau: true, ecran: 'campagnes', page: 'campagnes', captions: ['Campagnes : des séquences de mails de prospection. Le CRM prépare chaque jour les mails à envoyer, depuis votre boîte.', 'Votre première campagne est déjà écrite : premier contact, relance à J plus trois, dernier message à J plus sept.', 'Ceux qui répondent, changent de statut ou demandent à ne plus être contactés sortent tout seuls de la séquence.'],
+          steps: [{ b: 0, d: 300, zoom: 'jour', spot: 'jour' }, { b: 1, zoom: 'premiere', spot: 'premiere', curseur: 'premiere', clic: true }, { b: 1, d: 1800, ecran: 'campagne-edition', zoom: null, spot: 'editeur' }, { b: 2, spot: false }] }),
+        tuto({ t: 'Les modèles de messages', nouveau: true, ecran: 'modeles-messages', page: 'modeles', captions: ['Modèles : vos messages prêts à l’emploi, par canal. E-mail, SMS, LinkedIn, WhatsApp et script d’appel.', 'Cliquez sur Utiliser, choisissez un prospect : le prénom et le nom de l’entreprise se remplissent tout seuls.'],
+          steps: [{ b: 0, d: 300, zoom: 'canaux', s: 1.8, spot: 'canaux' }, { b: 1, zoom: 'modele', spot: 'modele' }, { b: 1, d: 1400, curseur: 'utiliser', clic: true, spot: 'utiliser' }] }),
+        tuto({ t: 'Planifier ses publications', nouveau: true, ecran: 'contenu', page: 'contenu', captions: ['Contenu : le calendrier de vos publications. LinkedIn d’abord, puis Facebook, Instagram et Google Business.', 'Pas d’idée ? La banque d’idées vous en propose. Le conseil du CRM : deux à trois posts LinkedIn par semaine, le mardi et le jeudi.'],
+          steps: [{ b: 0, d: 300, zoom: 'calendrier', spot: 'calendrier' }, { b: 0, d: 2600, zoom: 'reseaux', s: 2, spot: 'reseaux' }, { b: 1, zoom: null, spot: 'idees', curseur: 'idees', clic: true }] }),
+        tuto({ t: 'Sources et ROI', nouveau: true, ecran: 'sources', page: 'sources', captions: ['Sources et ROI : d’où viennent vos clients, combien ils coûtent et combien ils rapportent.', 'Exemple : le terrain transforme trente-trois pour cent des prospects en clients. Le CRM vous le dit en vert, juste au-dessus.', 'Pour chaque source : prospects, rendez-vous, clients, encaissé, coût par client et retour sur investissement.'],
+          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, zoom: 'meilleure', spot: 'meilleure' }, { b: 2, zoom: 'table', spot: 'table' }] }),
+      ],
+      recap: ['Campagnes : J0, J+3, J+7, et ceux qui répondent sortent.', 'Modèles : le texte se remplit tout seul.', 'Contenu et ROI : publier régulièrement, mesurer ce qui rapporte.'], suivant: 'Assistants IA et automatisations',
+      secours: ANCIENS[6].scenes }),
+
+    module({ n: 10, f: '10-assistants-automatisations', t: 'Assistants IA et automatisations', s: 'Huit assistants experts, leurs compétences, et les règles qui travaillent pour vous.',
+      accroche: 'Une équipe d’experts IA, et un CRM qui fait le travail répétitif.', chips: ['Assistants', 'Compétences', 'Règles', 'Historique'],
+      exemple: { titre: 'Un nouveau lead à 18 h 42', qui: ['AM', 'Alex Martin', 'Fondateur & gérant', 'orange'], intro: 'Exemple concret : un vendredi à dix-huit heures quarante-deux, un visiteur remplit le formulaire du site.',
+        etapes: [['18 h 42', 'globe', 'Lead du site : Électricité Moreau', 'Le lead Électricité Moreau arrive tout seul dans les prospects.'],
+          ['18 h 42', 'zap', 'Règle : appel le jour même', 'La règle « Nouveau lead, appel le jour même » le met dans la file d’appels.'],
+          ['Lundi 9 h', 'sparkles', 'Alex 2.0 prépare l’appel', 'Lundi matin, l’assistant Alex 2.0 prépare l’appel : accroche, questions et objections probables.']],
+        fin: ['check', 'Zéro lead oublié', 'Résultat : aucun lead oublié, et douze minutes de travail évitées cette semaine.'] },
+      quiz: [
+        ['Combien de compétences a chaque assistant IA ?', ['Une', 'Six, avec la méthode d’un expert', 'Cent'], 1],
+        ['Que fait une automatisation active ?', ['Elle s’applique toute seule et note ce qu’elle a fait', 'Elle supprime des fiches', 'Rien'], 0],
+        ['Où voir ce que les automatisations ont fait ?', ['Dans l’historique de la page Automatisations', 'Nulle part', 'Dans Paiements'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'Les assistants IA', nouveau: true, ecran: 'assistants', page: 'assistants', captions: ['Assistants IA : votre équipe d’experts. Alex 2.0, le coach du quotidien, l’assistant CEO, le VP Sales, le directeur de production, et d’autres.', 'Chacun a six compétences. Exemple : « Planifier ma journée », « Préparer un appel » ou « Répondre à une objection ».', 'Posez une question ou lancez une compétence ; cliquez sur « Appliquer » pour que ses actions se fassent dans le CRM.'],
+          steps: [{ b: 0, d: 300, zoom: 'alex', spot: 'alex' }, { b: 0, d: 2800, spot: 'ceo' }, { b: 1, zoom: 'competences', s: 2, spot: 'competences', curseur: 'competences', clic: true }, { b: 2, zoom: 'panneau', spot: 'panneau' }] }),
+        tuto({ t: 'Les automatisations', nouveau: true, ecran: 'automatisations', page: 'automatisations', captions: ['Automatisations : le CRM fait le travail répétitif pour toute l’équipe. En haut, les règles actives et le temps gagné.', 'Exemple : « Prospect oublié, retour dans la file d’appels » après vingt et un jours sans activité. Réglez le délai, activez l’interrupteur.', 'L’historique, à droite, montre tout ce que les règles ont fait.'],
+          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, zoom: 'regle', spot: 'regle' }, { b: 1, d: 2400, curseur: 'interrupteur', clic: true }, { b: 2, zoom: 'historique', spot: 'historique' }] }),
+      ],
+      recap: ['Huit assistants, six compétences chacun.', '« Appliquer » : les actions se font dans le CRM.', 'Des règles qui travaillent pour vous, avec historique.'], suivant: 'Messages, groupes et visio',
+      secours: ANCIENS[6].scenes }),
+
+    module({ n: 11, f: '11-messagerie', t: 'Messages, groupes et visio', s: 'Messagerie en trois colonnes, réactions, vocaux, pièces jointes, groupes et visio.',
+      accroche: 'Toute l’équipe se parle sans quitter le CRM.', chips: ['Messages', 'Réactions', 'Groupes', 'Visio'],
+      exemple: { titre: 'Une bonne nouvelle à partager', qui: ['SB', 'Sarah Benali', 'Responsable commerciale', 'rose'], intro: 'Exemple concret : le Cabinet Lumière vient de valider son devis.',
+        etapes: [['11 h 30', 'message-circle', '« Le cabinet Lumière a validé ! 🎉 »', 'Sarah l’annonce à Alex dans Messages. Une bannière s’affiche sur son écran.'],
+          ['11 h 31', 'heart', 'Réaction 🎉 d’Alex', 'Alex répond d’une réaction et demande la facture d’acompte.'],
+          ['14 h 00', 'video', 'Visio d’équipe en un clic', 'À quatorze heures, visio d’équipe en un clic pour fêter ça et préparer la suite.']],
+        fin: ['users', 'Toute l’équipe au courant', 'Tout est resté dans le CRM, lié au prospect. Aucune info perdue dans un autre outil !'] },
+      quiz: [
+        ['Comment réagir à un message sans écrire ?', ['Avec une réaction emoji', 'En le supprimant', 'Ce n’est pas possible'], 0],
+        ['Que se passe-t-il quand on clique sur une photo reçue ?', ['Elle s’ouvre en grand, avec zoom et téléchargement', 'Rien', 'Elle se supprime'], 0],
+        ['Que se passe-t-il quand quelqu’un lance une visio ?', ['Une sonnerie et une carte d’appel apparaissent', 'Rien', 'Un e-mail part'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'La messagerie en trois colonnes', nouveau: true, ecran: 'messages', page: 'messages', captions: ['Messages : vos conversations à gauche, avec les filtres non lus, épinglés et favoris. Le fil au centre.', 'Écrivez en bas : texte, message vocal, fichier ou modèle. Et réagissez d’un emoji à n’importe quel message.', 'À droite : les membres, et le prospect lié à la conversation. Les onglets Tâches, Événements et Notes sont juste au-dessus du fil.'],
+          steps: [{ b: 0, d: 300, zoom: 'liste', spot: 'liste' }, { b: 0, d: 2400, zoom: 'fil', spot: 'fil' }, { b: 1, zoom: 'saisie', spot: 'saisie', curseur: 'saisie', clic: true }, { b: 2, zoom: null, spot: 'details' }] }),
+        tuto({ t: 'Ouvrir une pièce jointe en grand', ecran: 'piece-jointe', page: 'messages', captions: ['Une photo, une vidéo ou un PDF reçu ? Cliquez dessus : il s’ouvre en grand, par-dessus le CRM.', 'Zoomez, passez à la pièce suivante avec les flèches, téléchargez, puis Échap pour fermer.'],
+          steps: [{ b: 0, d: 300, zoom: 'image', spot: 'image' }, { b: 0, d: 1500, curseur: 'image', clic: true, centre: true }, { b: 1, ecran: 'visionneuse', zoom: null, spot: false }, { b: 1, d: 1600, bulle: ['telecharger', 'Télécharger'], curseur: 'telecharger' }, { b: 1, d: 3200, curseur: 'fermer', clic: true }] }),
+        tuto({ t: 'Les groupes', ecran: 'groupes', page: 'groupes', captions: ['Groupes : un espace par équipe ou par projet, avec une image et les mêmes possibilités que les messages.', 'Nouveau groupe : donnez un nom, choisissez les membres. Exemple : « Équipe commerciale ».'],
+          steps: [{ b: 0, d: 300, zoom: 'fil', spot: 'fil' }, { b: 1, zoom: 'nouveau', s: 2, spot: 'nouveau', curseur: 'nouveau', clic: true }] }),
+        tuto({ t: 'Lancer une visio', ecran: 'visio', page: 'visio', captions: ['Visio : lancez une réunion avec l’équipe ou avec un groupe, en un clic.', 'Vos collègues reçoivent une sonnerie et une carte d’appel pour rejoindre.'],
+          steps: [{ b: 0, d: 300, zoom: 'lancer', s: 2, spot: 'lancer', curseur: 'lancer', clic: true }, { b: 1, zoom: null, spot: false }] }),
+      ],
+      recap: ['Trois colonnes : conversations, fil, prospect lié.', 'Réactions, vocaux, fichiers qui s’ouvrent en grand.', 'Groupes et visio en un clic.'], suivant: 'Analyse : rapports, clients et carte',
+      secours: ANCIENS[6].scenes }),
+
+    module({ n: 12, f: '12-analyse', t: 'Analyse : rapports, clients et carte', s: 'Rapports animés, mode présentation, clients et MRR, tableau de bord, carte clients.',
+      accroche: 'Mesurer pour mieux décider, et briller en réunion.', chips: ['Rapports', 'Présenter', 'Clients', 'Carte'],
+      exemple: { titre: 'La réunion du lundi d’Alex', qui: ['AM', 'Alex Martin', 'Fondateur & gérant', 'bleu'], intro: 'Exemple concret : lundi, réunion d’équipe. Alex n’a rien préparé… et ce n’est pas grave.',
+        etapes: [['9 h 30', 'chart-line', 'Rapports › Présenter (touche P)', 'Il ouvre Rapports et appuie sur P : le mode présentation s’affiche en plein écran.'],
+          ['9 h 32', 'trending-up', '23 200 € de chiffre, +63 %', 'Diapo après diapo, les chiffres s’animent : vingt-trois mille deux cents euros, plus soixante-trois pour cent.'],
+          ['9 h 40', 'globe', 'Carte clients : objectif Villeurbanne', 'Il finit sur la carte clients : prochaine zone à conquérir, Villeurbanne.']],
+        fin: ['award', 'Réunion bouclée en 15 min', 'Réunion bouclée en quinze minutes, toute l’équipe motivée !'] },
+      quiz: [
+        ['Comment présenter vos chiffres en réunion ?', ['Avec « Présenter » (touche P) dans Rapports', 'En recopiant à la main', 'Ce n’est pas possible'], 0],
+        ['Que mesure le MRR ?', ['Le revenu récurrent mensuel', 'Le nombre d’appels', 'Le nombre de devis'], 0],
+        ['Que montre la carte clients ?', ['Vos clients et prospects ville par ville, en carte ou en globe 3D', 'La météo', 'Les factures'], 0],
+      ],
+      tutos: [
+        tuto({ t: 'Les rapports animés', nouveau: true, ecran: 'rapports', page: 'reports', captions: ['Rapports et analyses : quatre chiffres clés comparés au mois précédent. Prospects contactés, rendez-vous, conversion et revenus.', 'Les graphiques s’animent à l’ouverture. Passez la souris sur un point : la valeur exacte s’affiche.', 'Choisissez la période en haut, et exportez le rapport en un clic.'],
+          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, zoom: 'perf', spot: 'perf' }, { b: 1, d: 2400, spot: 'ca' }, { b: 2, zoom: null, spot: 'exporter', curseur: 'periode' }] }),
+        tuto({ t: 'Le mode présentation', nouveau: true, ecran: 'rapports', page: 'reports', captions: ['Le bouton Présenter, ou la touche P, transforme vos rapports en diaporama plein écran.', 'Une diapo par chiffre clé et par graphique, avec ses animations. Idéal pour la réunion du lundi.'],
+          steps: [{ b: 0, d: 300, zoom: 'presenter', s: 2.2, spot: 'presenter', curseur: 'presenter', clic: true }, { b: 1, ecran: 'rapports-presentation', zoom: null, spot: false }] }),
         tuto({ t: 'Le portefeuille clients', ecran: 'clients', page: 'clients', captions: ['Clients : vos clients actifs, le revenu mensuel récurrent, l’ancienneté et le taux de résiliation.', 'Le MRR par secteur et le top clients montrent d’où vient votre chiffre.'],
           steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, zoom: 'mrr', spot: 'mrr' }, { b: 1, d: 2200, zoom: 'top', spot: 'top' }] }),
         tuto({ t: 'Le tableau de bord', ecran: 'tableau', page: 'dashboard', captions: ['Le tableau de bord : vos chiffres clés de la semaine, vos objectifs d’appels et de rendez-vous.', 'L’entonnoir montre l’étape à améliorer, des appels jusqu’aux clients signés.'],
           steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 0, d: 2400, zoom: 'objectifs', spot: 'objectifs' }, { b: 1, zoom: 'entonnoir', spot: 'entonnoir' }] }),
-        tuto({ t: 'Les rapports', ecran: 'rapports', page: 'reports', captions: ['Rapports : six mois d’activité, les tendances, et le suivi de votre niche.', 'Exportez en CSV, ou passez en mode présentation pour vos réunions.'],
-          steps: [{ b: 0, d: 300, zoom: 'kpi', spot: 'kpi' }, { b: 1, zoom: 'exporter', s: 2, spot: 'exporter', curseur: 'exporter' }, { b: 1, d: 1500, spot: 'presenter', curseur: 'presenter', clic: true }] }),
+        tuto({ t: 'La carte clients', ecran: 'carte', page: 'carte', captions: ['La carte clients place chaque fiche sur sa ville : en vert les clients, en bleu les prospects. À droite, le classement de vos villes.', 'Trois vues : la carte, le globe 3D qui tourne, et la vue réaliste par satellite.'],
+          steps: [{ b: 0, d: 400, zoom: 'carte', spot: 'carte', lent: true }, { b: 0, d: 2800, zoom: 'villes', spot: 'villes' }, { b: 1, zoom: 'vues', spot: 'vues', curseur: 'vues', clic: true }, { b: 1, d: 1800, ecran: 'globe', zoom: null, spot: false }] }),
       ],
-      recap: ['Clients : MRR, ancienneté, résiliation.', 'Tableau de bord : objectifs et entonnoir.', 'Rapports : tendances, export et présentation.'], suivant: 'La carte clients',
+      recap: ['Rapports animés, valeurs au survol, export.', 'Présenter (touche P) : vos chiffres en diaporama.', 'Clients, tableau de bord et carte : tout votre territoire.'], suivant: 'Équipe, outils et réglages',
       secours: ANCIENS[5].scenes }),
 
-    module({ n: 8, f: '08-carte-clients', t: 'La carte clients', s: 'Carte, globe 3D et vue réaliste : où sont vos clients et vos prospects.',
-      accroche: 'Votre territoire, d’un coup d’œil.', chips: ['Carte', 'Globe 3D', 'Réaliste', 'Villes'],
-      quiz: [
-        ['Quelles vues propose la carte clients ?', ['Carte, Globe 3D et Réaliste', 'Seulement une liste', 'Un tableau Excel'], 0],
-        ['Que montre une bulle sur la carte ?', ['Les clients et prospects d’une ville', 'La météo', 'Les factures'], 0],
-        ['Comment voir la carte en grand ?', ['Avec le bouton plein écran', 'En imprimant', 'Ce n’est pas possible'], 0],
-      ],
-      tutos: [
-        tuto({ t: 'Lire la carte clients', ecran: 'carte', page: 'carte', captions: ['La carte clients place chaque fiche sur sa ville : en vert les clients, en bleu les prospects.', 'En haut, les chiffres clés ; à droite, le classement de vos villes.', 'Filtrez clients ou prospects, et zoomez où vous voulez.'],
-          steps: [{ b: 0, d: 400, zoom: 'carte', spot: 'carte', lent: true }, { b: 1, zoom: 'kpi', spot: 'kpi' }, { b: 1, d: 2200, zoom: 'villes', spot: 'villes' }, { b: 2, zoom: null, spot: 'filtres', curseur: 'filtres', clic: true }] }),
-        tuto({ t: 'Globe 3D et vue réaliste', ecran: 'carte', page: 'carte', captions: ['Trois vues : la carte, le globe 3D qui tourne tout seul ou à la souris, et la vue réaliste par satellite.', 'Le bouton plein écran affiche la carte en grand, idéale en réunion.'],
-          steps: [{ b: 0, d: 300, zoom: 'vues', spot: 'vues', curseur: 'vues', clic: true }, { b: 0, d: 2000, ecran: 'globe', zoom: null, spot: false }, { b: 1, zoom: 'carte', spot: 'carte' }] }),
-      ],
-      recap: ['Verts les clients, bleus les prospects.', 'Carte, Globe 3D ou Réaliste, et plein écran.', 'Le classement des villes montre votre territoire.'], suivant: 'Messages, groupes et visio',
-      secours: ANCIENS[7].scenes.slice(3) }),
-
-    module({ n: 9, f: '09-messagerie', t: 'Messages, groupes et visio', s: 'Messagerie d’équipe, émojis, pièces jointes, groupes, visio et notifications.',
-      accroche: 'Toute l’équipe se parle sans quitter le CRM.', chips: ['Messages', 'Groupes', 'Visio', 'Notifications'],
-      quiz: [
-        ['Que se passe-t-il quand on clique sur une photo reçue ?', ['Elle s’ouvre en grand, avec zoom et téléchargement', 'Rien', 'Elle se supprime'], 0],
-        ['Comment parler à plusieurs collègues à la fois ?', ['Avec un groupe', 'En copiant le message', 'Ce n’est pas possible'], 0],
-        ['Que se passe-t-il quand quelqu’un lance une visio ?', ['Une sonnerie et une carte d’appel apparaissent', 'Rien', 'Un e-mail part'], 0],
-      ],
-      tutos: [
-        tuto({ t: 'Écrire à un collègue', ecran: 'messages', page: 'messages', captions: ['Messages : vos conversations à gauche, le fil de discussion à droite.', 'Écrivez en bas : émojis, et pièces jointes avec le trombone, images, PDF ou documents.', 'Trois petits points s’affichent quand votre collègue est en train d’écrire.'],
-          steps: [{ b: 0, d: 300, zoom: 'liste', spot: 'liste' }, { b: 0, d: 2000, zoom: 'fil', spot: 'fil' }, { b: 1, zoom: 'saisie', spot: 'saisie', curseur: 'saisie', clic: true }, { b: 1, d: 1400, curseur: 'joindre' }, { b: 2, zoom: null, spot: false }] }),
-        tuto({ t: 'Ouvrir une pièce jointe en grand', nouveau: true, ecran: 'piece-jointe', page: 'messages', captions: ['Une photo, une vidéo ou un PDF reçu ? Cliquez dessus : il s’ouvre en grand, par-dessus le CRM.', 'Zoomez, passez à la pièce suivante avec les flèches, téléchargez, puis Échap pour fermer.'],
-          steps: [{ b: 0, d: 300, zoom: 'image', spot: 'image' }, { b: 0, d: 1500, curseur: 'image', clic: true, centre: true }, { b: 1, ecran: 'visionneuse', zoom: null, spot: false }, { b: 1, d: 1600, bulle: ['telecharger', 'Télécharger'], curseur: 'telecharger' }, { b: 1, d: 3200, curseur: 'fermer', clic: true }] }),
-        tuto({ t: 'Les groupes', ecran: 'groupes', page: 'groupes', captions: ['Groupes : un espace par équipe ou par projet, avec les mêmes possibilités que les messages.', 'Nouveau groupe : donnez un nom et choisissez les membres.'],
-          steps: [{ b: 0, d: 300, zoom: 'fil', spot: 'fil' }, { b: 1, zoom: 'nouveau', s: 2, spot: 'nouveau', curseur: 'nouveau', clic: true }] }),
-        tuto({ t: 'Lancer une visio', ecran: 'visio', page: 'visio', captions: ['Visio : lancez une réunion avec l’équipe ou avec un groupe, en un clic.', 'Vos collègues reçoivent une sonnerie et une carte d’appel pour rejoindre. La sonnerie se choisit dans Réglages.'],
-          steps: [{ b: 0, d: 300, zoom: 'lancer', s: 2, spot: 'lancer', curseur: 'lancer', clic: true }, { b: 1, zoom: null, spot: false }] }),
-      ],
-      recap: ['Messages : émojis, et pièces jointes qui s’ouvrent en grand.', 'Groupes par équipe ou par projet.', 'Visio en un clic, avec sonnerie.'], suivant: 'Équipe, comptes et sauvegardes',
-      secours: ANCIENS[6].scenes }),
-
-    module({ n: 10, f: '10-equipe', t: 'Équipe, comptes et sauvegardes', s: 'Mon compte, organigramme, membres et droits, sauvegardes, suivi de la formation.',
-      accroche: 'Chacun son compte, toute l’équipe au même endroit.', chips: ['Compte', 'Organigramme', 'Membres', 'Sauvegardes'],
+    module({ n: 13, f: '13-equipe-reglages', t: 'Équipe, outils et réglages', s: 'Compte, organigramme, accès des membres, sauvegardes, enregistrements, sons, icônes et ambiance.',
+      accroche: 'Chacun son compte, et un CRM à votre image.', chips: ['Compte', 'Accès', 'Sauvegardes', 'Sons', 'Icônes'],
+      exemple: { titre: 'Alex accueille une stagiaire', qui: ['AM', 'Alex Martin', 'Fondateur & gérant', 'violet'], intro: 'Exemple concret : Alex accueille Emma, stagiaire pour deux mois.',
+        etapes: [['Lundi', 'user-plus', 'Inviter Emma, rôle membre', 'Il l’invite dans Réglages, Équipe et compte, avec le rôle membre.'],
+          ['Lundi', 'shield', 'Accès : Prospects, Simulations, Formations', 'Colonne Accès : il ne coche que Prospects, Simulations IA et Formations. Le reste lui est caché.'],
+          ['Vendredi', 'graduation-cap', 'Suivi : 13 modules vus, quiz 37 / 39', 'Vendredi, il voit dans Formations qu’Emma a suivi les treize modules. Quiz : trente-sept sur trente-neuf !']],
+        fin: ['award', 'Emma est prête à appeler', 'Emma est prête à prospecter, et les données sensibles sont restées protégées.'] },
       quiz: [
         ['Comment limiter les rubriques qu’un membre peut ouvrir ?', ['Ce n’est pas possible', 'Colonne Accès : l’administrateur coche ses rubriques', 'En lui donnant un autre mot de passe'], 1],
-        ['Où voir qui fait quoi dans l’équipe ?', ['Dans l’organigramme', 'Dans Paiements', 'Dans la carte'], 0],
-        ['Combien de versions le serveur garde-t-il ?', ['Aucune', 'Les cent dernières, restaurables', 'Une seule'], 1],
+        ['Combien de versions de vos données le serveur garde-t-il ?', ['Aucune', 'Les cent dernières, restaurables', 'Une seule'], 1],
+        ['Comment changer les icônes du menu ?', ['Réglages, Icônes du menu : plus de deux mille icônes deux tons', 'En changeant d’ordinateur', 'Ce n’est pas possible'], 0],
       ],
       tutos: [
-        tuto({ t: 'Mon compte et ma photo', ecran: 'compte', page: 'today', captions: ['Mon compte : votre nom, votre photo de profil et votre mot de passe.', 'Votre photo apparaît en haut à droite, dans la messagerie et dans l’organigramme.'],
-          steps: [{ b: 0, d: 300, zoom: 'fenetre', spot: 'fenetre' }, { b: 1, zoom: null, spot: false }] }),
-        tuto({ t: 'L’organigramme', ecran: 'organigramme', page: 'today', captions: ['L’organigramme montre le poste et le responsable de chaque membre.', 'Il se met à jour tout seul quand un administrateur modifie un poste.'],
-          steps: [{ b: 0, d: 300, zoom: 'organigramme', spot: 'organigramme', lent: true }, { b: 1, zoom: null, spot: false }] }),
-        tuto({ t: 'Inviter et gérer l’équipe', ecran: 'equipe', page: 'settings', captions: ['Réglages, Équipe et compte : l’administrateur invite les membres et choisit leur rôle.', 'Seuls les administrateurs peuvent supprimer : c’est contrôlé par le serveur.'],
-          steps: [{ b: 0, d: 300, zoom: 'membres', spot: 'membres' }, { b: 0, d: 1800, curseur: 'inviter', clic: true, spot: 'inviter' }, { b: 1, zoom: null, spot: 'membres' }] }),
-        tuto({ t: 'Choisir les accès d’un membre', nouveau: true, ecran: 'acces', page: 'settings', captions: ['Colonne Accès : l’administrateur choisit les rubriques que chaque membre peut ouvrir.', 'Cochez ce qu’il voit, décochez le reste, puis enregistrez : son menu change tout de suite sur ses écrans.'],
-          steps: [{ b: 0, d: 300, zoom: 'colonne', spot: 'bouton', curseur: 'bouton', clic: true }, { b: 1, zoom: 'panneau', spot: 'panneau' }, { b: 1, d: 2600, bulle: ['panneau', 'Une case par rubrique'] }] }),
+        tuto({ t: 'Mon compte et l’organigramme', ecran: 'compte', page: 'today', captions: ['Mon compte : votre nom, votre photo de profil et votre mot de passe.', 'L’organigramme montre le poste et le responsable de chaque membre, avec sa photo.'],
+          steps: [{ b: 0, d: 300, zoom: 'fenetre', spot: 'fenetre' }, { b: 1, ecran: 'organigramme', zoom: 'organigramme', spot: 'organigramme', lent: true }] }),
+        tuto({ t: 'Inviter et choisir les accès', ecran: 'equipe', page: 'settings', captions: ['Réglages, Équipe et compte : l’administrateur invite les membres et choisit leur rôle.', 'Colonne Accès : cochez les rubriques que chaque membre peut ouvrir. Son menu change tout de suite.'],
+          steps: [{ b: 0, d: 300, zoom: 'membres', spot: 'membres' }, { b: 0, d: 1800, curseur: 'inviter', clic: true, spot: 'inviter' }, { b: 1, ecran: 'acces', zoom: 'panneau', spot: 'panneau' }, { b: 1, d: 2400, bulle: ['panneau', 'Une case par rubrique'] }] }),
         tuto({ t: 'Sauvegardes et versions', ecran: 'donnees', page: 'settings', captions: ['Données : le serveur garde les cent dernières versions de vos données.', 'Une erreur ? Restaurez une version en un clic, ou exportez une sauvegarde.'],
           steps: [{ b: 0, d: 300, zoom: 'versions', spot: 'versions' }, { b: 1, zoom: 'sauvegarde', spot: 'sauvegarde' }] }),
+        tuto({ t: 'Écouter les enregistrements', ecran: 'enregistrements-equipe', page: 'tools', captions: ['Outils : les enregistrements d’appels de chaque membre arrivent tout seuls sur le serveur.', 'L’administrateur les écoute, les télécharge, et filtre par membre. Parfait pour coacher l’équipe.'],
+          steps: [{ b: 0, d: 300, zoom: 'liste', spot: 'liste' }, { b: 1, curseur: 'filtre', clic: true, spot: 'filtre' }, { b: 1, d: 1800, curseur: 'ecouter', clic: true, spot: 'ecouter' }] }),
+        tuto({ t: 'Vos propres sons MP3', ecran: 'sons', page: 'settings', captions: ['Sons du CRM : un son pour la visio, un pour les messages reçus, un pour les messages envoyés.', 'Choisissez un MP3 de votre ordinateur. Pourquoi pas un petit « cha-ching » à chaque message ?'],
+          steps: [{ b: 0, d: 300, zoom: 'sons', spot: 'sons' }, { b: 1, curseur: 'mp3', clic: true, spot: 'mp3' }, { b: 1, d: 1400, bulle: ['mp3', 'Votre fichier MP3'] }] }),
+        tuto({ t: 'Icônes deux tons et ambiance', nouveau: true, ecran: 'icones', page: 'settings', captions: ['Réglages, Icônes du menu : plus de deux mille icônes deux tons pour personnaliser chaque rubrique.', 'Apparence et Ambiance : thème clair ou sombre, couleur d’accent, et le fond animé de particules.'],
+          steps: [{ b: 0, d: 300, zoom: 'icones', spot: 'icones' }, { b: 1, ecran: 'apparence', zoom: null, spot: 'themes' }, { b: 1, d: 2400, ecran: 'ambiance', spot: 'ambiance' }] }),
         tuto({ t: 'Le suivi de la formation', ecran: 'suivi', page: 'formations', captions: ['Ici, dans Formations, l’administrateur voit les modules vus et le score aux quiz de chaque membre.'],
           steps: [{ b: 0, d: 300, zoom: 'suivi', spot: 'suivi' }] }),
       ],
-      apres: [ANCIENS[6].scenes[3]],
-      recap: ['Mon compte : nom, photo, mot de passe.', 'Rôles et accès de chaque membre, cochés par l’administrateur.', 'Cent versions de sauvegarde, restaurables.'], suivant: 'Outils et réglages',
-      secours: ANCIENS[6].scenes }),
-
-    module({ n: 11, f: '11-outils-reglages', t: 'Outils et réglages', s: 'Enregistrements de l’équipe, sons MP3, script, modèles, apparence, ambiances et icônes.',
-      accroche: 'Vos outils au quotidien, et un CRM à votre image.', chips: ['Enregistrements', 'Sons MP3', 'Script', 'Réglages'],
-      quiz: [
-        ['Où modifier le script d’appel ?', ['Outils, Script d’appel', 'Paiements', 'On ne peut pas'], 0],
-        ['Qui peut écouter les enregistrements des membres ?', ['Personne', 'L’administrateur, avec un filtre par membre', 'Tous les clients'], 1],
-        ['Comment mettre votre propre son pour un message reçu ?', ['Réglages, Équipe et compte, Sons du CRM : choisir un MP3', 'Ce n’est pas possible', 'En changeant de navigateur'], 0],
-      ],
-      tutos: [
-        tuto({ t: 'Écouter les enregistrements de l’équipe', nouveau: true, ecran: 'enregistrements-equipe', page: 'tools', captions: ['Les enregistrements de chaque membre arrivent tout seuls sur le serveur.', 'L’administrateur les écoute, les télécharge, et filtre par membre.'],
-          steps: [{ b: 0, d: 300, zoom: 'liste', spot: 'liste' }, { b: 1, curseur: 'filtre', clic: true, spot: 'filtre' }, { b: 1, d: 1800, curseur: 'ecouter', clic: true, spot: 'ecouter' }] }),
-        tuto({ t: 'Mettre vos propres sons MP3', nouveau: true, ecran: 'sons', page: 'settings', captions: ['Sons du CRM : un son pour la visio, un pour les messages reçus, un pour les messages envoyés.', 'Choisir un MP3 envoie le fichier de votre ordinateur ; Écouter le teste, Retirer remet le son d’origine.'],
-          steps: [{ b: 0, d: 300, zoom: 'sons', spot: 'sons' }, { b: 1, curseur: 'mp3', clic: true, spot: 'mp3' }, { b: 1, d: 1400, bulle: ['mp3', 'Votre fichier MP3'] }] }),
-        tuto({ t: 'Enregistreur d’appels', ecran: 'enregistreur', page: 'tools', captions: ['Outils : l’enregistreur garde vos appels, associés au prospect, pour les réécouter.', 'Le script d’appel et les modèles d’e-mail se modifient ici, pour toute l’équipe.'],
-          steps: [{ b: 0, d: 300, zoom: 'demarrer', spot: 'demarrer', curseur: 'demarrer', clic: true }, { b: 1, ecran: 'modeles', zoom: null, spot: false }] }),
-        tuto({ t: 'Apparence et ambiance', ecran: 'apparence', page: 'settings', captions: ['Réglages, Apparence : thème clair, sombre ou automatique, couleur d’accent, police et densité.', 'Ambiance : des images animées en fond, et le choix des icônes du menu.'],
-          steps: [{ b: 0, d: 300, zoom: 'themes', spot: 'themes' }, { b: 1, ecran: 'ambiance', zoom: null, spot: 'ambiance' }, { b: 1, d: 2600, ecran: 'icones', spot: 'icones' }] }),
-        tuto({ t: 'Notifications', ecran: 'notifications', page: 'settings', captions: ['Notifications : activez les alertes du navigateur pour ne rien manquer, même CRM fermé.'],
-          steps: [{ b: 0, d: 300, zoom: 'notifs', spot: 'notifs' }] }),
-      ],
-      recap: ['Enregistreur, script et modèles : vos outils au quotidien.', 'Apparence, ambiance et icônes : un CRM à votre image.', 'Vos propres sons MP3 dans Sons du CRM.'], suivant: null,
+      recap: ['Compte, organigramme, rôles et accès cochés par l’administrateur.', 'Cent versions de sauvegarde, et les enregistrements de l’équipe.', 'Sons, icônes deux tons et ambiance : un CRM à votre image.'], suivant: null,
       secours: ANCIENS[6].scenes }),
   ];
   // Tous les tutos (onglet « Tutos rapides ») : chaque scène sur la vraie interface, rangée par module.
@@ -1067,56 +1249,93 @@
   MODULES.forEach(function (m, i) { m.scenes.forEach(function (s) { if (s.tuto) TUTOS.push({ f: null, t: s.tuto, s: m.t, mod: i, quiz: [], scenes: [s] }); }); });
 
   // ================================================================== musique
-  // Petite musique entraînante générée en direct (Web Audio) : marimba, ukulélé, basse, claquements de mains et
-  // sifflement. Aucun fichier, aucun droit d'auteur. Elle baisse toute seule quand la voix off parle.
+  // Musique rigolote générée en direct (Web Audio) : marimba, ukulélé, basse qui rebondit, claquements de doigts,
+  // sifflement, kazoo, glockenspiel et petits « boing » en fin de phrase. Quatre couplets qui tournent, rien ne
+  // se répète trop. Aucun fichier, aucun droit d'auteur. Elle baisse toute seule quand la voix off parle.
   var Musique = (function () {
-    var ctx = null, master = null, duck = null, noise = null, timer = 0, step = 0, nextT = 0, cycle = 0;
-    var SPB = 60 / 112 / 4; // double croche à 112 battements par minute
-    var CH = [[60, 64, 67, 71], [57, 60, 64, 67], [53, 57, 60, 64], [55, 59, 62, 65]];
+    var ctx = null, master = null, duck = null, noise = null, timer = 0, step = 0, nextT = 0, cycle = 0, pans = {};
+    var SPB = 60 / 116 / 4; // double croche à 116 battements par minute
+    // Do, La mineur, Fa, Sol7 : la grille la plus joyeuse qui soit.
+    var CH = [[60, 64, 67, 72], [57, 60, 64, 69], [53, 57, 60, 65], [55, 59, 62, 65]];
     var MEL = [
-      [72, 0, 76, 0, 79, 0, 76, 0, 74, 0, 72, 0, 76, 0, 0, 0], [72, 0, 72, 74, 76, 0, 74, 0, 72, 0, 69, 0, 72, 0, 0, 0],
-      [69, 0, 72, 0, 77, 0, 76, 0, 74, 0, 72, 0, 69, 0, 0, 0], [71, 0, 74, 0, 79, 0, 77, 0, 76, 0, 74, 0, 71, 0, 74, 0]];
+      [72, 0, 74, 76, 0, 79, 0, 76, 74, 0, 72, 0, 67, 0, 0, 0], [69, 0, 72, 0, 76, 0, 74, 72, 0, 69, 0, 72, 0, 0, 0, 0],
+      [65, 0, 69, 72, 0, 77, 0, 76, 0, 74, 72, 0, 69, 0, 0, 0], [71, 0, 74, 0, 77, 76, 74, 0, 72, 0, 71, 0, 67, 0, 79, 0]];
+    var REP = [ // réponses courtes (glockenspiel, kazoo) entre les phrases
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84, 86, 88], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 81, 0, 84],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 77, 81, 84], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
     function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+    function bus(p) { // une sortie par position dans l'espace stéréo
+      if (pans[p] != null) return pans[p];
+      var n = ctx.createStereoPanner ? ctx.createStereoPanner() : ctx.createGain();
+      if (n.pan) n.pan.value = p;
+      n.connect(duck); pans[p] = n; return n;
+    }
     function tone(m, t, v, d, type, dest, detune) {
       var o = ctx.createOscillator(), g = ctx.createGain();
       o.type = type; o.frequency.value = hz(m); if (detune) o.detune.value = detune;
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
       o.connect(g); g.connect(dest || duck); o.start(t); o.stop(t + d + 0.05);
     }
-    function marimba(m, t, v) { tone(m, t, v, 0.45, 'sine'); tone(m + 24, t, v * 0.25, 0.08, 'sine'); }
+    function marimba(m, t, v) { tone(m, t, v, 0.42, 'sine', bus(-0.25)); tone(m + 24, t, v * 0.22, 0.07, 'sine', bus(-0.25)); }
+    function glock(m, t, v) { tone(m, t, v, 0.7, 'sine', bus(0.4)); tone(m + 31.02, t, v * 0.18, 0.25, 'sine', bus(0.4)); }
     function whistle(m, t, v) {
       var o = ctx.createOscillator(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(hz(m) * 0.97, t); o.frequency.exponentialRampToValueAtTime(hz(m), t + 0.06);
-      lfo.frequency.value = 5.5; lg.gain.value = hz(m) * 0.012; lfo.connect(lg); lg.connect(o.frequency);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
-      o.connect(g); g.connect(duck); o.start(t); lfo.start(t); o.stop(t + 0.36); lfo.stop(t + 0.36);
+      o.type = 'sine'; o.frequency.setValueAtTime(hz(m) * 0.94, t); o.frequency.exponentialRampToValueAtTime(hz(m), t + 0.07);
+      lfo.frequency.value = 5.5; lg.gain.value = hz(m) * 0.014; lfo.connect(lg); lg.connect(o.frequency);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+      o.connect(g); g.connect(bus(0.15)); o.start(t); lfo.start(t); o.stop(t + 0.34); lfo.stop(t + 0.34);
     }
-    function hit(t, f, q, v, d) {
+    // Kazoo : dent de scie filtrée, vibrato rapide, petit glissé à l'attaque.
+    function kazoo(m, t, v) {
+      var o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(hz(m - 1), t); o.frequency.linearRampToValueAtTime(hz(m), t + 0.05);
+      lfo.frequency.value = 7; lg.gain.value = hz(m) * 0.02; lfo.connect(lg); lg.connect(o.frequency);
+      f.type = 'bandpass'; f.frequency.value = 1300; f.Q.value = 2.2;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.02); g.gain.setValueAtTime(v, t + 0.14); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+      o.connect(f); f.connect(g); g.connect(bus(0.3)); o.start(t); lfo.start(t); o.stop(t + 0.27); lfo.stop(t + 0.27);
+    }
+    // « Boing » : une note qui tombe en glissant, façon dessin animé.
+    function boing(t, haut) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(haut ? 720 : 420, t); o.frequency.exponentialRampToValueAtTime(haut ? 180 : 110, t + 0.32);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.36);
+      o.connect(g); g.connect(bus(-0.4)); o.start(t); o.stop(t + 0.4);
+    }
+    function hit(t, f, q, v, d, p) {
       var s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
       s.buffer = noise; fl.type = 'bandpass'; fl.frequency.value = f; fl.Q.value = q;
       g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-      s.connect(fl); fl.connect(g); g.connect(duck); s.start(t); s.stop(t + d + 0.02);
+      s.connect(fl); fl.connect(g); g.connect(p == null ? duck : bus(p)); s.start(t); s.stop(t + d + 0.02);
     }
+    function snap(t) { hit(t, 2600, 4, 0.32, 0.05, 0.35); }
     function kick(t) {
       var o = ctx.createOscillator(), g = ctx.createGain();
       o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.14);
-      g.gain.setValueAtTime(0.55, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
       o.connect(g); g.connect(duck); o.start(t); o.stop(t + 0.22);
     }
     function play16(i, t) {
-      var bar = Math.floor(i / 16) % 4, k = i % 16, ch = CH[bar];
-      if (k === 0 || k === 8 || (k === 11 && cycle % 2)) kick(t);
-      if (k === 4 || k === 12) { hit(t, 1400, 0.8, 0.28, 0.13); hit(t + 0.012, 2200, 1.2, 0.18, 0.1); }
-      if (k % 2 === 0) hit(t, 8000, 1.5, k % 4 === 2 ? 0.09 : 0.05, 0.04);
-      if (k === 0 || k === 8) tone(ch[0] - 24, t, 0.28, 0.32, 'triangle');
-      if (k === 6 || k === 14) tone(ch[2] - 24, t, 0.22, 0.22, 'triangle');
-      if (k % 4 === 2) ch.slice(0, 3).forEach(function (n, j) { tone(n, t + j * 0.012, 0.045, 0.22, 'triangle', null, j * 4); });
+      var bar = Math.floor(i / 16) % 4, k = i % 16, ch = CH[bar], part = cycle % 4;
+      // Batterie : grosse caisse qui sautille, claquements de mains ou de doigts, charleston léger.
+      if (k === 0 || k === 8 || (k === 10 && part % 2)) kick(t);
+      if (k === 4 || k === 12) { if (part === 2) snap(t); else { hit(t, 1400, 0.8, 0.24, 0.13, -0.1); hit(t + 0.014, 2200, 1.2, 0.16, 0.1, 0.1); } }
+      if (k % 2 === 0) hit(t, 8000, 1.5, k % 4 === 2 ? 0.08 : 0.045, 0.04, 0.25);
+      // Basse qui rebondit d'une octave.
+      if (k === 0 || k === 8) tone(ch[0] - 24, t, 0.26, 0.26, 'triangle');
+      if (k === 3 || k === 11) tone(ch[0] - 12, t, 0.16, 0.12, 'triangle');
+      if (k === 6 || k === 14) tone(ch[2] - 24, t, 0.2, 0.18, 'triangle');
+      // Ukulélé : accords brefs à contretemps.
+      if (k % 4 === 2) ch.slice(0, 3).forEach(function (n, j) { tone(n, t + j * 0.011, 0.04, 0.2, 'triangle', bus(-0.35), j * 4); });
+      // Mélodie : marimba, puis sifflement, puis kazoo, puis marimba + glockenspiel.
       var m = MEL[bar][k];
-      if (m) { if (cycle % 4 === 3) whistle(m + 12, t, 0.06); else if (cycle % 4) marimba(m, t, 0.12); }
+      if (m) { if (part === 1) whistle(m + 12, t, 0.055); else if (part === 2) kazoo(m, t, 0.05); else marimba(m, t, 0.11); }
+      var r = REP[bar][k];
+      if (r && part !== 2) glock(r, t, 0.05);
+      if (bar === 3 && k === 15) boing(t, part % 2);
     }
     function sched() {
       while (nextT < ctx.currentTime + 0.15) {
-        play16(step, nextT); nextT += SPB * (step % 2 ? 0.92 : 1.08); // léger swing
+        play16(step, nextT); nextT += SPB * (step % 2 ? 0.9 : 1.1); // swing sautillant
         step++; if (step % 64 === 0) cycle++;
       }
     }
@@ -1139,7 +1358,7 @@
         master.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.12);
         clearInterval(timer); timer = 0;
       },
-      duck: function (on) { if (ctx) duck.gain.setTargetAtTime(on ? 0.32 : 1, ctx.currentTime, on ? 0.08 : 0.5); },
+      duck: function (on) { if (ctx) duck.gain.setTargetAtTime(on ? 0.3 : 1, ctx.currentTime, on ? 0.08 : 0.5); },
     };
   })();
 
@@ -1704,6 +1923,18 @@
     '.bsf-bigtitle span{display:inline-block}',
     '.bsf-line{border-radius:3px;background:linear-gradient(90deg,#3b82f6,#22d3ee)}',
     '.bsf-chips{display:flex;justify-content:center;gap:12px}',
+    '.bsf-ex-kick{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;background:rgb(250 204 21/.12);border:1px solid rgb(250 204 21/.35);color:#fde68a;font-size:14px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}',
+    '.bsf-ex-h{font-size:44px;font-weight:800;letter-spacing:-.02em;line-height:1.1}',
+    '.bsf-ex-qui{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:26px;background:linear-gradient(160deg,rgb(255 255 255/.09),rgb(255 255 255/.02));border:1px solid rgb(148 163 184/.22);box-shadow:0 30px 60px -30px rgb(0 0 0/.7)}',
+    '.bsf-ex-qui b{font-size:24px;margin-top:10px}',
+    '.bsf-ex-qui span{font-size:15px;color:' + C.text2 + '}',
+    '.bsf-ex-av{width:104px;height:104px;border-radius:30px;display:grid;place-items:center;font-size:38px;font-weight:800;color:#fff;box-shadow:0 18px 40px -12px rgb(59 130 246/.6)}',
+    '.bsf-ex-dot{display:grid;place-items:center;border-radius:14px;box-shadow:0 10px 24px -8px rgb(0 0 0/.6)}',
+    '.bsf-ex-card{display:flex;flex-direction:column;gap:3px;padding:12px 18px;border-radius:16px;background:rgb(255 255 255/.06);border:1px solid rgb(148 163 184/.2)}',
+    '.bsf-ex-card em{font-style:normal;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#93c5fd}',
+    '.bsf-ex-card span{font-size:20px;font-weight:600;line-height:1.3}',
+    '.bsf-ex-fin{display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:18px;background:linear-gradient(135deg,#34d399,#a3e635);color:#052e1b;font-size:19px;font-weight:800;box-shadow:0 20px 44px -16px rgb(52 211 153/.7)}',
+    '.bsf-ex-spark{border-radius:50%}',
     '.bsf-chips span{padding:8px 16px;border-radius:99px;border:1px solid rgb(148 163 184/.25);background:rgb(255 255 255/.05);font-size:16px;font-weight:600;color:#cfe0f7}',
     '.bsf-recap-h{font-size:44px;font-weight:800;letter-spacing:-.02em}',
     '.bsf-recap{display:flex;align-items:center;gap:20px;font-size:26px;font-weight:600}',

@@ -70,6 +70,7 @@ const groupe = (await alex.api('POST', '/api/chat/groupes', { name: 'Équipe com
 const sarah = await connecte('sarah@blackstart.fr');
 const direct = (await sarah.api('POST', '/api/chat/directs', { userId: ids.alex })).conversation;
 const lucas = await connecte('lucas@blackstart.fr');
+const envoyes = [];
 for (const [qui, conv, txt] of [
   [sarah, direct.id, 'Salut Alex ! Le cabinet Lumière a validé le devis ce matin 🎉'],
   [alex, direct.id, 'Top ! Tu peux préparer la facture d’acompte ?'],
@@ -77,7 +78,12 @@ for (const [qui, conv, txt] of [
   [lucas, groupe.id, 'J’ai 3 RDV posés cette semaine sur Villeurbanne 💪'],
   [sarah, groupe.id, 'Bravo Lucas ! Pensez à mettre vos relances dans l’agenda.'],
   [alex, groupe.id, 'Objectif de la semaine : 40 appels chacun. On y va !'],
-]) { await qui.api('POST', `/api/chat/conversations/${conv}/messages`, { body: txt }); await sleep(30); }
+]) { const r = await qui.api('POST', `/api/chat/conversations/${conv}/messages`, { body: txt }); envoyes.push([conv, r.message && r.message.id]); await sleep(30); }
+// Quelques réactions (emoji) sur les messages.
+for (const [qui, n, emoji] of [[alex, 0, '🎉'], [lucas, 3, '🔥'], [alex, 3, '👏'], [sarah, 5, '💪']]) {
+  const [conv, mid] = envoyes[n];
+  if (mid) await qui.api('POST', `/api/chat/conversations/${conv}/messages/${mid}/reactions`, { emoji });
+}
 // Fichiers bruts envoyés depuis la page (pièce jointe, enregistrements d'appels).
 const brut = (s, path, fichier, type) => s.p.evaluate(async ([path, b64, type, H]) => {
   const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -126,6 +132,20 @@ const union = (...fs) => async (p) => {
   return [x, y, Math.max(...bs.map((b) => b[0] + b[2])) - x, Math.max(...bs.map((b) => b[1] + b[3])) - y];
 };
 const cliquer = async (p, s, attente = 900) => { await p.locator(s).first().click(); await sleep(attente); };
+// Bloc visible qui contient un texte : le plus petit élément qui le contient, élargi jusqu'à la taille minimale.
+const bloc = (t, mw = 160, mh = 60) => async (p) => p.evaluate(([t, mw, mh]) => {
+  const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && getComputedStyle(e).visibility !== 'hidden'; };
+  const els = [...document.querySelectorAll('main *, .main *, #root *, body *')].filter((e) => e.childElementCount < 40 && (e.textContent || '').includes(t) && vis(e));
+  let e = els.filter((x) => ![...x.children].some((c) => (c.textContent || '').includes(t)))[0];
+  while (e && e.parentElement) { const r = e.getBoundingClientRect(); if (r.width >= mw && r.height >= mh) break; e = e.parentElement; }
+  if (!e) return null;
+  const r = e.getBoundingClientRect();
+  return [r.x, r.y, r.width, r.height];
+}, [t, mw, mh]);
+const bouton = (t) => bloc(t, 30, 20);
+// « Aujourd'hui » : la vue CEO occupe le haut de la page, la file d'appels est en dessous.
+const auFile = async (p) => { await p.evaluate(() => document.querySelector('.session-cta')?.scrollIntoView({ block: 'start' })); await p.evaluate(() => scrollBy(0, -120)); await sleep(700); };
+const defiler = async (p, t, bloc = 'center') => { await p.evaluate(([t, b]) => { const e = [...document.querySelectorAll('h1,h2,h3,h4,button,span,div,p')].find((x) => x.childElementCount < 3 && (x.textContent || '').trim().startsWith(t)); e?.scrollIntoView({ block: b }); }, [t, bloc]); await sleep(700); };
 const entreprises = (n) => Array.from({ length: n }, (_, i) => {
   const noms = ['PLOMBERIE DES TERREAUX', 'SAS AQUA CONFORT', 'CHAUFFAGE ET SANITAIRE LYONNAIS', 'MARTIN PLOMBERIE', 'HYDRO SERVICES 69', 'ATELIER DU CUIVRE',
     'LYON DEPANNAGE PLOMBERIE', 'SARL BERTHIER FRERES', 'CROIX-ROUSSE SANITAIRE', 'EAU & CO', 'PLOMBERIE GERLAND', 'RHONE THERMIQUE'];
@@ -143,6 +163,44 @@ const entreprises = (n) => Array.from({ length: n }, (_, i) => {
 // ------------------------------------------------------------------ les écrans
 // act : prépare l'écran ; z : zones nommées (sélecteur ou fonction → [x, y, largeur, hauteur]).
 const ECRANS = [
+  // Vue d'ensemble CEO (haut de « Aujourd'hui » pour les administrateurs)
+  { id: 'ceo', act: (p) => aller(p, 'today', 2500), z: {
+    hero: bloc('Bonjour Alex', 700, 300), kpi: bloc('Équipe active', 600, 100), assistant: bloc('Voir le rapport détaillé', 300, 250),
+    perf: bloc('Performance des équipes', 300, 250), formations: bloc('Répartition des formations', 300, 250), activite: bloc('Activité récente', 300, 250) } },
+  // Simulations IA
+  { id: 'simulations', act: (p) => aller(p, 'entrainement', 2000), z: {
+    scenarios: bloc('Scénarios', 240, 500), recommande: bloc('Recommandé', 220, 100), fiche: bloc('Objectif', 450, 300), objections: bloc('Objections à prévoir', 400, 150),
+    profil: bloc('Profil du prospect', 280, 220), analyse: bloc('Analyse de performance', 280, 110), filtres: bloc('Découverte', 240, 100) } },
+  { id: 'simulation-appel', act: async (p) => { await aller(p, 'entrainement', 2000); await cliquer(p, 'button:has-text("Démarrer l’appel")', 2500);
+    await p.evaluate(() => document.querySelector('[aria-label="Raccrocher"]')?.scrollIntoView({ block: 'center' })); await sleep(700); }, z: {
+    appel: bloc('Répondre à la voix', 560, 250), raccrocher: sel('[aria-label="Raccrocher"]'), notes: bloc('Notes', 560, 150) } },
+  // Calendrier
+  { id: 'calendrier', act: (p) => aller(p, 'agenda', 2000), z: {
+    vues: bloc('Semaine', 240, 40), semaine: bloc('Journée', 700, 400), mini: bloc('Octobre 2026', 280, 250), prochains: bloc('Prochains rendez-vous', 280, 200),
+    stats: bloc('Statistiques rapides', 280, 180) } },
+  { id: 'calendrier-mois', act: async (p) => { await aller(p, 'agenda', 2000); await cliquer(p, 'button:has-text("Mois")', 1200); }, z: { mois: bloc('Lun', 700, 400), vues: bloc('Semaine', 240, 40) } },
+  // Téléphone et mail
+  { id: 'telephone', act: (p) => aller(p, 'telephone', 1500), z: { ringover: bloc('Ringover dans le CRM', 700, 200), activer: bouton('Activer Ringover') } },
+  { id: 'mail-boites', act: async (p) => { await aller(p, 'mail', 1500); await cliquer(p, 'button:has-text("Mes boîtes")', 1000); }, z: {
+    onglets: bloc('Nouveau mail', 250, 30), fournisseurs: bloc('Connecter une boîte mail', 700, 300), gmail: bloc('Gmail', 80, 60) } },
+  { id: 'mail-ecrire', act: async (p) => { await aller(p, 'mail', 1500); await cliquer(p, 'button:has-text("Nouveau mail")', 1000); }, z: { onglets: bloc('Nouveau mail', 250, 30) } },
+  // Marketing
+  { id: 'campagnes', act: (p) => aller(p, 'campagnes', 1500), z: { jour: bloc('À envoyer aujourd', 700, 100), premiere: bloc('Votre première campagne', 700, 120), nouvelle: bouton('Nouvelle campagne') } },
+  { id: 'campagne-edition', act: async (p) => { await aller(p, 'campagnes', 1500); await cliquer(p, 'button:has-text("Créer ma première campagne")', 1500); }, z: { editeur: bloc('Qui reçoit les mails', 800, 200), mails: bloc('Jusqu’à 4 mails', 800, 120) } },
+  { id: 'modeles-messages', act: (p) => aller(p, 'modeles', 1500), z: { canaux: bloc('WhatsApp (', 450, 30), modele: bloc('Premier mail de prospection', 700, 100), utiliser: bouton('Utiliser'), nouveau: bouton('Nouveau modèle') } },
+  { id: 'contenu', act: (p) => aller(p, 'contenu', 1500), z: { kpi: bloc('Prévues ce mois', 860, 80), calendrier: sel('.bsct-cal'), reseaux: sel('.bsct-nav'), nouvelle: bouton('Nouvelle publication'), idees: bouton('Banque d’idées') } },
+  { id: 'sources', act: (p) => aller(p, 'sources', 1500), z: { kpi: bloc('Nouveaux prospects', 860, 80), meilleure: bloc('Meilleure source', 700, 30), table: bloc('Par source', 860, 300) } },
+  // Automatisation
+  { id: 'assistants', act: (p) => aller(p, 'assistants', 1500), z: { alex: bloc('Coach au quotidien', 300, 300), ceo: bloc('Bras droit du dirigeant', 300, 250), panneau: bloc('Votre assistant intelligent', 400, 400), competences: bloc('Planifier ma journée', 200, 30) } },
+  { id: 'automatisations', act: (p) => aller(p, 'automatisations', 1500), z: { kpi: bloc('règles actives', 860, 80), regle: bloc('Nouveau lead', 700, 100), historique: bloc('Historique', 300, 250), interrupteur: sel('input[type=checkbox] >> nth=0') } },
+  // Analyse
+  { id: 'rapports', act: (p) => aller(p, 'reports', 3500), z: {
+    kpi: bloc('Prospects contactés', 600, 100), perf: bloc('Performance commerciale', 450, 250), ca: bloc('Évolution du chiffre', 250, 250), presenter: bouton('Présenter'), exporter: bouton('Exporter le rapport'), periode: bouton('mai 2026') } },
+  { id: 'rapports-presentation', act: async (p) => { await aller(p, 'reports', 3500); await cliquer(p, 'button:has-text("Présenter")', 3000); }, z: { diapo: bloc('Prospects contactés', 600, 300) } },
+  { id: 'marche', act: (p) => aller(p, 'marche', 1500), z: { onglets: bloc('Nouvelles entreprises', 300, 30), zone: bloc('Votre marché', 700, 160), analyser: bouton('Analyser le marché') } },
+  { id: 'linkedin', act: async (p) => { await aller(p, 'leads', 1500); await cliquer(p, 'button:has-text("LinkedIn")', 1500); }, z: { onglets: bloc('Entreprises (Sirene)', 200, 30) } },
+  // Paiements en ligne
+  { id: 'paiement-en-ligne', act: (p) => aller(p, 'payments', 1500), z: { kpi: bloc('À encaisser', 860, 80), factures: bloc('Factures à encaisser', 400, 100), enligne: bloc('Paiement en ligne', 340, 400), stripe: bloc('Connecter Stripe', 200, 30) } },
   // 1. Prise en main
   { id: 'connexion', sans: true, hash: 'connexion', z: { formulaire: sel('form'), email: sel('input[name=email]') } },
   { id: 'accueil', act: (p) => aller(p, 'today'), z: {
@@ -153,16 +211,16 @@ const ECRANS = [
   { id: 'creer', act: async (p) => { await aller(p, 'today'); await cliquer(p, 'button.btn-primary:has-text("Créer")', 600); },
     z: { creer: texte('button.btn-primary', 'Créer'), menu: union(sel('.menu-item >> nth=0'), sel('.menu-item >> nth=5')) } },
   { id: 'moi', act: async (p) => { await aller(p, 'today'); await cliquer(p, '.bs-moi', 700); }, z: { moi: sel('.bs-moi'), menu: sel('.bs-moi-menu') } },
-  { id: 'mobile', mobile: true, act: (p) => aller(p, 'today'), z: { barre: sel('.bottom-nav'), session: sel('.session-cta') } },
+  { id: 'mobile', qui: 'sarah', mobile: true, act: (p) => aller(p, 'today'), z: { barre: sel('.bottom-nav'), session: sel('[data-act="session"]') } },
 
   // 2. Aujourd'hui et appels
-  { id: 'aujourdhui', act: (p) => aller(p, 'today'), z: {
-    session: sel('.session-cta'), file: union(sel('.queue-item >> nth=0'), sel('.queue-item >> nth=6')), premier: sel('.queue-item >> nth=0'),
-    appeler: sel('.call-btn >> nth=0'), taches: texte('.card', 'Tâches du jour'), relances: texte('.card', 'Prochaines relances'), objectifs: sel('.hero-stats, .today-hero') } },
-  { id: 'appel', act: async (p) => { await aller(p, 'today'); await cliquer(p, '.session-cta', 1300); }, z: {
+  { id: 'aujourdhui', qui: 'sarah', act: (p) => aller(p, 'today', 2500), z: {
+    kpi: bloc('Nouveaux prospects', 600, 100), prospects: bloc('Mes prospects', 600, 300), session: sel('[data-act="session"]'), ajouter: bouton('Ajouter des prospects'),
+    onglets: bloc('À contacter', 400, 30), premier: bloc('Plomberie Martin & Fils', 600, 30), assistant: bloc('Votre assistant intelligent', 280, 300) } },
+  { id: 'appel', qui: 'sarah', act: async (p) => { await aller(p, 'today', 2500); await cliquer(p, '[data-act="session"]', 1500); }, z: {
     composer: texte('a.btn', 'Composer'), script: union(sel('.script-head >> nth=0'), sel('.script-head >> nth=5')), notes: sel('textarea'),
     terminer: texte('button', 'Terminer l'), passer: texte('button', 'Passer') } },
-  { id: 'resultat', act: async (p) => { await aller(p, 'today'); await cliquer(p, '.session-cta', 1300); await p.locator('textarea').first().fill('Intéressée par un audit, rappeler jeudi pour fixer le RDV.'); await cliquer(p, 'button:has-text("Terminer l")', 1100); },
+  { id: 'resultat', qui: 'sarah', act: async (p) => { await aller(p, 'today', 2500); await cliquer(p, '[data-act="session"]', 1500); await p.locator('textarea').first().fill('Intéressée par un audit, rappeler jeudi pour fixer le RDV.'); await cliquer(p, 'button:has-text("Terminer l")', 1100); },
     z: { fenetre: sel('.modal, [role=dialog]'), choix: sel('.modal .outcome, .modal .grid, [role=dialog] .grid') } },
 
   // 3. Prospects
@@ -200,9 +258,6 @@ const ECRANS = [
 
   // 5. Pipeline, agenda, tâches
   { id: 'pipeline', act: (p) => aller(p, 'pipeline'), z: { colonnes: sel('.kanban'), carte: sel('.kb-card'), colonne2: sel('.kb-col >> nth=1') } },
-  { id: 'agenda', act: (p) => aller(p, 'agenda'), z: { relances: texte('.card', 'relances'), semaine: sel('.cal, .calendar, .week'), vues: union(texte('.seg', 'Jour'), texte('.seg', 'Mois')), planifier: texte('button', 'Planifier') } },
-  { id: 'agenda-mois', act: async (p) => { await aller(p, 'agenda'); await cliquer(p, '.seg:has-text("Mois")', 900); }, z: { mois: sel('.cal, .calendar, .month') } },
-  { id: 'planifier', act: async (p) => { await aller(p, 'agenda'); await cliquer(p, 'button:has-text("Planifier")', 900); }, z: { fenetre: sel('.modal, [role=dialog]') } },
   { id: 'taches', act: (p) => aller(p, 'tasks'), z: { retard: texte('.card', 'En retard'), jour: texte('.card', 'Aujourd'), nouvelle: texte('button', 'Nouvelle tâche') } },
 
   // 6. Devis, factures, paiements
@@ -214,7 +269,6 @@ const ECRANS = [
   // 7. Clients, tableau de bord, rapports
   { id: 'clients', act: (p) => aller(p, 'clients'), z: { kpi: sel('.kpis'), mrr: texte('.card', 'MRR par secteur'), top: texte('.card', 'Top clients'), portefeuille: texte('.card', 'Portefeuille') } },
   { id: 'tableau', act: (p) => aller(p, 'dashboard', 1800), z: { kpi: sel('.kpis'), objectifs: texte('.card', 'Objectifs'), entonnoir: texte('.card', 'Entonnoir'), appels: texte('.card', 'Appels par jour') } },
-  { id: 'rapports', act: (p) => aller(p, 'reports', 1800), z: { kpi: sel('.kpis'), niche: sel('.bsn-root'), exporter: texte('button', 'Exporter CSV'), presenter: texte('button', 'Présenter') } },
 
   // 8. Carte clients
   { id: 'carte', act: (p) => aller(p, 'carte', 3500), z: { carte: sel('.bsc-canvas'), vues: sel('.bsc-tools, .bsc-vues'), villes: texte('.card', 'Top villes'), kpi: sel('.bsc-kpi'), filtres: union(texte('button', 'Tous'), texte('button', 'Prospects')) } },
@@ -222,7 +276,8 @@ const ECRANS = [
 
   // 9. Messagerie
   { id: 'messages', act: async (p) => { await aller(p, 'messages', 1500); await cliquer(p, '.bsm-conv:has-text("Sarah"), [data-conv]:has-text("Sarah"), button:has-text("Sarah Benali")', 1200); },
-    z: { liste: sel('aside.bsm-side'), fil: sel('.bsm-scroll'), saisie: sel('form.bsm-compose'), visio: sel('.bsm-visio'), joindre: sel('.bsm-compose .bsm-outil >> nth=0'), emoji: sel('.bsm-compose .bsm-outil >> nth=-1') } },
+    z: { liste: sel('aside.bsm-side'), fil: sel('.bsm-scroll'), saisie: sel('form.bsm-compose'), visio: sel('.bsm-visio'), joindre: sel('.bsm-compose .bsm-outil >> nth=0'), emoji: sel('.bsm-compose .bsm-outil >> nth=-1'),
+    details: bloc('Prospect lié', 340, 420), onglets: bloc('Événements', 400, 30) } },
   { id: 'piece-jointe', act: async (p) => { await aller(p, 'messages', 1500); await cliquer(p, '.bsm-conv:has-text("Sarah")', 1500); },
     z: { image: sel('.bsm-img >> nth=-1'), fil: sel('.bsm-scroll') } },
   { id: 'visionneuse', act: async (p) => { await aller(p, 'messages', 1500); await cliquer(p, '.bsm-conv:has-text("Sarah")', 1500); await cliquer(p, '.bsm-img >> nth=-1', 1300); },
@@ -267,7 +322,7 @@ for (const e of ECRANS.filter((x) => !only.length || only.includes(x.id))) {
   for (const [scheme, suffixe] of [['dark', 'sombre'], ['light', 'clair']]) {
     let p;
     try {
-      p = await ouvrir({ scheme, mobile: e.mobile, hash: e.sans ? e.hash : '', state: e.sans ? null : alex.state });
+      p = await ouvrir({ scheme, mobile: e.mobile, hash: e.sans ? e.hash : '', state: e.sans ? null : (e.qui === 'sarah' ? sarah.state : alex.state) });
       if (e.act) await e.act(p);
       if (process.env.SONDE && scheme === 'dark') console.log(e.id, await p.evaluate(() => [...new Set([...document.querySelectorAll('body *')].filter((x) => { const r = x.getBoundingClientRect(); return r.width > 30 && r.height > 14 && r.top < innerHeight && r.left < innerWidth && x.className && typeof x.className === 'string'; }).map((x) => x.tagName.toLowerCase() + '.' + x.className.trim().split(/\s+/).join('.')))].join(' ')));
       await p.mouse.move(-10, -10);

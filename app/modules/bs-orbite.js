@@ -114,7 +114,8 @@
     window.dispatchEvent(new Event('bs:orbite'));
   }
   // Vagues de particules (canevas 2D, sans moteur 3D) : deux rubans violet → bleu → cyan qui se croisent en bas,
-  // un troisième en haut à droite et une poussière d'étoiles, qui ondulent et glissent lentement. 30 images/s au plus.
+  // un troisième en haut à droite, une poussière d'étoiles et des points lumineux qui flottent au milieu, qui ondulent
+  // et glissent lentement. 30 images/s au plus.
   function vague(id) {
     boite = document.createElement('div'); boite.id = 'bs-orbite-fond'; boite.className = 'vague'; boite.setAttribute('aria-hidden', 'true'); boite.setAttribute('data-fige', String(figer()));
     var cv = document.createElement('canvas'); boite.appendChild(cv);
@@ -131,10 +132,10 @@
     }
     // Rubans : position verticale (part de la hauteur), amplitude, longueur d'onde, début et fin en largeur, épaisseur.
     var RUBANS = [
-      { y: 0.8, amp: 0.07, onde: 1.15, x0: -0.05, x1: 1.05, ep: 0.05, phase: 0, n: 2300 },
-      { y: 0.8, amp: 0.07, onde: 1.15, x0: -0.05, x1: 1.05, ep: 0.045, phase: 2.2, n: 2000 },
-      { y: 0.09, amp: 0.045, onde: 0.9, x0: 0.3, x1: 1.05, ep: 0.035, phase: 1, n: 1800, monte: 0.07 },
-      { y: 0.98, amp: 0.05, onde: 1.4, x0: -0.05, x1: 1.05, ep: 0.04, phase: 4, n: 2400, monte: 0.8 },
+      { y: 0.8, amp: 0.07, onde: 1.15, x0: -0.05, x1: 1.05, ep: 0.05, phase: 0, n: 3600 },
+      { y: 0.8, amp: 0.07, onde: 1.15, x0: -0.05, x1: 1.05, ep: 0.045, phase: 2.2, n: 3200 },
+      { y: 0.09, amp: 0.045, onde: 0.9, x0: 0.3, x1: 1.05, ep: 0.035, phase: 1, n: 2900, monte: 0.07 },
+      { y: 0.98, amp: 0.05, onde: 1.4, x0: -0.05, x1: 1.05, ep: 0.04, phase: 4, n: 3800, monte: 0.8 },
     ];
     var points = [];
     RUBANS.forEach(function (r, i) {
@@ -144,7 +145,13 @@
       }
     });
     var etoiles = [];
-    for (var e = 0; e < 240; e++) etoiles.push({ x: hasard(), y: hasard(), sc: hasard() * 6.28, a: 0.15 + hasard() * 0.35 });
+    for (var e = 0; e < 520; e++) etoiles.push({ x: hasard(), y: hasard(), sc: hasard() * 6.28, a: 0.15 + hasard() * 0.4, t: hasard() < 0.12 ? 2 : 1 });
+    // Poussière lumineuse qui flotte au milieu de l'écran, entre les rubans : de petits points qui montent lentement en dérivant.
+    var poussiere = [];
+    for (var d = 0; d < 320; d++) {
+      var ud = hasard();
+      poussiere.push({ x: hasard(), y: hasard(), v: 0.004 + hasard() * 0.01, sc: hasard() * 6.28, c: couleur(ud), t: hasard() < 0.25 ? 2.6 : 1.6 });
+    }
     var W = 0, Hh = 0;
     function taille() {
       var dpr = Math.min(window.devicePixelRatio || 1, [1.5, 1, 0.75][niveau] || 1);
@@ -160,9 +167,17 @@
       for (var i = 0; i < etoiles.length; i++) {
         var s = etoiles[i];
         ctx.globalAlpha = s.a * (0.55 + 0.45 * Math.sin(t * 0.6 + s.sc));
-        ctx.fillRect(s.x * W, s.y * Hh, 1, 1);
+        ctx.fillRect(s.x * W, s.y * Hh, s.t, s.t);
       }
       ctx.globalCompositeOperation = 'lighter';
+      for (var m = 0; m < poussiere.length; m++) {
+        var q = poussiere[m];
+        var qy = (((q.y - t * q.v) % 1) + 1) % 1, qx = q.x + 0.012 * Math.sin(t * 0.3 + q.sc);
+        ctx.globalAlpha = 0.35 + 0.4 * Math.sin(t * 0.7 + q.sc) * Math.sin(t * 0.7 + q.sc);
+        ctx.fillStyle = q.c;
+        ctx.fillRect(qx * W, qy * Hh, q.t, q.t);
+        if (q.t > 2) { ctx.globalAlpha *= 0.25; ctx.fillRect(qx * W - 2, qy * Hh - 2, q.t + 4, q.t + 4); }
+      }
       for (var j = 0; j < points.length; j++) {
         var p = points[j], r = RUBANS[p.r];
         // Les points glissent lentement le long du ruban ; la vague ondule plus lentement encore.

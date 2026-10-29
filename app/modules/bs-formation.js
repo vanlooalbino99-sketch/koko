@@ -39,7 +39,9 @@
   // Voix off neuronale pré-enregistrée (fichiers voix/<empreinte>.mp3, durées dans window.BS_VOIX) ; sinon la
   // synthèse vocale du navigateur prend le relais. L'empreinte (FNV-1a 32 bits) est la même côté générateur.
   function hashCap(s) { var h = 0x811c9dc5; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
-  function voixMs(c) { var v = window.BS_VOIX; return v && v[hashCap(c)] || 0; }
+  // Voix ElevenLabs gardée par le serveur (window.BS_VOIX_11 = { empreinte: [durée ms, fichier] }) en priorité.
+  function voix11(c) { var v = SERVER && window.BS_VOIX_11; return v && v[hashCap(c)] || null; }
+  function voixMs(c) { var e = voix11(c); if (e) return e[0]; var v = window.BS_VOIX; return v && v[hashCap(c)] || 0; }
   function capDur(c) { var v = voixMs(c); return v ? Math.max(2200, v + 650) : Math.max(2600, c.length * 62 + 900); }
 
   // ================================================================== moteur de scène
@@ -1225,8 +1227,9 @@
     }
     function speak(text) {
       stopVoice();
-      if (AUDIO_OK && voixMs(text)) {
-        var a = audio = new Audio('voix/' + hashCap(text) + '.mp3');
+      var e11 = voix11(text);
+      if (e11 || (AUDIO_OK && voixMs(text))) {
+        var a = audio = new Audio(e11 ? '/api/formation/voix/' + e11[1] + '.mp3' : 'voix/' + hashCap(text) + '.mp3');
         a.playbackRate = prefs.vit; a.preservesPitch = true;
         speaking = true; spoken = text; Musique.duck(true);
         a.onended = function () { if (audio === a) { speaking = false; Musique.duck(false); } };
@@ -1329,7 +1332,7 @@
           var v = seen.indexOf(mm.f) >= 0;
           return '<button type="button" class="bsf-item' + (i === ui.idx ? ' active' : '') + (v ? ' done' : '') + '" data-mod="' + i + '"><span class="bsf-inum">' + (v ? ic('check', 15) : i + 1) + '</span>' +
             '<span class="bsf-itxt"><span class="bsf-it">' + esc(mm.t) + '</span><span class="bsf-is">' + esc(mm.s) + (quiz[mm.f] != null ? ' · quiz ' + quiz[mm.f] + '/3' : '') + '</span></span>' + (i === ui.idx ? ic('play', 15) : '') + '</button>';
-        }).join('') + '</div></div>') + teamHtml();
+        }).join('') + '</div></div>') + teamHtml() + voixHtml();
       if (T) filtrer();
       precharger(m);
       var screen = root.querySelector('.bsf-screen');
@@ -1376,6 +1379,66 @@
       if (resizeObs) resizeObs.disconnect();
       if (window.ResizeObserver) { resizeObs = new ResizeObserver(apply); resizeObs.observe(screen); }
       else window.addEventListener('resize', apply);
+    }
+    // ---------------- voix off ElevenLabs (administrateurs) : clé, choix de la voix, crédits, génération
+    var vx = { etat: null, liste: null, auto: false, poll: 0, msg: '' };
+    function phrases() {
+      var vu = {}, out = [];
+      MODULES.forEach(function (m) { m.scenes.forEach(function (sc) { sc.captions.forEach(function (c) { var h = hashCap(c); if (!vu[h]) { vu[h] = 1; out.push({ h: h, t: c }); } }); }); });
+      return out;
+    }
+    function voixHtml() {
+      var e = vx.etat;
+      if (!SERVER || !e || !e.admin) return '';
+      var tot = phrases().length, n = Math.min(tot, e.generees || 0), tr = e.travail || {};
+      var body;
+      if (!e.cle) {
+        body = '<p class="bsf-vx-p">Collez votre clé ElevenLabs (elevenlabs.io › Developers › API Keys) : chaque phrase de la formation est lue une fois par une voix réaliste, puis gardée par le serveur pour toute l’équipe.</p>' +
+          '<div class="bsf-vx-row"><input type="password" class="input" data-vx="cle" placeholder="Clé ElevenLabs" autocomplete="off" aria-label="Clé ElevenLabs"><button type="button" class="btn btn-primary btn-sm" data-act="vx-cle">Brancher</button></div>';
+      } else {
+        var cr = e.credits, opts = (vx.liste || []).map(function (v) {
+          return '<option value="' + esc(v.id) + '"' + (e.voix && e.voix.voix === v.id ? ' selected' : '') + '>' + esc(v.nom) + (v.langue || v.accent ? ' · ' + esc(v.langue || v.accent) : '') + (v.genre ? ' · ' + esc(v.genre) : '') + '</option>';
+        }).join('');
+        body = '<div class="bsf-vx-row"><label class="bsf-vx-l">Voix</label><select class="input" data-vx="voix" aria-label="Voix de la formation">' + (opts || '<option>' + esc(e.voix && e.voix.nom || 'Chargement…') + '</option>') + '</select>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-act="vx-ecouter">' + ic('play', 14) + ' Écouter</button></div>' +
+          '<div class="bsf-vx-prog"><span><b>' + n + ' / ' + tot + '</b> phrases lues par ElevenLabs' + (tr.reste ? ' · ' + tr.reste + ' en cours…' : '') + '</span><span class="bsf-pbar"><i style="width:' + Math.round(n / Math.max(1, tot) * 100) + '%"></i></span></div>' +
+          (cr ? '<p class="bsf-vx-p">Crédits du mois : ' + Number(cr.utilises).toLocaleString('fr-FR') + ' / ' + Number(cr.limite).toLocaleString('fr-FR') + ' (plan ' + esc(cr.plan || '?') + ')' + (cr.renouvellement ? ', renouvelés le ' + new Date(cr.renouvellement * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '') + '. Modèle ' + esc(e.modele) + '.</p>' : e.creditsErreur ? '<p class="bsf-vx-p err">' + esc(e.creditsErreur) + '</p>' : '') +
+          (tr.erreur ? '<p class="bsf-vx-p err">' + esc(tr.erreur) + '</p>' : '') +
+          '<div class="bsf-vx-row">' + (n < tot && !tr.reste ? '<button type="button" class="btn btn-primary btn-sm" data-act="vx-generer">' + ic('mic', 14) + (tr.erreur ? ' Reprendre' : ' Générer les voix manquantes') + '</button>' : '') +
+          (e.source === 'crm' ? '<button type="button" class="btn btn-ghost btn-sm" data-act="vx-retirer">Retirer la clé</button>' : '') + '</div>';
+      }
+      return '<section class="card bsf-vx-card"><header class="card-head"><div class="card-title-wrap"><span class="card-icon">' + ic('mic', 16) + '</span><div><h3 class="card-title">Voix off ElevenLabs</h3><p class="card-sub">Une voix réaliste pour toute la formation (visible par les administrateurs).</p></div></div></header>' +
+        body + (vx.msg ? '<p class="bsf-vx-p">' + esc(vx.msg) + '</p>' : '') + '</section>';
+    }
+    function majVoix() {
+      var old = root.querySelector('.bsf-vx-card'), html = voixHtml();
+      if (old) { var tmp = document.createElement('div'); tmp.innerHTML = html; if (tmp.firstChild) old.replaceWith(tmp.firstChild); else old.remove(); }
+      else if (html) root.insertAdjacentHTML('beforeend', html);
+    }
+    function lireIndex() { return api('GET', '/api/formation/voix/index').then(function (b) { window.BS_VOIX_11 = b.voix || {}; }); }
+    function etatVoix() {
+      if (!SERVER) return;
+      api('GET', '/api/formation/voix/etat').then(function (e) {
+        var avant = vx.etat && vx.etat.generees;
+        vx.etat = e;
+        if (!root.isConnected) return;
+        if (e.admin && e.cle && !vx.liste) api('GET', '/api/formation/voix/voix').then(function (b) { vx.liste = b.voix; majVoix(); }).catch(function () {});
+        // Les voix manquantes partent toutes seules à la génération, une fois par visite.
+        if (e.admin && e.cle && !vx.auto && !e.travail.erreur && e.generees < phrases().length) { vx.auto = true; generer(false); }
+        if (avant != null && e.generees !== avant) lireIndex().catch(function () {});
+        clearTimeout(vx.poll);
+        if (e.travail && e.travail.reste) vx.poll = setTimeout(etatVoix, 4000);
+        majVoix();
+      }).catch(function () {});
+    }
+    function generer(reprendre) {
+      api('POST', '/api/formation/voix/generer', { phrases: phrases(), reprendre: !!reprendre }).then(function () { vx.msg = ''; setTimeout(etatVoix, 1200); })
+        .catch(function () { vx.msg = 'La génération n’a pas pu démarrer.'; majVoix(); });
+    }
+    function apiErr(method, path, body) {
+      var h = { 'X-Requested-With': 'blackstart', 'Content-Type': 'application/json' };
+      return fetch(path, { method: method, credentials: 'same-origin', headers: h, body: body ? JSON.stringify(body) : undefined })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { if (!r.ok) throw new Error(b.error || 'HTTP ' + r.status); return b; }); });
     }
     function teamHtml() {
       if (!SERVER || !team) return '';
@@ -1463,6 +1526,21 @@
       else if (act === 'close') { closeOver(); render(); }
       else if (act === 'cert') { ui.cert = true; ui.quiz = null; showCert(); }
       else if (act === 'print') printCert();
+      else if (act === 'vx-cle') {
+        var inp = root.querySelector('[data-vx="cle"]'); vx.msg = 'Vérification de la clé…'; majVoix();
+        apiErr('PUT', '/api/formation/voix/cle', { cle: inp ? inp.value : '' }).then(function () { vx.msg = ''; vx.liste = null; vx.auto = false; etatVoix(); })
+          .catch(function (er) { vx.msg = er.message; majVoix(); });
+      }
+      else if (act === 'vx-retirer') { apiErr('DELETE', '/api/formation/voix/cle').then(function () { vx.liste = null; etatVoix(); }).catch(function () {}); }
+      else if (act === 'vx-generer') generer(true);
+      else if (act === 'vx-ecouter') {
+        var sel = root.querySelector('[data-vx="voix"]'); if (!sel || !sel.value) return;
+        vx.msg = 'Lecture d’un court essai…'; majVoix();
+        fetch('/api/formation/voix/echantillon', { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'blackstart', 'Content-Type': 'application/json' }, body: JSON.stringify({ voix: sel.value }) })
+          .then(function (r) { if (!r.ok) return r.json().then(function (b) { throw new Error(b.error); }); return r.blob(); })
+          .then(function (b) { vx.msg = ''; majVoix(); new Audio(URL.createObjectURL(b)).play().catch(function () {}); })
+          .catch(function (er) { vx.msg = er.message || 'Essai impossible.'; majVoix(); });
+      }
     });
     // Barre de progression : clic ou glisser pour se déplacer.
     root.addEventListener('pointerdown', function (e) {
@@ -1473,6 +1551,13 @@
       bar.addEventListener('pointermove', mv); bar.addEventListener('pointerup', up);
     });
     root.addEventListener('input', function (e) { if (e.target.closest('.bsf-tsearch')) { ui.q = e.target.value; filtrer(); } });
+    // Nouvelle voix choisie : les phrases seront relues avec elle.
+    root.addEventListener('change', function (e) {
+      var sel = e.target.closest('[data-vx="voix"]'); if (!sel) return;
+      var v = (vx.liste || []).filter(function (x) { return x.id === sel.value; })[0];
+      apiErr('PUT', '/api/formation/voix/reglage', { voix: sel.value, nom: v ? v.nom : '' }).then(function () { window.BS_VOIX_11 = {}; vx.auto = false; etatVoix(); })
+        .catch(function (er) { vx.msg = er.message; majVoix(); });
+    });
     root.addEventListener('keydown', function (e) {
       if (!e.target.closest || !e.target.closest('.bsf-player') || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
       var k = e.key;
@@ -1489,6 +1574,8 @@
     mo.observe(document.body, { childList: true, subtree: true });
     render();
     loadServer(function () { if (root.isConnected && !(player && player.playing)) render(); });
+    // Voix ElevenLabs déjà lues : les durées des scènes suivent ces fichiers, donc on recompose le lecteur.
+    if (SERVER) lireIndex().then(function () { if (root.isConnected && !(player && player.playing) && Object.keys(window.BS_VOIX_11).length) render(); etatVoix(); }).catch(etatVoix);
   }
 
   var curPlayer = null;
@@ -1565,6 +1652,14 @@
     '.bsf-it{font-weight:650;font-size:.92em;line-height:1.3}',
     '.bsf-is{font-size:.78em;color:var(--text-3)}',
     '.bsf-team-card{margin-top:16px}',
+    '.bsf-vx-card{margin-top:16px;display:flex;flex-direction:column;gap:10px}',
+    '.bsf-vx-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:0 18px}',
+    '.bsf-vx-row .input{flex:1 1 220px;max-width:420px}',
+    '.bsf-vx-l{font-size:13px;color:var(--text-2);min-width:42px}',
+    '.bsf-vx-p{margin:0;padding:0 18px;font-size:13px;color:var(--text-2)}',
+    '.bsf-vx-p.err{color:#f87171}',
+    '.bsf-vx-prog{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:0 18px;font-size:13px}',
+    '.bsf-vx-card>:last-child{margin-bottom:16px}',
     '.bsf-tv{display:inline-flex;align-items:center;gap:3px;color:#10b981}',
     '.bsf-tv em{font-style:normal;font-size:11px;color:var(--text-3)}',
     '.bsf-tn{color:var(--text-3)}',

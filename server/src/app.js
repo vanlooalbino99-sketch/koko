@@ -12,6 +12,7 @@ import { usersRoutes } from './routes/users.js';
 import { dataRoutes } from './routes/data.js';
 import { ambianceStore, ambianceApi, ambianceFiles } from './routes/ambiance.js';
 import { formationRoutes } from './routes/formation.js';
+import { voixRoutes } from './routes/voix.js';
 import { siteRoutes } from './routes/site.js';
 import { chatRoutes, chatHub } from './routes/chat.js';
 import { photosRoutes } from './routes/photos.js';
@@ -33,7 +34,7 @@ const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).ver
 
 // Base : PostgreSQL (Supabase) si databaseUrl est donné, sinon SQLite dans dataDir.
 // Mots de passe : Supabase Auth si supabase = { url, serviceKey } est donné, sinon vérifiés par le serveur.
-export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {}, mail = {}, integrations = {}, ia = {}, paiements = {} } = {}) {
+export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {}, mail = {}, integrations = {}, ia = {}, paiements = {}, voix = {} } = {}) {
   const db = await openStore({ dataDir, databaseUrl });
   const identity = supabase ? supabaseIdentity(supabase) : localIdentity();
   const app = express();
@@ -75,6 +76,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.use('/api/ambiance', requireUser, express.json({ limit: '40mb' }), ambianceApi({ db, store }));
   app.use('/api/osm', requireAcces('leads'), express.json({ limit: '40kb' }), osmRoutes());
   app.use('/api/contacts', requireAcces('leads'), express.json({ limit: '40kb' }), contactsRoutes(contacts));
+  app.use('/api/formation/voix', requireAcces('formations'), voixRoutes({ db, dataDir, ...voix }));
   app.use('/api/formation', requireAcces('formations'), express.json({ limit: '10kb' }), formationRoutes({ db }));
   app.use('/api/chat', requireUser, express.json({ limit: '600kb' }), chatRoutes({ db, hub }));
   app.use('/api/photos', requireUser, express.json({ limit: '700kb' }), photosRoutes({ db, hub }));

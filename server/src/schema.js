@@ -213,6 +213,16 @@ export const SQLITE_MIGRATIONS = [
      created_at TEXT NOT NULL
    );
    CREATE INDEX ia_usage_date ON ia_usage(created_at);`,
+  // v14 : voix off ElevenLabs de la formation, une par phrase et par voix (cle = empreinte de la phrase + voix).
+  `CREATE TABLE formation_voix (
+     cle TEXT PRIMARY KEY,
+     hash TEXT NOT NULL,
+     voix TEXT NOT NULL,
+     ms INTEGER NOT NULL,
+     data BLOB NOT NULL,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX formation_voix_voix ON formation_voix(voix);`,
 ];
 
 // PostgreSQL : le même schéma que SQLite après toutes ses migrations, en une fois.
@@ -436,4 +446,15 @@ export const PG_MIGRATIONS = [
    CREATE INDEX ia_usage_date ON ia_usage(created_at);
    ALTER TABLE simulations ENABLE ROW LEVEL SECURITY;
    ALTER TABLE ia_usage ENABLE ROW LEVEL SECURITY;`,
+  // Comme la v14 de SQLite : voix off ElevenLabs de la formation.
+  `CREATE TABLE formation_voix (
+     cle TEXT PRIMARY KEY,
+     hash TEXT NOT NULL,
+     voix TEXT NOT NULL,
+     ms INTEGER NOT NULL,
+     data BYTEA NOT NULL,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX formation_voix_voix ON formation_voix(voix);
+   ALTER TABLE formation_voix ENABLE ROW LEVEL SECURITY;`,
 ];

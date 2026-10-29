@@ -193,7 +193,7 @@
         S.a(n.querySelector('text'), [{ strokeDashoffset: 700, fillOpacity: 0 }, { strokeDashoffset: 0, fillOpacity: 0, offset: .7 }, { strokeDashoffset: 0, fillOpacity: 1 }], 200, 1800, EASE_IO);
         var k = S.el('Formation Blackstart CRM', 'left:0;top:318px;width:1280px', 'bsf-kicker');
         S.fadeUp(k, 700, 700, 12);
-        var t = S.el(title.split(' ').map(function (w) { return '<span>' + esc(w) + '</span>'; }).join(' '), 'left:80px;top:350px;width:1120px', 'bsf-bigtitle');
+        var t = S.el(title.split(' ').map(function (w) { return '<span>' + esc(w) + '</span>'; }).join(' '), 'left:80px;top:350px;width:1120px' + (title.length > 32 ? ';font-size:' + Math.max(38, Math.round(56 * 32 / title.length)) + 'px' : ''), 'bsf-bigtitle');
         var dl = cascade(t.children.length, 90);
         Array.prototype.forEach.call(t.children, function (w, i) {
           S.a(w, [{ opacity: 0 }, { opacity: 1 }], 900 + dl[i], 260, 'linear');

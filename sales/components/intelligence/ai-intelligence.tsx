@@ -244,7 +244,10 @@ export function AiIntelligence({ intel, t, locale, voiceReady }: { intel: Intell
       <div className={cn(panel, 'grid gap-5')}>
         <div className="grid gap-6 md:grid-cols-[minmax(220px,0.62fr)_1.6fr] md:gap-8">
           <div className="grid justify-items-center content-center gap-1 py-2 text-center">
-            <div className="relative">
+            <div
+              className="relative"
+              data-tip={intel.score === null ? undefined : `${t.charts.scoreAvg}\n${intel.score} / 100\n${format((locale === 'fr' ? intel.calls < 2 : intel.calls === 1) ? t.charts.scoredCalls.one : t.charts.scoredCalls.other, { n: intel.calls })}`}
+            >
               {intel.score !== null && <ScoreRing score={intel.score} color={grade.color} />}
               <p className="absolute inset-0 grid place-items-center text-[24px] font-medium text-white tabular-nums">
                 <span>

@@ -25,7 +25,7 @@ export function ScoreDial({ score, size = 92 }: { score: number; size?: number }
 }
 
 // Courbe des derniers scores du vendeur (au moins deux), en blanc sur la carte violette.
-export function Sparkline({ values }: { values: number[] }) {
+export function Sparkline({ values, tips }: { values: number[]; tips?: string[] }) {
   if (values.length < 2) return null;
   const W = 110;
   const H = 46;
@@ -39,6 +39,12 @@ export function Sparkline({ values }: { values: number[] }) {
     <svg viewBox={`0 0 ${W} ${H}`} aria-hidden="true" className="h-auto w-full max-w-[120px] overflow-visible">
       <path d={d} fill="none" stroke="#fff" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" opacity="0.9" />
       <circle cx={x(values.length - 1)} cy={y(values.at(-1)!)} r="3" fill="#fff" />
+      {tips &&
+        values.map((v, i) => {
+          const left = i === 0 ? 0 : (x(i - 1) + x(i)) / 2;
+          const right = i === values.length - 1 ? W : (x(i) + x(i + 1)) / 2;
+          return <rect key={i} x={left} y={0} width={right - left} height={H} className="bs-tip-col" data-tip={tips[i]} />;
+        })}
     </svg>
   );
 }
@@ -63,9 +69,12 @@ export function TrendGlyph() {
 export function SkillRadarLight({
   axes,
   label,
+  tips,
 }: {
   axes: { label: string; score: number; average?: number }[];
   label: string;
+  // Une bulle par axe, sur le point du score.
+  tips?: string[];
 }) {
   const W = 460;
   const H = 340;
@@ -99,6 +108,11 @@ export function SkillRadarLight({
         const [x, y] = point(i, a.score);
         return <circle key={i} cx={x} cy={y} r="3.6" fill={PURPLE} />;
       })}
+      {tips &&
+        axes.map((a, i) => {
+          const [x, y] = point(i, a.score);
+          return <circle key={`t${i}`} cx={x} cy={y} r="12" fill="transparent" className="bs-tip-hit" data-tip={tips[i]} />;
+        })}
       {axes.map((a, i) => {
         const cos = Math.cos(angle(i));
         const sin = Math.sin(angle(i));
@@ -115,7 +129,15 @@ export function SkillRadarLight({
 }
 
 // Score des dernières sessions notées, la session affichée mise en avant.
-export function ScoreOverTime({ points, label }: { points: { label: string; score: number; current: boolean }[]; label: string }) {
+export function ScoreOverTime({
+  points,
+  label,
+  tips,
+}: {
+  points: { label: string; score: number; current: boolean }[];
+  label: string;
+  tips?: string[];
+}) {
   const W = 380;
   const H = 200;
   const pad = { l: 30, r: 26, t: 26, b: 26 };
@@ -158,6 +180,12 @@ export function ScoreOverTime({ points, label }: { points: { label: string; scor
           </text>
         </g>
       )}
+      {tips &&
+        points.map((p, i) => {
+          const left = i === 0 ? pad.l - 10 : (x(i - 1) + x(i)) / 2;
+          const right = i === points.length - 1 ? W - pad.r + 10 : (x(i) + x(i + 1)) / 2;
+          return <rect key={`t${i}`} x={left} y={pad.t - 8} width={right - left} height={H - pad.t - pad.b + 8} className="bs-tip-col bs-tip-col-light" data-tip={tips[i]} />;
+        })}
     </svg>
   );
 }
@@ -165,7 +193,18 @@ export function ScoreOverTime({ points, label }: { points: { label: string; scor
 export const TIER_COLORS = { excellent: '#3f5bd8', good: '#22a884', average: '#f5c591', poor: '#ef6f87' } as const;
 
 // Anneau de répartition des compétences par palier.
-export function TierDonut({ segments, total, caption }: { segments: { key: keyof typeof TIER_COLORS; count: number }[]; total: number; caption: string }) {
+export function TierDonut({
+  segments,
+  total,
+  caption,
+  labels,
+}: {
+  segments: { key: keyof typeof TIER_COLORS; count: number }[];
+  total: number;
+  caption: string;
+  // Nom de chaque palier dans sa bulle ; sans eux, pas de bulle.
+  labels?: Record<keyof typeof TIER_COLORS, string>;
+}) {
   const r = 52;
   const c = 2 * Math.PI * r;
   let offset = 0;
@@ -188,6 +227,8 @@ export function TierDonut({ segments, total, caption }: { segments: { key: keyof
               strokeDasharray={`${Math.max(0, len - 1.5)} ${c}`}
               strokeDashoffset={-offset}
               transform="rotate(-90 70 70)"
+              className={labels ? 'bs-tip-hit' : undefined}
+              data-tip={labels ? `${labels[s.key]}\n${s.count} · ${Math.round((s.count / total) * 100)} %` : undefined}
             />
           );
           offset += len;

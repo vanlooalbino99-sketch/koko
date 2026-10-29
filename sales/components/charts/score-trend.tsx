@@ -27,10 +27,13 @@ export function ScoreTrend({ points, label }: { points: { date: string; score: n
       <path d={area} fill="url(#trend-fill)" />
       <path d={line} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
       {points.map((p, i) => (
-        <circle key={i} cx={x(i)} cy={y(p.score)} r="3" fill="var(--background)" stroke="var(--primary)" strokeWidth="2">
-          <title>{`${p.date} : ${p.score}`}</title>
-        </circle>
+        <circle key={i} cx={x(i)} cy={y(p.score)} r="3" fill="var(--background)" stroke="var(--primary)" strokeWidth="2" />
       ))}
+      {points.map((p, i) => {
+        const left = i === 0 ? pad.l : (x(i - 1) + x(i)) / 2;
+        const right = i === points.length - 1 ? W - pad.r : (x(i) + x(i + 1)) / 2;
+        return <rect key={`t${i}`} x={left} y={pad.t} width={Math.max(0, right - left)} height={H - pad.t - pad.b} className="bs-tip-col" data-tip={`${p.date}\n${p.score} / 100`} />;
+      })}
       {last && (
         <text x={x(points.length - 1)} y={y(last.score) - 10} textAnchor="end" fontSize="12" fontWeight="600" fill="var(--foreground)">
           {last.score}

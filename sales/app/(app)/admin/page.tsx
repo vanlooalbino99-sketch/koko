@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { Change } from '@/components/cockpit/change';
-import { AreaWave, Bars, Bubbles, DotMatrix, DottedLine, FunnelFlow, Gauge, HEX_COLORS, HexHealth, PLAN_COLORS, PlanDonut, rolling, TrendLine } from '@/components/cockpit/charts';
+import { AreaWave, Bars, bucketRanges, Bubbles, DotMatrix, DottedLine, FunnelFlow, Gauge, HEX_COLORS, HexHealth, PLAN_COLORS, PlanDonut, rolling, TrendLine } from '@/components/cockpit/charts';
 import { GlassTorus } from '@/components/cockpit/glass-torus';
 import { InsightSpark } from '@/components/cockpit/insight-spark';
 import { card, CardTitle, KpiCard, LiveBadge, ViewAll } from '@/components/cockpit/panel';
@@ -12,6 +12,7 @@ import { platformReport } from '@/lib/billing/admin';
 import { recentQuoteRequests } from '@/lib/billing/quotes';
 import { cockpit, PERIODS, type Period, type RiskFactor } from '@/lib/billing/cockpit';
 import { billingProviderFromEnv } from '@/lib/billing/stripe';
+import { chartTips } from '@/lib/charts/tips';
 import { getDb } from '@/lib/server/db';
 import type { Family } from '@/lib/domain';
 import { format, timeAgo } from '@/lib/i18n';
@@ -78,6 +79,20 @@ export default async function AdminPage({ searchParams }: Props) {
   const showAll = params.accounts === 'all';
   const accounts = showAll ? c.accounts : c.accounts.slice(0, 8);
 
+  // Bulles des graphiques : la tranche de la période et sa valeur.
+  const tip = chartTips(t, locale);
+  const revenueTips = c.revenue
+    ? bucketRanges(c.revenue.byDay.length, 12).map(([from, to]) => {
+        const total = c.revenue!.byDay.slice(from, to + 1).reduce((x, y) => x + y, 0);
+        return `${tip.days(c.since, from, to)}\n${money(total, c.revenue!.currency)}`;
+      })
+    : undefined;
+  const funnelTips = funnelKeys.map(
+    (key, i) =>
+      `${a.funnelSteps[key]}\n${n(funnelValues[i])}${i > 0 && funnelValues[i - 1] ? `\n${format(t.charts.fromPrevious, { n: pct((funnelValues[i] / funnelValues[i - 1]) * 100) })}` : ''}`,
+  );
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
   return (
     <div className="grid gap-2.5">
       <h1 className="sr-only">{a.title}</h1>
@@ -98,15 +113,19 @@ export default async function AdminPage({ searchParams }: Props) {
           }
           bleed
         >
-          <ParticleWave values={c.revenue ? c.revenue.byDay : []} label={a.revenueChart} />
+          <ParticleWave values={c.revenue ? c.revenue.byDay : []} label={a.revenueChart} tips={revenueTips} />
         </KpiCard>
 
         <KpiCard title={a.activeAccounts} value={n(c.activeAccounts.value)} delta={<Change value={c.activeAccounts.value} previous={c.activeAccounts.previous} label={vs} tag={tag} />}>
-          <DotMatrix values={c.callsGrid} label={a.activeChart} />
+          <DotMatrix values={c.callsGrid} label={a.activeChart} tip={(i, v) => `${tip.slice(c.since, now, i, c.callsGrid.length)}\n${tip.calls(v)}`} />
         </KpiCard>
 
         <KpiCard title={a.mrr} value={money(c.mrr.value)} delta={<Change value={c.mrr.value} previous={c.mrr.previous} label={format(a.mrrHint, { n: c.mrr.subscribers })} tag={tag} />} bleed>
-          <AreaWave values={c.mrr.series} label={a.mrrChart} />
+          <AreaWave
+            values={c.mrr.series}
+            label={a.mrrChart}
+            tip={(_, to) => `${format(t.charts.endOf, { date: tip.days(c.since, to, to) })}\n${a.mrr} ${money(c.mrr.series[to] ?? 0)}`}
+          />
         </KpiCard>
 
         <KpiCard
@@ -114,7 +133,11 @@ export default async function AdminPage({ searchParams }: Props) {
           value={c.conversion.value === null ? a.none : pct(c.conversion.value)}
           delta={<Change value={c.conversion.value} previous={c.conversion.previous} label={format(a.conversionHint, { n: c.conversion.signups })} points tag={tag} />}
         >
-          <DottedLine values={c.conversion.signupsByDay} label={a.conversionChart} />
+          <DottedLine
+            values={c.conversion.signupsByDay}
+            label={a.conversionChart}
+            tip={(from, to, v) => `${tip.days(c.since, from, to)}\n${tip.many(t.charts.signups, v)}`}
+          />
         </KpiCard>
 
         <KpiCard
@@ -122,7 +145,13 @@ export default async function AdminPage({ searchParams }: Props) {
           value={c.churn.value === null ? a.none : pct(c.churn.value)}
           delta={<p className="text-[11.5px] text-[#9aa1b2]">{format(a.churnHint, { n: c.churn.canceled })}</p>}
         >
-          <Bars values={c.subscribersBars} label={a.churnChart} />
+          <Bars
+            values={c.subscribersBars}
+            label={a.churnChart}
+            tip={(_, to, v) =>
+              `${format(t.charts.endOf, { date: tip.day(new Date(c.since.getTime() + ((to + 1) * (now.getTime() - c.since.getTime())) / 7 - 1)) })}\n${tip.many(t.charts.subscribers, v)}`
+            }
+          />
         </KpiCard>
 
         <KpiCard
@@ -130,7 +159,11 @@ export default async function AdminPage({ searchParams }: Props) {
           value={c.score.value === null ? a.none : c.score.value}
           delta={<Change value={c.score.value} previous={c.score.previous} label={format(a.scoreHint, { n: c.score.n })} points tag={tag} />}
         >
-          <Gauge value={c.score.value} label={a.score} />
+          <Gauge
+            value={c.score.value}
+            label={a.score}
+            tip={c.score.value === null ? undefined : `${t.charts.scoreAvg}\n${tip.score(c.score.value)}\n${tip.many(t.charts.scoredCalls, c.score.n)}`}
+          />
         </KpiCard>
       </div>
 
@@ -139,7 +172,7 @@ export default async function AdminPage({ searchParams }: Props) {
           <CardTitle action={periodPill}>{a.mrrByPlan}</CardTitle>
           <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row">
             <div className="w-[46%] max-w-[230px] shrink-0">
-              <PlanDonut segments={mrrSegments} center={money(c.mrr.value)} caption={a.mrrTotal} />
+              <PlanDonut segments={mrrSegments} center={money(c.mrr.value)} caption={a.mrrTotal} labels={t.enums.plan} format={(v) => money(v)} />
             </div>
             {c.mrr.value === 0 ? (
               <p className="text-[13px] text-[#9aa1b2]">{a.mrrEmpty}</p>
@@ -176,7 +209,7 @@ export default async function AdminPage({ searchParams }: Props) {
               </li>
             ))}
           </ol>
-          <FunnelFlow values={funnelValues} label={a.funnel} />
+          <FunnelFlow values={funnelValues} label={a.funnel} tips={funnelTips} />
           <p className="mt-3 flex items-center justify-between rounded-lg border border-border px-4 py-3 text-[12.5px] text-[#9aa1b2]">
             {a.funnelRate}
             <span className="font-medium text-[#3fe0b5] tabular-nums">{pct(c.funnel.signups ? (c.funnel.paying / c.funnel.signups) * 100 : 0)}</span>
@@ -233,7 +266,7 @@ export default async function AdminPage({ searchParams }: Props) {
             <p className="mt-3 text-[13px] text-[#9aa1b2]">{a.empty}</p>
           ) : (
             <>
-              <Bubbles items={c.families.map((f) => ({ label: t.enums.family[f.family as Family] ?? f.family, value: f.n }))} />
+              <Bubbles items={c.families.map((f) => ({ label: t.enums.family[f.family as Family] ?? f.family, value: f.n }))} format={tip.calls} />
               <p className="sr-only">{c.families.map((f) => `${t.enums.family[f.family as Family] ?? f.family} : ${f.n}`).join(', ')}</p>
             </>
           )}
@@ -310,7 +343,11 @@ export default async function AdminPage({ searchParams }: Props) {
                       <span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums', healthTone(row.health))}>{row.health}</span>
                     </td>
                     <td className="py-2.5">
-                      <TrendLine values={rolling(row.daily, 7)} tone={recent > earlier ? 'up' : recent < earlier ? 'down' : 'flat'} />
+                      <TrendLine
+                        values={rolling(row.daily, 7)}
+                        tone={recent > earlier ? 'up' : recent < earlier ? 'down' : 'flat'}
+                        tip={(i, v) => `${row.name} · ${tip.day(new Date(today - (row.daily.length - 1 - i) * DAY))}\n${format(t.charts.perDay, { n: tip.num.format(v) })}`}
+                      />
                     </td>
                     <td className="py-2.5 text-[#d3d7e1]">{ago(row.lastActivity)}</td>
                     <td className="py-2.5">

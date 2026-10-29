@@ -661,6 +661,17 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   assert.equal(csv.status(), 200);
   assert.match(await csv.text(), /Date \(UTC\),Scénario,Statut/);
   await shot(page, '29b-tableau-de-bord-rempli');
+  // Graphiques : au survol, une bulle donne la tranche et sa valeur.
+  const bubble = page.locator('[data-chart-tip]');
+  await page.locator('rect.bs-tip-col[data-tip$=" 1 appel"], rect.bs-tip-col[data-tip$="1 appel"]').first().hover();
+  await assert.doesNotReject(bubble.getByText('1 appel', { exact: true }).waitFor());
+  await page.locator('rect[data-tip^="Score moyen"]').first().hover();
+  await assert.doesNotReject(bubble.getByText('Score moyen').waitFor());
+  assert.match(await bubble.innerText(), /\d+ \/ 100\s+sur \d+ appels notés/);
+  await page.mouse.move(5, 5);
+  await bubble.waitFor({ state: 'detached' });
+  await page.locator('rect[data-tip^="Score moyen"]').first().hover();
+  if (SHOTS) await page.screenshot({ path: join(SHOTS, '29d-bulle-graphique.png'), clip: { x: 0, y: 0, width: 1440, height: 420 } });
   await page.goto(`${BASE}/dashboard?period=7`);
   await assert.doesNotReject(page.locator('a[aria-current="true"][href="/dashboard?period=7"]').first().waitFor({ state: 'attached' }));
   await page.setViewportSize({ width: 390, height: 844 });

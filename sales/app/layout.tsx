@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
+import { ChartTips } from '@/components/charts/chart-tips';
 import { getI18n } from '@/lib/server/context';
 import '@fontsource-variable/outfit';
 import './globals.css';
@@ -16,7 +17,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { locale } = await getI18n();
   return (
     <html lang={locale} className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="min-h-dvh font-sans antialiased">{children}</body>
+      <body className="min-h-dvh font-sans antialiased">
+        {children}
+        <ChartTips />
+      </body>
     </html>
   );
 }

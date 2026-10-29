@@ -23,6 +23,32 @@ function smooth(points: [number, number][]) {
   return d;
 }
 
+// Bulle d'une tranche dessinée : indices (inclus) des valeurs d'origine qu'elle regroupe, et la valeur dessinée.
+export type RangeTip = (from: number, to: number, value: number) => string;
+
+// Tranches d'origine de chaque case de buckets() (et de averages()), pour les bulles.
+export function bucketRanges(length: number, n: number): [number, number][] {
+  if (length <= n) return Array.from({ length }, (_, i) => [i, i]);
+  return Array.from({ length: n }, (_, i) => {
+    const from = Math.floor((i * length) / n);
+    const to = Math.max(from + 1, Math.floor(((i + 1) * length) / n));
+    return [from, to - 1];
+  });
+}
+
+// Colonnes invisibles qui portent les bulles d'une série dessinée sur toute la largeur.
+function TipColumns({ xs, width, height, tips }: { xs: number[]; width: number; height: number; tips: string[] }) {
+  return (
+    <g>
+      {xs.map((x, i) => {
+        const left = i === 0 ? 0 : (xs[i - 1] + x) / 2;
+        const right = i === xs.length - 1 ? width : (x + xs[i + 1]) / 2;
+        return <rect key={i} x={left} y={0} width={Math.max(0, right - left)} height={height} className="bs-tip-col" data-tip={tips[i]} />;
+      })}
+    </g>
+  );
+}
+
 // Regroupe une série en n cases (somme), pour garder le même dessin quelle que soit la période.
 export function buckets(values: number[], n: number) {
   if (!values.length) return Array.from({ length: n }, () => 0);
@@ -44,7 +70,7 @@ function averages(values: number[], n: number) {
 }
 
 // Grille de points sur 7 lignes (13 colonnes pour 91 tranches) : point plus vif quand il y a eu de l'activité.
-export function DotMatrix({ values, label }: { values: number[]; label: string }) {
+export function DotMatrix({ values, label, tip }: { values: number[]; label: string; tip?: (i: number, value: number) => string }) {
   const cells = values.slice(0, 91);
   const s = scale(cells);
   const cols = Math.max(1, Math.ceil(cells.length / 7));
@@ -66,12 +92,13 @@ export function DotMatrix({ values, label }: { values: number[]; label: string }
           />
         );
       })}
+      {tip && cells.map((v, i) => <rect key={`t${i}`} x={Math.floor(i / 7) * 12} y={(i % 7) * 10} width="12" height="10" className="bs-tip-col" data-tip={tip(i, v)} />)}
     </svg>
   );
 }
 
 // Aire lissée, en pleine largeur de la carte comme sur la maquette (MRR, scores).
-export function AreaWave({ values: raw, label }: { values: number[]; label: string }) {
+export function AreaWave({ values: raw, label, tip }: { values: number[]; label: string; tip?: RangeTip }) {
   const W = 200;
   const H = 70;
   // Au-delà de dix points, moyenne par tranche : des collines douces comme sur la maquette, pas des pics.
@@ -92,12 +119,20 @@ export function AreaWave({ values: raw, label }: { values: number[]; label: stri
         <path d={`${line} L${W} ${H} L0 ${H} Z`} fill="url(#pulse-area)" />
         <path d={line} fill="none" stroke="#6ff2c6" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
       </g>
+      {tip && pts.length > 0 && (
+        <TipColumns
+          xs={pts.map(([x]) => x)}
+          width={W}
+          height={H}
+          tips={bucketRanges(raw.length, 10).map(([from, to], i) => tip(from, to, values[i]))}
+        />
+      )}
     </svg>
   );
 }
 
 // Ligne pointillée : un point blanc par repère, reliés par des tirets.
-export function DottedLine({ values, label }: { values: number[]; label: string }) {
+export function DottedLine({ values, label, tip }: { values: number[]; label: string; tip?: RangeTip }) {
   const W = 150;
   const H = 62;
   const pts8 = buckets(values, 8);
@@ -109,12 +144,20 @@ export function DottedLine({ values, label }: { values: number[]; label: string 
       {pts.map(([x, y], i) => (
         <circle key={i} cx={x} cy={y} r="2.3" fill="#eef0f5" className="bs-pop" style={{ animationDelay: `${i * 90}ms` }} />
       ))}
+      {tip && (
+        <TipColumns
+          xs={pts.map(([x]) => x)}
+          width={W}
+          height={H}
+          tips={(values.length ? bucketRanges(values.length, 8) : []).map(([from, to], i) => tip(from, to, pts8[i]))}
+        />
+      )}
     </svg>
   );
 }
 
 // Sept barres verticales turquoise (la période découpée en sept tranches).
-export function Bars({ values, label }: { values: number[]; label: string }) {
+export function Bars({ values, label, tip }: { values: number[]; label: string; tip?: RangeTip }) {
   const seven = values.length === 7 ? values : buckets(values, 7);
   const s = scale(seven);
   const W = 150;
@@ -144,12 +187,20 @@ export function Bars({ values, label }: { values: number[]; label: string }) {
           <stop offset="1" stopColor="#2fbf98" />
         </linearGradient>
       </defs>
+      {tip && values.length > 0 && (
+        <TipColumns
+          xs={seven.map((_, i) => i * step + step / 2)}
+          width={W}
+          height={H}
+          tips={(values.length === 7 ? bucketRanges(7, 7) : bucketRanges(values.length, 7)).map(([from, to], i) => tip(from, to, seven[i]))}
+        />
+      )}
     </svg>
   );
 }
 
 // Jauge en demi-cercle : zones grise (< 50), turquoise (50-75) et violette (≥ 75), aiguille sur la valeur.
-export function Gauge({ value, label }: { value: number | null; label: string }) {
+export function Gauge({ value, label, tip }: { value: number | null; label: string; tip?: string }) {
   const r = 36;
   const cx = 50;
   const cy = 48;
@@ -170,6 +221,7 @@ export function Gauge({ value, label }: { value: number | null; label: string })
         </g>
       )}
       <circle cx={cx} cy={cy} r="3.6" fill="#c7cbd6" />
+      {tip && <rect x="0" y="0" width="100" height="56" className="bs-tip-col" data-tip={tip} />}
     </svg>
   );
 }
@@ -178,7 +230,18 @@ export const SERIES_COLORS = ['#5c55f0', '#7d76ff', '#5aa9ff', '#4fe3b5', '#a78b
 export const PLAN_COLORS = { standard: SERIES_COLORS[2], advanced: SERIES_COLORS[0], premium: SERIES_COLORS[4] } as const;
 
 // Anneau épais : une part par segment (séparées par un fin espace), total au centre.
-export function Donut({ segments, center, caption }: { segments: { label: string; value: number; color: string }[]; center: string; caption: string }) {
+export function Donut({
+  segments,
+  center,
+  caption,
+  format,
+}: {
+  segments: { label: string; value: number; color: string }[];
+  center: string;
+  caption: string;
+  // Valeur d'une part dans sa bulle (« 12 min ») ; sans elle, pas de bulle.
+  format?: (value: number) => string;
+}) {
   const total = segments.reduce((n, s) => n + s.value, 0);
   const r = 60;
   const c = 2 * Math.PI * r;
@@ -204,30 +267,51 @@ export function Donut({ segments, center, caption }: { segments: { label: string
                   strokeDasharray={`${Math.max(0, len - (segments.length > 1 ? 2.5 : 0))} ${c}`}
                   strokeDashoffset={-offset}
                   transform="rotate(-90 80 80)"
+                  className={format ? 'bs-tip-hit' : undefined}
+                  data-tip={format ? `${s.label}\n${format(s.value)} · ${Math.round((s.value / total) * 100)} %` : undefined}
                 />
               );
               offset += len;
               return el;
             })}
       </g>
-      <text x="80" y="82" textAnchor="middle" fontSize="17" fontWeight="600" fill="#eef0f5">
+      <text x="80" y="82" textAnchor="middle" fontSize="17" fontWeight="600" fill="#eef0f5" pointerEvents="none">
         {center}
       </text>
-      <text x="80" y="98" textAnchor="middle" fontSize="9" fill="#9aa1b2">
+      <text x="80" y="98" textAnchor="middle" fontSize="9" fill="#9aa1b2" pointerEvents="none">
         {caption}
       </text>
     </svg>
   );
 }
 
-export function PlanDonut({ segments, center, caption }: { segments: { key: keyof typeof PLAN_COLORS; value: number }[]; center: string; caption: string }) {
-  return <Donut segments={segments.map((s) => ({ label: s.key, value: s.value, color: PLAN_COLORS[s.key] }))} center={center} caption={caption} />;
+export function PlanDonut({
+  segments,
+  center,
+  caption,
+  labels,
+  format,
+}: {
+  segments: { key: keyof typeof PLAN_COLORS; value: number }[];
+  center: string;
+  caption: string;
+  labels?: Record<keyof typeof PLAN_COLORS, string>;
+  format?: (value: number) => string;
+}) {
+  return (
+    <Donut
+      segments={segments.map((s) => ({ label: labels?.[s.key] ?? s.key, value: s.value, color: PLAN_COLORS[s.key] }))}
+      center={center}
+      caption={caption}
+      format={format}
+    />
+  );
 }
 
 // Entonnoir : une bande dégradée violet → turquoise dont l'épaisseur suit chaque étape, fines verticales sous chaque
 // étape. Elle se déroule depuis la gauche à l'ouverture, puis ondule lentement (épaisseur qui respire de quelques
 // pour cent) avec un reflet qui la parcourt ; mouvement coupé si l'utilisateur réduit les animations.
-export function FunnelFlow({ values, label }: { values: number[]; label: string }) {
+export function FunnelFlow({ values, label, tips }: { values: number[]; label: string; tips?: string[] }) {
   const W = 400;
   const H = 130;
   const max = Math.max(...values, 1);
@@ -286,6 +370,7 @@ export function FunnelFlow({ values, label }: { values: number[]; label: string 
       {xs.map((x, i) => (
         <line key={i} x1={x} x2={x} y1="0" y2={H} stroke="#e9ecf4" strokeOpacity="0.35" strokeWidth="1" vectorEffect="non-scaling-stroke" />
       ))}
+      {tips && <TipColumns xs={xs} width={W} height={H} tips={tips} />}
     </svg>
   );
 }
@@ -294,7 +379,18 @@ export const HEX_COLORS = ['#8f7dff', '#5aa9ff', '#7fe7d9', '#57e3b0', '#6d5cff'
 
 // Santé en nid d'abeille : un anneau hexagonal découpé en tuiles (une par facette, nom et valeur dedans), score
 // global dans l'hexagone central. Les couleurs suivent l'ordre des tuiles, comme sur la maquette.
-export function HexHealth({ facets, center, caption }: { facets: { label: string; value: number | null }[]; center: number | null; caption: string }) {
+export function HexHealth({
+  facets,
+  center,
+  caption,
+  detail,
+}: {
+  facets: { label: string; value: number | null }[];
+  center: number | null;
+  caption: string;
+  // Détail de la bulle d'une tuile (« 4 appels notés ») ; le nom complet et la note y sont toujours.
+  detail?: (i: number) => string | undefined;
+}) {
   const cx = 100;
   const cy = 100;
   const R = 92;
@@ -328,7 +424,12 @@ export function HexHealth({ facets, center, caption }: { facets: { label: string
         const [lx, ly] = at((R + r) / 2 + 2, mid);
         const name = f.label.length > 11 ? `${f.label.slice(0, 10)}…` : f.label;
         return (
-          <g key={f.label} className="bs-pop" style={{ animationDelay: `${i * 90}ms` }}>
+          <g
+            key={f.label}
+            className="bs-pop bs-tip-hit"
+            style={{ animationDelay: `${i * 90}ms` }}
+            data-tip={[f.label, f.value === null ? '—' : `${f.value} / 100`, detail?.(i)].filter(Boolean).join('\n')}
+          >
             <path d={tile(a0, a1)} fill={HEX_COLORS[i % HEX_COLORS.length]} fillOpacity={f.value === null ? 0.35 : 0.92} stroke="#1d212c" strokeWidth="3" strokeLinejoin="round" />
             <text x={lx} y={ly - 2} textAnchor="middle" fontSize="7.2" fill="#0f1218" fillOpacity="0.85">
               {name}
@@ -340,7 +441,7 @@ export function HexHealth({ facets, center, caption }: { facets: { label: string
         );
       })}
       <path d={inner.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ') + ' Z'} fill="#0b0d12" />
-      <text x={cx} y={cy + 4} textAnchor="middle" fontSize="24" fontWeight="700" fill="#f4f5f8">
+      <text x={cx} y={cy + 4} textAnchor="middle" fontSize="24" fontWeight="700" fill="#f4f5f8" data-tip={`${caption}\n${center ?? '—'}${center === null ? '' : ' / 100'}`}>
         {center ?? '—'}
       </text>
       <text x={cx} y={cy + 17} textAnchor="middle" fontSize="7.5" fill="#c9cedb">
@@ -362,7 +463,7 @@ function twoLines(label: string) {
 
 // Bulles : une par catégorie, placées comme sur la maquette (grosse à gauche, trois plus petites qui la touchent) ;
 // leur taille suit la part de chacune autour de ce gabarit. Elles flottent lentement.
-export function Bubbles({ items }: { items: { label: string; value: number }[] }) {
+export function Bubbles({ items, format }: { items: { label: string; value: number }[]; format?: (value: number) => string }) {
   const top = items.slice(0, 4);
   const total = top.reduce((n, i) => n + i.value, 0);
   const spots = [
@@ -381,7 +482,11 @@ export function Bubbles({ items }: { items: { label: string; value: number }[] }
         const y0 = spots[i].y - (lines.length - 1) * 4;
         return (
           <g key={item.label} className="bs-pop" style={{ animationDelay: `${i * 120}ms` }}>
-            <g className="bs-float" style={{ animationDelay: `${i * -1.5}s` }}>
+            <g
+              className="bs-float bs-tip-hit"
+              style={{ animationDelay: `${i * -1.5}s` }}
+              data-tip={format ? `${item.label}\n${format(item.value)} · ${Math.round(share * 100)} %` : undefined}
+            >
               <circle cx={spots[i].x} cy={spots[i].y} r={radius} fill={BUBBLE_FILLS[i]} />
               <text x={spots[i].x} y={y0 + (big ? 1 : 0)} textAnchor="middle" fontSize={big ? 17 : i === 1 ? 14 : 12} fontWeight="700" fill="#fff">
                 {Math.round(share * 100)}%
@@ -400,7 +505,7 @@ export function Bubbles({ items }: { items: { label: string; value: number }[] }
 }
 
 // Tendance ondulée d'une ligne du tableau (moyenne glissante pour lisser les jours sans appel).
-export function TrendLine({ values, tone }: { values: number[]; tone: 'up' | 'down' | 'flat' }) {
+export function TrendLine({ values, tone, tip }: { values: number[]; tone: 'up' | 'down' | 'flat'; tip?: (i: number, value: number) => string }) {
   const W = 84;
   const H = 22;
   const s = scale(values);
@@ -409,6 +514,7 @@ export function TrendLine({ values, tone }: { values: number[]; tone: 'up' | 'do
   return (
     <svg viewBox={`0 0 ${W} ${H}`} aria-hidden="true" className="h-5 w-[84px]">
       <path d={pts.length > 1 ? smooth(pts) : `M0 ${H / 2} L${W} ${H / 2}`} fill="none" stroke={stroke} strokeWidth="1.6" className="bs-draw" style={{ ['--len' as string]: 160 }} />
+      {tip && pts.length > 0 && <TipColumns xs={pts.map(([x]) => x)} width={W} height={H} tips={values.map((v, i) => tip(i, v))} />}
     </svg>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, ClipboardList, Mic, Target } from 'lucide-react';
 import { Change } from '@/components/cockpit/change';
-import { AreaWave, Bars, Bubbles, buckets, Donut, DotMatrix, DottedLine, FunnelFlow, Gauge, HEX_COLORS, HexHealth, SERIES_COLORS, TrendLine } from '@/components/cockpit/charts';
+import { AreaWave, Bars, bucketRanges, Bubbles, Donut, DotMatrix, DottedLine, FunnelFlow, Gauge, HEX_COLORS, HexHealth, SERIES_COLORS, TrendLine } from '@/components/cockpit/charts';
 import { GlassTorus } from '@/components/cockpit/glass-torus';
 import { card, CardTitle, KpiCard, LiveBadge, ViewAll } from '@/components/cockpit/panel';
 import { ParticleWave } from '@/components/cockpit/particle-wave';
@@ -16,6 +16,7 @@ import { creditStatus } from '@/lib/billing/credits';
 import { aiIntelligence } from '@/lib/dashboard/intelligence';
 import { getDashboard } from '@/lib/dashboard/service';
 import { PERIODS, periodOf, trainingPulse, type SkillRow } from '@/lib/dashboard/pulse';
+import { chartTips } from '@/lib/charts/tips';
 import { getDb } from '@/lib/server/db';
 import { can, SKILLS, type Difficulty, type Family, type Skill } from '@/lib/domain';
 import { format, formatDate, timeAgo } from '@/lib/i18n';
@@ -100,6 +101,17 @@ export default async function DashboardPage({ searchParams }: Props) {
   const pending = [...new Set([...(profile.goals as Skill[]), ...SKILLS])].slice(0, 5);
   const facetAverage = facets.length ? Math.round(facets.reduce((s, f) => s + f.value, 0) / facets.length) : null;
 
+  // Bulles des graphiques : la tranche de la période (ou les appels) et sa valeur.
+  const tip = chartTips(t, locale);
+  const minuteTips = bucketRanges(pulse.minutes.byDay.length, 12).map(([from, to]) => {
+    const total = pulse.minutes.byDay.slice(from, to + 1).reduce((a, b) => a + b, 0);
+    return `${tip.days(pulse.since, from, to)}\n${tip.minutes(Math.round(total * 10) / 10)}`;
+  });
+  const funnelTips = funnelKeys.map(
+    (key, i) =>
+      `${d.funnelSteps[key]}\n${tip.calls(funnelValues[i])}${i > 0 && funnelValues[i - 1] ? `\n${format(t.charts.fromPrevious, { n: pct((funnelValues[i] / funnelValues[i - 1]) * 100) })}` : ''}`,
+  );
+
   return (
     <div className="grid gap-2.5">
       <h1 className="sr-only">{format(d.greeting, { name: firstName })}</h1>
@@ -116,15 +128,19 @@ export default async function DashboardPage({ searchParams }: Props) {
           delta={<Change value={pulse.minutes.value} previous={pulse.minutes.previous} label={vs} tag={tag} />}
           bleed
         >
-          <ParticleWave values={pulse.minutes.byDay} label={d.minutesChart} />
+          <ParticleWave values={pulse.minutes.byDay} label={d.minutesChart} tips={minuteTips} />
         </KpiCard>
 
         <KpiCard title={d.kpiCalls} value={n(pulse.calls.value)} delta={<Change value={pulse.calls.value} previous={pulse.calls.previous} label={vs} tag={tag} />}>
-          <DotMatrix values={pulse.calls.grid} label={d.callsChart} />
+          <DotMatrix values={pulse.calls.grid} label={d.callsChart} tip={(i, v) => `${tip.slice(pulse.since, now, i, pulse.calls.grid.length)}\n${tip.calls(v)}`} />
         </KpiCard>
 
         <KpiCard title={d.kpiBest} value={pulse.best ?? d.none} delta={<p className="text-[11.5px] text-[#9aa1b2]">{format(d.bestHint, { n: pulse.score.n })}</p>} bleed>
-          <AreaWave values={pulse.score.series} label={d.bestChart} />
+          <AreaWave
+            values={pulse.score.series}
+            label={d.bestChart}
+            tip={(from, to, v) => `${tip.callsLabel(from, to)}\n${from === to ? tip.score(v) : format(t.charts.average, { n: Math.round(v) })}`}
+          />
         </KpiCard>
 
         <KpiCard
@@ -132,7 +148,7 @@ export default async function DashboardPage({ searchParams }: Props) {
           value={format(d.activeDaysValue, { n: pulse.activeDays.value, days })}
           delta={<p className="text-[11.5px] text-[#9aa1b2]">{d.activeDaysHint}</p>}
         >
-          <DottedLine values={pulse.calls.byDay} label={d.activeDaysChart} />
+          <DottedLine values={pulse.calls.byDay} label={d.activeDaysChart} tip={(from, to, v) => `${tip.days(pulse.since, from, to)}\n${tip.calls(v)}`} />
         </KpiCard>
 
         <KpiCard
@@ -146,7 +162,7 @@ export default async function DashboardPage({ searchParams }: Props) {
             </p>
           }
         >
-          <Bars values={buckets(pulse.minutes.byDay, 7)} label={d.creditsChart} />
+          <Bars values={pulse.minutes.byDay} label={d.creditsChart} tip={(from, to, v) => `${tip.days(pulse.since, from, to)}\n${tip.minutes(Math.round(v * 10) / 10)}`} />
         </KpiCard>
 
         <KpiCard
@@ -154,7 +170,11 @@ export default async function DashboardPage({ searchParams }: Props) {
           value={pulse.score.value === null ? <span className="text-[14px] font-normal text-[#9aa1b2]">{d.noScore}</span> : pulse.score.value}
           delta={<Change value={pulse.score.value} previous={pulse.score.previous} label={format(d.scoreHint, { n: pulse.score.n })} points tag={tag} />}
         >
-          <Gauge value={pulse.score.value} label={d.kpiScore} />
+          <Gauge
+            value={pulse.score.value}
+            label={d.kpiScore}
+            tip={pulse.score.value === null ? undefined : `${t.charts.scoreAvg}\n${tip.score(pulse.score.value)}\n${tip.many(t.charts.scoredCalls, pulse.score.n)}`}
+          />
         </KpiCard>
       </div>
 
@@ -167,7 +187,7 @@ export default async function DashboardPage({ searchParams }: Props) {
           <CardTitle action={periodPill}>{d.familiesTitle}</CardTitle>
           <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row sm:items-center">
             <div className="w-[46%] max-w-[230px] shrink-0">
-              <Donut segments={familySegments} center={format(d.minutesValue, { n: n(familyTotal) })} caption={d.familiesTotal} />
+              <Donut segments={familySegments} center={format(d.minutesValue, { n: n(familyTotal) })} caption={d.familiesTotal} format={tip.minutes} />
             </div>
             {familyTotal === 0 ? (
               <p className="text-[13px] text-[#9aa1b2]">{d.familiesEmpty}</p>
@@ -204,7 +224,7 @@ export default async function DashboardPage({ searchParams }: Props) {
               </li>
             ))}
           </ol>
-          <FunnelFlow values={funnelValues} label={d.funnelTitle} />
+          <FunnelFlow values={funnelValues} label={d.funnelTitle} tips={funnelTips} />
           <p className="mt-3 flex items-center justify-between rounded-lg border border-border px-4 py-3 text-[12.5px] text-[#9aa1b2]">
             {d.funnelRate}
             <span className="font-medium text-[#3fe0b5] tabular-nums">{pct(funnelValues[0] ? (funnelValues[3] / funnelValues[0]) * 100 : 0)}</span>
@@ -230,7 +250,12 @@ export default async function DashboardPage({ searchParams }: Props) {
           ) : (
             <>
               <div className="mt-2 grid justify-items-center">
-                <HexHealth facets={facets.map((f) => ({ label: t.enums.skill[f.skill], value: f.value }))} center={facetAverage} caption={d.skillsCenter} />
+                <HexHealth
+                  facets={facets.map((f) => ({ label: t.enums.skill[f.skill], value: f.value }))}
+                  center={facetAverage}
+                  caption={d.skillsCenter}
+                  detail={(i) => tip.many(t.charts.ratings, facets[i].n)}
+                />
               </div>
               <ul className="mt-3 grid gap-1.5 text-[12px]">
                 {facets.map((f, i) => (
@@ -285,7 +310,7 @@ export default async function DashboardPage({ searchParams }: Props) {
             <p className="mt-3 text-[13px] text-[#9aa1b2]">{d.outcomesEmpty}</p>
           ) : (
             <>
-              <Bubbles items={pulse.outcomes.map((o) => ({ label: t.report.outcome[o.key], value: o.n }))} />
+              <Bubbles items={pulse.outcomes.map((o) => ({ label: t.report.outcome[o.key], value: o.n }))} format={tip.calls} />
               <p className="sr-only">{pulse.outcomes.map((o) => `${t.report.outcome[o.key]} : ${o.n}`).join(', ')}</p>
             </>
           )}
@@ -377,7 +402,11 @@ export default async function DashboardPage({ searchParams }: Props) {
                       <span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums', scoreTone(row.value))}>{row.value}</span>
                     </td>
                     <td className="py-2.5">
-                      <TrendLine values={row.history} tone={last > first ? 'up' : last < first ? 'down' : 'flat'} />
+                      <TrendLine
+                        values={row.history}
+                        tone={last > first ? 'up' : last < first ? 'down' : 'flat'}
+                        tip={(i, v) => `${t.enums.skill[row.skill]} · ${tip.callsLabel(i, i)}\n${tip.score(v)}`}
+                      />
                     </td>
                     <td className="py-2.5 text-[#d3d7e1]">{timeAgo(row.last, now, tag)}</td>
                     <td className="py-2.5">

@@ -433,7 +433,7 @@ export default async function SimulationPage({ params, searchParams }: Props) {
               {r.overall}
             </h2>
             <div className="relative mt-3 flex items-center gap-3">
-              <div className="relative grid shrink-0 place-items-center">
+              <div className="relative grid shrink-0 place-items-center" data-tip={`${t.charts.overall}\n${res.overallScore} / 100\n${r.tierLabel[tierOf(res.overallScore)]}`}>
                 <ScoreDial score={res.overallScore} size={84} />
                 <span className="absolute grid justify-items-center leading-none">
                   <span className="text-[24px] font-semibold tabular-nums">{res.overallScore}</span>
@@ -442,7 +442,10 @@ export default async function SimulationPage({ params, searchParams }: Props) {
               </div>
               <p className="w-[86px] shrink-0 text-[13px] leading-snug opacity-95">{r.tierLabel[tierOf(res.overallScore)]}</p>
               <div className="min-w-0 flex-1">
-                <Sparkline values={scored.map((s) => s.overallScore!)} />
+                <Sparkline
+                  values={scored.map((s) => s.overallScore!)}
+                  tips={scored.map((s) => `${formatDate(s.createdAt, locale)}${s.id === current.id ? ` · ${t.charts.thisCall}` : ''}\n${s.overallScore} / 100`)}
+                />
               </div>
             </div>
           </section>
@@ -518,6 +521,15 @@ export default async function SimulationPage({ params, searchParams }: Props) {
             <SkillRadarLight
               label={r.skillsTitle}
               axes={res.skills.map((s) => ({ label: skillLabel(s.skill), score: s.score, average: benchmark.skillAverages[s.skill] }))}
+              tips={res.skills.map((s) =>
+                [
+                  skillLabel(s.skill),
+                  format(t.charts.you, { n: s.score }),
+                  typeof benchmark.skillAverages[s.skill] === 'number' ? format(t.charts.others, { n: Math.round(benchmark.skillAverages[s.skill]!) }) : '',
+                ]
+                  .filter(Boolean)
+                  .join('\n'),
+              )}
             />
             {Object.keys(benchmark.skillAverages).length === 0 && (
               <p className="text-center text-xs text-muted-foreground">{format(r.averageWaiting, { min: BENCHMARK_MIN })}</p>
@@ -574,6 +586,7 @@ export default async function SimulationPage({ params, searchParams }: Props) {
                   score: s.overallScore!,
                   current: s.id === current.id,
                 }))}
+                tips={scored.map((s) => `${formatDate(s.createdAt, locale)}${s.id === current.id ? ` · ${t.charts.thisCall}` : ''}\n${s.overallScore} / 100`)}
               />
             ) : (
               <p className="text-sm text-muted-foreground">{r.scoreOverTimeEmpty}</p>
@@ -583,7 +596,7 @@ export default async function SimulationPage({ params, searchParams }: Props) {
           <Panel title={r.byCategory}>
             <div className="flex items-center gap-4">
               <div className="w-[42%] max-w-[150px] shrink-0">
-                <TierDonut segments={tiers} total={total} caption={r.totalSkills} />
+                <TierDonut segments={tiers} total={total} caption={r.totalSkills} labels={r.tierRange} />
               </div>
               <ul className="grid flex-1 gap-3 text-[12.5px] whitespace-nowrap">
                 {tiers.map((tier) => (

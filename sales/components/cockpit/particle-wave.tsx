@@ -33,7 +33,8 @@ function colorAt(u: number) {
   return u < 0.5 ? mix(STOPS[0], STOPS[1], u * 2) : mix(STOPS[1], STOPS[2], (u - 0.5) * 2);
 }
 
-export function ParticleWave({ values, label }: { values: number[]; label: string }) {
+// tips : une bulle par tranche de la période, de gauche à droite (colonnes invisibles posées sur la vague).
+export function ParticleWave({ values, label, tips }: { values: number[]; label: string; tips?: string[] }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const key = values.join(',');
 
@@ -112,5 +113,16 @@ export function ParticleWave({ values, label }: { values: number[]; label: strin
     };
   }, [key]);
 
-  return <canvas ref={canvas} role="img" aria-label={label} className="block h-[96px] w-full" />;
+  return (
+    <div className="relative">
+      <canvas ref={canvas} role="img" aria-label={label} className="block h-[96px] w-full" />
+      {tips && tips.length > 0 && (
+        <div className="absolute inset-0 flex">
+          {tips.map((tip, i) => (
+            <span key={i} data-tip={tip} className="h-full flex-1 transition-colors hover:bg-white/[0.05]" />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

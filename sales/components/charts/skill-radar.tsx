@@ -30,6 +30,10 @@ export function SkillRadar({ skills, title }: { skills: { label: string; score: 
         return <circle key={i} cx={x} cy={y} r="3.5" fill="var(--teal)" />;
       })}
       {skills.map((s, i) => {
+        const [x, y] = point(i, s.score);
+        return <circle key={`t${i}`} cx={x} cy={y} r="12" fill="transparent" className="bs-tip-hit" data-tip={`${s.label}\n${s.score} / 100`} />;
+      })}
+      {skills.map((s, i) => {
         const [x, y] = point(i, 118);
         const cos = Math.cos(angle(i));
         const anchor = Math.abs(cos) < 0.2 ? 'middle' : cos > 0 ? 'start' : 'end';

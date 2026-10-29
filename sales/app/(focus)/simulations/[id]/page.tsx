@@ -46,6 +46,7 @@ import {
   Trophy,
 } from '@/components/report/charts';
 import { ScenarioCard } from '@/components/scenarios/scenario-card';
+import { ToneTag } from '@/components/vox/vox-screen';
 import { Badge } from '@/components/ui/badge';
 import { FormAlert } from '@/components/ui/field';
 import { BENCHMARK_MIN, scenarioBenchmark, TIERS, tierOf } from '@/lib/analysis/benchmark';
@@ -185,7 +186,12 @@ function Transcript({ turns, prospectName, t, language }: { turns: TranscriptTur
                     <span key={k}>{p.text}</span>
                   ),
                 )
-              : turn.text}
+              : (
+                  <>
+                    <ToneTag tones={turn.tones} labels={t.call.tones} />
+                    {turn.text}
+                  </>
+                )}
             {turn.interrupted && <span className="ml-1 text-warning">…</span>}
           </p>
         </li>

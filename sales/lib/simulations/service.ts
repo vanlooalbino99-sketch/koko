@@ -17,8 +17,9 @@ import type { Locale } from '../domain.ts';
 import { ScenarioMetaSchema } from '../scenarios/content.ts';
 import { getPlayableVersion, type PlayableVersion } from '../scenarios/service.ts';
 import { agentPayload, payloadHash } from '../voice/agent-config.ts';
+import { splitTones } from '../voice/emotion.ts';
 import type { VoiceDefaults } from '../voice/voices.ts';
-import type { ProviderConversation, VoiceProvider } from '../voice/provider.ts';
+import { VoiceProviderError, type ProviderConversation, type VoiceProvider } from '../voice/provider.ts';
 
 const ACTIVE = ['connecting', 'in_progress', 'processing'] as const;
 // Au-delà, une simulation jamais connectée ou jamais transcrite est considérée comme perdue.
@@ -26,19 +27,29 @@ const LOST_AFTER_MS = 45 * 60 * 1000;
 
 // Prospect vocal de la version : réutilisé tant que la configuration ne change pas. Le verrou évite que deux
 // premiers appels simultanés créent chacun un agent.
+// Si ElevenLabs refuse la voix expressive (offre du compte, langue), le prospect est créé avec la voix rapide d'avant ;
+// l'empreinte enregistrée reste celle de la configuration voulue, pour ne pas retenter à chaque appel.
 export async function ensureVoiceAgent(db: Db, provider: VoiceProvider, playable: PlayableVersion, voices: VoiceDefaults = {}) {
-  const payload = agentPayload(
-    ScenarioMetaSchema.parse(playable.scenario),
-    playable.content,
-    { id: playable.versionId, number: playable.versionNumber },
-    voices,
-  );
+  const build = (expressive: boolean) =>
+    agentPayload(
+      ScenarioMetaSchema.parse(playable.scenario),
+      playable.content,
+      { id: playable.versionId, number: playable.versionNumber },
+      voices,
+      { expressive },
+    );
+  const payload = build(true);
   const hash = payloadHash(payload);
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${playable.versionId}, 0))`);
     const [existing] = await tx.select().from(voiceAgents).where(eq(voiceAgents.scenarioVersionId, playable.versionId)).limit(1);
     if (existing?.configHash === hash) return existing.agentId;
-    const { agentId } = await provider.createAgent(payload);
+    const { agentId } = await provider.createAgent(payload).catch((err: unknown) => {
+      const refused = err instanceof VoiceProviderError && (err.status === 400 || err.status === 403 || err.status === 422);
+      if (!refused) throw err;
+      console.warn('[voice] voix expressive refusée, prospect créé avec la voix rapide :', err.message);
+      return provider.createAgent(build(false));
+    });
     await tx
       .insert(voiceAgents)
       .values({ scenarioVersionId: playable.versionId, agentId, configHash: hash })
@@ -233,16 +244,19 @@ export async function saveMarkers(db: Db, auth: AuthContext, id: string, markers
   return true;
 }
 
+// Les balises de voix du prospect (« [sighs] ») sortent du texte ; son ton est gardé à part.
 export function normalizeTranscript(turns: ProviderConversation['transcript']): TranscriptTurn[] {
   return (turns ?? []).flatMap((turn): TranscriptTurn[] => {
-    const text = turn.message?.trim();
-    if (!text || (turn.role !== 'user' && turn.role !== 'agent')) return [];
+    if (turn.role !== 'user' && turn.role !== 'agent') return [];
+    const { text, tones } = turn.role === 'agent' ? splitTones(turn.message ?? '') : { text: turn.message?.trim() ?? '', tones: [] };
+    if (!text) return [];
     return [
       {
         role: turn.role === 'user' ? 'seller' : 'prospect',
         text,
         at: Math.max(0, Math.round(turn.time_in_call_secs ?? 0)),
         ...(turn.role === 'agent' && turn.interrupted ? { interrupted: true } : {}),
+        ...(tones.length ? { tones } : {}),
       },
     ];
   });

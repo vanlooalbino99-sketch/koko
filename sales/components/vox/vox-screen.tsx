@@ -50,6 +50,7 @@ import {
   type Signal,
 } from '@/lib/live/speech';
 import { cn } from '@/lib/utils';
+import type { Tone } from '@/lib/voice/emotion';
 
 // ─── Données de l'écran ──────────────────────────────────────────────────────
 
@@ -103,7 +104,15 @@ export type VoxStatic = {
 };
 
 export type VoxPhase = 'loading' | 'idle' | 'starting' | 'live' | 'ending';
-export type VoxLine = { id: number; role: 'seller' | 'prospect'; text: string; at: number };
+export type VoxLine = { id: number; role: 'seller' | 'prospect'; text: string; at: number; tones?: Tone[] };
+
+// Ton du prospect sur une réplique (« hausse le ton », « soupire »…) : le plus fort seulement.
+export function ToneTag({ tones, labels }: { tones?: Tone[]; labels: Record<Tone, string> }) {
+  const tone = tones?.[0];
+  if (!tone) return null;
+  const hot = tone === 'shouts' || tone === 'angry';
+  return <span className={cn('mr-1.5 text-[12.5px] italic', hot ? 'text-[#ef6f87]' : 'text-muted-foreground/80')}>({labels[tone]})</span>;
+}
 export type VoxSignal = Signal & { end: number };
 export type WaveSample = { v: number; who: 's' | 'p' | '-' };
 
@@ -740,6 +749,7 @@ function Transcript({ data, live }: { data: VoxStatic; live: VoxLive }) {
             ) : (
               <p className="text-muted-foreground">
                 <span className="mr-2 text-[11px] font-medium tracking-[0.06em] text-muted-foreground/80 uppercase">{firstName}</span>
+                <ToneTag tones={line.tones} labels={c.tones} />
                 {line.text}
               </p>
             )}

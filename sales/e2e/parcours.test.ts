@@ -43,7 +43,7 @@ const report = { email: `romain.${Date.now()}@example.com`, simulationId: '', sc
 const TRANSCRIPT: TranscriptTurn[] = [
   { role: 'prospect', text: 'Allô, oui ?', at: 0 },
   { role: 'seller', text: 'Bonjour Monsieur Lefèvre, je vous appelle au sujet des appels manqués, vous avez deux minutes ?', at: 2 },
-  { role: 'prospect', text: 'Deux minutes, pas plus, je suis sur un chantier.', at: 9, interrupted: true },
+  { role: 'prospect', text: 'Deux minutes, pas plus, je suis sur un chantier.', at: 9, interrupted: true, tones: ['rushed'] },
   { role: 'seller', text: "Combien d'appels pensez-vous rater par semaine quand vous êtes en intervention ?", at: 13 },
   { role: 'prospect', text: 'Une dizaine, peut-être plus.', at: 18 },
   { role: 'seller', text: 'Je vous propose une démo de vingt minutes jeudi à 18 heures, ça vous va ?', at: 22 },
@@ -308,7 +308,8 @@ before(async () => {
   server.stderr?.on('data', (d) => process.stderr.write(d));
   await waitForHealth();
   // Micro simulé par Chromium : l'autorisation est accordée sans fenêtre.
-  browser = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
+  // BS_CHROMIUM : navigateur déjà installé sur la machine, quand ce n'est pas la version attendue par Playwright.
+  browser = await chromium.launch({ executablePath: process.env.BS_CHROMIUM || undefined, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
 });
 
 after(async () => {
@@ -612,6 +613,10 @@ test('rapport : Claude analyse l\'appel, scores justifiés par des citations vé
   await tabs.getByRole('link', { name: 'Élocution' }).click();
   await page.waitForURL(/tab=speech/);
   await assert.doesNotReject(page.getByText('Temps de parole').first().waitFor());
+  // Transcription : le ton du prospect (tiré des balises de sa voix expressive) accompagne sa réplique.
+  await page.goto(`${BASE}/simulations/${report.simulationId}?tab=recording`);
+  await assert.doesNotReject(page.getByText('(s’impatiente)').first().waitFor());
+  await page.goto(`${BASE}/simulations/${report.simulationId}?tab=speech`);
   await tabs.getByRole('link', { name: 'Vue d’ensemble' }).click();
   await page.waitForURL((url) => !url.search.includes('tab='));
   // Sur téléphone, le rapport tient dans la largeur de l'écran.

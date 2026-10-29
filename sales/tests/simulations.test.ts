@@ -10,6 +10,7 @@ import { guessGender } from '../lib/voice/gender.ts';
 import { completeVoices } from '../lib/voice/voices.ts';
 import { analysisPrompt } from '../lib/analysis/prompt.ts';
 import {
+  ensureVoiceAgent,
   finishSimulation,
   getSimulation,
   markSimulationConnected,
@@ -21,7 +22,7 @@ import {
   syncSimulation,
 } from '../lib/simulations/service.ts';
 import { creditStatus } from '../lib/billing/credits.ts';
-import type { AgentPayload, ProviderConversation, VoiceProvider } from '../lib/voice/provider.ts';
+import { VoiceProviderError, type AgentPayload, type ProviderConversation, type VoiceProvider } from '../lib/voice/provider.ts';
 import { joinOrg, newUser, testDb } from './helpers.ts';
 
 let db: Db;
@@ -100,6 +101,57 @@ test('prospect vocal : la voix choisie dans le scénario passe avant la voix par
   assert.equal(chosen.conversation_config.tts.voice_id, 'voixScenario1');
 });
 
+test('prospect vocal : voix expressive et humeur changeante ; voix rapide sans balises si ElevenLabs refuse', async () => {
+  const { auth } = await newUser(db, 'Zoé');
+  const scenario = await firstCatalogScenario(auth);
+  const playable = (await getPlayableVersion(db, auth, scenario.id))!;
+  const meta = ScenarioMetaSchema.parse(playable.scenario);
+  const version = { id: playable.versionId, number: playable.versionNumber };
+  const expressive = agentPayload(meta, playable.content, version);
+  assert.equal(expressive.conversation_config.tts.model_id, 'eleven_v4_turbo');
+  const prompt = expressive.conversation_config.agent.prompt.prompt;
+  assert.match(prompt, /calm, guarded, impatient, irritated, angry/);
+  assert.match(prompt, /\[shouts\]/);
+  assert.ok(prompt.indexOf('# Rules') < prompt.indexOf('<scenario>'), 'les règles du jeu restent avant le scénario');
+  // Sans voix expressive, aucune balise dans la consigne : la voix les lirait à voix haute.
+  const plain = agentPayload(meta, playable.content, version, {}, { expressive: false });
+  assert.equal(plain.conversation_config.tts.model_id, 'eleven_flash_v2_5');
+  assert.doesNotMatch(plain.conversation_config.agent.prompt.prompt, /\[[a-z]+\]/);
+
+  // ElevenLabs refuse la voix expressive : le prospect est créé une seule fois, avec la voix rapide.
+  class Refusing extends FakeProvider {
+    status = 400;
+    async createAgent(config: AgentPayload) {
+      if (config.conversation_config.tts.model_id === 'eleven_v4_turbo') throw new VoiceProviderError(`ElevenLabs POST /v1/convai/agents/create → ${this.status}`, this.status);
+      return super.createAgent(config);
+    }
+  }
+  const refusing = new Refusing();
+  const voices = { fr: 'voixRepli1' };
+  const first = await ensureVoiceAgent(db, refusing, playable, voices);
+  assert.equal(await ensureVoiceAgent(db, refusing, playable, voices), first, 'pas de nouvel essai à chaque appel');
+  assert.equal(refusing.agents.length, 1);
+  assert.equal(refusing.agents[0].conversation_config.tts.model_id, 'eleven_flash_v2_5');
+  // Une clé refusée ou une panne n'est pas masquée par le repli.
+  const down = new Refusing();
+  down.status = 401;
+  await assert.rejects(ensureVoiceAgent(db, down, playable, { fr: 'voixRepli2' }), /401/);
+  assert.equal(down.agents.length, 0);
+
+  // L'analyse voit le ton du prospect sur sa réplique.
+  const analysis = analysisPrompt({
+    meta,
+    content: playable.content,
+    weights: playable.content.skillWeights,
+    transcript: [
+      { role: 'seller', text: 'Je vous rappelle pour la troisième fois.', at: 0 },
+      { role: 'prospect', text: 'MAIS ÇA SUFFIT !', at: 3, tones: ['shouts', 'angry'] },
+    ],
+    feedbackLocale: 'fr',
+  });
+  assert.match(analysis, /\[1\] PROSPECT \(tone: shouts, angry\): MAIS ÇA SUFFIT !/);
+});
+
 test('prospect vocal : le premier appel précédent passe en récupération quand on en démarre un autre', async () => {
   const { auth } = await newUser(db, 'Hugo');
   const scenario = await firstCatalogScenario(auth);
@@ -138,7 +190,7 @@ test('session : fin d\'appel, transcription normalisée, durée et coût enregis
     transcript: [
       { role: 'agent', message: 'Allô, oui ?', time_in_call_secs: 0 },
       { role: 'user', message: 'Bonjour, ici Albino de Blackstart.', time_in_call_secs: 2.4 },
-      { role: 'agent', message: 'Je suis en plein chantier, faites vite', time_in_call_secs: 6, interrupted: true },
+      { role: 'agent', message: '[sighs] Je suis en plein chantier, [snappy] faites vite', time_in_call_secs: 6, interrupted: true },
       { role: 'user', message: '  ', time_in_call_secs: 9 },
       { role: 'user', message: 'Deux minutes et je vous laisse.', time_in_call_secs: 9.6 },
     ],
@@ -153,7 +205,8 @@ test('session : fin d\'appel, transcription normalisée, durée et coût enregis
   assert.deepEqual(done.transcript, [
     { role: 'prospect', text: 'Allô, oui ?', at: 0 },
     { role: 'seller', text: 'Bonjour, ici Albino de Blackstart.', at: 2 },
-    { role: 'prospect', text: 'Je suis en plein chantier, faites vite', at: 6, interrupted: true },
+    // Les balises de la voix expressive sortent du texte ; le ton du prospect est gardé pour le rapport et l'analyse.
+    { role: 'prospect', text: 'Je suis en plein chantier, faites vite', at: 6, interrupted: true, tones: ['sighs', 'rushed'] },
     { role: 'seller', text: 'Deux minutes et je vous laisse.', at: 10 },
   ]);
   // Une simulation terminée n'est plus modifiée par une nouvelle synchronisation.

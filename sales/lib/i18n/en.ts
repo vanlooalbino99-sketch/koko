@@ -350,6 +350,7 @@ export const en: Dictionary = {
     live: 'Live transcript',
     liveEmpty: 'Lines appear here during the call.',
     you: 'You',
+    tones: { shouts: 'raises their voice', angry: 'gets annoyed', sighs: 'sighs', laughs: 'laughs', rushed: 'gets impatient', doubt: 'doubts', calm: 'softens' },
     back: 'Back to scenario',
     navLive: 'Live call',
     navMore: 'More',

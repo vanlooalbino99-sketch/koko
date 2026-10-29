@@ -56,11 +56,10 @@ const ConversationSchema = z.object({
 export type ProviderConversation = z.infer<typeof ConversationSchema>;
 
 export class VoiceProviderError extends Error {
-  constructor(
-    message: string,
-    readonly status?: number,
-  ) {
+  readonly status?: number;
+  constructor(message: string, status?: number) {
     super(message);
+    this.status = status;
   }
 }
 

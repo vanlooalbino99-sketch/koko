@@ -13,6 +13,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import type { ScenarioContent } from '../scenarios/content.ts';
+import type { Tone } from '../voice/emotion.ts';
 
 // Toutes les dates sont stockées en UTC (timestamptz).
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
@@ -210,6 +211,8 @@ export type TranscriptTurn = {
   at: number;
   // Réplique du prospect coupée par le vendeur.
   interrupted?: boolean;
+  // Ton du prospect sur cette réplique (cri, agacement, soupir…), tiré des balises de sa voix expressive.
+  tones?: Tone[];
 };
 
 export const simulations = pgTable(

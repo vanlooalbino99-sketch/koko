@@ -16,6 +16,7 @@ import {
   type WaveSample,
 } from '@/components/vox/vox-screen';
 import { addSellerLine, countFillers, countWords, lineSignals, pace, PACE_TARGET, type LiveState } from '@/lib/live/speech';
+import { splitTones } from '@/lib/voice/emotion';
 
 // Volume du micro au-delà duquel on considère que le vendeur parle (le micro capte aussi la pièce).
 const VOICE_THRESHOLD = 0.06;
@@ -123,15 +124,16 @@ function Room({ data }: { data: VoxStatic }) {
       if (!connected.current) void finish('error', message);
     },
     onMessage: ({ message, role }) => {
-      const text = message.trim();
+      const seller = role === 'user';
+      // Les balises de voix du prospect (« [sighs] ») ne s'affichent pas : seul son ton est montré.
+      const { text, tones } = seller ? { text: message.trim(), tones: [] } : splitTones(message);
       if (!text) return;
       const arrival = now();
-      const seller = role === 'user';
       // La réplique du prospect arrive quand il commence à parler ; celle du vendeur, quand il a fini.
       const at = seller ? sellerLine(text, arrival) : Math.max(lastAt.current, arrival);
       lastAt.current = at;
       const id = lineId.current++;
-      setLines((prev) => [...prev, { id, role: seller ? 'seller' : 'prospect', text, at }]);
+      setLines((prev) => [...prev, { id, role: seller ? 'seller' : 'prospect', text, at, ...(tones.length ? { tones } : {}) }]);
     },
     onInterruption: () => {
       const at = now();

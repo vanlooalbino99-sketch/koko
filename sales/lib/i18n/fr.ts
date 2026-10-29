@@ -350,6 +350,7 @@ export const fr = {
     live: 'Transcription en direct',
     liveEmpty: 'Les répliques apparaissent ici pendant l’appel.',
     you: 'Vous',
+    tones: { shouts: 'hausse le ton', angry: 's’agace', sighs: 'soupire', laughs: 'rit', rushed: 's’impatiente', doubt: 'doute', calm: 'se radoucit' },
     back: 'Retour au scénario',
     navLive: 'Appel en direct',
     navMore: 'Plus',

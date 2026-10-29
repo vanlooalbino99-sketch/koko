@@ -497,3 +497,33 @@
 [data-tip].bs-tip-hit:hover {
   filter: brightness(1.18) saturate(1.1);
 }
+
+/* Barre de navigation (components/shell/nav-progress.tsx) : avance vite puis ralentit, se remplit à l'arrivée. */
+.bs-nav-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 200;
+  height: 2.5px;
+  width: 100%;
+  transform-origin: left;
+  background: linear-gradient(90deg, #6c63ff, #5aa9ff, #3fe0b5);
+  box-shadow: 0 0 10px rgb(108 99 255 / 0.6);
+  pointer-events: none;
+}
+.bs-nav-running {
+  animation: bs-nav-run 8s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
+}
+.bs-nav-done {
+  transform: scaleX(1);
+  opacity: 0;
+  transition: opacity 0.3s ease 0.05s;
+}
+@keyframes bs-nav-run {
+  from {
+    transform: scaleX(0.05);
+  }
+  to {
+    transform: scaleX(0.92);
+  }
+}

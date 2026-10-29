@@ -8,6 +8,7 @@ export const en: Dictionary = {
   common: {
     appName: 'Sales Intelligence',
     brand: 'Blackstart AI',
+    loading: 'Loading…',
     save: 'Save',
     cancel: 'Cancel',
     back: 'Back',

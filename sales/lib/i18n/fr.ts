@@ -7,6 +7,7 @@ export const fr = {
   common: {
     appName: 'Sales Intelligence',
     brand: 'Blackstart AI',
+    loading: 'Chargement…',
     save: 'Enregistrer',
     cancel: 'Annuler',
     back: 'Retour',

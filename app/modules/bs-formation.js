@@ -1217,6 +1217,8 @@
     }
     // Voix off : fichier neuronal pré-enregistré quand le serveur le fournit, sinon synthèse du navigateur.
     var audio = null, AUDIO_OK = /^https?:/.test(location.protocol) && !!window.BS_VOIX;
+    // Voix ElevenLabs quand le serveur en a une (il renvoie lui-même vers la voix du projet en cas d'échec).
+    var VOIX_BASE = (window.BS_SERVER && window.BS_SERVER.voix) || 'voix/';
     function stopVoice() {
       if (audio) { audio.onended = audio.onerror = null; try { audio.pause(); } catch (e) {} audio = null; }
       try { speechSynthesis.cancel(); } catch (e) {}
@@ -1225,7 +1227,7 @@
     function speak(text) {
       stopVoice();
       if (AUDIO_OK && voixMs(text)) {
-        var a = audio = new Audio('voix/' + hashCap(text) + '.mp3');
+        var a = audio = new Audio(VOIX_BASE + hashCap(text) + '.mp3');
         a.playbackRate = prefs.vit; a.preservesPitch = true;
         speaking = true; spoken = text; Musique.duck(true);
         a.onended = function () { if (audio === a) { speaking = false; Musique.duck(false); } };

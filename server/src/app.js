@@ -22,13 +22,14 @@ import { assemble } from '../../scripts/build.mjs';
 import { osmRoutes } from './osm.js';
 import { contactsRoutes } from './contacts.js';
 import { requireAcces, peut } from './acces.js';
+import { voixElevenLabs } from './voix.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
 
 // Base : PostgreSQL (Supabase) si databaseUrl est donné, sinon SQLite dans dataDir.
 // Mots de passe : Supabase Auth si supabase = { url, serviceKey } est donné, sinon vérifiés par le serveur.
-export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {} } = {}) {
+export async function createApp({ dataDir, databaseUrl = null, supabase = null, dev = false, secureCookies = false, trustProxy = false, siteApiKey = null, siteTimeZone, googleMapsKey = null, contacts = {}, voix = null } = {}) {
   const db = await openStore({ dataDir, databaseUrl });
   const identity = supabase ? supabaseIdentity(supabase) : localIdentity();
   const app = express();
@@ -43,6 +44,8 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
     next();
   });
   app.get('/healthz', (_req, res) => res.json({ ok: true, version: VERSION }));
+  // Voix off ElevenLabs (facultative) : enregistrée à la première écoute, réservée aux comptes qui ont la Formation.
+  if (voix) app.get('/voix/el/:f', attachUser(db), requireAcces('formations'), voixElevenLabs({ ...voix, dataDir, root: ROOT }));
   // Voix off de la formation (fichiers MP3 nommés par l'empreinte du texte : jamais modifiés, cache long).
   app.use('/voix', express.static(join(ROOT, 'app', 'voix'), { immutable: true, maxAge: '30d', fallthrough: false, index: false }));
   // Logo en verre 3D de la page de connexion (Three.js assemblé par npm run build:verre).
@@ -81,7 +84,7 @@ export async function createApp({ dataDir, databaseUrl = null, supabase = null, 
   app.get('/', (req, res) => {
     if (!req.user) return res.redirect('/connexion');
     const page = html || assemble();
-    const conf = JSON.stringify({ user: req.user, version: VERSION, ...(googleMapsKey && peut(req.user, 'carte') ? { carte: { google: googleMapsKey } } : {}) }).replace(/</g, '\\u003c');
+    const conf = JSON.stringify({ user: req.user, version: VERSION, ...(googleMapsKey && peut(req.user, 'carte') ? { carte: { google: googleMapsKey } } : {}), ...(voix && peut(req.user, 'formations') ? { voix: 'voix/el/' } : {}) }).replace(/</g, '\\u003c');
     res.set('Cache-Control', 'no-store').type('html')
       .send(page.replace('<head>', `<head>\n<script id="bs-serveur-conf">window.BS_SERVER=${conf};</script>`));
   });

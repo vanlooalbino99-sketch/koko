@@ -14,11 +14,12 @@ COPY scripts ./scripts
 COPY server/src ./server/src
 
 # Monter un volume sur /data (docker-compose, Render disk, volume Railway) pour garder les données.
+# Le script de démarrage donne le disque au compte « node » et lance le serveur sous ce compte.
 RUN mkdir -p /data && chown node:node /data
-USER node
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -qO- "http://127.0.0.1:${PORT}/healthz" >/dev/null || exit 1
 
+ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 CMD ["node", "--experimental-sqlite", "--disable-warning=ExperimentalWarning", "server/src/index.js"]

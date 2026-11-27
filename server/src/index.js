@@ -6,6 +6,7 @@
 //   HERE_API_KEY, GOOGLE_PLACES_KEY, TOMTOM_KEY   facultatifs : plus de téléphones pour le générateur de leads (voir contacts.js)
 //   LEADS_BASE_LOCALE=0        ne pas télécharger la base des lieux OpenStreetMap (générateur de leads)
 //   CONTACTS_ESSAI=0           pas d'essai réel du générateur de leads au démarrage
+//   ELEVENLABS_API_KEY         facultatif : voix off de la Formation par ElevenLabs (ELEVENLABS_VOICE_ID, ELEVENLABS_MODEL)
 import { resolve, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { createApp } from './app.js';
@@ -32,6 +33,7 @@ const { app, db, hub, identity } = await createApp({
   siteTimeZone: env.SITE_TIMEZONE || 'Europe/Paris',
   googleMapsKey: env.GOOGLE_MAPS_KEY || null,
   contacts,
+  voix: env.ELEVENLABS_API_KEY ? { apiKey: env.ELEVENLABS_API_KEY, voiceId: env.ELEVENLABS_VOICE_ID || undefined, modelId: env.ELEVENLABS_MODEL || undefined } : null,
 });
 // Passage à Supabase : COPIER_SQLITE=1 recopie la base SQLite de DATA_DIR dans Supabase, une seule fois
 // (seulement si Supabase n'a encore aucun compte). Le fichier SQLite reste intact, en secours.
@@ -55,7 +57,7 @@ if (env.ADMIN_EMAIL && env.ADMIN_PASSWORD && (await db.get('SELECT COUNT(*) AS n
 
 const server = app.listen(port, () => {
   const where = db.kind === 'pg' ? 'PostgreSQL (Supabase)' : dataDir;
-  console.log(`Blackstart CRM — http://localhost:${port} (données : ${where}, mots de passe : ${identity.kind === 'supabase' ? 'Supabase Auth' : 'serveur'})`);
+  console.log(`Blackstart CRM — http://localhost:${port} (données : ${where}, mots de passe : ${identity.kind === 'supabase' ? 'Supabase Auth' : 'serveur'}${env.ELEVENLABS_API_KEY ? ', voix off : ElevenLabs' : ''})`);
   if (lieux) {
     lieux.demarrer()
       .then(() => (env.CONTACTS_ESSAI !== '0' ? essaiReel(contacts) : null))

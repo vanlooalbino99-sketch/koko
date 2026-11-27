@@ -6,24 +6,13 @@ import { readFileSync, writeFileSync, readdirSync, unlinkSync, existsSync } from
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import vm from 'node:vm';
+import { phrasesFormation } from './phrases.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const VOIX = join(ROOT, 'app', 'voix'), JS = join(ROOT, 'app', 'modules', 'bs-voix.js');
-function hashCap(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
 
-// Toutes les phrases : modules et tutos, version équipe (captures présentes).
-// Deux passes : version équipe (tutos sur captures) et version autonome (anciennes scènes animées).
-const caps = new Map();
-for (const serveur of [true, false]) {
-  const win = { document: { documentElement: { getAttribute: () => 'dark' } }, location: { protocol: 'http:' } };
-  if (serveur) win.BS_SERVER = {};
-  const ctx = vm.createContext({ window: win, document: win.document, location: win.location, navigator: {}, setTimeout, console });
-  // Toutes les captures « présentes » : chaque tuto compte, même avant d'avoir refait les captures.
-  if (serveur) win.BS_ECRANS = new Proxy({}, { get: (_, k) => (k === '_v' ? undefined : { w: 1440, h: 900, z: {} }) });
-  vm.runInContext(readFileSync(join(ROOT, 'app', 'modules', 'bs-formation.js'), 'utf8'), ctx);
-  for (const m of win.bsFormation.modules) for (const s of m.scenes) for (const c of s.captions) caps.set(hashCap(c), c);
-}
+// Toutes les phrases : modules et tutos, version équipe et version autonome.
+const caps = phrasesFormation(ROOT);
 const old = existsSync(JS) ? JSON.parse(readFileSync(JS, 'utf8').replace(/^[\s\S]*?window\.BS_VOIX = /, '').replace(/;\s*$/, '')) : {};
 const manque = [...caps].filter(([h]) => !(old[h] && existsSync(join(VOIX, h + '.mp3')))).map(([h, t]) => ({ h, t }));
 console.log(`${caps.size} phrases, ${manque.length} à enregistrer`);

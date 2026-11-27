@@ -99,12 +99,23 @@ Variables d'environnement (voir [`.env.example`](.env.example)) :
 | `SUPABASE_DB_URL` | Base PostgreSQL de Supabase (adresse « Session pooler ») à la place de SQLite | SQLite |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Mots de passe vérifiés par Supabase Auth (sinon par le serveur) | désactivé |
 | `COPIER_SQLITE` | `1` : au premier démarrage sur Supabase, recopie la base SQLite de `DATA_DIR` (seulement si Supabase n'a aucun compte) | `0` |
+| `ELEVENLABS_API_KEY` | Voix off de la Formation par ElevenLabs : chaque phrase est enregistrée à la première écoute puis gardée dans `DATA_DIR` (sinon voix pré-enregistrée du projet) | désactivé |
+| `ELEVENLABS_VOICE_ID`, `ELEVENLABS_MODEL` | Voix (identifiant pris dans la bibliothèque ElevenLabs) et modèle | voix « George », `eleven_multilingual_v2` |
 
 ### Déploiement
 
 N'importe quel hébergement qui fait tourner une image Docker **avec un disque persistant** monté sur `/data` :
 un VPS (Docker Compose + Caddy ou Nginx pour le HTTPS), Railway, Fly.io, Render (avec disque)…
 Derrière un proxy HTTPS, mettre `TRUST_PROXY=1` et `COOKIE_SECURE=1`.
+
+**Render, en un clic** : le fichier [`render.yaml`](render.yaml) décrit le service (image Docker, région Francfort,
+disque de 1 Go sur `/data`, contrôle `/healthz`, HTTPS). Ouvrir
+<https://render.com/deploy?repo=https://github.com/vanlooalbino99-sketch/koko>, se connecter à Render avec GitHub,
+puis remplir les valeurs demandées : `ADMIN_EMAIL` et `ADMIN_PASSWORD` (premier administrateur) et, pour la voix
+off, `ELEVENLABS_API_KEY` (et `ELEVENLABS_VOICE_ID` pour une voix française). Ces valeurs restent dans Render, jamais
+dans le dépôt. Le disque demande l'offre payante « Starter » : sans disque, les données seraient perdues à chaque
+redémarrage (ou alors utiliser Supabase, ci-dessous). Chaque push sur la branche principale redéploie le service.
+Le script de démarrage de l'image rend le disque au compte `node`, sous lequel tourne le serveur.
 
 ### Supabase (base de données et comptes)
 

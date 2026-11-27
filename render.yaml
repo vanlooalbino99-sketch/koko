@@ -1,0 +1,34 @@
+# Render : déploiement en un clic (Blueprint). Sur render.com : New › Blueprint › ce dépôt,
+# ou https://render.com/deploy?repo=https://github.com/vanlooalbino99-sketch/koko/tree/claude/crm-connexion-verre
+# Render demande à la création les valeurs marquées « sync: false » : elles restent dans Render, jamais dans le dépôt.
+services:
+  - type: web
+    name: blackstart-crm
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: frankfurt
+    # Le disque (données SQLite, images d'ambiance, clés chiffrées) demande une offre payante.
+    plan: starter
+    healthCheckPath: /healthz
+    autoDeploy: true
+    disk:
+      name: donnees
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: TRUST_PROXY
+        value: "1"
+      - key: COOKIE_SECURE
+        value: "1"
+      # Premier administrateur, créé au premier démarrage (sinon le premier visiteur de l'adresse pourrait le créer).
+      - key: ADMIN_NAME
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Voix off de la Formation par ElevenLabs (facultatif ; la clé peut aussi être collée dans Formations).
+      - key: ELEVENLABS_API_KEY
+        sync: false
